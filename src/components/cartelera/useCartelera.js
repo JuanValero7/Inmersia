@@ -55,7 +55,7 @@ export function useCartelera(libroId, userId) {
           .select('seccion, imagen:biblioteca_media!imagen_media_id(url, titulo)')
           .eq('libro_id', libroId),
         supabase.from('predicciones_usuario')
-          .select('id, capitulo_num, contenido, created_at')
+          .select('id, capitulo_num, contenido, updated_at')
           .eq('user_id', userId)
           .eq('libro_id', libroId)
           .order('capitulo_num', { ascending: true }),
