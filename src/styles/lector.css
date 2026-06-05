@@ -1,0 +1,49 @@
+/* ══ LECTOR · Acuarela / Clay ════════════════════════════════
+   Estética coherente con el resto de Inmersia (Baloo 2, tinta
+   #4a3622, acento terracota). El grueso del estilo vive inline
+   en los componentes; aquí solo lo global: fondo, animaciones,
+   slider de volumen y selección. */
+
+.desk {
+  position: relative;
+  min-height: 100vh;
+  font-family: 'Baloo 2', system-ui, sans-serif;
+  color: #4a3622;
+}
+
+/* Brillo de polaroid con foto nueva */
+@keyframes inm-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(255,190,70,0.55)); }
+  50%      { filter: drop-shadow(0 0 16px rgba(255,190,70,0.95)); }
+}
+.inm-glow { animation: inm-pulse 1.9s ease-in-out infinite; }
+
+/* Slider de volumen fino (grabadora) */
+input.inm-vol {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 3px;
+  background: rgba(120,90,50,0.4);
+  outline: none;
+  cursor: pointer;
+}
+input.inm-vol::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: currentColor;
+  border: 2px solid rgba(0,0,0,0.25);
+}
+input.inm-vol::-moz-range-thumb {
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: currentColor;
+  border: 2px solid rgba(0,0,0,0.25);
+}
+
+::selection { background: rgba(207,123,76,0.35); }
+
+@media (prefers-reduced-motion: reduce) {
+  .inm-glow { animation: none; }
+}

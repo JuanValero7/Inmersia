@@ -1,0 +1,176 @@
+import { useState } from 'react'
+import clsx from 'clsx'
+import { CAT_COLOR, itint, ilum } from './tiendaHelpers.jsx'
+import PanelLibro from './PanelLibro.jsx'
+
+// =============================================================
+// CatalogoInterior · interior de la tienda (estilo storybook)
+// Buscador + filtros por categoría + rejilla de portadas, y panel
+// lateral de detalle. Toda la data viene de props (catálogo real).
+//
+// Props:
+//   catalogo    · filas de `libros` (+ _nuevo)
+//   loading     · cargando catálogo
+//   user        · usuario auth (para el panel)
+//   tieneLibro  · (id) => bool
+//   libroLeido  · (id) => bool
+//   onComprar   · (libro) => void
+//   onPreview   · (libro) => void  (abre LibroReel)
+//   onVolver()  · regresar a la calle
+// =============================================================
+
+// Portada de la tarjeta: portada_url si existe, si no una generada.
+function CoverCard({ libro }) {
+  const c = libro.color || '#cf8a6e'
+  if (libro.portada_url) {
+    return <img className="bk-cover bk-cover-img" src={libro.portada_url} alt={libro.titulo} />
+  }
+  const light = ilum(c) > 0.62
+  const fg   = light ? 'rgba(40,28,16,0.92)' : 'rgba(255,250,240,0.96)'
+  const mark = light ? 'rgba(40,28,16,0.4)'  : 'rgba(255,247,225,0.85)'
+  return (
+    <div className="bk-cover" style={{ background: `linear-gradient(150deg, ${itint(c, 0.18)}, ${itint(c, -0.16)})` }}>
+      <span className="bk-cover-band" />
+      <span className="bk-cover-mark" style={{ background: mark }} />
+      <span className="bk-cover-title" style={{ color: fg, textShadow: light ? 'none' : '0 1px 2px rgba(0,0,0,0.35)' }}>
+        {libro.titulo}
+      </span>
+    </div>
+  )
+}
+
+function BookCard({ libro, adquirido, onOpen }) {
+  const c = libro.color || '#cf8a6e'
+  const catCol = CAT_COLOR[libro.categorias?.[0]] || '#cf8a6e'
+  return (
+    <button className={clsx('bk-card', adquirido && 'bk-card-owned')} type="button"
+      title={`${libro.titulo} — ${libro.autor}`} onClick={() => onOpen(libro)}>
+      {libro._nuevo && <span className="bk-ribbon">Nuevo</span>}
+      <div className="bk-inner">
+        <span className="bk-badge" style={{ background: catCol }} title={libro.categorias?.[0]}>✦</span>
+        <div className="bk-stage" style={{ background: `linear-gradient(180deg, ${itint(c, 0.82)}, ${itint(c, 0.66)})` }}>
+          <span className="bk-glow" style={{ background: `radial-gradient(circle, ${itint(c, 0.28)}, transparent 66%)` }} />
+          <span className="bk-podium" />
+          <CoverCard libro={libro} />
+          <span className="bk-shelf" />
+        </div>
+        <div className="bk-foot">
+          <div className="bk-meta">
+            <span className="bk-title">{libro.titulo}</span>
+            <span className="bk-author">{libro.autor}</span>
+          </div>
+          <span className={clsx('bk-fab', adquirido && 'owned')} aria-hidden="true">{adquirido ? '✓' : '›'}</span>
+        </div>
+      </div>
+    </button>
+  )
+}
+
+export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMore, onLoadMore, user, tieneLibro, libroLeido, onComprar, onPreview, onVolver }) {
+  const [cat,    setCat]    = useState('Todos')
+  const [qInput, setQInput] = useState('')
+  const [q,      setQ]      = useState('')
+  const [sel,    setSel]    = useState(null)
+
+  const cats  = ['Todos', ...new Set(catalogo.flatMap(b => b.categorias || []))]
+  const query = q.trim().toLowerCase()
+
+  const handleQChange = (value) => {
+    setQInput(value)
+    if (!value) setQ('')
+  }
+  const handleQKeyDown = (e) => {
+    if (e.key === 'Enter') setQ(qInput)
+    if (e.key === 'Escape') { setQInput(''); setQ('') }
+  }
+  const list  = catalogo.filter(b => {
+    const okCat = cat === 'Todos' || (b.categorias || []).includes(cat)
+    const okQ = !query ||
+      (b.titulo || '').toLowerCase().includes(query) ||
+      (b.autor  || '').toLowerCase().includes(query)
+    return okCat && okQ
+  })
+  const reset = () => { setCat('Todos'); setQ(''); setQInput('') }
+
+  return (
+    <div className="interior show">
+      <div className="interior-bg" />
+      <button className="int-back" onClick={onVolver}>‹ Biblioteca</button>
+
+      <div className="interior-inner">
+        <h1 className="int-title">Catálogo</h1>
+        <p className="int-sub">Elige tu próximo mundo</p>
+
+        {/* Buscador */}
+        <div className="int-search">
+          <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round">
+            <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.5" y2="16.5" />
+          </svg>
+          <input type="text" placeholder="Buscar por título o autor… (Enter)" value={qInput}
+            onChange={e => handleQChange(e.target.value)}
+            onKeyDown={handleQKeyDown} />
+          {qInput && <button className="int-search-clear" onClick={() => { setQInput(''); setQ('') }} aria-label="Limpiar">×</button>}
+        </div>
+
+        {/* Filtro por categoría */}
+        {cats.length > 1 && (
+          <div className="int-filterbar">
+            <span className="int-filter-label">Filtrar</span>
+            <div className="int-chips">
+              {cats.map(c => (
+                <button key={c} className={clsx('int-chip', cat === c && 'on')} onClick={() => setCat(c)}>
+                  {c !== 'Todos' && <span className="dot" style={{ background: CAT_COLOR[c] || '#cf8a6e' }} />}
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <p className="int-count">{list.length} {list.length === 1 ? 'aventura' : 'aventuras'}</p>
+
+        {/* Rejilla */}
+        {loading ? (
+          <p className="int-count">Cargando catálogo…</p>
+        ) : list.length > 0 ? (
+          <>
+            <div className="int-grid">
+              {list.map(b => (
+                <BookCard key={b.id} libro={b} adquirido={tieneLibro(b.id)} onOpen={setSel} />
+              ))}
+            </div>
+            {hasMore && (
+              <div style={{ textAlign: 'center', padding: '28px 0 8px' }}>
+                <button className="int-empty-reset" onClick={onLoadMore} disabled={loadingMore}>
+                  {loadingMore ? 'Cargando…' : 'Cargar más libros'}
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="int-empty">
+            <div className="int-empty-mark">✦</div>
+            <div className="int-empty-text">
+              {query ? <>No encontramos nada para «{q}»</> : 'No hay libros en esta categoría.'}
+            </div>
+            <button className="int-empty-reset" onClick={reset}>Ver todo el catálogo</button>
+          </div>
+        )}
+      </div>
+
+      {/* Panel lateral de detalle */}
+      <div className={clsx('bkp-scrim', sel && 'show')} onClick={() => setSel(null)} />
+      {sel && (
+        <PanelLibro
+          key={sel.id}
+          libro={sel}
+          user={user}
+          yaAdquirido={tieneLibro(sel.id)}
+          yaLeido={libroLeido(sel.id)}
+          onComprar={() => { onComprar(sel); setSel(null) }}
+          onClose={() => setSel(null)}
+          onPreview={() => onPreview(sel)}
+        />
+      )}
+    </div>
+  )
+}

@@ -1,0 +1,22 @@
+/* ══ BIBLIOTECA · Acuarela ═══════════════════════════════════
+   Reemplaza por completo al biblioteca.css anterior (cajones,
+   sidebar, rodapié, topbar — todo eso quedó jubilado).
+   El estilo vive casi todo inline en los componentes; acá solo
+   queda la base y el scrollbar. La animación de hover de los
+   lomos (.inm-bk) la inyecta clay/Shelves.jsx.
+   ════════════════════════════════════════════════════════════ */
+
+.bib-body,
+.bib-body * {
+  font-family: 'Baloo 2', system-ui, sans-serif;
+}
+
+.bib-body {
+  background-color: #f6f3ec;
+  min-height: 100vh;
+}
+
+/* Scrollbar cálido (opcional) */
+.bib-body ::-webkit-scrollbar { width: 10px; height: 10px; }
+.bib-body ::-webkit-scrollbar-thumb { background: rgba(120,90,55,0.32); border-radius: 9px; }
+.bib-body ::-webkit-scrollbar-track { background: transparent; }

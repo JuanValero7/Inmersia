@@ -1,0 +1,11 @@
+# Fuerza LF en todos los archivos de texto (estándar web)
+* text=auto eol=lf
+
+# Binarios — sin conversión
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
