@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { supabase } from './lib/supabase.js'
 import Auth from './components/Auth.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
+import TourResume from './components/TourResume.jsx'
 
 const VistaBiblioteca = lazy(() => import('./components/Biblioteca.jsx'))
 const VistaLectura    = lazy(() => import('./components/Lector.jsx'))
@@ -108,6 +109,7 @@ export default function App() {
   if (!user) return <Auth onAuthSuccess={(u) => { setUser(u); window.history.replaceState({ view: 'biblioteca' }, ''); setView('biblioteca') }}/>
 
   return (
+    <>
     <Suspense fallback={Fallback}>
       {view === 'biblioteca' && (
         <VistaBiblioteca
@@ -161,5 +163,7 @@ export default function App() {
         />
       )}
     </Suspense>
+    <TourResume />
+    </>
   )
 }
