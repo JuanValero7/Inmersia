@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 import { supabase } from '../lib/supabase.js'
+import { MANUAL_LIBRO_ID } from '../lib/constants.js'
 import '../styles/auth.css'
 
 // Logo y fondo se sirven desde public/assets (referencia con ruta absoluta)
@@ -57,6 +58,12 @@ export default function Auth({ onAuthSuccess }) {
         nombre: regForm.nombre.trim(),
         apellido: regForm.apellido.trim(),
         fecha_nacimiento: regForm.fechaNacimiento || null,
+      })
+      // Todo usuario nuevo recibe el Manual del Explorador automáticamente
+      await supabase.from('bibliotecas_usuarios').insert({
+        user_id: data.user.id,
+        libro_id: MANUAL_LIBRO_ID,
+        leido: false,
       })
     }
     setLoading(false)

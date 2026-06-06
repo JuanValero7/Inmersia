@@ -87,7 +87,7 @@ function ChapterSelect({ chapters, chapterIndex, onChapterSelect }) {
 
   return (
     <>
-      <button ref={btnRef} type="button" onClick={handleClick}
+      <button id="tutorial-chapter-btn" ref={btnRef} type="button" onClick={handleClick}
         style={{ display: 'inline-flex', alignItems: 'center', gap: 8, maxWidth: 320, fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: theme.navBg, color: theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
         <span style={{ fontSize: 8, opacity: 0.6, flexShrink: 0 }}>{open ? '▲' : '▼'}</span>
@@ -142,7 +142,7 @@ function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont })
 
   return (
     <>
-      <button ref={btnRef} type="button" onClick={handleClick} title="Tamaño y fuente del texto"
+      <button id="tutorial-typography-btn" ref={btnRef} type="button" onClick={handleClick} title="Tamaño y fuente del texto"
         style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Crimson Text', Georgia, serif", fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: open ? theme.accent : theme.navBg, color: open ? '#fff' : theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
         <span style={{ fontSize: 12, lineHeight: 1 }}>A</span>
         <span style={{ fontSize: 17, lineHeight: 1 }}>A</span>

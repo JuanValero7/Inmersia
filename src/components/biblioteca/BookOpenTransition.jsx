@@ -24,10 +24,11 @@
 import { useEffect, useRef, useState } from 'react'
 
 const ANIM_LOADERS = {
-  libro_01: () => import('../../assets/animations/libro_01.json'),
+  libro_01:   () => import('../../assets/animations/libro_01.json'),
+  libro_01_f: () => import('../../assets/animations/libro_01_f.json'),
 }
 
-const DEFAULT_KEY = 'libro_01'
+const DEFAULT_KEY = 'libro_01_f'
 const EXPAND_MS   = 250
 
 export default function BookOpenTransition({ book, startRect, onComplete }) {

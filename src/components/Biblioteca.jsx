@@ -1,7 +1,10 @@
 import React from 'react'
 import { supabase } from '../lib/supabase.js'
+import { MANUAL_LIBRO_ID } from '../lib/constants.js'
 import useLocalStorage from '../hooks/useLocalStorage.js'
 import '../styles/biblioteca.css'
+import { runGuidedBib1, runGuidedBib2 } from './tutorial.js'
+import { getTourPhase, setTourPhase, shouldStart } from './guidedTour.js'
 import BibBookModal from './biblioteca/BibBookModal.jsx'
 import ManageCategoriasModal from './biblioteca/ManageCategoriasModal.jsx'
 import BookOpenTransition from './biblioteca/BookOpenTransition.jsx'
@@ -24,13 +27,13 @@ const COLOR_BOOK_FALLBACK2 = '#5a3d28';
 const SIN_CATEGORIA_ID = '__sin_categoria';
 
 const MANUAL_USUARIO = {
-  id: 'manual', libro_id: null, categoria_id: null,
-  title: 'Manual del Lector', author: 'Biblioteca Virtual',
-  pages: 42, _baseColor: '#5a7a4a', cover: null, progress: null,
-  summary: 'Tu guía de bienvenida a la Biblioteca Virtual. Descubre cómo organizar tu colección, seguir tu progreso lector y acceder a la Tienda de los Guardianes.',
+  id: 'manual', libro_id: MANUAL_LIBRO_ID, categoria_id: null,
+  title: 'Manual del Explorador', author: 'Biblioteca Virtual',
+  pages: 8, _baseColor: '#5a7a4a', cover: null, progress: null,
+  summary: 'Tu guía de bienvenida a Inmersia. Descubre cómo leer, anotar, investigar y conectar con otros lectores.',
 };
 
-function VistaBiblioteca({ user, lastOpenedBookId, onSignOut, onOpenBook, onGoTienda, onGoPerfil, onGoForo }) {
+function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoTienda, onGoPerfil, onGoForo, onGoNotebook }) {
   const [rawBooks, setRawBooks] = React.useState([MANUAL_USUARIO]);
   const [loadingBooks, setLoadingBooks] = React.useState(true);
   const [perfil, setPerfil] = React.useState(null);
@@ -44,6 +47,20 @@ function VistaBiblioteca({ user, lastOpenedBookId, onSignOut, onOpenBook, onGoTi
   const [searchInput, setSearchInput] = React.useState('');
   const [search, setSearch] = React.useState('');
   const [activeCategory, setCategory] = React.useState(null); // null | 'none' | uuid
+
+  // Tutorial — guided tour o standalone
+  React.useEffect(() => {
+    if (loadingBooks) return
+    const phase = getTourPhase()
+    let t
+    if (phase === 'bib_1' || shouldStart()) {
+      if (shouldStart()) setTourPhase('bib_1')
+      t = setTimeout(() => runGuidedBib1(), 700)
+    } else if (phase === 'bib_2') {
+      t = setTimeout(() => runGuidedBib2(), 700)
+    }
+    return () => clearTimeout(t)
+  }, [loadingBooks])
 
   // Perfil (nombre)
   React.useEffect(() => {
@@ -160,21 +177,33 @@ function VistaBiblioteca({ user, lastOpenedBookId, onSignOut, onOpenBook, onGoTi
 
   const shelvesCount = Math.max(1, Math.ceil(groups.length / 3));
 
-  // Destacado del hero + repisa de portadas (real, no inventado)
+  // Destacado del hero + sección "Últimos abiertos"
   const featured = React.useMemo(() => {
     const nonManual = books.filter(b => b.id !== 'manual')
-    if (lastOpenedBookId) {
-      const last = nonManual.find(b => b.id === lastOpenedBookId)
+    if (lastOpenedBookIds?.length) {
+      const last = nonManual.find(b => b.id === lastOpenedBookIds[0])
       if (last) return last
     }
     return nonManual[0] || null
-  }, [books, lastOpenedBookId]);
-  const portadas = React.useMemo(() => books.filter(b => b.id !== 'manual').slice(0, 7), [books]);
+  }, [books, lastOpenedBookIds]);
+  const portadas = React.useMemo(() => {
+    const nonManual = books.filter(b => b.id !== 'manual')
+    if (lastOpenedBookIds?.length) {
+      const ordered = lastOpenedBookIds.map(id => nonManual.find(b => b.id === id)).filter(Boolean)
+      return ordered.slice(0, 3)
+    }
+    return nonManual.slice(0, 3)
+  }, [books, lastOpenedBookIds]);
 
   const displayName = perfil?.nombre ? `${perfil.nombre} ${perfil.apellido || ''}`.trim() : (user?.email?.split('@')[0] || 'Lector');
   const inicial = displayName.charAt(0).toUpperCase();
 
   const openBook = (book, rect) => { setPendingBook(book); setPendingRect(rect); };
+
+  const handleGoTienda = () => {
+    if (getTourPhase() === 'wait_tienda') setTourPhase('tienda_calle')
+    onGoTienda()
+  };
 
   const chip = (active, color) => ({
     display: 'inline-flex', alignItems: 'center', borderRadius: 999, padding: '8px 16px', fontSize: 13.5, fontWeight: 700,
@@ -187,7 +216,7 @@ function VistaBiblioteca({ user, lastOpenedBookId, onSignOut, onOpenBook, onGoTi
   return (
     <div className="bib-body" style={{ fontFamily: "'Baloo 2', cursive", color: INK, minHeight: '100%', backgroundColor: '#f6f3ec' }}>
       <InmHeader search={searchInput} onSearch={handleSearchChange} onSearchKeyDown={handleSearchKeyDown} displayName={displayName} inicial={inicial}
-        onGoPerfil={onGoPerfil} onGoTienda={onGoTienda} onSignOut={onSignOut} />
+        onGoPerfil={onGoPerfil} onGoTienda={handleGoTienda} onSignOut={onSignOut} />
 
       <div style={{ padding: '26px 32px 56px' }}>
         <div style={{ fontWeight: 800, fontSize: 32, letterSpacing: '-0.01em', color: headerInk }}>¡Hola otra vez, {displayName.split(' ')[0]}!</div>
@@ -199,28 +228,27 @@ function VistaBiblioteca({ user, lastOpenedBookId, onSignOut, onOpenBook, onGoTi
             <Swimlane featured={featured} onOpen={openBook} />
 
             {portadas.length > 0 && (
-              <div style={{ marginTop: 36 }}>
+              <div id="tutorial-ultimos-abiertos" style={{ marginTop: 36 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: 800, fontSize: 19, color: headerInk, whiteSpace: 'nowrap' }}>Explora tu colección</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(74,54,34,0.55)', whiteSpace: 'nowrap' }}>· {books.length - 1} libros</span>
+                  <span style={{ fontWeight: 800, fontSize: 19, color: headerInk, whiteSpace: 'nowrap' }}>Últimos abiertos</span>
                 </div>
                 <CoverShelf books={portadas} onOpen={openBook} />
               </div>
             )}
 
             {/* Encabezado colección + acciones */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginTop: 44 }}>
+            <div id="tutorial-coleccion" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginTop: 44 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', flexShrink: 0 }}>
                 <span style={{ fontWeight: 800, fontSize: 24, color: headerInk, whiteSpace: 'nowrap' }}>Tu colección</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(74,54,34,0.55)', whiteSpace: 'nowrap' }}>{totalPages.toLocaleString()} páginas · {shelvesCount} {shelvesCount === 1 ? 'estante' : 'estantes'}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(74,54,34,0.55)', whiteSpace: 'nowrap' }}>{books.filter(b => b.id !== 'manual').length} {books.filter(b => b.id !== 'manual').length === 1 ? 'libro' : 'libros'}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, flexWrap: 'wrap' }}>
-                <button onClick={() => setShowFilters(v => !v)}
+                <button id="tutorial-filtrar-btn" onClick={() => setShowFilters(v => !v)}
                   style={{ display: 'flex', alignItems: 'center', gap: 9, background: showFilters ? '#cf7b4c' : '#fffdf8', color: showFilters ? '#fff' : '#cf7b4c', border: `2px solid ${INK}`, borderRadius: 14, padding: '10px 17px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap', textShadow: showFilters ? '0 1px 1px rgba(0,0,0,0.2)' : 'none', boxShadow: `1.6px 2px 0 ${INK}33` }}>
                   <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round"/></svg>
                   Filtrar{activeCategory ? ' · 1' : ''}
                 </button>
-                <button onClick={() => setShowManage(true)}
+                <button id="tutorial-gestionar-btn" onClick={() => setShowManage(true)}
                   style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#fffdf8', color: '#6f9457', border: `2px solid ${INK}`, borderRadius: 14, padding: '10px 17px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: `1.6px 2px 0 ${INK}33` }}>
                   <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   Gestionar tu colección
@@ -259,10 +287,9 @@ function VistaBiblioteca({ user, lastOpenedBookId, onSignOut, onOpenBook, onGoTi
           user={user}
           transparentBackdrop={!!pendingBook}
           onClose={() => { setSelectedBook(null); setPendingBook(null); setPendingRect(null); }}
-          notes={notes[selectedBook.id] || ''}
-          onNotesChange={text => setNotes(n => ({ ...n, [selectedBook.id]: text }))}
           onOpenBook={(book) => { setSelectedBook(null); onOpenBook(book); }}
           onGoForo={(book) => { setSelectedBook(null); onGoForo(book); }}
+          onGoNotebook={(book) => { setSelectedBook(null); setPendingBook(null); setPendingRect(null); onGoNotebook(book); }}
           categories={categories}
           onAssignCategory={assignCategoriaToBook}
         />

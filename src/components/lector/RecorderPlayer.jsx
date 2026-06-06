@@ -81,6 +81,67 @@ const RecorderPlayer = memo(function RecorderPlayer({ ambient }) {
 
 export { RecorderPlayer }
 
+// Lupa ilustrada — lente arriba-izquierda, mango de madera bajando a la derecha.
+// Mismo lenguaje visual que NotebookIcon: bordes ink, gradientes, sombra clay, hover que endereza.
+export function LupaIcon() {
+  const [hov, setHov] = useState(false)
+  const ink = theme.ink
+  return (
+    <span onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ display: 'block', position: 'relative', width: 74, height: 84,
+        transform: `rotate(${hov ? 0 : -7}deg) translateY(${hov ? -3 : 0}px)`,
+        transformOrigin: 'bottom center', transition: 'transform .22s cubic-bezier(.3,1.3,.5,1)' }}>
+      {/* Mango de madera — emerge detrás del lente, baja casi vertical (60° desde la horizontal) */}
+      <span style={{ position: 'absolute', top: 51, left: 37, width: 14, height: 33,
+        background: 'linear-gradient(120deg,#c4854a,#9c6a36)', border: `2px solid ${ink}`,
+        borderRadius: '4px 4px 6px 6px', transform: 'rotate(-30deg)', transformOrigin: 'top center',
+        boxShadow: `1.5px 2px 0 ${ink}2e`, zIndex: 0 }} />
+      {/* Virola dorada — collar entre lente y mango */}
+      <span style={{ position: 'absolute', top: 43, left: 34, width: 17, height: 13,
+        background: 'linear-gradient(120deg,#e0c272,#bf9636)', border: `2px solid ${ink}`,
+        borderRadius: 3, transform: 'rotate(-30deg)', transformOrigin: 'center', zIndex: 1 }} />
+      {/* Marco del lente — círculo grande */}
+      <span style={{ position: 'absolute', top: 1, left: 3, width: 54, height: 54,
+        borderRadius: '50%', background: 'linear-gradient(135deg,#cdd9e3,#9bb4c6)',
+        border: `3px solid ${ink}`, boxShadow: `2px 3px 0 ${ink}33`, zIndex: 2 }}>
+        {/* Vidrio */}
+        <span style={{ position: 'absolute', inset: 3, borderRadius: '50%',
+          background: 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.85) 0%, rgba(206,224,240,0.7) 45%, rgba(150,190,220,0.55) 100%)' }} />
+        {/* Reflejo brillante */}
+        <span style={{ position: 'absolute', top: 10, left: 11, width: 18, height: 9,
+          borderRadius: '50%', background: 'rgba(255,255,255,0.8)', transform: 'rotate(-25deg)' }} />
+      </span>
+    </span>
+  )
+}
+
+// Burbujas de conversación — mismo estilo que NotebookIcon.
+export function ForoIcon() {
+  const [hov, setHov] = useState(false)
+  const ink = theme.ink
+  return (
+    <span onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ display: 'block', position: 'relative', width: 74, height: 84,
+        transform: `rotate(${hov ? 0 : -7}deg) translateY(${hov ? -3 : 0}px)`,
+        transformOrigin: 'bottom center', transition: 'transform .22s cubic-bezier(.3,1.3,.5,1)' }}>
+      {/* Burbuja trasera */}
+      <span style={{ position: 'absolute', top: 30, right: 2, width: 42, height: 36,
+        background: '#e8904a', border: `2.5px solid ${ink}`,
+        borderRadius: '50% 50% 50% 10%', boxShadow: `1.5px 2px 0 ${ink}26`, zIndex: 0 }} />
+      {/* Burbuja principal */}
+      <span style={{ position: 'absolute', top: 6, left: 2, width: 58, height: 50,
+        background: '#f5aa80', border: `2.5px solid ${ink}`,
+        borderRadius: '50% 50% 10% 50%', boxShadow: `2px 3px 0 ${ink}33`, zIndex: 1 }}>
+        {/* Líneas de texto */}
+        {[0, 1, 2].map(i => (
+          <span key={i} style={{ position: 'absolute', left: 11, right: 9 + i * 9,
+            top: 13 + i * 11, height: 2.5, background: `${ink}55`, borderRadius: 2 }} />
+        ))}
+      </span>
+    </span>
+  )
+}
+
 // Cuaderno espiral inclinado (ícono del lanzador). Hover lo endereza.
 export function NotebookIcon() {
   const [hov, setHov] = useState(false)

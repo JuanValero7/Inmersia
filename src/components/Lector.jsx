@@ -8,6 +8,8 @@ import useLocalStorage from '../hooks/useLocalStorage.js'
 import '../styles/lector.css'
 
 import { paginarParrafos } from '../utils/lectorPagination.js'
+import { runGuidedLector1, runGuidedLector2, runGuidedNotebook1 } from './tutorial.js'
+import { getTourPhase, setTourPhase } from './guidedTour.js'
 import { BookReader }      from './lector/BookReader.jsx'
 import { PolaroidStack }   from './lector/PolaroidStack.jsx'
 import { RecorderPlayer, NotebookIcon } from './lector/RecorderPlayer.jsx'
@@ -42,36 +44,13 @@ function computeGeom(doubleView, fontSize, readingFont) {
   return { pageW, pageH, charsPerLine, lineHeight, maxH }
 }
 
-// Menú colapsado (arriba a la derecha)
-function MenuButton({ items }) {
-  const [open, setOpen] = useState(false)
-  useEffect(() => {
-    if (!open) return
-    const h = (e) => { if (!e.target.closest('.inm-menu')) setOpen(false) }
-    document.addEventListener('mousedown', h)
-    return () => document.removeEventListener('mousedown', h)
-  }, [open])
+function NavButton({ onClick, title, icon, label, id }) {
+  const btnStyle = { display: 'inline-flex', alignItems: 'center', gap: 9, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13.5, cursor: 'pointer', border: `2px solid ${theme.ink}`, borderRadius: 999, padding: '8px 16px 8px 14px', background: theme.navBg, color: theme.navText, boxShadow: `1.6px 2.4px 0 ${theme.ink}30` }
   return (
-    <div className="inm-menu" style={{ position: 'relative' }}>
-      <button type="button" onClick={() => setOpen(o => !o)} title="Ir a…"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 9, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13.5, cursor: 'pointer', border: `2px solid ${theme.ink}`, borderRadius: 999, padding: '8px 16px 8px 14px', background: open ? theme.accent : theme.navBg, color: open ? '#fff' : theme.navText, boxShadow: `1.6px 2.4px 0 ${theme.ink}30` }}>
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-        Menú
-      </button>
-      {open && (
-        <div style={{ position: 'absolute', top: '116%', right: 0, zIndex: 60, minWidth: 200, background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 16, padding: 6, boxShadow: `2px 4px 0 ${theme.ink}26, 0 14px 30px rgba(0,0,0,0.25)` }}>
-          {items.map(it => (
-            <button key={it.label} type="button" onClick={() => { setOpen(false); it.onClick?.() }}
-              style={{ display: 'flex', alignItems: 'center', gap: 11, width: '100%', textAlign: 'left', padding: '10px 13px', border: 'none', borderRadius: 10, cursor: 'pointer', background: 'transparent', color: theme.navText, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13.5 }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(207,123,76,0.14)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={theme.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={it.icon}/></svg>
-              {it.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <button id={id} type="button" onClick={onClick} title={title} style={btnStyle}>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d={icon}/></svg>
+      {label}
+    </button>
   )
 }
 
@@ -87,12 +66,27 @@ function EstrellaLector({ valor, onChange }) {
   )
 }
 
-export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo }) {
+export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted }) {
   const [chapterIndex,   setChapterIndex]   = useState(0)
   const [pageIndex,      setPageIndex]      = useState(0)
   const [doubleView,     setDoubleView]     = useState(true)
   const [notebookOpen,   setNotebookOpen]   = useState(false)
   const [pendingChapter, setPendingChapter] = useState(null)
+  const [explorarOpen,   setExplorarOpen]   = useState(false)
+
+  useEffect(() => {
+    if (startWithNotebook) {
+      setNotebookOpen(true)
+      onNotebookStarted?.()
+    }
+  }, [startWithNotebook])
+
+  useEffect(() => {
+    if (!explorarOpen) return
+    const h = (e) => { if (!e.target.closest('.inm-explorar-popup')) setExplorarOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [explorarOpen])
 
   // Preferencias de lectura (persistidas)
   const [fontSize,    setFontSize]    = useLocalStorage('inm_lector_fontSize', 19)
@@ -102,6 +96,17 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo }
   const [loading,    setLoading]    = useState(true)
   const [loadingCap, setLoadingCap] = useState(false)
   const [error,      setError]      = useState(null)
+
+  // Tutorial — se lanza la primera vez que el libro carga (después de loading)
+  useEffect(() => {
+    if (loading || !book?.libro_id) return
+    const phase = getTourPhase()
+    let t
+    if (phase === 'wait_lector') {
+      t = setTimeout(() => runGuidedLector1(), 900)
+    }
+    return () => clearTimeout(t)
+  }, [loading, book?.libro_id])
 
   const [chapterCache,      setChapterCache]      = useState({})
   const [userId,            setUserId]            = useState(null)
@@ -444,6 +449,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo }
   const handleNextChapter = useCallback(() => {
     const next = chapterIndex + 1
     if (next >= capitulos.length) return
+    if (getTourPhase() === 'wait_chapter') setTourPhase('notebook_1')
     setPendingChapter(next); setNotebookOpen(true)
   }, [chapterIndex, capitulos.length])
 
@@ -451,6 +457,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo }
   const handleChapterSelect = useCallback((idx) => { setChapterIndex(idx); setPageIndex(0) }, [])
   async function handleCloseNotebook() {
     setNotebookOpen(false)
+    if (getTourPhase() === 'lector_2') {
+      setTimeout(() => runGuidedLector2(), 500)
+    }
     if (pendingChapter !== null) {
       if (userId && book?.libro_id) {
         const newPct = Math.round((pendingChapter / capitulos.length) * 100)
@@ -467,13 +476,6 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo }
     }
   }
 
-  const menuItems = [
-    { label: 'Cartelera', icon: 'M4 5h16M4 12h16M4 19h10', onClick: onGoCartelera },
-    { label: 'Foro', icon: 'M4 5h16v10H9l-4 4V5z', onClick: onGoForo },
-    ...(isLeido && book?.libro_id ? [{ label: 'Reseña', icon: 'M12 3l2.6 5.4L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.4-.6z', onClick: () => setResenaOpen(true) }] : []),
-    { label: 'Biblioteca', icon: 'M5 4h5v16H5zM10 4h4v16h-4zM14 5l4 1-3 14-4-1', onClick: onGoBack },
-  ]
-
   const msgStyle = { color: theme.subText, fontFamily: "'Special Elite',monospace", fontSize: 14, textAlign: 'center', padding: 60 }
   const halfBook = (doubleView ? (2 * geom.pageW + 20 + 14) : (geom.pageW + 7)) / 2
 
@@ -486,7 +488,47 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo }
         <div style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 14, padding: '9px 15px', display: 'flex', alignItems: 'center', boxShadow: `1.5px 2px 0 ${theme.ink}22` }}>
           <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ height: 34, width: 'auto', display: 'block' }} />
         </div>
-        <MenuButton items={menuItems} />
+        <div style={{ display: 'flex', gap: 9, alignItems: 'center' }}>
+          {isLeido && book?.libro_id && (
+            <NavButton onClick={() => setResenaOpen(true)} title="Escribir reseña"
+              icon="M12 3l2.6 5.4L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.4-.6z"
+              label="Reseña" />
+          )}
+          <div className="inm-explorar-popup" style={{ position: 'relative' }}>
+            {explorarOpen && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60,
+                background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 16,
+                padding: '10px 14px', display: 'flex', gap: 20, alignItems: 'flex-end',
+                boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)',
+                whiteSpace: 'nowrap',
+              }}>
+                <button type="button" onClick={() => { setExplorarOpen(false); onGoForo() }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
+                  <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Foro</span>
+                </button>
+                <button type="button" onClick={() => { if (getTourPhase() === 'wait_cartelera') setTourPhase('cart_portada_1'); setExplorarOpen(false); onGoCartelera() }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                  <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Investigación</span>
+                </button>
+                <button type="button" onClick={() => { setExplorarOpen(false); onGoBack() }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                  <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Biblioteca</span>
+                </button>
+              </div>
+            )}
+            <button id="tutorial-explorar-header" type="button" onClick={() => setExplorarOpen(o => !o)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 999, padding: '9px 16px', color: theme.ink, fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: `1.5px 2px 0 rgba(74,54,34,0.20)` }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><path d="M2 12h20"/>
+              </svg>
+              Explorar
+            </button>
+          </div>
+        </div>
       </header>
 
       {/* CONTENIDO */}
@@ -543,8 +585,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo }
       {/* BOTTOM BAR */}
       {!loading && !error && book?.libro_id && (
         <div style={{ position: 'relative', zIndex: 20, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '8px 26px 18px', gap: 16 }}>
-          <RecorderPlayer ambient={currentAmbient} />
-          <button type="button" onClick={() => setNotebookOpen(true)} title="Abrir cuaderno de notas"
+          <div id="tutorial-recorder"><RecorderPlayer ambient={currentAmbient} /></div>
+
+          <button id="tutorial-cuaderno-btn" type="button" onClick={() => setNotebookOpen(true)}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, background: 'transparent', border: 'none', cursor: 'pointer' }}>
             <NotebookIcon />
             <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11.5, color: theme.textColor }}>Cuaderno</span>

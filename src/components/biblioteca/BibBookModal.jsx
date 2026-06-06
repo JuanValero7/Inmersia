@@ -1,6 +1,8 @@
 import React from 'react'
 import { supabase } from '../../lib/supabase.js'
 import { inmTint } from './clay/helpers.jsx'
+import { getTourPhase } from '../guidedTour.js'
+import { runGuidedModal } from '../tutorial.js'
 
 // =============================================================
 // ACUARELA · BibBookModal — MISMAS conexiones que el real
@@ -27,7 +29,7 @@ function Estrellas({ valor, onChange }) {
   );
 }
 
-function BibBookModal({ book, user, onClose, notes, onNotesChange, onOpenBook, onGoForo, categories, onAssignCategory, transparentBackdrop = false }) {
+function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook, categories, onAssignCategory, transparentBackdrop = false }) {
   const bg = book.color || COLOR_BOOK_FALLBACK;
   const [saving, setSaving] = React.useState(false);
   const esManual = book.id === 'manual';
@@ -53,6 +55,13 @@ function BibBookModal({ book, user, onClose, notes, onNotesChange, onOpenBook, o
     setMiResena({ rating: form.rating, texto: form.texto });
     setModoForm(false); setEnviando(false);
   }
+
+  React.useEffect(() => {
+    if (getTourPhase() === 'wait_modal') {
+      const t = setTimeout(() => runGuidedModal(), 600)
+      return () => clearTimeout(t)
+    }
+  }, [])
 
   React.useEffect(() => {
     const h = (e) => { if (e.key === 'Escape') onClose(); };
@@ -111,14 +120,8 @@ function BibBookModal({ book, user, onClose, notes, onNotesChange, onOpenBook, o
             </div>
           )}
 
-          <div>
-            <div style={label}>Mis Notas</div>
-            <textarea rows={4} placeholder="Escribe tus notas aquí…" value={notes} onChange={e => onNotesChange(e.target.value)}
-              style={{ ...inputBase, resize: 'vertical', minHeight: 90, lineHeight: 1.55 }} />
-          </div>
-
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button style={primary} onClick={() => onOpenBook(book)}>
+            <button id="tutorial-abrir-libro-btn" style={primary} onClick={() => onOpenBook(book)}>
               <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
               Abrir libro
             </button>
@@ -127,6 +130,14 @@ function BibBookModal({ book, user, onClose, notes, onNotesChange, onOpenBook, o
                 <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                   <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.4"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   Ir al Foro
+                </span>
+              </button>
+            )}
+            {!esManual && (
+              <button style={{ ...ghost, color: '#5a7a4a' }} onClick={() => onGoNotebook(book)}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Cuaderno
                 </span>
               </button>
             )}

@@ -14,6 +14,8 @@ import TableroHechos from './cartelera/TableroHechos.jsx'
 import TableroDatos from './cartelera/TableroDatos.jsx'
 import TableroNotas from './cartelera/TableroNotas.jsx'
 import '../styles/cartelera.css'
+import { runGuidedCartPersonajes, runGuidedCartNotas } from './tutorial.js'
+import { getTourPhase, setTourPhase } from './guidedTour.js'
 
 const TABLEROS = { personajes: TableroPersonajes, lugares: TableroLugares, hechos: TableroHechos, datos: TableroDatos }
 const BOARD_W = 700, BOARD_H = 860
@@ -58,6 +60,22 @@ function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection }) {
   const scale = useFitScale(stageRef)
   const Tablero = TABLEROS[sectionKey]
 
+  useEffect(() => {
+    const phase = getTourPhase()
+    let t
+    if (sectionKey === 'personajes' && phase === 'cart_personajes') {
+      t = setTimeout(() => runGuidedCartPersonajes(), 700)
+    } else if (sectionKey === 'notas' && phase === 'cart_notas') {
+      t = setTimeout(() => runGuidedCartNotas(), 700)
+    }
+    return () => clearTimeout(t)
+  }, [sectionKey])
+
+  const handlePortada = () => {
+    if (getTourPhase() === 'wait_portada_2') setTourPhase('cart_portada_2')
+    onPortada()
+  }
+
   return (
     <div className="cart-scene" style={{ '--sec': meta.color }}>
       <div className="bg-layer" />
@@ -65,9 +83,13 @@ function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection }) {
       <div className="topbar">
         <div className="ttl"><h1>{meta.label}</h1><span className="sub">{meta.sub}</span></div>
         <div className="actions">
-          <button className="btn ghost" type="button" onClick={onPortada}>
+          <button className="btn ghost" type="button" onClick={handlePortada}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            Cartelera
+            Investigación
+          </button>
+          <button id="tutorial-lista-btn" className="btn ghost" type="button" onClick={() => onOpenList(sectionKey)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            Lista
           </button>
         </div>
       </div>
@@ -99,14 +121,20 @@ function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection }) {
   )
 }
 
-export default function CartelaView({ onGoBack, book, user, onGoForo }) {
+export default function CartelaView({ onGoBack, book, user, onGoForo, onGoBiblioteca }) {
   const data = useCartelera(book?.libro_id || null, user?.id || null)
   const [view, setView] = useState({ kind: 'portada', key: null })
 
+
+  const handlePortadaOpen = (k) => {
+    if (k === 'personajes' && getTourPhase() === 'wait_personajes') setTourPhase('cart_personajes')
+    setView({ kind: 'board', key: k })
+  }
+
   let content
   if (view.kind === 'portada') {
-    content = <Portada subtitle={book?.title} onOpen={(k) => setView({ kind: 'board', key: k })}
-      onGoBack={onGoBack} onGoForo={onGoForo} />
+    content = <Portada subtitle={book?.title} onOpen={handlePortadaOpen}
+      onGoBack={onGoBack} onGoForo={onGoForo} onGoBiblioteca={onGoBiblioteca} />
   } else if (view.kind === 'ficha') {
     content = <Ficha section={seccionMeta(view.key)} items={data.itemsBySeccion[view.key] || []}
       onBackTablero={() => setView({ kind: 'board', key: view.key })}

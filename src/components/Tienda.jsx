@@ -4,6 +4,8 @@ import LibroReel from './tienda/LibroReel.jsx'
 import CalleEscena from './tienda/CalleEscena.jsx'
 import CatalogoInterior from './tienda/CatalogoInterior.jsx'
 import '../styles/tienda.css'
+import { runGuidedTiendaCalle, runGuidedTiendaInterior } from './tutorial.js'
+import { getTourPhase, setTourPhase } from './guidedTour.js'
 
 // =============================================================
 // VistaTienda · Tienda Inmersia (estilo "Calle con imágenes")
@@ -85,19 +87,37 @@ export default function VistaTienda({ onGoBack, user }) {
 
   useEffect(() => { fetchTienda() }, [fetchTienda])
 
+  useEffect(() => {
+    const t = setTimeout(() => { if (getTourPhase() === 'tienda_calle') runGuidedTiendaCalle() }, 700)
+    return () => clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
+    if (subView !== 'catalogo') return
+    if (getTourPhase() === 'tienda_interior') {
+      const t = setTimeout(() => runGuidedTiendaInterior(), 700)
+      return () => clearTimeout(t)
+    }
+  }, [subView])
+
   async function comprar(libro) {
     await supabase.from('bibliotecas_usuarios').insert({ user_id: user.id, libro_id: libro.id, leido: false })
     setUserLibros(prev => [...prev, { libro_id: libro.id, leido: false }])
   }
 
   // ── Fachada (calle) ─────────────────────────────────────────────
+  const handleEntrar = () => {
+    if (getTourPhase() === 'tienda_calle') setTourPhase('tienda_interior')
+    setSubView('catalogo')
+  }
+
   if (subView === 'calle') {
     return (
       <CalleEscena
         pendientes={pendientes}
         limite={LIMITE}
         bloqueado={accesoBloqueado}
-        onEntrar={() => setSubView('catalogo')}
+        onEntrar={handleEntrar}
         onGoBack={onGoBack}
       />
     )

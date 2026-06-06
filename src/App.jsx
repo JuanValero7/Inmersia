@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { supabase } from './lib/supabase.js'
 import Auth from './components/Auth.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
@@ -18,89 +18,146 @@ const Fallback = (
 )
 
 export default function App() {
-  const [view,             setView]             = useState('auth')
-  const [user,             setUser]             = useState(undefined)
-  const [authReady,        setAuthReady]        = useState(false)
-  const [currentBook,      setCurrentBook]      = useState(null)
-  const [lastOpenedBookId, setLastOpenedBookId] = useState(null)
-  const [foroSource,       setForoSource]       = useState('biblioteca')
+  const [view,                setView]                = useState('auth')
+  const [user,                setUser]                = useState(undefined)
+  const [authReady,           setAuthReady]           = useState(false)
+  const [currentBook,         setCurrentBook]         = useState(null)
+  const [lastOpenedBookIds,   setLastOpenedBookIds]   = useState([])
+  const [foroSource,          setForoSource]          = useState('biblioteca')
+  const [lectorStartNotebook, setLectorStartNotebook] = useState(false)
 
+  // ── Browser history ──────────────────────────────────────────
+  const navigate = useCallback((newView) => {
+    window.history.pushState({ view: newView }, '')
+    setView(newView)
+  }, [])
+
+  useEffect(() => {
+    const handlePopState = (e) => {
+      const v = e.state?.view
+      if (!v || v === 'auth' || v === 'reset-password') return
+      setView(v)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  // ── Auth ──────────────────────────────────────────────────────
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const u = session?.user ?? null
       setUser(u)
       setAuthReady(true)
       if (u) {
+        window.history.replaceState({ view: 'biblioteca' }, '')
         setView('biblioteca')
-        const saved = localStorage.getItem(`inm_last_book_${u.id}`)
-        if (saved) setLastOpenedBookId(saved)
+        // Leer últimos libros abiertos (nuevo key, fallback al key anterior)
+        const savedNew = localStorage.getItem(`inm_last_books_${u.id}`)
+        const savedOld = localStorage.getItem(`inm_last_book_${u.id}`)
+        if (savedNew) {
+          try { setLastOpenedBookIds(JSON.parse(savedNew)) } catch { /* ignore */ }
+        } else if (savedOld) {
+          setLastOpenedBookIds([savedOld])
+        }
       }
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
       if (event === 'PASSWORD_RECOVERY') { setView('reset-password'); return }
-      if (!session) { setView('auth'); setLastOpenedBookId(null) }
+      if (!session) {
+        window.history.replaceState({ view: 'auth' }, '')
+        setView('auth')
+        setLastOpenedBookIds([])
+      }
     })
     return () => subscription.unsubscribe()
   }, [])
 
-  const handleSignOut = async () => { await supabase.auth.signOut(); setUser(null); setView('auth') }
-
-  const handleOpenBook = (book) => {
-    if (user) localStorage.setItem(`inm_last_book_${user.id}`, book.id)
-    setLastOpenedBookId(book.id)
-    setCurrentBook(book)
-    setView('lectura')
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    setUser(null)
+    setLastOpenedBookIds([])
+    window.history.replaceState({ view: 'auth' }, '')
+    setView('auth')
   }
 
+  // ── Helpers para actualizar historial de libros ───────────────
+  function pushBookId(bookId, currentUser) {
+    setLastOpenedBookIds(prev => {
+      const next = [bookId, ...prev.filter(id => id !== bookId)].slice(0, 3)
+      if (currentUser) localStorage.setItem(`inm_last_books_${currentUser.id}`, JSON.stringify(next))
+      return next
+    })
+  }
+
+  const handleOpenBook = (book) => {
+    pushBookId(book.id, user)
+    setCurrentBook(book)
+    navigate('lectura')
+  }
+
+  const handleGoNotebook = useCallback((book) => {
+    pushBookId(book.id, user)
+    setCurrentBook(book)
+    setLectorStartNotebook(true)
+    navigate('lectura')
+  }, [user, navigate])
+
   if (!authReady) return Fallback
-  if (view === 'reset-password') return <ResetPassword onDone={() => setView('biblioteca')} />
-  if (!user) return <Auth onAuthSuccess={(u) => { setUser(u); setView('biblioteca') }}/>
+  if (view === 'reset-password') return <ResetPassword onDone={() => { window.history.replaceState({ view: 'biblioteca' }, ''); setView('biblioteca') }} />
+  if (!user) return <Auth onAuthSuccess={(u) => { setUser(u); window.history.replaceState({ view: 'biblioteca' }, ''); setView('biblioteca') }}/>
 
   return (
     <Suspense fallback={Fallback}>
       {view === 'biblioteca' && (
         <VistaBiblioteca
           user={user}
-          lastOpenedBookId={lastOpenedBookId}
+          lastOpenedBookIds={lastOpenedBookIds}
           onSignOut={handleSignOut}
           onOpenBook={handleOpenBook}
-          onGoTienda={() => setView('tienda')}
-          onGoPerfil={() => setView('perfil')}
-          onGoForo={(book) => { setCurrentBook(book); setForoSource('biblioteca'); setView('foro') }}
+          onGoTienda={() => navigate('tienda')}
+          onGoPerfil={() => navigate('perfil')}
+          onGoForo={(book) => { setCurrentBook(book); setForoSource('biblioteca'); navigate('foro') }}
+          onGoNotebook={handleGoNotebook}
         />
       )}
       {view === 'perfil' && (
         <VistaPerfil
           user={user}
-          onGoBack={() => setView('biblioteca')}
+          onGoBack={() => navigate('biblioteca')}
           onSignOut={handleSignOut}
         />
       )}
       {view === 'tienda' && (
-        <VistaTienda onGoBack={() => setView('biblioteca')} user={user}/>
+        <VistaTienda onGoBack={() => navigate('biblioteca')} user={user}/>
       )}
       {view === 'cartelera' && (
         <CartelaView
-          onGoBack={() => setView('lectura')}
+          onGoBack={() => navigate('lectura')}
           book={currentBook}
           user={user}
-          onGoForo={() => { setForoSource('cartelera'); setView('foro') }}
+          onGoForo={() => { setForoSource('cartelera'); navigate('foro') }}
+          onGoBiblioteca={() => navigate('biblioteca')}
         />
       )}
       {view === 'foro' && (
         <VistaForo
           book={currentBook}
           user={user}
-          onGoBack={() => setView(foroSource)}
+          onGoBack={() => navigate(foroSource)}
+          onGoLectura={() => navigate('lectura')}
+          onGoBiblioteca={() => navigate('biblioteca')}
+          onGoCartelera={() => navigate('cartelera')}
         />
       )}
       {view === 'lectura' && (
         <VistaLectura
           book={currentBook}
-          onGoBack={() => setView('biblioteca')}
-          onGoCartelera={() => setView('cartelera')}
-          onGoForo={() => { setForoSource('lectura'); setView('foro') }}
+          onGoBack={() => navigate('biblioteca')}
+          onGoCartelera={() => navigate('cartelera')}
+          onGoForo={() => { setForoSource('lectura'); navigate('foro') }}
+          startWithNotebook={lectorStartNotebook}
+          onNotebookStarted={() => setLectorStartNotebook(false)}
         />
       )}
     </Suspense>

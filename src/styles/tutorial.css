@@ -1,0 +1,106 @@
+/* =============================================================
+   Inmersia — Estilos para driver.js (product tour)
+   Sobrescribe el tema por defecto para que combine con la
+   estética clay/acuarela de la app.
+   ============================================================= */
+
+.driver-popover {
+  font-family: 'Baloo 2', cursive !important;
+  border-radius: 18px !important;
+  border: 2px solid #4a3622 !important;
+  background: #fffdf8 !important;
+  box-shadow: 3px 4px 0 rgba(74,54,34,0.18), 0 18px 44px rgba(0,0,0,0.30) !important;
+  padding: 20px 22px 16px !important;
+  min-width: 280px !important;
+  max-width: 340px !important;
+}
+
+.driver-popover-title {
+  font-family: 'Baloo 2', cursive !important;
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  color: #3a2b1c !important;
+  margin-bottom: 8px !important;
+  line-height: 1.2 !important;
+}
+
+.driver-popover-description {
+  font-family: 'Baloo 2', cursive !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #5a4632 !important;
+  line-height: 1.6 !important;
+}
+
+.driver-popover-footer {
+  margin-top: 16px !important;
+  gap: 8px !important;
+}
+
+.driver-popover-navigation-btns button {
+  font-family: 'Baloo 2', cursive !important;
+  font-weight: 700 !important;
+  font-size: 13.5px !important;
+  border-radius: 10px !important;
+  padding: 7px 16px !important;
+  cursor: pointer !important;
+  box-shadow: 1.5px 2px 0 rgba(74,54,34,0.2) !important;
+  transition: transform .1s, box-shadow .1s !important;
+}
+
+.driver-popover-navigation-btns button:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 2px 3px 0 rgba(74,54,34,0.28) !important;
+}
+
+.driver-popover-next-btn {
+  background: #cf7b4c !important;
+  color: #fff !important;
+  border: 2px solid #4a3622 !important;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.15) !important;
+}
+
+.driver-popover-prev-btn {
+  background: #fffdf8 !important;
+  color: #5a4632 !important;
+  border: 2px solid #4a3622 !important;
+}
+
+.driver-popover-done-btn {
+  background: #6f9457 !important;
+  color: #fff !important;
+  border: 2px solid #4a3622 !important;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.15) !important;
+}
+
+.driver-popover-close-btn {
+  color: #8a7355 !important;
+  font-size: 18px !important;
+  top: 14px !important;
+  right: 16px !important;
+}
+
+.driver-popover-close-btn:hover {
+  color: #4a3622 !important;
+}
+
+.driver-popover-progress-text {
+  font-family: 'Baloo 2', cursive !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #a8906b !important;
+}
+
+/* Flecha del popover */
+.driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: #4a3622 !important;
+}
+.driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: #4a3622 !important;
+}
+.driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: #4a3622 !important;
+}
+.driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: #4a3622 !important;
+}
