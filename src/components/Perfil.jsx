@@ -21,7 +21,7 @@ import { supabase } from '../lib/supabase.js'
 import '../styles/perfil.css'
 
 // ── Color de barra por sección (acuarela derivada de la paleta) ──
-const SEC_COLOR = { datos: '#86ad9e', seguridad: '#7d8db5', transac: '#d9a05a', historial: '#cf8ea4' }
+export const SEC_COLOR = { datos: '#86ad9e', seguridad: '#7d8db5', transac: '#d9a05a', historial: '#cf8ea4' }
 
 function tint(hex, amt) {
   const n = parseInt(hex.slice(1), 16)
@@ -30,7 +30,7 @@ function tint(hex, amt) {
   const mix = c => Math.round((t - c) * p + c)
   return `rgb(${mix(r)},${mix(g)},${mix(b)})`
 }
-function washBg(base) {
+export function washBg(base) {
   return [
     `radial-gradient(58% 52% at 18% 12%, ${tint(base, 0.32)}, transparent 60%)`,
     `radial-gradient(56% 60% at 86% 70%, ${tint(base, -0.24)}, transparent 62%)`,
@@ -41,7 +41,7 @@ function washBg(base) {
 }
 
 // ── Iconos ────────────────────────────────────────────────────
-const I = {
+export const I = {
   datos:     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5.5 16c.6-1.6 2-2.4 3-2.4s2.4.8 3 2.4M14 10h5M14 14h3" strokeLinecap="round"/></svg>,
   seguridad: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1"><path d="M12 2.5l8 3v6c0 5-3.5 9.5-8 11-4.5-1.5-8-6-8-11v-6l8-3z" strokeLinejoin="round"/><path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   transac:   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19" strokeLinecap="round"/><path d="M6 15h4" strokeLinecap="round"/></svg>,
@@ -53,13 +53,13 @@ const I = {
   receipt:   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 3v18l2-1.4 2 1.4 2-1.4 2 1.4 2-1.4 2 1.4V3l-2 1.4L15 3l-2 1.4L11 3 9 4.4 7 3 5 4.4z" strokeLinejoin="round"/><path d="M9 9h6M9 13h6" strokeLinecap="round"/></svg>,
 }
 
-const NAV = [
+export const NAV = [
   { id: 'datos',     label: 'Datos',         icon: I.datos },
   { id: 'seguridad', label: 'Seguridad',     icon: I.seguridad },
   { id: 'transac',   label: 'Transacciones', icon: I.transac },
   { id: 'historial', label: 'Historial',     icon: I.historial },
 ]
-const TITLES = { datos: 'Datos de perfil', seguridad: 'Seguridad', transac: 'Transacciones', historial: 'Historial de lectura' }
+export const TITLES = { datos: 'Datos de perfil', seguridad: 'Seguridad', transac: 'Transacciones', historial: 'Historial de lectura' }
 
 // Datos de ejemplo — SOLO para previsualizar el layout. Reemplazar
 // por queries reales cuando definas las tablas de transacciones/historial.
@@ -77,7 +77,7 @@ const HIST_DEMO = [
 ]
 
 // ════════════════════ Sección: Datos ════════════════════════
-function SecDatos({ nombre, apellido, email, miembroDesde, cargando, onSave }) {
+export function SecDatos({ nombre, apellido, email, miembroDesde, cargando, onSave }) {
   const [editing, setEditing] = useState(false)
   const [dN, setDN] = useState(nombre)
   const [dA, setDA] = useState(apellido)
@@ -153,7 +153,7 @@ function SecDatos({ nombre, apellido, email, miembroDesde, cargando, onSave }) {
 }
 
 // ════════════════════ Sección: Seguridad ════════════════════
-function SecSeguridad() {
+export function SecSeguridad() {
   const [p1, setP1] = useState('')
   const [p2, setP2] = useState('')
   const [saving, setSaving] = useState(false)
@@ -190,7 +190,7 @@ function SecSeguridad() {
 
 // ════════════════════ Sección: Transacciones ════════════════
 // TODO: conectar a Supabase cuando exista la tabla de pagos/plan.
-function SecTransac() {
+export function SecTransac() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 18 }}>
@@ -228,7 +228,7 @@ function SecTransac() {
 
 // ════════════════════ Sección: Historial ════════════════════
 // TODO: conectar a `progreso_lectura` (libros terminados del usuario).
-function SecHistorial() {
+export function SecHistorial() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 18 }}>

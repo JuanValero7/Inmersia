@@ -1,15 +1,30 @@
+// src/App.jsx
+// ─────────────────────────────────────────────────────────────
+// MODIFICADO para soportar versiones mobile por vista.
+// Cambios marcados con  // ⬅︎ MOBILE
+// Por ahora SOLO el Foro tiene variante mobile; las demás vistas
+// siguen idénticas. Cuando hagamos la mobile de otra vista, repetís
+// el patrón: importás su par lazy y agregás un  `const X = isMobile ? ...`
+// ─────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { supabase } from './lib/supabase.js'
+import useIsMobile from './hooks/useIsMobile.js'   // ⬅︎ MOBILE
 import Auth from './components/Auth.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
 import TourResume from './components/TourResume.jsx'
 
 const VistaBiblioteca = lazy(() => import('./components/Biblioteca.jsx'))
+
 const VistaLectura    = lazy(() => import('./components/Lector.jsx'))
 const VistaTienda     = lazy(() => import('./components/Tienda.jsx'))
 const CartelaView     = lazy(() => import('./components/Cartelera.jsx'))
 const VistaPerfil     = lazy(() => import('./components/Perfil.jsx'))
 const VistaForo       = lazy(() => import('./components/Foro.jsx'))
+const VistaForoMobile = lazy(() => import('./components/mobile/ForoMobile.jsx'))  // ⬅︎ MOBILE
+const VistaPerfilMobile = lazy(() => import('./components/mobile/PerfilMobile.jsx'))  // ⬅︎ MOBILE
+const VistaBibliotecaMobile = lazy(() => import('./components/mobile/BibliotecaMobile.jsx'))  // ⬅︎ MOBILE
+const CarteleraMobile = lazy(() => import('./components/mobile/CarteleraMobile.jsx'))  // ⬅︎ MOBILE
+const VistaLecturaMobile = lazy(() => import('./components/mobile/LectorMobile.jsx'))  // ⬅︎ MOBILE
 
 const Fallback = (
   <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,background:'var(--bg-warm)'}}>
@@ -26,6 +41,13 @@ export default function App() {
   const [lastOpenedBookIds,   setLastOpenedBookIds]   = useState([])
   const [foroSource,          setForoSource]          = useState('biblioteca')
   const [lectorStartNotebook, setLectorStartNotebook] = useState(false)
+
+  const isMobile = useIsMobile()                       // ⬅︎ MOBILE
+  const Foro = isMobile ? VistaForoMobile : VistaForo  // ⬅︎ MOBILE
+  const Perfil = isMobile ? VistaPerfilMobile : VistaPerfil   // ⬅︎ MOBILE
+  const Biblioteca = isMobile ? VistaBibliotecaMobile : VistaBiblioteca   // ⬅︎ MOBILE
+  const Cartelera = isMobile ? CarteleraMobile : CartelaView   // ⬅︎ MOBILE
+  const Lectura = isMobile ? VistaLecturaMobile : VistaLectura   // ⬅︎ MOBILE
 
   // ── Browser history ──────────────────────────────────────────
   const navigate = useCallback((newView) => {
@@ -112,7 +134,7 @@ export default function App() {
     <>
     <Suspense fallback={Fallback}>
       {view === 'biblioteca' && (
-        <VistaBiblioteca
+        <Biblioteca                          /* ⬅︎ MOBILE (antes: VistaBiblioteca) */
           user={user}
           lastOpenedBookIds={lastOpenedBookIds}
           onSignOut={handleSignOut}
@@ -124,7 +146,7 @@ export default function App() {
         />
       )}
       {view === 'perfil' && (
-        <VistaPerfil
+        <Perfil
           user={user}
           onGoBack={() => navigate('biblioteca')}
           onSignOut={handleSignOut}
@@ -134,7 +156,7 @@ export default function App() {
         <VistaTienda onGoBack={() => navigate('biblioteca')} user={user}/>
       )}
       {view === 'cartelera' && (
-        <CartelaView
+        <Cartelera
           onGoBack={() => navigate('lectura')}
           book={currentBook}
           user={user}
@@ -143,7 +165,7 @@ export default function App() {
         />
       )}
       {view === 'foro' && (
-        <VistaForo
+        <Foro                                /* ⬅︎ MOBILE (antes: VistaForo) */
           book={currentBook}
           user={user}
           onGoBack={() => navigate(foroSource)}
@@ -153,7 +175,7 @@ export default function App() {
         />
       )}
       {view === 'lectura' && (
-        <VistaLectura
+        <Lectura
           book={currentBook}
           onGoBack={() => navigate('biblioteca')}
           onGoCartelera={() => navigate('cartelera')}

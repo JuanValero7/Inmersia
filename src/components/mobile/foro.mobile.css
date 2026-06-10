@@ -1,0 +1,122 @@
+/* src/components/mobile/foro.mobile.css
+   ──────────────────────────────────────────────────────────────
+   Overrides RESPONSIVE del Foro mobile. NO redefine lógica:
+   solo ajusta el chrome (header/tabs) y reacomoda las sub-vistas
+   (ForoComentarios / ForoChat) que ya traen su markup y clases.
+   Todo va acotado a .foro-m (la cáscara mobile) para no tocar
+   el Foro de escritorio.
+   ────────────────────────────────────────────────────────────── */
+
+/* ── Header compacto, ocupa el ancho ── */
+.foro-m .foro-m-header {
+  margin: 12px 12px 0;
+  padding: 11px 12px 11px 16px;
+  gap: 10px;
+  border-radius: 18px;
+}
+.foro-m .foro-m-title { text-align: left; }
+.foro-m .foro-m-title .foro-titulo { font-size: 1.15rem; }
+.foro-m .foro-m-explore {
+  width: 42px; height: 42px;
+  padding: 0; border-radius: 50%;
+  justify-content: center; flex-shrink: 0;
+}
+
+/* ── Tabs full-width ── */
+.foro-m .foro-m-tabs { display: flex; width: auto; margin: 14px 12px 0; }
+.foro-m .foro-m-tabs .foro-tab { flex: 1; padding: 10px 0; }
+
+/* ── Barra de tags y contenido: sin el max-width de escritorio ── */
+.foro-m .foro-tags-bar { padding: 14px 12px 4px; max-width: none; }
+.foro-m .foro-main { padding: 16px 12px 120px; max-width: none; }
+
+/* ── FAB un poco más arriba (zona pulgar + safe-area) ── */
+.foro-m .foro-fab {
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  right: 18px;
+}
+
+/* ── Modal "nuevo comentario" → bottom-sheet ── */
+.foro-m .foro-modal-backdrop { align-items: flex-end; padding: 0; }
+.foro-m .foro-modal {
+  max-width: none;
+  border-radius: 24px 24px 0 0;
+  border-bottom: none;
+  max-height: 88vh;
+  animation: foro-m-sheet-up .26s cubic-bezier(.22,.61,.36,1);
+}
+/* manija (grip) del sheet, sin tocar el JSX del modal */
+.foro-m .foro-modal-header { position: relative; }
+.foro-m .foro-modal-header::before {
+  content: '';
+  position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+  width: 42px; height: 5px; border-radius: 999px;
+  background: rgba(74,54,34,0.22);
+}
+.foro-m .foro-modal-body { max-height: 56vh; overflow-y: auto; }
+.foro-m .foro-modal-footer { padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+
+/* ── CHAT: el historial pasa de columna lateral a fila arriba ── */
+.foro-m .chat-inicio-layout { flex-direction: column; gap: 16px; }
+.foro-m .chat-historial-panel { width: 100%; box-sizing: border-box; }
+.foro-m .chat-historial-lista {
+  flex-direction: row; gap: 16px;
+  overflow-x: auto; padding-bottom: 2px;
+}
+.foro-m .chat-historial-lista::-webkit-scrollbar { display: none; }
+.foro-m .chat-historial-item { flex-direction: column; gap: 6px; min-width: 64px; }
+.foro-m .chat-historial-info { align-items: center; text-align: center; }
+.foro-m .chat-historial-nombre { max-width: 72px; }
+
+/* ── Ventana de chat: ocupa el alto disponible del teléfono ── */
+.foro-m .chat-window { height: calc(100dvh - 250px); }
+
+/* ── Bottom-sheet de navegación ("Ir a…") ── */
+.foro-m-sheet-backdrop {
+  position: fixed; inset: 0; z-index: 120;
+  background: rgba(74,54,34,0.42);
+  backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+  display: flex; align-items: flex-end;
+  animation: foro-m-fade .2s ease;
+}
+.foro-m-sheet {
+  width: 100%;
+  background: var(--foro-cream);
+  border-top: 2px solid var(--foro-ink);
+  border-radius: 24px 24px 0 0;
+  padding: 10px 18px max(22px, env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 30px rgba(74,54,34,0.25);
+  animation: foro-m-sheet-up .26s cubic-bezier(.22,.61,.36,1);
+}
+.foro-m-sheet-grip {
+  width: 42px; height: 5px; border-radius: 999px;
+  background: rgba(74,54,34,0.25); margin: 2px auto 12px;
+}
+.foro-m-sheet-title {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgba(74,54,34,0.6);
+  margin-bottom: 12px; padding-left: 2px;
+}
+.foro-m-sheet-nav { display: flex; gap: 10px; }
+.foro-m-sheet-nav button {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  background: var(--foro-card);
+  border: 2px solid var(--foro-ink);
+  border-radius: 16px;
+  padding: 16px 8px;
+  cursor: pointer;
+  box-shadow: 2px 3px 0 rgba(74,54,34,0.14);
+  font-family: inherit; font-weight: 700; font-size: 12.5px; color: var(--foro-ink);
+  transition: transform 0.14s;
+}
+.foro-m-sheet-nav button:active { transform: translateY(1px); }
+
+@keyframes foro-m-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes foro-m-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

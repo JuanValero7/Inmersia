@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import clsx from 'clsx'
 import { BG, telonActual } from './tiendaHelpers.jsx'
 
 // =============================================================
@@ -7,6 +6,11 @@ import { BG, telonActual } from './tiendaHelpers.jsx'
 // 3 telones pintados (día / tarde / noche) con crossfade automático
 // según la hora del usuario. Hotspot sobre la tienda central, zoom
 // a la puerta y, si el acceso está bloqueado, aviso "Cerrado".
+//
+// RESPONSIVE: en pantallas chicas (≤640px) la escena se renderiza
+// "encuadrada" sobre la tienda Inmersia (recorte de los locales
+// vecinos para que no se vea estirada), con un botón a pantalla
+// completa para entrar. En desktop se mantiene el "cover" original.
 //
 // Props:
 //   pendientes  · nº de lecturas sin terminar (solo informativo)
@@ -20,7 +24,21 @@ const IMG_W = 1024, IMG_H = 700
 const DOOR = { x: 50.5, y: 85 }   // puerta — origen del zoom
 const LOGO = { x: 55,   y: 37 }   // letrero sobre la cornisa de ladrillo
 
+// Hook: ¿viewport mobile?
+function useIsMobile(query = '(max-width: 640px)') {
+  const [m, setM] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const h = e => setM(e.matches)
+    mq.addEventListener ? mq.addEventListener('change', h) : mq.addListener(h)
+    return () => mq.removeEventListener ? mq.removeEventListener('change', h) : mq.removeListener(h)
+  }, [query])
+  return m
+}
+
 export default function CalleEscena({ pendientes = 0, limite = 5, bloqueado = false, onEntrar, onGoBack }) {
+  const mobile = useIsMobile()
   const [hovered, setHovered] = useState(false)
   const [opening, setOpening] = useState(false)
   const [zooming, setZooming] = useState(false)
@@ -53,21 +71,72 @@ export default function CalleEscena({ pendientes = 0, limite = 5, bloqueado = fa
 
   const overlayUp = zooming || closed
 
+  const backBtn = !overlayUp && (
+    <button className="back-btn" type="button" onClick={onGoBack}
+      style={{ position: 'fixed', top: 16, left: 16, zIndex: 600 }}>
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+        <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      Biblioteca
+    </button>
+  )
+
+  const cerrado = (zooming || closed) && (
+    <div className={`closed ${closed ? 'show' : ''}`}>
+      <div className="closed-card">
+        <span className="closed-mark">✦</span>
+        <h2 className="closed-title">Cerrado</h2>
+        <p className="closed-text">Termina tus lecturas pendientes antes de adquirir nuevos mundos.</p>
+        <button className="closed-btn" onClick={back}>Volver a la calle</button>
+      </div>
+    </div>
+  )
+
+  const pend = !overlayUp && (
+    <p className="img-pend" style={{ color: bloqueado ? '#f0a08a' : '#cbe3c6' }}>
+      Lecturas pendientes: <strong>{pendientes}</strong> / {limite}
+    </p>
+  )
+
+  // ── MOBILE: escena encuadrada sobre Inmersia ───────────────────
+  if (mobile) {
+    return (
+      <div className="img-root cm-root">
+        {backBtn}
+        <div className="cm-scene">
+          <div className={`cm-zoomer ${zooming ? 'zoomin' : ''}`}>
+            {/* Telones pintados (crossfade por hora), recortados a Inmersia */}
+            {Object.entries(BG).map(([k, src]) => (
+              <div key={k} className="cm-plate"
+                style={{ backgroundImage: `url('${src}')`, opacity: imgKey === k ? 1 : 0 }} />
+            ))}
+            {/* Letrero Inmersia */}
+            <div className="cm-sign">
+              <div className="img-sign-board"><img src="/assets/inmersia-logo.png" alt="Inmersia" /></div>
+            </div>
+          </div>
+
+          {/* Tap = todo el escaparate */}
+          <button className="cm-tap" type="button" onClick={enter} aria-label="Entrar a la tienda" />
+          {!opening && <span className="cm-hint">Tocá para entrar ✦</span>}
+
+          <div className={`warmflash ${zooming ? 'on' : ''}`}
+            style={{ background: 'radial-gradient(circle at 52% 72%, rgba(255,216,130,0.98), rgba(255,196,110,0) 52%)' }} />
+        </div>
+        {pend}
+        {cerrado}
+      </div>
+    )
+  }
+
+  // ── DESKTOP: "cover" original ──────────────────────────────────
   return (
     <div className="img-root">
-      {!overlayUp && (
-        <button className="back-btn" type="button" onClick={onGoBack}
-          style={{ position: 'fixed', top: 16, left: 16, zIndex: 600 }}>
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-            <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Biblioteca
-        </button>
-      )}
+      {backBtn}
 
       <div className="img-fit" style={{ width: IMG_W * scale, height: IMG_H * scale }}>
         <div className="img-stage" style={{ transform: `scale(${scale})` }}>
-          <div className={clsx('img-zoomer', zooming && 'zoomin')}
+          <div className={`img-zoomer ${zooming ? 'zoomin' : ''}`}
             style={{ transformOrigin: `${DOOR.x}% ${DOOR.y}%` }}>
 
             {/* Telones pintados (crossfade por hora) */}
@@ -85,7 +154,7 @@ export default function CalleEscena({ pendientes = 0, limite = 5, bloqueado = fa
 
             {/* Hotspot interactivo: columna de la tienda central */}
             <div
-              className={clsx('img-hotspot', hovered && 'hot')}
+              className={`img-hotspot ${hovered ? 'hot' : ''}`}
               style={{ left: '46%', top: '3%', width: '22%', height: '90%' }}
               onMouseEnter={() => setHovered(true)}
               onMouseLeave={() => setHovered(false)}
@@ -97,33 +166,17 @@ export default function CalleEscena({ pendientes = 0, limite = 5, bloqueado = fa
             </div>
 
             {/* Pista "entrar" sobre la franja de ladrillo */}
-            <span className={clsx('img-hint', hovered && 'show')}
+            <span className={`img-hint ${hovered ? 'show' : ''}`}
               style={{ left: '55%', top: '64%' }}>entrar ✦</span>
           </div>
 
-          <div className={clsx('warmflash', zooming && 'on')}
+          <div className={`warmflash ${zooming ? 'on' : ''}`}
             style={{ background: `radial-gradient(circle at ${DOOR.x}% ${DOOR.y}%, rgba(255,216,130,0.98), rgba(255,196,110,0) 50%)` }} />
         </div>
       </div>
 
-      {/* Lecturas pendientes (informativo) */}
-      {!overlayUp && (
-        <p className="img-pend" style={{ color: bloqueado ? '#f0a08a' : '#cbe3c6' }}>
-          Lecturas pendientes: <strong>{pendientes}</strong> / {limite}
-        </p>
-      )}
-
-      {/* Aviso "Cerrado" tras el zoom si el acceso está bloqueado */}
-      {(zooming || closed) && (
-        <div className={clsx('closed', closed && 'show')}>
-          <div className="closed-card">
-            <span className="closed-mark">✦</span>
-            <h2 className="closed-title">Cerrado</h2>
-            <p className="closed-text">Termina tus lecturas pendientes antes de adquirir nuevos mundos.</p>
-            <button className="closed-btn" onClick={back}>Volver a la calle</button>
-          </div>
-        </div>
-      )}
+      {pend}
+      {cerrado}
     </div>
   )
 }

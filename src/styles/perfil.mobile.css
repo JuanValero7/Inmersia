@@ -1,0 +1,103 @@
+/* =============================================================
+   INMERSIA — Perfil mobile (chrome del carnet)
+   Va en:  src/styles/perfil.mobile.css
+   Import: import './perfil.mobile.css'   (dentro de PerfilMobile.jsx)
+
+   Solo estiliza la CÁSCARA mobile (.pm-*): header, tarjeta de
+   identidad con acuarela, selector de secciones y logout. El
+   CONTENIDO de cada sección usa las clases .pf-* de perfil.css
+   (importado también), así no se duplica nada.
+   ============================================================= */
+
+.pm-root{
+  --ink:#4a3622; --accent:#cf7b4c; --cream:#fffdf8; --paper:#f6f3ec;
+  --muted:rgba(74,54,34,0.6); --label:#7a4020;
+  position:relative; min-height:100vh; height:100dvh; width:100%;
+  display:flex; flex-direction:column; overflow:hidden;
+  font-family:'Baloo 2', system-ui, sans-serif; color:var(--ink);
+  background-color:var(--paper);
+  background-image:
+    radial-gradient(60% 40% at 16% 4%, rgba(134,173,158,0.16), transparent 60%),
+    radial-gradient(58% 44% at 90% 98%, rgba(207,123,76,0.10), transparent 60%);
+  padding-top:max(8px, env(safe-area-inset-top));
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.pm-topbar{ flex-shrink:0; margin:8px 14px 0; display:flex; align-items:center;
+  justify-content:space-between; gap:10px; }
+.pm-brand{ display:flex; flex-direction:column; min-width:0; }
+.pm-brand h1{ font-size:1.32rem; font-weight:800; letter-spacing:-.01em; line-height:1.05; }
+.pm-brand p{ font-size:11px; font-weight:700; color:#8a7355; text-transform:uppercase;
+  letter-spacing:.1em; margin-top:2px; white-space:nowrap; }
+.pm-back{ flex-shrink:0; display:inline-flex; align-items:center; gap:6px; background:var(--cream);
+  color:#5a4632; border:2px solid var(--ink); border-radius:13px; padding:8px 13px; font-family:inherit;
+  font-weight:700; font-size:12.5px; cursor:pointer; box-shadow:1.6px 2px 0 rgba(74,54,34,.2);
+  transition:transform .12s; }
+.pm-back:active{ transform:translateY(1px); }
+
+/* ── Tarjeta de identidad (acuarela por sección) ────────── */
+.pm-idcard{ position:relative; flex-shrink:0; margin:14px 14px 0; overflow:hidden;
+  border:2.5px solid var(--ink); border-radius:22px;
+  box-shadow:3px 5px 0 rgba(74,54,34,.16), inset 0 0 0 1.5px rgba(255,255,255,.25);
+  transition:background .45s ease; }
+.pm-idcard-grain{ position:absolute; inset:0; pointer-events:none; opacity:.10; mix-blend-mode:multiply;
+  background:#3a5249; filter:url(#pf-grain); }
+.pm-idcard-vig{ position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(120% 80% at 26% 12%, rgba(255,255,255,.20), transparent 55%),
+    linear-gradient(180deg, transparent 58%, rgba(36,52,46,.16)); }
+.pm-idrow{ position:relative; z-index:2; display:flex; align-items:center; gap:15px; padding:16px 18px; }
+
+.pm-avatar-ring{ position:relative; width:84px; height:84px; flex-shrink:0; border-radius:50%; padding:4px;
+  background:var(--cream); border:2.5px solid var(--ink);
+  box-shadow:2px 3px 0 rgba(74,54,34,.22), 0 8px 16px rgba(40,26,12,.22); }
+.pm-avatar-img{ width:100%; height:100%; border-radius:50%; object-fit:cover; display:block; }
+.pm-avatar-fallback{ width:100%; height:100%; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; font-size:36px; font-weight:800; color:#86ad9e; letter-spacing:-.02em;
+  background:radial-gradient(circle at 50% 36%, #fff, #f1ece1); }
+.pm-avatar-cam{ position:absolute; right:-2px; bottom:-2px; width:30px; height:30px; border-radius:50%;
+  background:var(--accent); border:2.5px solid var(--ink); display:flex; align-items:center; justify-content:center;
+  color:#fff; box-shadow:1.4px 2px 0 rgba(74,54,34,.3); cursor:pointer; transition:filter .15s, transform .1s; }
+.pm-avatar-cam:active{ transform:translateY(1px); }
+
+.pm-idinfo{ min-width:0; flex:1; }
+.pm-idname{ font-size:1.22rem; font-weight:800; line-height:1.08; color:#2e3b36;
+  text-shadow:0 1px 0 rgba(255,255,255,.35); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pm-idmail{ font-size:12px; font-weight:700; color:rgba(46,59,54,.72); margin-top:2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pm-idmeta{ display:inline-flex; align-items:center; gap:6px; margin-top:8px; font-size:10.5px; font-weight:800;
+  text-transform:uppercase; letter-spacing:.06em; color:#3a4a44; white-space:nowrap;
+  background:rgba(255,253,248,.6); border:1.5px solid rgba(46,59,54,.28); border-radius:999px; padding:3px 10px; }
+
+/* ── Selector de secciones ──────────────────────────────── */
+.pm-tabs{ flex-shrink:0; display:flex; gap:8px; padding:14px 14px 4px; overflow-x:auto;
+  -webkit-overflow-scrolling:touch; }
+.pm-tabs::-webkit-scrollbar{ display:none; }
+.pm-tab{ display:inline-flex; align-items:center; gap:8px; padding:9px 15px; flex-shrink:0;
+  border-radius:999px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;
+  border:2px solid var(--ink); background:var(--cream); color:var(--ink); font-family:inherit;
+  box-shadow:1.4px 1.8px 0 rgba(74,54,34,.16); transition:background .15s, color .15s, transform .1s; }
+.pm-tab svg{ flex-shrink:0; }
+.pm-tab.active{ background:var(--accent); color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.18); }
+.pm-tab:active{ transform:translateY(1px); }
+
+/* ── Scroll + contenido ─────────────────────────────────── */
+.pm-scroll{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.pm-scroll::-webkit-scrollbar{ display:none; }
+.pm-content{ padding:14px 14px calc(40px + env(safe-area-inset-bottom)); }
+.pm-sec-title{ font-size:1.18rem; font-weight:800; letter-spacing:-.01em; }
+.pm-sec-gap{ height:12px; }
+
+/* ── Logout ─────────────────────────────────────────────── */
+.pm-logout{ display:flex; align-items:center; justify-content:center; gap:9px; width:100%; margin-top:22px;
+  padding:13px 15px; border-radius:14px; border:2px solid rgba(74,54,34,.34); white-space:nowrap;
+  background:rgba(255,253,248,.55); color:#5a4632; font-family:inherit; font-weight:700; font-size:14px;
+  cursor:pointer; transition:background .15s, color .15s, border-color .15s; }
+.pm-logout:active{ background:#f4d9cf; color:#8b1a0e; border-color:#8b1a0e; }
+
+/* ── Ajustes finos de las sub-vistas .pf-* en mobile ────── */
+/* Los formularios y filas de perfil.css ya son fluidos; solo
+   aflojamos anchos máximos y compactamos el grid de "Datos". */
+.pm-content .pf-field-row{ padding:13px 2px; }
+.pm-content form[style]{ max-width:none !important; }     /* ocupa todo el ancho */
+.pm-content div[style*="1fr 1fr"]{ grid-template-columns:1fr !important; gap:14px !important; }
+.pm-content .pf-lead{ font-size:13px; }

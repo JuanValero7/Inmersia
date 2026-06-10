@@ -70,7 +70,7 @@
   background:#f4efe1;--ink:#4a3622;--cream:#fffdf8;--accent:#cf7b4c;font-family:'Baloo 2',cursive;}
 .interior.show{opacity:1;pointer-events:auto;}
 .interior-bg{position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:#f4efe1 url('/assets/tienda/cat-books-bg.webp') center 14% / min(1480px,168%) auto no-repeat;}
+  background:#f4efe1 url('/assets/tienda/cat-books-bg.png') center 14% / min(1480px,168%) auto no-repeat;}
 .interior-bg::after{content:"";position:absolute;inset:0;background:rgba(246,241,229,0.55);}
 .interior-inner{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:80px 30px 80px;}
 .int-back{position:fixed;top:18px;left:18px;z-index:5;background:var(--cream);border:2px solid var(--ink);
@@ -181,7 +181,7 @@
   --ink:#4a3622;--cream:#fffdf8;--accent:#cf7b4c;font-family:'Baloo 2',cursive;}
 .bkp.show{transform:translateX(0);}
 .bkp::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.16;
-  background:url('/assets/tienda/cat-reading-bg.webp') center 58% / min(560px,90%) auto no-repeat;}
+  background:url('/assets/tienda/cat-reading-bg.png') center 58% / min(560px,90%) auto no-repeat;}
 .bkp-close{position:absolute;top:15px;right:15px;z-index:4;width:34px;height:34px;border-radius:999px;
   background:rgba(255,253,248,0.92);border:2px solid var(--ink);color:#7a5a3c;font-size:18px;line-height:1;
   font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;
@@ -261,6 +261,79 @@
 .bkp-empty{color:#a98a64;font-size:13.5px;text-align:center;padding:14px 0;font-weight:600;font-style:italic;}
 
 @media(max-width:760px){.int-grid{grid-template-columns:repeat(2,1fr);}.bkp-header{flex-direction:column;align-items:center;text-align:center;}}
+
+/* ════════════════════════════════════════════════════════════════
+   MOBILE (≤640px) — adaptación a pantalla de teléfono.
+   · Calle: escena encuadrada sobre Inmersia (clases .cm-*, solo se
+     renderizan en mobile por JS, ver CalleEscena.jsx).
+   · Catálogo: buscador visible + rejilla de 2 columnas + chips scroll.
+   · Ficha del libro: panel a pantalla completa entrando desde la derecha.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Calle · escena mobile (encuadre Inmersia) ──────────────── */
+.cm-root{position:fixed;inset:0;overflow:hidden;background:#0d0f17;}
+.cm-scene{position:absolute;inset:0;overflow:hidden;}
+.cm-zoomer{position:absolute;inset:0;transform-origin:52% 70%;}
+.cm-zoomer.zoomin{animation:cmZoom 1s cubic-bezier(.5,0,.35,1) forwards;}
+@keyframes cmZoom{0%{transform:scale(1);opacity:1;}70%{opacity:1;}100%{transform:scale(4.4);opacity:0;}}
+.cm-plate{position:absolute;inset:0;background-repeat:no-repeat;background-size:362% auto;
+  background-position:53.5% 70%;transition:opacity .8s ease;}
+.cm-sign{position:absolute;left:50%;top:30.5%;transform:translate(-50%,-50%);z-index:6;
+  display:flex;justify-content:center;}
+.cm-sign .img-sign-board{padding:4px 13px;}
+.cm-sign .img-sign-board img{height:21px;}
+.cm-tap{position:absolute;left:0;right:0;bottom:0;height:78%;z-index:7;background:transparent;
+  border:none;cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;}
+.cm-hint{position:absolute;left:50%;bottom:118px;transform:translateX(-50%);z-index:8;
+  display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;font-weight:800;
+  font-size:14px;letter-spacing:.03em;padding:11px 22px;border-radius:999px;border:2.5px solid var(--ink);
+  text-shadow:0 1px 1px rgba(0,0,0,0.22);white-space:nowrap;box-shadow:2px 3px 0 rgba(74,54,34,0.32);
+  animation:cmHint 2.4s ease-in-out infinite;}
+@keyframes cmHint{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-5px);}}
+
+@media(max-width:640px){
+  /* Catálogo */
+  .interior-inner{max-width:none;padding:64px 16px 40px;}
+  .int-title{font-size:30px;}
+  .int-sub{font-size:14px;margin-bottom:18px;}
+  .int-search{max-width:none;margin-bottom:16px;}
+  .int-filterbar{flex-direction:column;align-items:stretch;gap:8px;margin-bottom:2px;}
+  .int-filter-label{text-align:left;}
+  .int-chips{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding-bottom:8px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .int-chips::-webkit-scrollbar{display:none;}
+  .int-chip{flex:0 0 auto;}
+  .int-count{margin:12px 0 16px;}
+  .int-grid{grid-template-columns:repeat(2,1fr);gap:14px;}
+  .bk-stage{height:158px;padding-bottom:20px;}
+  .bk-glow{width:108px;height:108px;}
+  .bk-podium{width:84px;}
+  .bk-cover{width:80px;height:120px;padding:10px 9px 11px;}
+  .bk-cover-title{font-size:10.5px;}
+  .bk-foot{padding:11px 11px 12px;}
+  .bk-title{font-size:13px;}
+  .bk-author{font-size:11px;}
+  .bk-fab{width:30px;height:30px;font-size:16px;}
+
+  /* Ficha del libro · pantalla completa desde la derecha */
+  .bkp-scrim{display:none;}
+  .bkp{width:100vw;min-width:0;max-width:100vw;border-left:none;box-shadow:none;}
+  .bkp::before{background-size:130% auto;}
+  .bkp-close{top:14px;right:14px;}
+  .bkp-header{flex-direction:row;align-items:flex-start;text-align:left;gap:16px;padding:54px 18px 0;}
+  .bkp-cover{width:118px;height:176px;padding:13px 12px 14px;}
+  .bkp-cover-title{font-size:13px;}
+  .bkp-title{font-size:21px;}
+  .bkp-author{font-size:14px;}
+  .bkp-preview{font-size:12.5px;margin-top:11px;}
+  .bkp-cta{padding:18px 18px 4px;}
+  .bkp-sec{padding:18px 18px 16px;}
+  .bkp-sinopsis{font-size:14.5px;}
+
+  /* Aviso "Cerrado" */
+  .closed-title{font-size:34px;}
+  .closed-text{font-size:15.5px;margin:12px 0 24px;}
+}
 
 /* ════════════════════════════════════════════════════════════════
    LibroReel · preview tipo stories (SE CONSERVA INTACTO)
