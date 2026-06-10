@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { driver } from 'driver.js'
 import { getTourPhase, getPhaseInfo } from './guidedTour.js'
+import useIsMobile from '../hooks/useIsMobile.js'
 
 export default function TourResume() {
   const [phase, setPhase] = useState(getTourPhase)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     const handler = () => setPhase(getTourPhase())
@@ -15,6 +17,8 @@ export default function TourResume() {
   const info = getPhaseInfo(phase)
   if (!info) return null
 
+  const hint = (isMobile && info.hintMobile) ? info.hintMobile : info.hint
+
   const handleClick = () => {
     const d = driver({
       showProgress:  false,
@@ -25,19 +29,24 @@ export default function TourResume() {
       steps: [{
         popover: {
           title:       `Tu tour · ${info.label}`,
-          description: info.hint,
+          description: hint,
         },
       }],
     })
     d.drive()
   }
 
+  // En mobile va a la derecha para no solapar el dock del gato (abajo-izquierda).
+  const posStyle = isMobile
+    ? { bottom: 24, right: 16 }
+    : { bottom: 24, left: 24 }
+
   return (
     <button
       onClick={handleClick}
       title="Ver dónde estás en el tutorial"
       style={{
-        position: 'fixed', bottom: 24, left: 24, zIndex: 2000,
+        position: 'fixed', zIndex: 2000, ...posStyle,
         display: 'flex', alignItems: 'center', gap: 8,
         background: '#fffdf8', border: '2px solid #4a3622',
         borderRadius: 999, padding: '9px 16px',

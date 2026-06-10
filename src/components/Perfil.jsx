@@ -15,9 +15,10 @@
 // La barra lateral cambia de color acuarela según la sección.
 // =============================================================
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import clsx from 'clsx'
 import { supabase } from '../lib/supabase.js'
+import { usePerfilData } from '../hooks/usePerfilData.js'
 import '../styles/perfil.css'
 
 // ── Color de barra por sección (acuarela derivada de la paleta) ──
@@ -266,61 +267,15 @@ export function SecHistorial() {
 
 // ════════════════════ Componente principal ══════════════════
 export default function Perfil({ user, onGoBack, onSignOut }) {
-  const [sec, setSec] = useState('datos')
-  const [nombre, setNombre] = useState('')
-  const [apellido, setApellido] = useState('')
-  const [cargando, setCargando] = useState(true)
-  const [avatarUrl, setAvatarUrl] = useState(null)
+  // Lógica de datos compartida con PerfilMobile (ver src/hooks/usePerfilData.js)
+  const {
+    sec, setSec,
+    nombre, apellido, cargando, avatarUrl,
+    email, miembroDesde, inicial,
+    guardarDatos, onPickAvatar,
+  } = usePerfilData(user)
 
-  const email = user?.email || ''
-
-  const miembroDesde = (() => {
-    if (!user?.created_at) return null
-    try {
-      return new Date(user.created_at).toLocaleDateString('es', { month: 'long', year: 'numeric' })
-    } catch { return null }
-  })()
-
-  const inicial = (nombre || email || '?').trim().charAt(0).toUpperCase() || '?'
-
-  // Cargar perfil
-  useEffect(() => {
-    let activo = true
-    ;(async () => {
-      const { data, error } = await supabase
-        .from('perfiles')
-        .select('nombre, apellido')
-        .eq('id', user.id)
-        .maybeSingle()
-      if (!activo) return
-      if (!error && data) {
-        setNombre(data.nombre || '')
-        setApellido(data.apellido || '')
-      }
-      setCargando(false)
-    })()
-    return () => { activo = false }
-  }, [user.id])
-
-  // Guardar datos → devuelve null si ok, o el mensaje de error
-  async function guardarDatos({ nombre: n, apellido: a }) {
-    const { error } = await supabase
-      .from('perfiles')
-      .update({ nombre: n, apellido: a })
-      .eq('id', user.id)
-    if (error) return error.message
-    setNombre(n); setApellido(a)
-    return null
-  }
-
-  // Foto: preview local. TODO: subir a Supabase Storage y guardar la URL en `perfiles`.
-  function onPickAvatar(e) {
-    const file = e.target.files && e.target.files[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setAvatarUrl(reader.result)
-    reader.readAsDataURL(file)
-  }
+  const navBg = useMemo(() => washBg(SEC_COLOR[sec]), [sec])
 
   return (
     <div className="pf-page">
@@ -358,7 +313,7 @@ export default function Perfil({ user, onGoBack, onSignOut }) {
         </div>
 
         {/* página izquierda: navegación (color por sección) */}
-        <nav className="pf-nav" style={{ background: washBg(SEC_COLOR[sec]) }}>
+        <nav className="pf-nav" style={{ background: navBg }}>
           <div className="pf-grain"></div>
           <div className="pf-vignette"></div>
           <div className="pf-nav-list">

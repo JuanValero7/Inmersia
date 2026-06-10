@@ -23,10 +23,13 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } from 'react'
 import { supabase } from '../../lib/supabase.js'
 import useLocalStorage from '../../hooks/useLocalStorage.js'
+import { useLectorData } from '../../hooks/useLectorData.js'
 import { paginarParrafos } from '../../utils/lectorPagination.js'
 import { READING_FONTS } from '../lector/BookReader.jsx'   // ← mismas fuentes que el escritorio
 import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTILIZADO (igual al de PC)
 import { INK, ACCENT } from '../lector/clay.jsx'
+import { getTourPhase, setTourPhase } from '../guidedTour.js'
+import { runGuidedLector1Mobile, runGuidedLector2Mobile } from '../tutorial.mobile.js'
 import '../../styles/lector.mobile.css'
 
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
@@ -188,7 +191,7 @@ function ChapterSheet({ chapters, current, onPick, onClose }) {
 }
 
 // ── Sheet: tipografía ────────────────────────────────────────
-function TypoSheet({ fontSize, onFontSize, readingFont, onReadingFont, onClose }) {
+function TypoSheet({ fontSize, onFontSize, readingFont, onReadingFont, readingTheme = 'light', onReadingTheme, onClose }) {
   const MIN = 16, MAX = 24
   return (
     <div className="lm-backdrop" onClick={onClose}>
@@ -212,6 +215,17 @@ function TypoSheet({ fontSize, onFontSize, readingFont, onReadingFont, onClose }
               </button>
             ))}
           </div>
+          {onReadingTheme && (<>
+            <div className="lm-typo-label">Tema</div>
+            <div className="lm-theme-row">
+              {[{ id: 'light', label: 'Claro' }, { id: 'dark', label: 'Noche' }].map(t => (
+                <button key={t.id} className={'lm-theme-card ' + t.id + (readingTheme===t.id?' active':'')} onClick={() => onReadingTheme(t.id)}>
+                  <span className="sw">A</span>
+                  <span className="nm">{t.label}</span>
+                </button>
+              ))}
+            </div>
+          </>)}
         </div>
       </div>
     </div>
@@ -335,7 +349,7 @@ function ResenaSheet({ form, setForm, enviando, miResena, onSubmit, onClose }) {
 //  COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════════
 export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted }) {
-  // ── Estado de navegación de lectura ──
+  // ── Estado de navegación de lectura (UI) ──
   const [chapterIndex, setChapterIndex] = useState(0)
   const [pageIndex,    setPageIndex]    = useState(0)
   const [sheet,        setSheetRaw]     = useState(null)   // 'chapters' | 'typo' | 'audio' | 'nav'
@@ -344,30 +358,29 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const [catOpen,      setCatOpen]      = useState(false)
   const [pendingChapter, setPendingChapter] = useState(null)
 
-  // ── Reseña (igual que el escritorio: aparece al terminar el libro) ──
-  const [resenaOpen,     setResenaOpen]     = useState(false)
-  const [resenaForm,     setResenaForm]     = useState({ rating: 0, texto: '' })
-  const [resenaEnviando, setResenaEnviando] = useState(false)
-  const [miResena,       setMiResena]       = useState(null)
+  // Lógica de datos compartida con el Lector de escritorio (ver src/hooks/useLectorData.js)
+  const {
+    userId, capitulos, chapterCache, loading, loadingCap, error,
+    isLeido, setIsLeido,
+    pendingRestore, setPendingRestore, restoredRef,
+    setLoadingCap, setError,
+    fetchChapter, playSfx, persistChapterAdvance, subrayar,
+    miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
+  } = useLectorData(book, setChapterIndex, setPageIndex)
+
+  // ── Reseña (UI) ──
+  const [resenaOpen, setResenaOpen] = useState(false)
 
   // Preferencias de lectura (compartidas con el escritorio vía localStorage)
   const [fontSize,    setFontSize]    = useLocalStorage('inm_lector_fontSize', 19)
   const [readingFont, setReadingFont] = useLocalStorage('inm_lector_font', READING_FONT_DEFAULT)
+  const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
 
-  // ── Datos ──
-  const [capitulos,   setCapitulos]   = useState([])
-  const [chapterCache, setChapterCache] = useState({})
-  const [userId,      setUserId]      = useState(null)
-  const [loading,     setLoading]     = useState(true)
-  const [loadingCap,  setLoadingCap]  = useState(false)
-  const [error,       setError]       = useState(null)
-  const [isLeido,     setIsLeido]     = useState(book?.leido ?? false)
-  const [pendingRestore, setPendingRestore] = useState(null)
+  // ── Estado de UI no compartido ──
   const [pendingSelection, setPendingSelection] = useState(null)  // { text, parrafoId, rect }
-  const restoredRef = useRef(false)
   const screenRef = useRef(null)
 
-  // ── Audio de ambiente (real) ──
+  // ── Audio de ambiente (real, solo mobile) ──
   const audioRef = useRef(null)
   const [ambientPlaying, setAmbientPlaying] = useState(false)
   const [ambientVol, setAmbientVol] = useState(0.5)
@@ -381,103 +394,14 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     if (startWithNotebook) { setNotebookOpen(true); onNotebookStarted?.() }
   }, [startWithNotebook])
 
-  // usuario
+  // Tutorial mobile — al cargar el libro, si venimos de la fase wait_lector
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data?.user?.id || null))
-  }, [])
-
-  // ── Reseña: traer la mía cuando el libro está terminado ──
-  useEffect(() => {
-    if (!userId || !book?.libro_id || !isLeido) return
-    supabase.from('resenas_libros').select('rating, texto')
-      .eq('user_id', userId).eq('libro_id', book.libro_id).maybeSingle()
-      .then(({ data }) => {
-        setMiResena(data || null)
-        if (data) setResenaForm({ rating: data.rating, texto: data.texto || '' })
-      })
-  }, [userId, book?.libro_id, isLeido])
-
-  async function submitResena() {
-    if (!resenaForm.rating) return
-    if ((resenaForm.texto?.length ?? 0) > 1000) return
-    setResenaEnviando(true)
-    await supabase.from('resenas_libros').upsert(
-      { user_id: userId, libro_id: book.libro_id, rating: resenaForm.rating, texto: resenaForm.texto || null, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id,libro_id' }
-    )
-    setMiResena({ rating: resenaForm.rating, texto: resenaForm.texto })
-    setResenaOpen(false)
-    setResenaEnviando(false)
-  }
-
-  // ── Cargar lista de capítulos (+ restaurar progreso) ──
-  useEffect(() => {
-    if (!book?.libro_id) { setLoading(false); return }
-    let cancelled = false
-    ;(async () => {
-      setLoading(true); setError(null); setChapterCache({})
-      restoredRef.current = false; setPendingRestore(null)
-      try {
-        const { data: caps, error: e } = await supabase
-          .from('capitulos').select('id, numero, titulo')
-          .eq('libro_id', book.libro_id).order('numero')
-        if (e) throw e
-        if (!caps || caps.length === 0) throw new Error('Este libro no tiene capítulos cargados.')
-
-        let startChapter = 0, pendingParrafo = null
-        if (userId) {
-          const { data: prog } = await supabase.from('progreso_lectura')
-            .select('ultimo_parrafo_id').eq('user_id', userId).eq('libro_id', book.libro_id).maybeSingle()
-          if (prog?.ultimo_parrafo_id) {
-            const { data: parr } = await supabase.from('parrafos')
-              .select('capitulo_id').eq('id', prog.ultimo_parrafo_id).maybeSingle()
-            if (parr?.capitulo_id) {
-              const idx = caps.findIndex(c => c.id === parr.capitulo_id)
-              if (idx >= 0) { startChapter = idx; pendingParrafo = prog.ultimo_parrafo_id }
-            }
-          }
-        }
-        if (cancelled) return
-        setCapitulos(caps); setChapterIndex(startChapter); setPageIndex(0)
-        setPendingRestore(pendingParrafo)
-        if (!pendingParrafo) restoredRef.current = true
-      } catch (err) {
-        if (!cancelled) setError(err.message || String(err))
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
-    return () => { cancelled = true }
-  }, [book?.libro_id, userId])
-
-  // ── Traer un capítulo (párrafos + media + ambiente) ──
-  const fetchChapter = useCallback(async (cap) => {
-    if (!cap) return null
-    if (chapterCache[cap.id]) return chapterCache[cap.id]
-    const [{ data: parrafos, error: e1 }, { data: mediaRows, error: e2 }] = await Promise.all([
-      supabase.from('parrafos')
-        .select('id, capitulo_id, numero, contenido, tipo, escena_tags, tiene_interactivo')
-        .eq('capitulo_id', cap.id).order('numero'),
-      supabase.from('media_por_parrafo')
-        .select('parrafo_id, media_id, slug, tipo, url, titulo, descripcion, metadata, origen')
-        .eq('capitulo_id', cap.id),
-    ])
-    if (e1) throw e1; if (e2) throw e2
-    const mediaByParrafo = {}
-    for (const m of (mediaRows || [])) {
-      if (!mediaByParrafo[m.parrafo_id]) mediaByParrafo[m.parrafo_id] = []
-      mediaByParrafo[m.parrafo_id].push(m)
+    if (loading || !book?.libro_id) return
+    if (getTourPhase() === 'wait_lector') {
+      const t = setTimeout(() => runGuidedLector1Mobile(), 900)
+      return () => clearTimeout(t)
     }
-    const seen = new Set(); const ambients = []
-    for (const p of (parrafos || [])) {
-      for (const m of (mediaByParrafo[p.id] || [])) {
-        if (m.origen === 'tag' && m.tipo === 'audio' && !seen.has(m.slug)) { seen.add(m.slug); ambients.push(m) }
-      }
-    }
-    const entry = { parrafos: parrafos || [], mediaByParrafo, ambient: ambients[0] || null }
-    setChapterCache(prev => ({ ...prev, [cap.id]: entry }))
-    return entry
-  }, [chapterCache])
+  }, [loading, book?.libro_id])
 
   // cargar capítulo actual cuando cambia
   useEffect(() => {
@@ -523,11 +447,15 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     })
   }, [fontSize, readingFont])
 
-  useLayoutEffect(() => { measureGeom() })
+  // Medir solo cuando puede cambiar la geometría (fuente/viewport vía measureGeom,
+  // fin de carga, cambio de capítulo) en vez de en CADA render. measureGeom ya
+  // hace no-op si los valores no cambian, así que esto solo recorta reflows.
+  useLayoutEffect(() => { measureGeom() }, [measureGeom, loading, currentChapData])
   useEffect(() => {
-    const on = () => measureGeom()
+    let raf = 0
+    const on = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(measureGeom) }
     window.addEventListener('resize', on)
-    return () => window.removeEventListener('resize', on)
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', on) }
   }, [measureGeom])
 
   // ── Paginación (una sola página) ──
@@ -606,12 +534,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   }
   function setVol(v) { setAmbientVol(v); if (audioRef.current) audioRef.current.volume = v }
 
-  // SFX puntual (botón ♪ en párrafo)
-  const playSfx = useCallback((list) => {
-    const m = list[0]; if (!m?.url) return
-    const a = new Audio(m.url); a.volume = 0.85; a.play().catch(() => {})
-  }, [])
-
   // ── Imágenes visibles en la página actual (y anteriores del capítulo) ──
   const visibleImages = useMemo(() => {
     if (!currentChapData) return []
@@ -651,25 +573,25 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     setPendingSelection(null); setCatOpen(false)
     if (pageIndex < total - 1) { setPageIndex(p => p + 1); return }
     // fin del capítulo → abrir cuaderno antes de avanzar (igual que el escritorio)
-    if (chapterIndex < capitulos.length - 1) { setPendingChapter(chapterIndex + 1); setNotebookOpen(true) }
+    if (chapterIndex < capitulos.length - 1) {
+      if (getTourPhase() === 'wait_chapter') setTourPhase('notebook_1')
+      setPendingChapter(chapterIndex + 1); setNotebookOpen(true)
+    }
   }
   function pickChapter(i) { setChapterIndex(i); setPageIndex(0); setSheet(null); setPendingSelection(null) }
 
   // ── Cuaderno: al cerrar, persistir avance de capítulo si venía de "fin de capítulo" ──
+  async function handleSubmitResena() {
+    if (await submitResena()) setResenaOpen(false)
+  }
+
   async function handleCloseNotebook() {
     setNotebookOpen(false)
+    if (getTourPhase() === 'lector_2') {
+      setTimeout(() => runGuidedLector2Mobile(), 500)
+    }
     if (pendingChapter !== null) {
-      if (userId && book?.libro_id) {
-        const newPct = Math.round((pendingChapter / capitulos.length) * 100)
-        await supabase.from('progreso_lectura')
-          .update({ porcentaje: newPct, updated_at: new Date().toISOString() })
-          .eq('user_id', userId).eq('libro_id', book.libro_id).lt('porcentaje', newPct)
-        if (newPct >= 90) {
-          await supabase.from('bibliotecas_usuarios').update({ leido: true })
-            .eq('user_id', userId).eq('libro_id', book.libro_id)
-          setIsLeido(true)
-        }
-      }
+      await persistChapterAdvance(pendingChapter)
       setChapterIndex(pendingChapter); setPageIndex(0); setPendingChapter(null)
     }
   }
@@ -681,13 +603,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   }
   async function confirmSubrayar() {
     if (!pendingSelection || !userId || !book?.libro_id) { setPendingSelection(null); return }
-    const cap = capitulos[chapterIndex]
-    await supabase.from('subrayados_usuario').insert({
-      user_id: userId, libro_id: book.libro_id,
-      capitulo_num: cap?.numero ?? chapterIndex + 1,
-      texto_original: pendingSelection.text,
-      parrafo_id: pendingSelection.parrafoId || null,
-    })
+    await subrayar(pendingSelection.text, pendingSelection.parrafoId, chapterIndex)
     setPendingSelection(null)
     window.getSelection()?.removeAllRanges()
   }
@@ -707,14 +623,14 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const page = paginas[pageIndex] || []
 
   return (
-    <div className="lm-screen" ref={screenRef}>
+    <div className={'lm-screen' + (readingTheme === 'dark' ? ' night' : '')} ref={screenRef}>
       {/* Header */}
       <header className="lm-header">
         <div className="lm-title">
           <h1>{book?.title || 'Libro'}</h1>
           <p>{book?.author || ''}</p>
         </div>
-        <button className="lm-explore" onClick={() => setSheet('nav')} title="Explorar"><Compass /></button>
+        <button id="tutorial-m-explorar" className="lm-explore" onClick={() => setSheet('nav')} title="Explorar"><Compass /></button>
         {isLeido && book?.libro_id && (
           <button className="lm-explore lm-resena-btn" onClick={() => { setSheetRaw(null); setCatOpen(false); setResenaOpen(true) }} title="Escribir reseña" aria-label="Escribir reseña"><IcStar /></button>
         )}
@@ -722,11 +638,11 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* Controles */}
       <div className="lm-controls">
-        <button className="lm-ctrl cap" onClick={() => setSheet('chapters')}>
+        <button id="tutorial-m-cap" className="lm-ctrl cap" onClick={() => setSheet('chapters')}>
           <span className="lm-ctrl-label">Cap. {currentChapter?.numero ?? chapterIndex + 1}{currentChapter?.titulo ? ` · ${currentChapter.titulo}` : ''}</span>
           <span className="chev">▼</span>
         </button>
-        <button className="lm-ctrl typo" onClick={() => setSheet('typo')} title="Texto">
+        <button id="tutorial-m-typo" className="lm-ctrl typo" onClick={() => setSheet('typo')} title="Texto">
           <span className="a-sm">A</span><span className="a-lg">A</span>
         </button>
       </div>
@@ -754,7 +670,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         {/* Mascota (gato) + bandeja horizontal de herramientas */}
         {!loading && !error && book?.libro_id && (
           <div className="lm-cat-dock">
-            <button className="lm-cat-btn" onClick={() => setCatOpen(o => !o)} title="Herramientas" aria-label="Herramientas">
+            <button id="tutorial-m-dock" className="lm-cat-btn" onClick={() => setCatOpen(o => !o)} title="Herramientas" aria-label="Herramientas">
               {/* La mascota negra de Inmersia. Ruta servida desde /public. */}
               <img className="lm-cat-img" src="/assets/lector/cat-mascot.png" alt="Mascota de Inmersia" />
             </button>
@@ -782,15 +698,15 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* Sheets */}
       {sheet==='chapters' && <ChapterSheet chapters={capitulos} current={chapterIndex} onPick={pickChapter} onClose={()=>setSheet(null)} />}
-      {sheet==='typo' && <TypoSheet fontSize={fontSize} onFontSize={setFontSize} readingFont={readingFont} onReadingFont={setReadingFont} onClose={()=>setSheet(null)} />}
+      {sheet==='typo' && <TypoSheet fontSize={fontSize} onFontSize={setFontSize} readingFont={readingFont} onReadingFont={setReadingFont} readingTheme={readingTheme} onReadingTheme={setReadingTheme} onClose={()=>setSheet(null)} />}
       {sheet==='audio' && <AudioSheet ambient={currentAmbient} playing={ambientPlaying} volume={ambientVol} onToggle={toggleAmbient} onVolume={setVol} onClose={()=>setSheet(null)} />}
-      {sheet==='nav' && <NavSheet onGoForo={onGoForo} onGoCartelera={onGoCartelera} onGoBiblioteca={onGoBack} onClose={()=>setSheet(null)} />}
+      {sheet==='nav' && <NavSheet onGoForo={onGoForo} onGoCartelera={() => { if (getTourPhase() === 'wait_cartelera') setTourPhase('cart_portada_1'); onGoCartelera() }} onGoBiblioteca={onGoBack} onClose={()=>setSheet(null)} />}
 
       {/* Overlay imagen */}
       {imageOpen && <ImageOverlay images={visibleImages} chapter={currentChapter} chapterIndex={chapterIndex} onClose={()=>setImageOpen(false)} />}
 
       {/* Reseña (aparece al terminar el libro) */}
-      {resenaOpen && <ResenaSheet form={resenaForm} setForm={setResenaForm} enviando={resenaEnviando} miResena={miResena} onSubmit={submitResena} onClose={()=>setResenaOpen(false)} />}
+      {resenaOpen && <ResenaSheet form={resenaForm} setForm={setResenaForm} enviando={resenaEnviando} miResena={miResena} onSubmit={handleSubmitResena} onClose={()=>setResenaOpen(false)} />}
 
       {/* Cuaderno — REUTILIZA el componente de escritorio (tipos arriba, solapas a la derecha) */}
       <Notebook

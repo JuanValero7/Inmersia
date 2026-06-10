@@ -1,30 +1,19 @@
 // =============================================================
 // INMERSIA · Biblioteca mobile — helpers visuales + portada.
-// Espeja la capa "acuarela" del desktop (clay/helpers.jsx) con
-// proporciones afinadas para mobile. Sin dependencias de datos:
-// consume el `book` ya mapeado por el orquestador.
+// Espeja la capa "acuarela" del desktop con proporciones afinadas
+// para mobile. Las funciones puras (inmTint, hashOf, lum, STORYBOOK,
+// spineColor, INK) se re-exportan desde ../../biblioteca/coverHelpers.shared.js;
+// aquí viven solo los tamaños de lomo y el BookCover propios de mobile.
+// Consume el `book` ya mapeado por el orquestador.
 // =============================================================
 import React from 'react'
+import { INK, inmTint, hashOf, lum, STORYBOOK, spineColor } from '../../biblioteca/coverHelpers.shared.js'
 
-export const INK = '#4a3622'
+export { INK, inmTint, hashOf, lum, STORYBOOK, spineColor }
+
 export const ACCENT = '#cf7b4c'
 export const GREEN = '#6f9457'
 export const WALL = '#b0bdca'
-
-// mezcla un hex con blanco (amt>0) o negro (amt<0)
-export function inmTint(hex, amt) {
-  const n = parseInt(hex.slice(1), 16)
-  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255
-  const t = amt < 0 ? 0 : 255, p = Math.abs(amt)
-  const mix = (c) => Math.round((t - c) * p + c)
-  return `rgb(${mix(r)},${mix(g)},${mix(b)})`
-}
-export function hashOf(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h) }
-export function lum(hex) { const n = parseInt(hex.slice(1), 16); const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) / 255 }
-
-// Paleta "libro de cuento" — relleno cuando el libro no trae color de categoría
-export const STORYBOOK = ['#e7dcc2', '#a7c4d2', '#86ad9e', '#d98b5f', '#d56a52', '#e0b256', '#7d8db5', '#cf8ea4', '#b9cf94', '#cf9a86', '#e9cf9b', '#9cb0c8', '#c98b6b', '#8fb6ad']
-export const spineColor = (b) => STORYBOOK[hashOf(b.id) % STORYBOOK.length]
 
 // tamaños de lomo (variación según páginas + hash → look ilustrado)
 export const spineW = (b) => Math.max(26, Math.min(52, Math.round((b.pages / 800) * 22 + 28) + (hashOf(b.id) % 7) - 3))

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase.js'
 import '../styles/auth.css'
 
@@ -11,6 +11,8 @@ export default function ResetPassword({ onDone }) {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
   const [success, setSuccess] = useState(false)
+  const doneTimerRef = useRef(null)
+  useEffect(() => () => { if (doneTimerRef.current) clearTimeout(doneTimerRef.current) }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -21,7 +23,7 @@ export default function ResetPassword({ onDone }) {
     setLoading(false)
     if (err) { setError('No se pudo actualizar la contraseña. El enlace puede haber expirado.'); return }
     setSuccess(true)
-    setTimeout(onDone, 2200)
+    doneTimerRef.current = setTimeout(onDone, 2200)
   }
 
   return (

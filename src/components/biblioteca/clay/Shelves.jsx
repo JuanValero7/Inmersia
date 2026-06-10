@@ -197,4 +197,10 @@ function CoverShelf({ books, onOpen }) {
   );
 }
 
-export { FlatShelves, ShSpine, CartoonPlank, CoverShelf };
+// Memoizados: el orquestador re-renderiza al teclear en el buscador / abrir
+// filtros, pero estos solo dependen de groups/books (memos estables) y onOpen
+// (useCallback), así que se saltan esos re-renders.
+const FlatShelvesMemo = React.memo(FlatShelves)
+const CoverShelfMemo = React.memo(CoverShelf)
+
+export { FlatShelvesMemo as FlatShelves, ShSpine, CartoonPlank, CoverShelfMemo as CoverShelf };

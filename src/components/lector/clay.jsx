@@ -37,6 +37,33 @@ export const theme = {
   meter: ACCENT,
 }
 
+// ── Paleta de lectura (claro / noche) ───────────────────────
+// Solo afecta la HOJA + el fondo del lector; el chrome (pills) mantiene su
+// look claro. Compartida por el Lector desktop y mobile vía readingTheme.
+const READER_LIGHT = {
+  deskBg: theme.deskBg,
+  vignette: theme.vignette,
+  pageBg: theme.pageBg,
+  pageInk: theme.pageInk,
+  pageMeta: theme.pageMeta,
+  pageEdge: theme.pageEdge,
+  lineRGBA: 'rgba(150,110,60,0.05)',
+}
+const READER_DARK = {
+  deskBg:
+    'radial-gradient(130% 100% at 50% 0%, rgba(60,48,36,0.35), transparent 55%),' +
+    'linear-gradient(180deg,#211b15 0%,#1a150f 60%,#140f0a 100%)',
+  vignette: 'radial-gradient(95% 80% at 50% 38%, transparent 55%, rgba(0,0,0,0.45) 100%)',
+  pageBg: 'radial-gradient(ellipse at 22% 8%, #262019 0%, #1d1813 55%, #15110d 100%)',
+  pageInk: '#e9ddc7',
+  pageMeta: 'rgba(220,200,160,0.45)',
+  pageEdge: '#2a231b',
+  lineRGBA: 'rgba(220,190,140,0.05)',
+}
+export function getReaderPalette(mode) {
+  return mode === 'dark' ? READER_DARK : READER_LIGHT
+}
+
 // Botón clay (pill con borde de tinta + sombra offset)
 export function ClayButton({ children, onClick, variant = 'ghost', style = {}, title, disabled }) {
   const [hov, setHov] = useState(false)

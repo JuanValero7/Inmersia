@@ -11,15 +11,18 @@ export default function LibroReel({ libro, onClose }) {
   const touchStartY = useRef(null)
 
   useEffect(() => {
+    let cancelled = false
     supabase
       .from('libro_reels')
       .select('id, orden, imagen_url, audio_url, titulo, subtexto')
       .eq('libro_id', libro.id)
       .order('orden')
       .then(({ data }) => {
+        if (cancelled) return
         setReels(data || [])
         setLoading(false)
       })
+    return () => { cancelled = true }
   }, [libro.id])
 
   // Audio: solo reinicia si la URL cambia

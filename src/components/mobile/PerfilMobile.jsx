@@ -16,62 +16,25 @@
 // Mismo contrato de props que Perfil.jsx:
 //   { user, onGoBack, onSignOut }
 // ─────────────────────────────────────────────────────────────
-import React, { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase.js'
+import React, { useMemo } from 'react'
 import {
   SecDatos, SecSeguridad, SecTransac, SecHistorial,
   NAV, TITLES, SEC_COLOR, washBg, I,
 } from '../Perfil.jsx'                 // ← sub-vistas + helpers REUTILIZADOS (¡mayúscula!)
+import { usePerfilData } from '../../hooks/usePerfilData.js'  // ← lógica de datos compartida
 import '../../styles/perfil.css'        // base .pf-* (lo usan las sub-vistas)
 import '../../styles/perfil.mobile.css'           // overrides + chrome mobile .pm-*
 
 export default function PerfilMobile({ user, onGoBack, onSignOut }) {
-  // — MISMA lógica de datos que Perfil.jsx (no cambia nada) —
-  const [sec,       setSec]       = useState('datos')
-  const [nombre,    setNombre]    = useState('')
-  const [apellido,  setApellido]  = useState('')
-  const [cargando,  setCargando]  = useState(true)
-  const [avatarUrl, setAvatarUrl] = useState(null)
+  // — MISMA lógica de datos que Perfil.jsx (ver src/hooks/usePerfilData.js) —
+  const {
+    sec, setSec,
+    nombre, apellido, cargando, avatarUrl,
+    email, miembroDesde, inicial,
+    guardarDatos, onPickAvatar,
+  } = usePerfilData(user)
 
-  const email = user?.email || ''
-
-  const miembroDesde = (() => {
-    if (!user?.created_at) return null
-    try { return new Date(user.created_at).toLocaleDateString('es', { month: 'long', year: 'numeric' }) }
-    catch { return null }
-  })()
-
-  const inicial = (nombre || email || '?').trim().charAt(0).toUpperCase() || '?'
-
-  // Cargar perfil (idéntico a Perfil.jsx)
-  useEffect(() => {
-    let activo = true
-    ;(async () => {
-      const { data, error } = await supabase
-        .from('perfiles').select('nombre, apellido').eq('id', user.id).maybeSingle()
-      if (!activo) return
-      if (!error && data) { setNombre(data.nombre || ''); setApellido(data.apellido || '') }
-      setCargando(false)
-    })()
-    return () => { activo = false }
-  }, [user.id])
-
-  // Guardar datos → null si ok, o mensaje de error
-  async function guardarDatos({ nombre: n, apellido: a }) {
-    const { error } = await supabase.from('perfiles').update({ nombre: n, apellido: a }).eq('id', user.id)
-    if (error) return error.message
-    setNombre(n); setApellido(a)
-    return null
-  }
-
-  // Foto: preview local (igual que Perfil.jsx). TODO: subir a Storage.
-  function onPickAvatar(e) {
-    const file = e.target.files && e.target.files[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setAvatarUrl(reader.result)
-    reader.readAsDataURL(file)
-  }
+  const idCardBg = useMemo(() => washBg(SEC_COLOR[sec]), [sec])
 
   return (
     <div className="pm-root">
@@ -94,7 +57,7 @@ export default function PerfilMobile({ user, onGoBack, onSignOut }) {
       </header>
 
       {/* ── Tarjeta de identidad — acuarela según sección ── */}
-      <div className="pm-idcard" style={{ background: washBg(SEC_COLOR[sec]) }}>
+      <div className="pm-idcard" style={{ background: idCardBg }}>
         <div className="pm-idcard-grain" />
         <div className="pm-idcard-vig" />
         <div className="pm-idrow">

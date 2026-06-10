@@ -2,19 +2,20 @@
 // Lector inmersivo — orquestador principal (estética clay / acuarela).
 // Solo estado, queries Supabase y composicion de vistas.
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 import useLocalStorage from '../hooks/useLocalStorage.js'
+import { useLectorData } from '../hooks/useLectorData.js'
 import '../styles/lector.css'
 
 import { paginarParrafos } from '../utils/lectorPagination.js'
-import { runGuidedLector1, runGuidedLector2, runGuidedNotebook1 } from './tutorial.js'
+import { runGuidedLector1, runGuidedLector2 } from './tutorial.js'
 import { getTourPhase, setTourPhase } from './guidedTour.js'
 import { BookReader }      from './lector/BookReader.jsx'
 import { PolaroidStack }   from './lector/PolaroidStack.jsx'
 import { RecorderPlayer, NotebookIcon } from './lector/RecorderPlayer.jsx'
 import { Notebook }        from './lector/Notebook.jsx'
-import { theme, ClayButton } from './lector/clay.jsx'
+import { theme, ClayButton, getReaderPalette } from './lector/clay.jsx'
 
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
 
@@ -74,6 +75,16 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const [pendingChapter, setPendingChapter] = useState(null)
   const [explorarOpen,   setExplorarOpen]   = useState(false)
 
+  // Lógica de datos compartida con LectorMobile (ver src/hooks/useLectorData.js)
+  const {
+    userId, capitulos, chapterCache, loading, loadingCap, error,
+    isLeido, setIsLeido,
+    pendingRestore, setPendingRestore, restoredRef,
+    setLoadingCap, setError,
+    fetchChapter, playSfx, persistChapterAdvance, subrayar,
+    miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
+  } = useLectorData(book, setChapterIndex, setPageIndex)
+
   useEffect(() => {
     if (startWithNotebook) {
       setNotebookOpen(true)
@@ -91,11 +102,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   // Preferencias de lectura (persistidas)
   const [fontSize,    setFontSize]    = useLocalStorage('inm_lector_fontSize', 19)
   const [readingFont, setReadingFont] = useLocalStorage('inm_lector_font', READING_FONT_DEFAULT)
-
-  const [capitulos,  setCapitulos]  = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [loadingCap, setLoadingCap] = useState(false)
-  const [error,      setError]      = useState(null)
+  const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
+  const pal = getReaderPalette(readingTheme)
 
   // Tutorial — se lanza la primera vez que el libro carga (después de loading)
   useEffect(() => {
@@ -108,18 +116,15 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     return () => clearTimeout(t)
   }, [loading, book?.libro_id])
 
-  const [chapterCache,      setChapterCache]      = useState({})
-  const [userId,            setUserId]            = useState(null)
-  const [pendingRestore,    setPendingRestore]    = useState(null)
   const [pendingSelection,  setPendingSelection]  = useState(null)
-  const restoredRef = useRef(false)
 
   const [geom, setGeom] = useState(() => computeGeom(true, fontSize, readingFont))
   useEffect(() => {
-    const onResize = () => setGeom(computeGeom(doubleView, fontSize, readingFont))
+    let raf = 0
+    const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setGeom(computeGeom(doubleView, fontSize, readingFont))) }
     setGeom(computeGeom(doubleView, fontSize, readingFont))
     window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize) }
   }, [doubleView, fontSize, readingFont])
   const pagiOpts = useMemo(() => ({ charsPerLine: geom.charsPerLine, lineHeight: geom.lineHeight, maxH: geom.maxH }), [geom])
 
@@ -127,110 +132,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const [measuredHeights, setMeasuredHeights] = useState({})
   const [titleH,          setTitleH]          = useState(0)
 
-  // ── Reseña ────────────────────────────────────────────────
-  const [isLeido,       setIsLeido]       = useState(book?.leido ?? false)
-  const [resenaOpen,    setResenaOpen]    = useState(false)
-  const [resenaForm,    setResenaForm]    = useState({ rating: 0, texto: '' })
-  const [resenaEnviando, setResenaEnviando] = useState(false)
-  const [miResena,      setMiResena]      = useState(null)
-
-  useEffect(() => {
-    if (!userId || !book?.libro_id || !isLeido) return
-    supabase.from('resenas_libros').select('rating, texto')
-      .eq('user_id', userId).eq('libro_id', book.libro_id).maybeSingle()
-      .then(({ data }) => {
-        setMiResena(data || null)
-        if (data) setResenaForm({ rating: data.rating, texto: data.texto || '' })
-      })
-  }, [userId, book?.libro_id, isLeido])
-
-  async function submitResenaLector() {
-    if (!resenaForm.rating) return
-    if ((resenaForm.texto?.length ?? 0) > 1000) return
-    setResenaEnviando(true)
-    await supabase.from('resenas_libros').upsert(
-      { user_id: userId, libro_id: book.libro_id, rating: resenaForm.rating, texto: resenaForm.texto || null, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id,libro_id' }
-    )
-    setMiResena({ rating: resenaForm.rating, texto: resenaForm.texto })
-    setResenaOpen(false)
-    setResenaEnviando(false)
-  }
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data?.user?.id || null))
-  }, [])
-
-  useEffect(() => {
-    if (!book?.libro_id) { setLoading(false); return }
-    let cancelled = false
-    ;(async () => {
-      setLoading(true); setError(null); setChapterCache({})
-      restoredRef.current = false; setPendingRestore(null)
-      try {
-        const { data: caps, error: e } = await supabase
-          .from('capitulos').select('id, numero, titulo')
-          .eq('libro_id', book.libro_id).order('numero')
-        if (e) throw e
-        if (!caps || caps.length === 0) throw new Error('Este libro no tiene capítulos cargados.')
-
-        let startChapter = 0; let pendingParrafo = null
-        if (userId) {
-          const { data: prog } = await supabase.from('progreso_lectura')
-            .select('ultimo_parrafo_id').eq('user_id', userId).eq('libro_id', book.libro_id).maybeSingle()
-          if (prog?.ultimo_parrafo_id) {
-            const { data: parr } = await supabase.from('parrafos')
-              .select('capitulo_id').eq('id', prog.ultimo_parrafo_id).maybeSingle()
-            if (parr?.capitulo_id) {
-              const idx = caps.findIndex(c => c.id === parr.capitulo_id)
-              if (idx >= 0) { startChapter = idx; pendingParrafo = prog.ultimo_parrafo_id }
-            }
-          }
-        }
-
-        if (cancelled) return
-        setCapitulos(caps); setChapterIndex(startChapter); setPageIndex(0)
-        setPendingRestore(pendingParrafo)
-        if (!pendingParrafo) restoredRef.current = true
-      } catch (err) {
-        if (!cancelled) setError(err.message || String(err))
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
-    return () => { cancelled = true }
-  }, [book?.libro_id, userId])
-
-  async function fetchChapter(cap) {
-    if (!cap) return null
-    if (chapterCache[cap.id]) return chapterCache[cap.id]
-    const [{ data: parrafos, error: e1 }, { data: mediaRows, error: e2 }] = await Promise.all([
-      supabase.from('parrafos')
-        .select('id, capitulo_id, numero, contenido, tipo, escena_tags, tiene_interactivo')
-        .eq('capitulo_id', cap.id).order('numero'),
-      supabase.from('media_por_parrafo')
-        .select('parrafo_id, media_id, slug, tipo, url, titulo, descripcion, metadata, origen')
-        .eq('capitulo_id', cap.id),
-    ])
-    if (e1) throw e1; if (e2) throw e2
-
-    const mediaByParrafo = {}
-    for (const m of (mediaRows || [])) {
-      if (!mediaByParrafo[m.parrafo_id]) mediaByParrafo[m.parrafo_id] = []
-      mediaByParrafo[m.parrafo_id].push(m)
-    }
-    const seen = new Set(); const ambients = []
-    for (const p of (parrafos || [])) {
-      for (const m of (mediaByParrafo[p.id] || [])) {
-        if (m.origen === 'tag' && m.tipo === 'audio' && !seen.has(m.slug)) {
-          seen.add(m.slug); ambients.push(m)
-        }
-      }
-    }
-    const entry = { parrafos: parrafos || [], mediaByParrafo, ambient: ambients[0] || null }
-    setChapterCache(prev => ({ ...prev, [cap.id]: entry }))
-    return entry
-  }
+  // ── Reseña (UI) ──
+  const [resenaOpen, setResenaOpen] = useState(false)
 
   useEffect(() => {
     const cap = capitulos[chapterIndex]; if (!cap) return
@@ -381,24 +284,13 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     return () => clearTimeout(t)
   }, [chapterIndex, pageIndex, currentPaginas.length, capitulos.length, doubleView, userId, book?.libro_id])
 
-  const playSfx = useCallback((mediaList) => {
-    const m = mediaList[0]; if (!m?.url) return
-    const a = new Audio(m.url); a.volume = 0.85; a.play().catch(() => {})
-  }, [])
-
   const handleTextSelect = useCallback(({ text, parrafoId, rect }) => {
     setPendingSelection({ text, parrafoId, rect })
   }, [])
 
   async function handleSubrayar() {
     if (!pendingSelection || !userId || !book?.libro_id) return
-    const cap = capitulos[chapterIndex]
-    await supabase.from('subrayados_usuario').insert({
-      user_id: userId, libro_id: book.libro_id,
-      capitulo_num: cap?.numero ?? chapterIndex + 1,
-      texto_original: pendingSelection.text,
-      parrafo_id: pendingSelection.parrafoId || null,
-    })
+    await subrayar(pendingSelection.text, pendingSelection.parrafoId, chapterIndex)
     setPendingSelection(null)
     window.getSelection()?.removeAllRanges()
   }
@@ -455,23 +347,17 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
   const handleToggleView    = useCallback(() => setDoubleView(v => !v), [])
   const handleChapterSelect = useCallback((idx) => { setChapterIndex(idx); setPageIndex(0) }, [])
+  async function handleSubmitResena() {
+    if (await submitResena()) setResenaOpen(false)
+  }
+
   async function handleCloseNotebook() {
     setNotebookOpen(false)
     if (getTourPhase() === 'lector_2') {
       setTimeout(() => runGuidedLector2(), 500)
     }
     if (pendingChapter !== null) {
-      if (userId && book?.libro_id) {
-        const newPct = Math.round((pendingChapter / capitulos.length) * 100)
-        await supabase.from('progreso_lectura')
-          .update({ porcentaje: newPct, updated_at: new Date().toISOString() })
-          .eq('user_id', userId).eq('libro_id', book.libro_id).lt('porcentaje', newPct)
-        if (newPct >= 90) {
-          await supabase.from('bibliotecas_usuarios').update({ leido: true })
-            .eq('user_id', userId).eq('libro_id', book.libro_id)
-          setIsLeido(true)
-        }
-      }
+      await persistChapterAdvance(pendingChapter)
       setChapterIndex(pendingChapter); setPageIndex(0); setPendingChapter(null)
     }
   }
@@ -480,8 +366,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const halfBook = (doubleView ? (2 * geom.pageW + 20 + 14) : (geom.pageW + 7)) / 2
 
   return (
-    <div className="desk" style={{ position: 'relative', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: theme.deskBg, fontFamily: "'Baloo 2', sans-serif" }}>
-      <div style={{ position: 'absolute', inset: 0, background: theme.vignette, pointerEvents: 'none', zIndex: 1 }} />
+    <div className="desk" style={{ position: 'relative', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: pal.deskBg, fontFamily: "'Baloo 2', sans-serif" }}>
+      <div style={{ position: 'absolute', inset: 0, background: pal.vignette, pointerEvents: 'none', zIndex: 1 }} />
 
       {/* TOP BAR */}
       <header style={{ position: 'relative', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '14px 24px 0' }}>
@@ -570,6 +456,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   readingFont={readingFont}
                   onFontSize={setFontSize}
                   onReadingFont={setReadingFont}
+                  readingTheme={readingTheme}
+                  onReadingTheme={setReadingTheme}
                 />
           )}
         </div>
@@ -622,7 +510,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
             />
             <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
               <ClayButton onClick={() => setResenaOpen(false)}>Cancelar</ClayButton>
-              <ClayButton variant="primary" disabled={!resenaForm.rating || resenaEnviando} onClick={submitResenaLector}>
+              <ClayButton variant="primary" disabled={!resenaForm.rating || resenaEnviando} onClick={handleSubmitResena}>
                 {resenaEnviando ? 'Guardando…' : 'Guardar'}
               </ClayButton>
             </div>

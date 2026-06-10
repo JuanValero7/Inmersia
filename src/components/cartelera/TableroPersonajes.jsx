@@ -56,10 +56,12 @@ function Frame({ it }) {
 export default function TableroPersonajes({ pct = 0, scale = 1, imageUrl, onOpenList }) {
   const { items, order } = useMemo(buildLayout, [])
   const revealed = Math.round(Math.max(0, Math.min(100, pct)) / 100 * TOTAL)
-  const shown = order.slice(0, revealed)
-  const clip = shown.length
+  const shown = useMemo(() => order.slice(0, revealed), [order, revealed])
+  // El clip-path solo cambia cuando cambia cuántas polaroids están reveladas;
+  // se memoiza para no rearmar hasta 30 paths en cada render (p. ej. al escalar).
+  const clip = useMemo(() => shown.length
     ? `path('${shown.map(i => { const it = items[i]; return quadPath(it.cx, it.cy, it.w, it.h, it.rot) }).join(' ')}')`
-    : `path('M 0 0 Z')`
+    : `path('M 0 0 Z')`, [shown, items])
 
   return (
     <div className="cart-canvas" style={{ width: BOARD_W, height: BOARD_H, transform: `scale(${scale})`, cursor: onOpenList ? 'pointer' : 'default' }}

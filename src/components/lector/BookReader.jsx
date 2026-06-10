@@ -1,7 +1,7 @@
 // Plain JavaScript (.jsx)
 import { useState, useEffect, useRef, memo } from 'react'
 import { createPortal } from 'react-dom'
-import { theme, tint } from './clay.jsx'
+import { theme, tint, getReaderPalette } from './clay.jsx'
 
 // ── Fuentes de lectura disponibles ──────────────────────────
 // El `css` de cada opción debe coincidir EXACTO con el valor que guarda
@@ -14,7 +14,7 @@ export const READING_FONTS = [
 ]
 
 // ── Contenido de una página (datos reales) ──────────────────
-const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, onPlaySfx, onTextSelect, fontSize, readingFont, isFirst, chapterTitle, chapterNum }) {
+const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, onPlaySfx, onTextSelect, fontSize, readingFont, isFirst, chapterTitle, chapterNum, pal = getReaderPalette('light') }) {
   function handleMouseUp() {
     if (!onTextSelect) return
     const sel = window.getSelection()
@@ -27,11 +27,11 @@ const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, onPlay
   }
 
   return (
-    <div onMouseUp={handleMouseUp} style={{ fontFamily: readingFont || "'Crimson Text', Georgia, serif", fontSize, lineHeight: 1.85, color: theme.pageInk }}>
+    <div onMouseUp={handleMouseUp} style={{ fontFamily: readingFont || "'Crimson Text', Georgia, serif", fontSize, lineHeight: 1.85, color: pal.pageInk }}>
       {isFirst && (
         <div style={{ marginBottom: 22 }}>
-          <div style={{ fontFamily: "'Special Elite', monospace", fontSize: fontSize * 0.6, letterSpacing: '0.18em', textTransform: 'uppercase', color: theme.pageMeta }}>Capítulo {chapterNum}</div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: fontSize * 1.7, fontWeight: 700, lineHeight: 1.1, color: theme.pageInk, marginTop: 6 }}>{chapterTitle}</div>
+          <div style={{ fontFamily: "'Special Elite', monospace", fontSize: fontSize * 0.6, letterSpacing: '0.18em', textTransform: 'uppercase', color: pal.pageMeta }}>Capítulo {chapterNum}</div>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: fontSize * 1.7, fontWeight: 700, lineHeight: 1.1, color: pal.pageInk, marginTop: 6 }}>{chapterTitle}</div>
           <div style={{ width: 60, height: 3, borderRadius: 2, background: theme.accent, marginTop: 14 }} />
         </div>
       )}
@@ -39,7 +39,7 @@ const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, onPlay
         const sfx = (mediaByParrafo[p.id] || []).filter(m => m.origen === 'explicito' && m.tipo === 'audio')
         const tieneSfx = sfx.length > 0
         if (p.tipo === 'separador')
-          return <div key={p.id ?? `sep-${pIdx}`} style={{ textAlign: 'center', color: theme.pageMeta, margin: '20px 0', letterSpacing: '0.4em' }}>❧</div>
+          return <div key={p.id ?? `sep-${pIdx}`} style={{ textAlign: 'center', color: pal.pageMeta, margin: '20px 0', letterSpacing: '0.4em' }}>❧</div>
         const isDlg = p.tipo === 'dialogo'
         return (
           <p key={p.id ?? `p-${pIdx}`} data-parrafo-id={p.id}
@@ -108,7 +108,7 @@ function ChapterSelect({ chapters, chapterIndex, onChapterSelect }) {
 }
 
 // ── Control de tipografía (tamaño + fuente) ─────────────────
-function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont }) {
+function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, readingTheme = 'light', onReadingTheme }) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState({ top: 0, left: 0 })
   const btnRef = useRef(null)
@@ -172,6 +172,24 @@ function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont })
               )
             })}
           </div>
+          {/* Tema de lectura */}
+          {onReadingTheme && (
+            <>
+              <div style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.pageMeta, margin: '16px 0 9px' }}>Tema</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
+                {[{ id: 'light', label: 'Claro', bg: '#f7efde', fg: '#3a2a18' }, { id: 'dark', label: 'Noche', bg: '#1d1813', fg: '#e9ddc7' }].map(t => {
+                  const active = readingTheme === t.id
+                  return (
+                    <button key={t.id} type="button" onClick={() => onReadingTheme(t.id)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', cursor: 'pointer', border: `1.5px solid ${active ? theme.accent : theme.ink}`, borderRadius: 11, background: active ? 'rgba(207,123,76,0.12)' : 'transparent' }}>
+                      <span style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, background: t.bg, border: `1.5px solid ${theme.ink}`, color: t.fg, fontFamily: "'Crimson Text', serif", fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>A</span>
+                      <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, color: active ? theme.accent : theme.navText }}>{t.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </>
+          )}
         </div>,
         document.body
       )}
@@ -180,36 +198,36 @@ function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont })
 }
 
 // ── Lateral clicable (pasa página) + esquina que se dobla ───
-function SideTurn({ side, onClick, kind }) {
+function SideTurn({ side, onClick, kind, pal = getReaderPalette('light') }) {
   const [hov, setHov] = useState(false)
   const outer = side === 'left' ? 'left' : 'right'
   return (
     <div onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       title={kind === 'next-chapter' ? 'Siguiente capítulo →' : (side === 'left' ? '← Página anterior' : 'Página siguiente →')}
       style={{ position: 'absolute', top: 0, bottom: 0, [outer]: 0, width: 56, cursor: 'pointer', zIndex: 6, background: hov ? `linear-gradient(${side === 'left' ? '90deg' : '270deg'}, rgba(120,80,30,0.10), transparent)` : 'transparent', transition: 'background .15s' }}>
-      <div style={{ position: 'absolute', top: '50%', [outer]: 14, transform: 'translateY(-50%)', fontSize: 18, color: theme.pageMeta, opacity: hov ? 0.9 : 0, transition: 'opacity .15s' }}>
+      <div style={{ position: 'absolute', top: '50%', [outer]: 14, transform: 'translateY(-50%)', fontSize: 18, color: pal.pageMeta, opacity: hov ? 0.9 : 0, transition: 'opacity .15s' }}>
         {kind === 'next-chapter' ? '✦' : (side === 'left' ? '‹' : '›')}
       </div>
-      <div style={{ position: 'absolute', bottom: 0, [outer]: 0, width: 0, height: 0, transition: 'border-width .18s ease', borderStyle: 'solid', borderWidth: `0 0 ${hov ? 50 : 0}px ${hov ? 50 : 0}px`, borderColor: `transparent transparent ${theme.pageEdge} transparent`, transform: side === 'left' ? 'scaleX(-1)' : 'none', filter: 'drop-shadow(0 -2px 3px rgba(0,0,0,0.22))' }} />
+      <div style={{ position: 'absolute', bottom: 0, [outer]: 0, width: 0, height: 0, transition: 'border-width .18s ease', borderStyle: 'solid', borderWidth: `0 0 ${hov ? 50 : 0}px ${hov ? 50 : 0}px`, borderColor: `transparent transparent ${pal.pageEdge} transparent`, transform: side === 'left' ? 'scaleX(-1)' : 'none', filter: 'drop-shadow(0 -2px 3px rgba(0,0,0,0.22))' }} />
     </div>
   )
 }
 
-const Leaf = memo(function Leaf({ parrafos, side, pageNum, fontSize, readingFont, pageW, pageH, mediaByParrafo, onPlaySfx, onTextSelect, onPrev, onNext, nextKind, chapterTitle, chapterNum, isFirst, empty }) {
+const Leaf = memo(function Leaf({ parrafos, side, pageNum, fontSize, readingFont, pageW, pageH, mediaByParrafo, onPlaySfx, onTextSelect, onPrev, onNext, nextKind, chapterTitle, chapterNum, isFirst, empty, pal = getReaderPalette('light') }) {
   const radius = side === 'left' ? '5px 2px 2px 5px' : side === 'right' ? '2px 5px 5px 2px' : '5px'
   const innerShadow = side === 'left' ? 'inset -16px 0 26px -14px rgba(60,35,12,0.38)' : side === 'right' ? 'inset 16px 0 26px -14px rgba(60,35,12,0.30)' : 'none'
   const pad = Math.round(pageW * 0.11)
   return (
-    <div style={{ position: 'relative', width: pageW, height: pageH, background: theme.pageBg, borderRadius: radius, boxShadow: `${innerShadow}, 0 0 0 1px rgba(60,35,12,0.12)`, overflow: 'hidden', flexShrink: 0 }}>
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5, backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent ${fontSize*1.85-1}px, rgba(150,110,60,0.05) ${fontSize*1.85-1}px, rgba(150,110,60,0.05) ${fontSize*1.85}px)` }} />
+    <div style={{ position: 'relative', width: pageW, height: pageH, background: pal.pageBg, borderRadius: radius, boxShadow: `${innerShadow}, 0 0 0 1px rgba(60,35,12,0.12)`, overflow: 'hidden', flexShrink: 0 }}>
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5, backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent ${fontSize*1.85-1}px, ${pal.lineRGBA} ${fontSize*1.85-1}px, ${pal.lineRGBA} ${fontSize*1.85}px)` }} />
       <div style={{ position: 'absolute', inset: 0, padding: `${Math.round(pageH*0.075)}px ${pad}px ${Math.round(pageH*0.085)}px`, overflow: 'hidden' }}>
         {empty
-          ? <div style={{ color: theme.pageMeta, fontFamily: "'Special Elite', monospace", fontSize: 14, textAlign: 'center', marginTop: pageH/2 - 80 }}>— fin del capítulo —</div>
-          : <PageContent parrafos={parrafos} mediaByParrafo={mediaByParrafo} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} fontSize={fontSize} readingFont={readingFont} isFirst={isFirst} chapterTitle={chapterTitle} chapterNum={chapterNum} />}
+          ? <div style={{ color: pal.pageMeta, fontFamily: "'Special Elite', monospace", fontSize: 14, textAlign: 'center', marginTop: pageH/2 - 80 }}>— fin del capítulo —</div>
+          : <PageContent parrafos={parrafos} mediaByParrafo={mediaByParrafo} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} fontSize={fontSize} readingFont={readingFont} isFirst={isFirst} chapterTitle={chapterTitle} chapterNum={chapterNum} pal={pal} />}
       </div>
-      {pageNum && <div style={{ position: 'absolute', bottom: 20, [side === 'right' ? 'right' : 'left']: pad, fontSize: 11, color: theme.pageMeta, fontFamily: "'Special Elite', monospace" }}>{pageNum}</div>}
-      {(side === 'left' || side === 'single') && onPrev && <SideTurn side="left" onClick={onPrev} kind="prev" />}
-      {(side === 'right' || side === 'single') && onNext && <SideTurn side="right" onClick={onNext} kind={nextKind} />}
+      {pageNum && <div style={{ position: 'absolute', bottom: 20, [side === 'right' ? 'right' : 'left']: pad, fontSize: 11, color: pal.pageMeta, fontFamily: "'Special Elite', monospace" }}>{pageNum}</div>}
+      {(side === 'left' || side === 'single') && onPrev && <SideTurn side="left" onClick={onPrev} kind="prev" pal={pal} />}
+      {(side === 'right' || side === 'single') && onNext && <SideTurn side="right" onClick={onNext} kind={nextKind} pal={pal} />}
     </div>
   )
 })
@@ -218,22 +236,23 @@ export const BookReader = memo(function BookReader({
   chapter, chapters, chapterIndex, paginas, pageIndex, doubleView,
   mediaByParrafo, onPlaySfx, onPrevPage, onNextPage, onNextChapter,
   onToggleView, onChapterSelect, onTextSelect,
-  onFontSize, onReadingFont,
+  onFontSize, onReadingFont, readingTheme = 'light', onReadingTheme,
   pageW = 470, pageH = 560, fontSize = 18, readingFont = "'Crimson Text', Georgia, serif",
 }) {
+  const pal = getReaderPalette(readingTheme)
   const total = paginas.length
   const isLast = doubleView ? pageIndex >= total - 2 : pageIndex >= total - 1
   const left = paginas[pageIndex] || []
   const right = paginas[pageIndex + 1] || []
   const showRight = doubleView && right.length > 0
-  const edge = (radius) => ({ width: 7, alignSelf: 'stretch', margin: '3px 0', background: `repeating-linear-gradient(0deg, ${theme.pageEdge}, ${theme.pageEdge} 1px, ${tint(theme.pageEdge,-0.12)} 2px, ${tint(theme.pageEdge,-0.12)} 3px)`, borderRadius: radius, flexShrink: 0 })
+  const edge = (radius) => ({ width: 7, alignSelf: 'stretch', margin: '3px 0', background: `repeating-linear-gradient(0deg, ${pal.pageEdge}, ${pal.pageEdge} 1px, ${tint(pal.pageEdge,-0.12)} 2px, ${tint(pal.pageEdge,-0.12)} 3px)`, borderRadius: radius, flexShrink: 0 })
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 12, padding: '0 6px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <ChapterSelect chapters={chapters || []} chapterIndex={chapterIndex} onChapterSelect={onChapterSelect} />
-          <TypographyControl fontSize={fontSize} onFontSize={onFontSize} readingFont={readingFont} onReadingFont={onReadingFont} />
+          <TypographyControl fontSize={fontSize} onFontSize={onFontSize} readingFont={readingFont} onReadingFont={onReadingFont} readingTheme={readingTheme} onReadingTheme={onReadingTheme} />
         </div>
         <button type="button" onClick={onToggleView}
           style={{ whiteSpace: 'nowrap', fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: theme.navBg, color: theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
@@ -243,10 +262,10 @@ export const BookReader = memo(function BookReader({
 
       <div className="book-shadow" style={{ display: 'flex', position: 'relative', filter: 'drop-shadow(0 16px 30px rgba(70,46,20,0.4))' }}>
         {doubleView && <div style={edge('5px 0 0 5px')} />}
-        <Leaf parrafos={left} side={doubleView ? 'left' : 'single'} pageNum={pageIndex + 1} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onPrev={onPrevPage} onNext={!doubleView ? (isLast ? onNextChapter : onNextPage) : undefined} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={pageIndex === 0} chapterTitle={chapter.titulo} chapterNum={chapter.numero ?? chapterIndex + 1} />
+        <Leaf parrafos={left} side={doubleView ? 'left' : 'single'} pageNum={pageIndex + 1} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onPrev={onPrevPage} onNext={!doubleView ? (isLast ? onNextChapter : onNextPage) : undefined} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={pageIndex === 0} chapterTitle={chapter.titulo} chapterNum={chapter.numero ?? chapterIndex + 1} pal={pal} />
         {doubleView && <div style={{ width: 20, height: pageH, background: 'linear-gradient(to right, rgba(0,0,0,0.34) 0%, rgba(90,55,20,0.12) 45%, rgba(0,0,0,0.28) 100%)', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.42)', flexShrink: 0 }} />}
         {doubleView && (
-          <Leaf parrafos={right} side="right" pageNum={showRight ? pageIndex + 2 : ''} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onNext={isLast ? onNextChapter : onNextPage} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={false} empty={!showRight} />
+          <Leaf parrafos={right} side="right" pageNum={showRight ? pageIndex + 2 : ''} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onNext={isLast ? onNextChapter : onNextPage} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={false} empty={!showRight} pal={pal} />
         )}
         <div style={edge('0 5px 5px 0')} />
       </div>

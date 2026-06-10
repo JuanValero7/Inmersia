@@ -65,23 +65,30 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
+  // Lee los últimos libros abiertos de localStorage (nuevo key, fallback al anterior)
+  const loadLastBooks = useCallback((u) => {
+    if (!u) return
+    const savedNew = localStorage.getItem(`inm_last_books_${u.id}`)
+    const savedOld = localStorage.getItem(`inm_last_book_${u.id}`)
+    if (savedNew) {
+      try { setLastOpenedBookIds(JSON.parse(savedNew)) } catch { /* ignore */ }
+    } else if (savedOld) {
+      setLastOpenedBookIds([savedOld])
+    }
+  }, [])
+
   // ── Auth ──────────────────────────────────────────────────────
   useEffect(() => {
+    let mounted = true
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return
       const u = session?.user ?? null
       setUser(u)
       setAuthReady(true)
       if (u) {
         window.history.replaceState({ view: 'biblioteca' }, '')
         setView('biblioteca')
-        // Leer últimos libros abiertos (nuevo key, fallback al key anterior)
-        const savedNew = localStorage.getItem(`inm_last_books_${u.id}`)
-        const savedOld = localStorage.getItem(`inm_last_book_${u.id}`)
-        if (savedNew) {
-          try { setLastOpenedBookIds(JSON.parse(savedNew)) } catch { /* ignore */ }
-        } else if (savedOld) {
-          setLastOpenedBookIds([savedOld])
-        }
+        loadLastBooks(u)
       }
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -93,8 +100,8 @@ export default function App() {
         setLastOpenedBookIds([])
       }
     })
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => { mounted = false; subscription.unsubscribe() }
+  }, [loadLastBooks])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -128,7 +135,7 @@ export default function App() {
 
   if (!authReady) return Fallback
   if (view === 'reset-password') return <ResetPassword onDone={() => { window.history.replaceState({ view: 'biblioteca' }, ''); setView('biblioteca') }} />
-  if (!user) return <Auth onAuthSuccess={(u) => { setUser(u); window.history.replaceState({ view: 'biblioteca' }, ''); setView('biblioteca') }}/>
+  if (!user) return <Auth onAuthSuccess={(u) => { setUser(u); loadLastBooks(u); window.history.replaceState({ view: 'biblioteca' }, ''); setView('biblioteca') }}/>
 
   return (
     <>
@@ -185,7 +192,7 @@ export default function App() {
         />
       )}
     </Suspense>
-    {!isMobile && <TourResume />}
+    <TourResume />
     </>
   )
 }

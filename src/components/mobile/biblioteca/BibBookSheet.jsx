@@ -7,8 +7,10 @@
 // removida tras montar → robusto aunque se pausen las animaciones.
 // =============================================================
 import React from 'react'
-import { supabase } from '../../../lib/supabase.js'
 import { INK, ACCENT, inmTint, BookCover } from './bibmHelpers.jsx'
+import { useResena } from '../../../hooks/useResena.js'
+import { getTourPhase } from '../../guidedTour.js'
+import { runGuidedModalMobile } from '../../tutorial.mobile.js'
 
 function Estrellas({ valor, onChange }) {
   const [hover, setHover] = React.useState(0)
@@ -33,27 +35,8 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
   const [moving, setMoving] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
 
-  // reseña (idéntico al modal real)
-  const [miResena, setMiResena] = React.useState(null)
-  const [form, setForm] = React.useState({ rating: 0, texto: '' })
-  const [modoForm, setModoForm] = React.useState(false)
-  const [enviando, setEnviando] = React.useState(false)
-
-  React.useEffect(() => {
-    if (!book.leido || esManual || !user) return
-    supabase.from('resenas_libros').select('rating, texto').eq('user_id', user.id).eq('libro_id', book.id).maybeSingle()
-      .then(({ data }) => { setMiResena(data || null); if (data) setForm({ rating: data.rating, texto: data.texto || '' }) })
-  }, [book.id, book.leido, esManual, user])
-
-  async function submitResena() {
-    if (!form.rating || (form.texto?.length ?? 0) > 1000) return
-    setEnviando(true)
-    await supabase.from('resenas_libros').upsert(
-      { user_id: user.id, libro_id: book.id, rating: form.rating, texto: form.texto || null, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id,libro_id' })
-    setMiResena({ rating: form.rating, texto: form.texto })
-    setModoForm(false); setEnviando(false)
-  }
+  // reseña (lógica compartida con BibBookModal, ver src/hooks/useResena.js)
+  const { miResena, form, setForm, modoForm, setModoForm, enviando, submitResena } = useResena(book, user, esManual)
 
   async function assign(catId) {
     if (esManual) return
@@ -121,7 +104,7 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
       )}
 
       <div className="bibm-actions">
-        <button className="bibm-btn" onClick={() => onOpenBook(book)}>
+        <button id="tutorial-m-abrir-libro" className="bibm-btn" onClick={() => onOpenBook(book)}>
           <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.4"><path d="M12 6.04A8.97 8.97 0 006 3.75c-1.05 0-2.06.18-3 .51v14.25A9 9 0 016 18c2.3 0 4.4.87 6 2.29m0-14.25A8.97 8.97 0 0118 3.75c1.05 0 2.06.18 3 .51v14.25A9 9 0 0018 18a8.97 8.97 0 00-6 2.29m0-14.25v14.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
           {hasProgress ? 'Continuar' : 'Abrir libro'}
         </button>
@@ -171,6 +154,13 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
 export default function BibBookSheet({ book, user, categories, onClose, onOpenBook, onGoForo, onGoNotebook, onAssignCategory, transparentBackdrop = false }) {
   const [entering, setEntering] = React.useState(true)
   React.useEffect(() => { const t = setTimeout(() => setEntering(false), 20); return () => clearTimeout(t) }, [])
+  // Tour: resalta "Abrir libro" al abrir la ficha durante la fase wait_modal
+  React.useEffect(() => {
+    if (getTourPhase() === 'wait_modal') {
+      const t = setTimeout(() => runGuidedModalMobile(), 500)
+      return () => clearTimeout(t)
+    }
+  }, [])
   React.useEffect(() => {
     const h = (e) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', h)

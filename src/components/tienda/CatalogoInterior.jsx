@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import clsx from 'clsx'
 import { CAT_COLOR, itint, ilum } from './tiendaHelpers.jsx'
 import PanelLibro from './PanelLibro.jsx'
@@ -72,7 +72,7 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
   const [q,      setQ]      = useState('')
   const [sel,    setSel]    = useState(null)
 
-  const cats  = ['Todos', ...new Set(catalogo.flatMap(b => b.categorias || []))]
+  const cats  = useMemo(() => ['Todos', ...new Set(catalogo.flatMap(b => b.categorias || []))], [catalogo])
   const query = q.trim().toLowerCase()
 
   const handleQChange = (value) => {
@@ -83,13 +83,13 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
     if (e.key === 'Enter') setQ(qInput)
     if (e.key === 'Escape') { setQInput(''); setQ('') }
   }
-  const list  = catalogo.filter(b => {
+  const list  = useMemo(() => catalogo.filter(b => {
     const okCat = cat === 'Todos' || (b.categorias || []).includes(cat)
     const okQ = !query ||
       (b.titulo || '').toLowerCase().includes(query) ||
       (b.autor  || '').toLowerCase().includes(query)
     return okCat && okQ
-  })
+  }), [catalogo, cat, query])
   const reset = () => { setCat('Todos'); setQ(''); setQInput('') }
 
   return (

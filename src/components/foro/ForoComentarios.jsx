@@ -75,10 +75,20 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
     setComentarios(prev => reset ? rootList : [...prev, ...rootList])
     setRepliesByParent(prev => reset ? newRepliesByParent : { ...prev, ...newRepliesByParent })
     setHasMore(rootList.length === PAGE_SIZE)
-    if (reset) onCountChange?.(rootList.length)
 
     if (reset) setLoading(false)
     else setLoadingMore(false)
+  }, [foro.id])
+
+  // Conteo real de comentarios raíz (para el badge de la pestaña), independiente
+  // del tag activo y de la paginación.
+  const refreshCount = useCallback(async () => {
+    const { count } = await supabase
+      .from('foros_comentarios')
+      .select('id', { count: 'exact', head: true })
+      .eq('foro_id', foro.id)
+      .is('parent_id', null)
+    onCountChange?.(count || 0)
   }, [foro.id, onCountChange])
 
   // Re-fetch desde cero cuando cambia el foro o el tag activo
@@ -86,6 +96,8 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
     setOffset(0)
     fetchPage(0, activeTag, true)
   }, [foro.id, activeTag, fetchPage])
+
+  useEffect(() => { refreshCount() }, [refreshCount])
 
   function loadMore() {
     const next = offset + PAGE_SIZE
@@ -125,6 +137,7 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
     setSubmitting(false)
     setOffset(0)
     fetchPage(0, activeTag, true)
+    refreshCount()
   }
 
   async function submitReply(parentId) {
@@ -147,6 +160,7 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
     if (isRoot) {
       setComentarios(prev => prev.filter(c => c.id !== id))
       setRepliesByParent(prev => { const next = { ...prev }; delete next[id]; return next })
+      refreshCount()
     } else {
       setRepliesByParent(prev => {
         const next = { ...prev }

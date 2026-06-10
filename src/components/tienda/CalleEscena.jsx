@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { BG, telonActual } from './tiendaHelpers.jsx'
 
 // =============================================================
@@ -53,20 +53,27 @@ export default function CalleEscena({ pendientes = 0, limite = 5, bloqueado = fa
     // la imagen no se estira; solo se recorta algo de cielo/calle en los bordes.
     function fit() { setScale(Math.max(window.innerWidth / IMG_W, window.innerHeight / IMG_H)) }
     fit()
-    window.addEventListener('resize', fit)
-    return () => window.removeEventListener('resize', fit)
+    let raf = 0
+    const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(fit) }
+    window.addEventListener('resize', onResize)
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize) }
   }, [])
+
+  // timers de las transiciones; se limpian al desmontar para no llamar
+  // setState/onEntrar sobre un componente ya desmontado.
+  const timersRef = useRef([])
+  useEffect(() => () => { timersRef.current.forEach(clearTimeout) }, [])
 
   const enter = useCallback(() => {
     if (opening || zooming) return
     setOpening(true)
-    setTimeout(() => setZooming(true), 260)
-    setTimeout(() => { if (bloqueado) setClosed(true); else onEntrar?.() }, 980)
+    timersRef.current.push(setTimeout(() => setZooming(true), 260))
+    timersRef.current.push(setTimeout(() => { if (bloqueado) setClosed(true); else onEntrar?.() }, 980))
   }, [opening, zooming, bloqueado, onEntrar])
 
   const back = useCallback(() => {
     setClosed(false)
-    setTimeout(() => { setZooming(false); setOpening(false) }, 440)
+    timersRef.current.push(setTimeout(() => { setZooming(false); setOpening(false) }, 440))
   }, [])
 
   const overlayUp = zooming || closed

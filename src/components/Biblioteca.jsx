@@ -1,7 +1,7 @@
 import React from 'react'
-import { supabase } from '../lib/supabase.js'
-import { MANUAL_LIBRO_ID } from '../lib/constants.js'
 import useLocalStorage from '../hooks/useLocalStorage.js'
+import { useBiblioteca } from '../hooks/useBiblioteca.js'
+import { SIN_CATEGORIA_ID, COLOR_DEFAULT } from './biblioteca/constants.js'
 import '../styles/biblioteca.css'
 import { runGuidedBib1, runGuidedBib2 } from './tutorial.js'
 import { getTourPhase, setTourPhase, shouldStart } from './guidedTour.js'
@@ -14,30 +14,23 @@ import { INK } from './biblioteca/clay/helpers.jsx'
 
 // =============================================================
 // ACUARELA · VistaBiblioteca (orquestador).
-// Réplica del componente real: MISMAS props, queries Supabase,
-// CRUD de categorías, notas localStorage y modales. Cambia solo
-// la capa visual: Wall(cajones) → FlatShelves, TopBar → InmHeader,
-// + saludo + Swimlane + repisa de portadas + chips de filtro.
-// En el preview, BookOpenTransition es passthrough (en src/ se
-// mantiene el real).
+// MISMAS props del componente real. La lógica de datos (perfil,
+// categorías + CRUD, libros, asignar categoría, memos books/featured)
+// vive en src/hooks/useBiblioteca.js, compartida con BibliotecaMobile.
+// Aquí solo queda el chrome desktop + sus derivados de UI
+// (búsqueda, groups, portadas, tutorial).
 // =============================================================
 
-const COLOR_DEFAULT = '#7a4a28';
-const COLOR_BOOK_FALLBACK2 = '#5a3d28';
-const SIN_CATEGORIA_ID = '__sin_categoria';
-
-const MANUAL_USUARIO = {
-  id: 'manual', libro_id: MANUAL_LIBRO_ID, categoria_id: null,
-  title: 'Manual del Explorador', author: 'Biblioteca Virtual',
-  pages: 8, _baseColor: '#5a7a4a', cover: null, progress: null,
-  summary: 'Tu guía de bienvenida a Inmersia. Descubre cómo leer, anotar, investigar y conectar con otros lectores.',
-};
-
 function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoTienda, onGoPerfil, onGoForo, onGoNotebook }) {
-  const [rawBooks, setRawBooks] = React.useState([MANUAL_USUARIO]);
-  const [loadingBooks, setLoadingBooks] = React.useState(true);
-  const [perfil, setPerfil] = React.useState(null);
-  const [categories, setCategories] = React.useState([]);
+  // Lógica de datos compartida con BibliotecaMobile (ver src/hooks/useBiblioteca.js)
+  const {
+    loadingBooks, categories, books, featured, displayName, inicial,
+    createCategoria, updateCategoria,
+    deleteCategoria: deleteCategoriaBase,
+    assignCategoriaToBook: assignCategoriaToBookBase,
+  } = useBiblioteca(user, lastOpenedBookIds)
+
+  // Estado de UI/chrome (no compartido)
   const [notes, setNotes] = useLocalStorage('bv_notes', {});
   const [selectedBook, setSelectedBook] = React.useState(null);
   const [pendingBook, setPendingBook] = React.useState(null);
@@ -48,9 +41,13 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
   const [search, setSearch] = React.useState('');
   const [activeCategory, setCategory] = React.useState(null); // null | 'none' | uuid
 
-  // Tutorial — guided tour o standalone
+  // Tutorial — guided tour o standalone. Arranca una sola vez (cuando termina
+  // la primera carga); no se relanza si loadingBooks vuelve a true→false por
+  // recargas posteriores (p. ej. al reasignar categorías).
+  const tourStartedRef = React.useRef(false)
   React.useEffect(() => {
-    if (loadingBooks) return
+    if (loadingBooks || tourStartedRef.current) return
+    tourStartedRef.current = true
     const phase = getTourPhase()
     let t
     if (phase === 'bib_1' || shouldStart()) {
@@ -62,77 +59,15 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
     return () => clearTimeout(t)
   }, [loadingBooks])
 
-  // Perfil (nombre)
-  React.useEffect(() => {
-    let activo = true;
-    (async () => {
-      const { data } = await supabase.from('perfiles').select('nombre, apellido').eq('id', user.id).maybeSingle();
-      if (activo && data) setPerfil(data);
-    })();
-    return () => { activo = false; };
-  }, [user.id]);
-
-  // Categorías
-  const fetchCategories = React.useCallback(async () => {
-    const { data } = await supabase.from('categorias_usuario')
-      .select('id, nombre, color, orden').eq('user_id', user.id)
-      .order('orden', { ascending: true }).order('nombre', { ascending: true });
-    setCategories(data || []);
-  }, [user.id]);
-  React.useEffect(() => { fetchCategories(); }, [fetchCategories]);
-
-  // Libros
-  const fetchUserBooks = React.useCallback(async () => {
-    setLoadingBooks(true);
-    const { data } = await supabase.from('bibliotecas_usuarios')
-      .select('leido, categoria_id, libros(id, titulo, autor, paginas, descripcion, color, portada_url, metadata)')
-      .eq('user_id', user.id);
-    const mapped = (data || []).map(r => ({
-      id: r.libros.id,
-      libro_id: r.libros.id,
-      categoria_id: r.categoria_id,
-      title: r.libros.titulo,
-      author: r.libros.autor || 'Desconocido',
-      pages: r.libros.paginas || 200,
-      _baseColor: r.libros.color || COLOR_BOOK_FALLBACK2,
-      summary: r.libros.descripcion || '',
-      leido: r.leido,
-      cover: r.libros.portada_url || null,        // null → portada generada
-      // TODO progreso de lectura: cuando agregues la columna `progreso`
-      // (numeric 0..1) a bibliotecas_usuarios, súmala al .select() de arriba
-      // y cambia esta línea por:  progress: typeof r.progreso === 'number' ? r.progreso : null,
-      progress: null,
-    }));
-    setRawBooks([MANUAL_USUARIO, ...mapped]);
-    setLoadingBooks(false);
-  }, [user.id]);
-  React.useEffect(() => { fetchUserBooks(); }, [fetchUserBooks]);
-
-  // ── CRUD categorías (idéntico al real) ──
-  async function createCategoria(nombre, color) {
-    const { error } = await supabase.from('categorias_usuario').insert({ user_id: user.id, nombre, color });
-    if (error) return error.message.includes('duplicate') ? `Ya tenés una categoría llamada "${nombre}".` : error.message;
-    await fetchCategories();
-    return null;
-  }
-  async function updateCategoria(id, fields) {
-    const { error } = await supabase.from('categorias_usuario').update(fields).eq('id', id);
-    if (error) return error.message;
-    await fetchCategories();
-    return null;
-  }
+  // ── Wrappers que sincronizan estado de UI tras las primitivas del hook ──
   async function deleteCategoria(id) {
-    const { error } = await supabase.from('categorias_usuario').delete().eq('id', id);
-    if (error) return error.message;
-    await Promise.all([fetchCategories(), fetchUserBooks()]);
-    if (activeCategory === id) setCategory(null);
-    return null;
+    const err = await deleteCategoriaBase(id);
+    if (!err && activeCategory === id) setCategory(null);
+    return err;
   }
   async function assignCategoriaToBook(catalogoLibroId, categoria_id) {
     if (catalogoLibroId === 'manual') return;
-    await supabase.from('bibliotecas_usuarios').update({ categoria_id })
-      .eq('user_id', user.id).eq('libro_id', catalogoLibroId);
-    await fetchUserBooks();
+    await assignCategoriaToBookBase(catalogoLibroId, categoria_id);
     setSelectedBook(prev => prev && prev.id === catalogoLibroId ? { ...prev, categoria_id } : prev);
   }
 
@@ -146,16 +81,7 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
     if (e.key === 'Escape') { setSearchInput(''); setSearch(''); }
   }, [searchInput]);
 
-  // ── Resolución + filtrado ──
-  const categoriasMap = React.useMemo(() => {
-    const m = {}; categories.forEach(c => { m[c.id] = c; }); return m;
-  }, [categories]);
-
-  const books = React.useMemo(() => rawBooks.map(b => {
-    const cat = b.categoria_id ? categoriasMap[b.categoria_id] : null;
-    return { ...b, color: cat?.color || b._baseColor || COLOR_BOOK_FALLBACK2, categoryName: cat?.nombre || '' };
-  }), [rawBooks, categoriasMap]);
-
+  // ── Filtrado + agrupado (derivados de UI) ──
   const searchedBooks = React.useMemo(() => books.filter(b => {
     const q = search.toLowerCase();
     if (q && !b.title.toLowerCase().includes(q) && !b.author.toLowerCase().includes(q)) return false;
@@ -177,15 +103,7 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
 
   const shelvesCount = Math.max(1, Math.ceil(groups.length / 3));
 
-  // Destacado del hero + sección "Últimos abiertos"
-  const featured = React.useMemo(() => {
-    const nonManual = books.filter(b => b.id !== 'manual')
-    if (lastOpenedBookIds?.length) {
-      const last = nonManual.find(b => b.id === lastOpenedBookIds[0])
-      if (last) return last
-    }
-    return nonManual[0] || null
-  }, [books, lastOpenedBookIds]);
+  // Repisa "Últimos abiertos" (máx 3)
   const portadas = React.useMemo(() => {
     const nonManual = books.filter(b => b.id !== 'manual')
     if (lastOpenedBookIds?.length) {
@@ -195,10 +113,7 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
     return nonManual.slice(0, 3)
   }, [books, lastOpenedBookIds]);
 
-  const displayName = perfil?.nombre ? `${perfil.nombre} ${perfil.apellido || ''}`.trim() : (user?.email?.split('@')[0] || 'Lector');
-  const inicial = displayName.charAt(0).toUpperCase();
-
-  const openBook = (book, rect) => { setPendingBook(book); setPendingRect(rect); };
+  const openBook = React.useCallback((book, rect) => { setPendingBook(book); setPendingRect(rect); }, []);
 
   const handleGoTienda = () => {
     if (getTourPhase() === 'wait_tienda') setTourPhase('tienda_calle')

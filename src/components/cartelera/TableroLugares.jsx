@@ -40,6 +40,13 @@ function buildField(W, H) {
   return f
 }
 
+// El campo de ruido y el "manto" usan seeds fijos → el resultado es idéntico
+// en cada render. Se cachean a nivel de módulo para no recalcular ~600k px en
+// cada montaje (incluidas las miniaturas del corcho de Notas).
+let _fieldCache = null, _coatCache = null
+function getField(W, H) { if (!_fieldCache) _fieldCache = buildField(W, H); return _fieldCache }
+function getCoat(W, H) { if (!_coatCache) _coatCache = buildCoat(W, H); return _coatCache }
+
 function buildCoat(W, H) {
   const r = rng(77713)
   const px = new Uint8ClampedArray(W * H * 4)
@@ -93,8 +100,8 @@ function Reveal({ percent }) {
 
   useEffect(() => {
     const cnv = cvs.current; cnv.width = BOARD_W; cnv.height = BOARD_H
-    fieldRef.current = buildField(BOARD_W, BOARD_H)
-    coatRef.current = buildCoat(BOARD_W, BOARD_H)
+    fieldRef.current = getField(BOARD_W, BOARD_H)
+    coatRef.current = getCoat(BOARD_W, BOARD_H)
     ready.current = true
     paint(percent)
   }, [])

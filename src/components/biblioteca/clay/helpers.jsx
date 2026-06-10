@@ -1,29 +1,13 @@
 import React from 'react'
+import { INK, inmTint, hashOf, lum, STORYBOOK, spineColor } from '../coverHelpers.shared.js'
 
 // =============================================================
 // ACUARELA · helpers + portada generada (face-out).
-// Sin dependencias de datos mock: consume el `book` ya mapeado
-// por el orquestador { id, title, author, pages, color, cover, ... }.
-// Exporta: window.inmTint, hashOf, lum, STORYBOOK, spineW, spineH,
-//          spineColor, BookCover
+// Las funciones puras (inmTint, hashOf, lum, STORYBOOK, spineColor,
+// INK) viven en ../coverHelpers.shared.js y se re-exportan aquí.
+// Este archivo conserva los tamaños de lomo y el BookCover propios
+// del desktop. Consume el `book` ya mapeado por el orquestador.
 // =============================================================
-
-const INK = '#4a3622';
-
-// mezcla un hex con blanco (amt>0) o negro (amt<0)
-function inmTint(hex, amt) {
-  const n = parseInt(hex.slice(1), 16);
-  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-  const t = amt < 0 ? 0 : 255, p = Math.abs(amt);
-  const mix = (c) => Math.round((t - c) * p + c);
-  return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
-}
-function hashOf(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
-function lum(hex) { const n = parseInt(hex.slice(1), 16); const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) / 255; }
-
-// Paleta "libro de cuento": variada y suave (clave del look acuarela)
-const STORYBOOK = ['#e7dcc2', '#a7c4d2', '#86ad9e', '#d98b5f', '#d56a52', '#e0b256', '#7d8db5', '#cf8ea4', '#b9cf94', '#cf9a86', '#e9cf9b', '#9cb0c8', '#c98b6b', '#8fb6ad'];
-const spineColor = (b) => STORYBOOK[hashOf(b.id) % STORYBOOK.length];
 
 // tamaños de lomo (variación según páginas + hash → look ilustrado)
 const spineW = (b) => Math.max(30, Math.min(60, Math.round((b.pages / 800) * 24 + 32) + (hashOf(b.id) % 7) - 3));

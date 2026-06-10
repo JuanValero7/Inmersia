@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase.js'
 import LibroReel from './tienda/LibroReel.jsx'
 import CalleEscena from './tienda/CalleEscena.jsx'
@@ -39,7 +39,13 @@ export default function VistaTienda({ onGoBack, user }) {
 
   const COLS_BASE = 'id, titulo, autor, paginas, descripcion, color, portada_url, anio, categorias, moods'
 
+  // Invalida peticiones en vuelo: si llega una más nueva (o se desmonta), las
+  // anteriores se descartan y no pisan el estado ni hacen setState fuera de tiempo.
+  const reqIdRef = useRef(0)
+  useEffect(() => () => { reqIdRef.current++ }, [])
+
   const fetchPage = useCallback(async (offset, reset) => {
+    const myId = ++reqIdRef.current
     if (reset) setLoading(true)
     else setLoadingMore(true)
 
@@ -54,6 +60,7 @@ export default function VistaTienda({ onGoBack, user }) {
       catRes = await supabase.from('libros').select(COLS_BASE)
         .range(offset, offset + PAGE_SIZE - 1)
     }
+    if (myId !== reqIdRef.current) return
 
     const libros = catRes.data || []
     const nuevosIds = (reset && tieneFecha)
@@ -67,6 +74,7 @@ export default function VistaTienda({ onGoBack, user }) {
     if (reset) {
       const { data: ub } = await supabase
         .from('bibliotecas_usuarios').select('libro_id, leido').eq('user_id', user.id)
+      if (myId !== reqIdRef.current) return
       setUserLibros(ub || [])
       setLoading(false)
     } else {
@@ -101,7 +109,8 @@ export default function VistaTienda({ onGoBack, user }) {
   }, [subView])
 
   async function comprar(libro) {
-    await supabase.from('bibliotecas_usuarios').insert({ user_id: user.id, libro_id: libro.id, leido: false })
+    const { error } = await supabase.from('bibliotecas_usuarios').insert({ user_id: user.id, libro_id: libro.id, leido: false })
+    if (error) { console.error('No se pudo adquirir el libro:', error.message); return }
     setUserLibros(prev => [...prev, { libro_id: libro.id, leido: false }])
   }
 

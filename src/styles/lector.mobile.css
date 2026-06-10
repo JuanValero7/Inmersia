@@ -306,6 +306,36 @@
 .lm-font-card .nm { font-size: 12px; font-weight: 700; color: var(--muted); }
 .lm-font-card.active .nm { color: var(--accent); }
 
+/* ── Toggle de tema (Claro / Noche) ── */
+.lm-theme-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 6px; }
+.lm-theme-card {
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 13px; cursor: pointer; border-radius: 13px;
+  border: 2px solid var(--ink); background: var(--cream); font-family: inherit;
+  box-shadow: 1.4px 1.8px 0 rgba(74,54,34,0.13);
+}
+.lm-theme-card.active { border-color: var(--accent); background: rgba(207,123,76,0.12); box-shadow: 1.4px 1.8px 0 rgba(207,123,76,0.3); }
+.lm-theme-card .sw { width: 24px; height: 24px; border-radius: 7px; border: 1.5px solid var(--ink); display: flex; align-items: center; justify-content: center; font-family: 'Crimson Text', serif; font-size: 14px; flex-shrink: 0; }
+.lm-theme-card.light .sw { background: #f7efde; color: #3a2a18; }
+.lm-theme-card.dark .sw  { background: #1d1813; color: #e9ddc7; }
+.lm-theme-card .nm { font-size: 12px; font-weight: 700; color: var(--muted); }
+.lm-theme-card.active .nm { color: var(--accent); }
+
+/* ══ Modo nocturno (solo hoja + fondo del lector) ══ */
+.lm-screen.night {
+  --paper: #1a150f;
+  --page-ink: #e9ddc7;
+  --page-meta: rgba(220,200,160,0.45);
+  background-image:
+    radial-gradient(58% 36% at 12% 4%, rgba(120,90,50,0.18), transparent 60%),
+    radial-gradient(62% 44% at 94% 100%, rgba(0,0,0,0.35), transparent 62%);
+}
+.lm-screen.night .lm-page {
+  background: radial-gradient(ellipse at 22% 8%, #262019 0%, #1d1813 55%, #15110d 100%);
+}
+.lm-screen.night .lm-turn.right .corner { border-color: transparent transparent #2a231b transparent; }
+.lm-screen.night .lm-turn.left .corner  { border-color: transparent #2a231b transparent transparent; }
+
 /* ── Audio sheet ── */
 .lm-audio-body { padding: 8px 22px 18px; }
 .lm-audio-track { font-family: 'Special Elite', monospace; font-size: 13px; color: var(--ink); text-align: center; margin-bottom: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

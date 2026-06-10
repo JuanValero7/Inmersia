@@ -1,8 +1,8 @@
 import React from 'react'
-import { supabase } from '../../lib/supabase.js'
 import { inmTint } from './clay/helpers.jsx'
 import { getTourPhase } from '../guidedTour.js'
 import { runGuidedModal } from '../tutorial.js'
+import { useResena } from '../../hooks/useResena.js'
 
 // =============================================================
 // ACUARELA · BibBookModal — MISMAS conexiones que el real
@@ -34,27 +34,8 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
   const [saving, setSaving] = React.useState(false);
   const esManual = book.id === 'manual';
 
-  const [miResena, setMiResena] = React.useState(null);
-  const [form, setForm] = React.useState({ rating: 0, texto: '' });
-  const [modoForm, setModoForm] = React.useState(false);
-  const [enviando, setEnviando] = React.useState(false);
-
-  React.useEffect(() => {
-    if (!book.leido || esManual || !user) return;
-    supabase.from('resenas_libros').select('rating, texto').eq('user_id', user.id).eq('libro_id', book.id).maybeSingle()
-      .then(({ data }) => { setMiResena(data || null); if (data) setForm({ rating: data.rating, texto: data.texto || '' }); });
-  }, [book.id, book.leido, esManual, user]);
-
-  async function submitResena() {
-    if (!form.rating) return;
-    if ((form.texto?.length ?? 0) > 1000) return;
-    setEnviando(true);
-    await supabase.from('resenas_libros').upsert(
-      { user_id: user.id, libro_id: book.id, rating: form.rating, texto: form.texto || null, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id,libro_id' });
-    setMiResena({ rating: form.rating, texto: form.texto });
-    setModoForm(false); setEnviando(false);
-  }
+  // Reseña (lógica compartida con BibBookSheet, ver src/hooks/useResena.js)
+  const { miResena, form, setForm, modoForm, setModoForm, enviando, submitResena } = useResena(book, user, esManual);
 
   React.useEffect(() => {
     if (getTourPhase() === 'wait_modal') {

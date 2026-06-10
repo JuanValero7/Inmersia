@@ -30,6 +30,7 @@ function Spine({ book, onOpen }) {
   const round = `${8 + (hh % 4)}px ${7 + (hh % 5)}px 1px 1px`
   return (
     <div className="bibm-bk" title={`${book.title} — ${book.author}`}
+      id={book.id === 'manual' ? 'tutorial-m-manual' : undefined}
       onClick={onOpen ? (e) => onOpen(book, e.currentTarget.getBoundingClientRect()) : undefined}
       style={{ position: 'relative', flexShrink: 0, width: w, height: h, background: bg,
         border: `2px solid ${INK}`, borderRadius: round, boxShadow: `1.5px 2px 0 ${INK}22`,

@@ -1,22 +1,24 @@
 // Plain JavaScript (.jsx)
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import clsx from 'clsx'
-import { supabase } from '../lib/supabase.js'
-import { fetchNombre } from './foro/foroUtils.jsx'
 import ForoComentarios from './foro/ForoComentarios.jsx'
 import ForoChat from './foro/ForoChat.jsx'
 import '../styles/foro.css'
 import { runGuidedForo1 } from './tutorial.js'
 import { getTourPhase, setTourPhase } from './guidedTour.js'
+import { useForoData } from '../hooks/useForoData.js'
 
 export default function VistaForo({ book, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera }) {
-  const [activeTab,        setActiveTab]        = useState('comentarios')
-  const [foro,             setForo]             = useState(null)
-  const [miNombre,         setMiNombre]         = useState('Lector')
-  const [loading,          setLoading]          = useState(true)
-  const [comentariosCount, setComentariosCount] = useState(0)
-  const [hasSesion,        setHasSesion]        = useState(false)
-  const [navOpen,          setNavOpen]          = useState(false)
+  // Lógica de datos compartida con ForoMobile (ver src/hooks/useForoData.js)
+  const {
+    foro, miNombre, loading,
+    comentariosCount, setComentariosCount,
+    hasSesion, setHasSesion,
+  } = useForoData(book, user)
+
+  // Estado de UI/chrome (no compartido)
+  const [activeTab, setActiveTab] = useState('comentarios')
+  const [navOpen,   setNavOpen]   = useState(false)
 
   useEffect(() => {
     if (!navOpen) return
@@ -24,16 +26,6 @@ export default function VistaForo({ book, user, onGoBack, onGoLectura, onGoBibli
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [navOpen])
-
-  useEffect(() => {
-    if (!book?.libro_id) { setLoading(false); return }
-    supabase.from('foros').select('id').eq('libro_id', book.libro_id).maybeSingle()
-      .then(({ data }) => { setForo(data || null); setLoading(false) })
-  }, [book?.libro_id])
-
-  useEffect(() => {
-    fetchNombre(user.id).then(setMiNombre)
-  }, [user.id])
 
   useEffect(() => {
     if (loading) return

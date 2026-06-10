@@ -19,19 +19,22 @@ export default function ForoChat({ foro, book, user, miNombre, onSesionChange })
 
   // ─── Sesión activa al montar ────────────────────────────
   useEffect(() => {
+    // limit(1) en vez de maybeSingle: si por datos huérfanos hubiera más de
+    // una sesión, maybeSingle lanzaba error y la sesión quedaba invisible.
     supabase.from('chat_sesiones')
       .select('id, usuario_a, usuario_b')
       .or(`usuario_a.eq.${user.id},usuario_b.eq.${user.id}`)
-      .maybeSingle()
-      .then(async ({ data }) => {
-        if (!data) return
-        const partnerId = data.usuario_a === user.id ? data.usuario_b : data.usuario_a
+      .limit(1)
+      .then(async ({ data, error }) => {
+        const sesion = data?.[0]
+        if (error || !sesion) return
+        const partnerId = sesion.usuario_a === user.id ? sesion.usuario_b : sesion.usuario_a
         const nombre = await fetchNombre(partnerId)
-        setSesionActiva(data)
+        setSesionActiva(sesion)
         setChatPartner({ user_id: partnerId, nombre })
         onSesionChange?.(true)
-        await loadMessages(data.id)
-        subscribeToChat(data.id)
+        await loadMessages(sesion.id)
+        subscribeToChat(sesion.id)
       })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id])

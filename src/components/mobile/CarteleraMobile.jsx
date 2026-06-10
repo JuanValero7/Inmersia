@@ -21,6 +21,11 @@ import TableroHechos from '../cartelera/TableroHechos.jsx'
 import TableroDatos from '../cartelera/TableroDatos.jsx'
 import TableroNotas from '../cartelera/TableroNotas.jsx'
 import CarteleraMobileFicha, { CarteleraMobileLista } from './CarteleraMobileFicha.jsx'
+import { getTourPhase, setTourPhase } from '../guidedTour.js'
+import {
+  runGuidedCartPortada1Mobile, runGuidedCartPortada2Mobile,
+  runGuidedCartPersonajesMobile, runGuidedCartNotasMobile,
+} from '../tutorial.mobile.js'
 import '../../styles/cartelera.css'
 import './cartelera.mobile.css'
 
@@ -103,7 +108,7 @@ function CatDock({ currentKey, onJump }) {
   const others = ORDER.filter(k => k !== currentKey).map(seccionMeta)
   return (
     <div className="cm-cat-dock">
-      <button type="button" className="cm-cat-btn" onClick={() => setOpen(o => !o)} aria-label="Otras categorías">
+      <button type="button" id="tutorial-m-catdock" className="cm-cat-btn" onClick={() => setOpen(o => !o)} aria-label="Otras categorías">
         <img className="cm-cat-img" src="/assets/cartelera/cat-sit.png" alt="Gato" />
       </button>
       {open && (
@@ -153,7 +158,7 @@ function Portada({ book, onOpen }) {
   return (
     <div className="pv-intro-stack" style={{ display: 'contents' }}>
       <div className="pv-intro"><span className="k">Cartelera · {book?.title || ''}</span></div>
-      <div className="pv-stack">
+      <div id="tutorial-m-paneles" className="pv-stack">
         {SECCIONES.map((sec, i) => {
           const light = shade(sec.color, 0.16), dark = shade(sec.color, -0.20)
           const blot1 = shade(sec.color, 0.10), blot2 = shade(sec.color, -0.12)
@@ -216,7 +221,7 @@ function SectionView({ sectionKey, data, onPortada, onJump, onExplore }) {
         {isNotas
           ? <span className="cm-sec-tag">Cartelera de investigación</span>
           : (
-            <div className="cm-seg">
+            <div id="tutorial-m-lista" className="cm-seg">
               <button type="button" className={clsx(tab === 'mural' && 'active')} onClick={() => setTab('mural')}><MuralIcon /> Mural</button>
               <button type="button" className={clsx(tab !== 'mural' && 'active')} onClick={openLista}><ListIcon /> Lista</button>
             </div>
@@ -251,12 +256,33 @@ export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBi
   const [view, setView] = useState({ kind: 'portada', key: null })
   const [explore, setExplore] = useState(false)
 
-  // Adelanta fases del tour igual que el desktop (sin los popovers, que
-  // están anclados al layout de escritorio). Ver nota en el README.
-  const openSection = (k) => setView({ kind: 'board', key: k })
-  const goPortada = () => setView({ kind: 'portada', key: null })
+  // Tour mobile — avanza las mismas fases que el desktop según la acción.
+  const openSection = (k) => {
+    if (k === 'personajes' && getTourPhase() === 'wait_personajes') setTourPhase('cart_personajes')
+    if (k === 'notas' && getTourPhase() === 'wait_notas') setTourPhase('cart_notas')
+    setView({ kind: 'board', key: k })
+  }
+  const goPortada = () => {
+    if (getTourPhase() === 'wait_portada_2') setTourPhase('cart_portada_2')
+    setView({ kind: 'portada', key: null })
+  }
 
-  const exploreProps = { onClose: () => setExplore(false), onGoBack, onGoForo, onGoBiblioteca }
+  // Lanza el popover correcto al entrar a cada vista del tour.
+  useEffect(() => {
+    const phase = getTourPhase()
+    let t
+    if (view.kind === 'portada') {
+      if (phase === 'cart_portada_1') t = setTimeout(() => runGuidedCartPortada1Mobile(), 700)
+      else if (phase === 'cart_portada_2') t = setTimeout(() => runGuidedCartPortada2Mobile(), 700)
+    } else if (view.kind === 'board') {
+      if (view.key === 'personajes' && phase === 'cart_personajes') t = setTimeout(() => runGuidedCartPersonajesMobile(), 700)
+      else if (view.key === 'notas' && phase === 'cart_notas') t = setTimeout(() => runGuidedCartNotasMobile(), 700)
+    }
+    return () => clearTimeout(t)
+  }, [view])
+
+  const goForoTour = () => { if (getTourPhase() === 'wait_foro') setTourPhase('foro_1'); onGoForo() }
+  const exploreProps = { onClose: () => setExplore(false), onGoBack, onGoForo: goForoTour, onGoBiblioteca }
   const dataWithBook = { ...data, book }
 
   return (

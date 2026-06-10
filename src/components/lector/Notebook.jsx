@@ -35,7 +35,7 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
       const t = setTimeout(() => runGuidedNotebook1(), 600)
       return () => clearTimeout(t)
     }
-  }, [isOpen, libroId, capituloNum])
+  }, [isOpen, libroId, capituloNum, userId])
 
   async function loadIndex() {
     const [predList, anotList, subRes] = await Promise.all([

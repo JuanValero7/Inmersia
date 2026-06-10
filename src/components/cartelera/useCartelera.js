@@ -19,7 +19,6 @@ export function useCartelera(libroId, userId) {
   const [porcentaje, setPorcentaje] = useState(0)
   const [itemsBySeccion, setItems]  = useState(VACIO)
   const [principal, setPrincipal]   = useState({})
-  const [predicciones, setPred]     = useState([])
 
   useEffect(() => {
     let cancelled = false
@@ -29,7 +28,7 @@ export function useCartelera(libroId, userId) {
 
       if (!libroId || !userId) {
         if (!cancelled) {
-          setCap(0); setPorcentaje(0); setItems(VACIO); setPrincipal({}); setPred([])
+          setCap(0); setPorcentaje(0); setItems(VACIO); setPrincipal({})
           setLoading(false)
         }
         return
@@ -45,8 +44,8 @@ export function useCartelera(libroId, userId) {
 
       const pct = Math.max(0, Math.min(100, prog?.porcentaje ?? 0))
 
-      // 2) En paralelo: items + imágenes + predicciones + total capítulos
-      const [carteleraRes, principalRes, predRes, chapsRes] = await Promise.all([
+      // 2) En paralelo: items + imágenes + total capítulos
+      const [carteleraRes, principalRes, chapsRes] = await Promise.all([
         supabase.from('cartelera_items')
           .select('id, seccion, nombre, descripcion, capitulo_numero, metadata, imagen:biblioteca_media!imagen_media_id(url, slug, titulo)')
           .eq('libro_id', libroId)
@@ -54,11 +53,6 @@ export function useCartelera(libroId, userId) {
         supabase.from('cartelera_principal')
           .select('seccion, imagen:biblioteca_media!imagen_media_id(url, titulo)')
           .eq('libro_id', libroId),
-        supabase.from('predicciones_usuario')
-          .select('id, capitulo_num, contenido, updated_at')
-          .eq('user_id', userId)
-          .eq('libro_id', libroId)
-          .order('capitulo_num', { ascending: true }),
         supabase.from('capitulos')
           .select('id', { count: 'exact', head: true })
           .eq('libro_id', libroId),
@@ -83,16 +77,11 @@ export function useCartelera(libroId, userId) {
         if (row.imagen?.url) imgs[row.seccion] = row.imagen
       }
 
-      const filteredPreds = capActual > 0
-        ? (predRes.data || []).filter(p => p.capitulo_num < capActual)
-        : []
-
       if (!cancelled) {
         setCap(capActual)
         setPorcentaje(pct)
         setItems(agrupado)
         setPrincipal(imgs)
-        setPred(filteredPreds)
         setLoading(false)
       }
     }
@@ -101,5 +90,5 @@ export function useCartelera(libroId, userId) {
     return () => { cancelled = true }
   }, [libroId, userId])
 
-  return { loading, capituloActual, porcentaje, itemsBySeccion, principal, predicciones }
+  return { loading, capituloActual, porcentaje, itemsBySeccion, principal }
 }

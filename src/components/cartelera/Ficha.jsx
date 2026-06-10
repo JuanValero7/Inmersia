@@ -31,8 +31,11 @@ export default function Ficha({ section, items = [], onBackTablero, onBackPortad
       const sh = (window.innerHeight - 188) / 760
       setScale(Math.max(0.32, Math.min(sw, sh, 1)))
     }
-    fit(); window.addEventListener('resize', fit)
-    return () => window.removeEventListener('resize', fit)
+    fit()
+    let raf = 0
+    const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(fit) }
+    window.addEventListener('resize', onResize)
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize) }
   }, [])
 
   const filtered = useMemo(() => {
