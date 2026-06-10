@@ -23,8 +23,8 @@
 }
 
 /* ── Tabs full-width ── */
-.foro-m .foro-m-tabs { display: flex; width: auto; margin: 14px 12px 0; }
-.foro-m .foro-m-tabs .foro-tab { flex: 1; padding: 10px 0; }
+.foro-m .foro-m-tabs { display: flex; align-self: stretch; margin: 14px 12px 0; }
+.foro-m .foro-m-tabs .foro-tab { flex: 1; padding: 11px 24px; }
 
 /* ── Barra de tags y contenido: sin el max-width de escritorio ── */
 .foro-m .foro-tags-bar { padding: 14px 12px 4px; max-width: none; }

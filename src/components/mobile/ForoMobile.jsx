@@ -19,8 +19,6 @@ import ForoComentarios from '../foro/ForoComentarios.jsx'   // ← reutilizado
 import ForoChat from '../foro/ForoChat.jsx'                  // ← reutilizado
 import '../../styles/foro.css'        // base (clases que usan las sub-vistas)
 import './foro.mobile.css'            // overrides responsive del chrome
-import { runGuidedForo1 } from '../tutorial.js'
-import { getTourPhase, setTourPhase } from '../guidedTour.js'
 
 export default function ForoMobile({ book, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera }) {
   // — MISMA lógica de datos que Foro.jsx (no cambia nada) —
@@ -39,12 +37,6 @@ export default function ForoMobile({ book, user, onGoBack, onGoLectura, onGoBibl
   }, [book?.libro_id])
 
   useEffect(() => { fetchNombre(user.id).then(setMiNombre) }, [user.id])
-
-  useEffect(() => {
-    if (loading) return
-    const t = setTimeout(() => { if (getTourPhase() === 'foro_1') runGuidedForo1() }, 700)
-    return () => clearTimeout(t)
-  }, [loading])
 
   const goNav = (fn) => { setNavOpen(false); fn && fn() }
 

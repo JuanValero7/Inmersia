@@ -21,7 +21,6 @@ import TableroHechos from '../cartelera/TableroHechos.jsx'
 import TableroDatos from '../cartelera/TableroDatos.jsx'
 import TableroNotas from '../cartelera/TableroNotas.jsx'
 import CarteleraMobileFicha, { CarteleraMobileLista } from './CarteleraMobileFicha.jsx'
-import { getTourPhase, setTourPhase } from '../guidedTour.js'
 import '../../styles/cartelera.css'
 import './cartelera.mobile.css'
 
@@ -126,7 +125,7 @@ function ExploreSheet({ onClose, onGoBack, onGoForo, onGoBiblioteca }) {
   const opts = [
     onGoBack && { key: 'lectura', label: 'Lectura', fn: onGoBack },
     onGoBiblioteca && { key: 'biblioteca', label: 'Biblioteca', fn: onGoBiblioteca },
-    onGoForo && { key: 'foro', label: 'Foro', fn: () => { if (getTourPhase() === 'wait_foro') setTourPhase('foro_1'); onGoForo() } },
+    onGoForo && { key: 'foro', label: 'Foro', fn: onGoForo },
   ].filter(Boolean)
   return (
     <div className="cm-backdrop" onClick={onClose}>
@@ -254,15 +253,8 @@ export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBi
 
   // Adelanta fases del tour igual que el desktop (sin los popovers, que
   // están anclados al layout de escritorio). Ver nota en el README.
-  const openSection = (k) => {
-    if (k === 'personajes' && getTourPhase() === 'wait_personajes') setTourPhase('cart_personajes')
-    if (k === 'notas' && getTourPhase() === 'wait_notas') setTourPhase('cart_notas')
-    setView({ kind: 'board', key: k })
-  }
-  const goPortada = () => {
-    if (getTourPhase() === 'wait_portada_2') setTourPhase('cart_portada_2')
-    setView({ kind: 'portada', key: null })
-  }
+  const openSection = (k) => setView({ kind: 'board', key: k })
+  const goPortada = () => setView({ kind: 'portada', key: null })
 
   const exploreProps = { onClose: () => setExplore(false), onGoBack, onGoForo, onGoBiblioteca }
   const dataWithBook = { ...data, book }

@@ -185,7 +185,7 @@ export default function App() {
         />
       )}
     </Suspense>
-    <TourResume />
+    {!isMobile && <TourResume />}
     </>
   )
 }
