@@ -563,11 +563,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   }
   function setVol(v) { setAmbientVol(v); if (audioRef.current) audioRef.current.volume = v }
 
-  // SFX puntual (botón ♪ en párrafo)
-  const playSfx = useCallback((list) => {
-    const m = list[0]; if (!m?.url) return
-    const a = new Audio(m.url); a.volume = 0.85; a.play().catch(() => {})
-  }, [])
 
   // ── Imágenes visibles en la página actual (y anteriores del capítulo) ──
   const visibleImages = useMemo(() => {
