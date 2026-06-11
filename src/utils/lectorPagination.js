@@ -57,13 +57,15 @@ export function paginarParrafos(parrafos, isDouble = true, opts = {}) {
     const pH = parrafoH(p, charsPerLine, lineH, GAP, measured, origLens)
 
     // ── Entra en la página actual ──
-    if (cur.length === 0 || curH + pH <= mH()) {
+    if (curH + pH <= mH()) {
       cur.push(p)
       curH += pH
       continue
     }
 
     // ── No entra: intentar dividir el párrafo ──
+    // Nota: esto cubre también el caso cur.length === 0, donde un párrafo
+    // más largo que la página completa debe dividirse en lugar de desbordarse.
     const free       = mH() - curH
     const linesAvail = Math.floor(free / lineH)
     const text       = p.contenido || ''
@@ -101,11 +103,19 @@ export function paginarParrafos(parrafos, isDouble = true, opts = {}) {
       }
     }
 
-    // ── Sin split posible: párrafo a la página siguiente ──
-    pages.push(cur)
-    pageNum++
-    cur  = [p]
-    curH = pH
+    // ── Sin split posible ──
+    if (cur.length === 0) {
+      // Párrafo mayor que la página completa y no divisible: agregar igualmente
+      // para evitar loop infinito (caso extremadamente raro con párrafos muy cortos).
+      cur.push(p)
+      curH += pH
+    } else {
+      // Mover a la página siguiente
+      pages.push(cur)
+      pageNum++
+      cur  = [p]
+      curH = pH
+    }
   }
 
   if (cur.length > 0) pages.push(cur)
