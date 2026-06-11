@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { theme, tint, getReaderPalette } from './clay.jsx'
+import '../../styles/lector.css'
 
 // ── Fuentes de lectura disponibles ──────────────────────────
 // El `css` de cada opción debe coincidir EXACTO con el valor que guarda
