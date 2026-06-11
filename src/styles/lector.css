@@ -44,6 +44,22 @@ input.inm-vol::-moz-range-thumb {
 
 ::selection { background: rgba(207,123,76,0.35); }
 
+/* SFX: brillo de párrafo o frase con sonido asociado */
+@keyframes sfx-pulse {
+  0%, 100% { background-color: rgba(207,123,76,0); }
+  50%       { background-color: rgba(207,123,76,0.15); }
+}
+.sfx-glow {
+  border-radius: 3px;
+  cursor: pointer;
+  animation: sfx-pulse 2.4s ease-in-out infinite;
+}
+.sfx-glow:hover {
+  animation: none;
+  background-color: rgba(207,123,76,0.28);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .inm-glow { animation: none; }
+  .sfx-glow { animation: none; background-color: rgba(207,123,76,0.12); }
 }
