@@ -25,7 +25,7 @@ import { supabase } from '../../lib/supabase.js'
 import useLocalStorage from '../../hooks/useLocalStorage.js'
 import { useLectorData } from '../../hooks/useLectorData.js'
 import { paginarParrafos } from '../../utils/lectorPagination.js'
-import { READING_FONTS } from '../lector/BookReader.jsx'   // ← mismas fuentes que el escritorio
+import { READING_FONTS } from '../lector/readerConstants.js'
 import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTILIZADO (igual al de PC)
 import { INK, ACCENT } from '../lector/clay.jsx'
 import { getTourPhase, setTourPhase } from '../guidedTour.js'
@@ -33,6 +33,16 @@ import { runGuidedLector1Mobile, runGuidedLector2Mobile } from '../tutorial.mobi
 import '../../styles/lector.mobile.css'
 
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
+
+// Divide texto en frases conservando la puntuación y espacios intermedios.
+function splitSentences(text) {
+  const re = /[^.!?…]*[.!?…]+\s*/g
+  const parts = []
+  let m, last = 0
+  while ((m = re.exec(text)) !== null) { parts.push(m[0]); last = m.index + m[0].length }
+  if (last < text.length) parts.push(text.slice(last))
+  return parts.length ? parts : [text]
+}
 
 // Factor de ancho medio de carácter por fuente (estima caracteres/línea).
 const FONT_WIDTH = {
@@ -119,20 +129,25 @@ function BookPage({ chapter, chapterIndex, parrafos, mediaByParrafo, isFirst, pa
   const innerRef = useRef(null)
 
   function handleSel() {
-    if (!onSelectText) return
-    const sel = window.getSelection()
-    if (!sel || sel.isCollapsed || !sel.toString().trim()) { onSelectText(null); return }
-    const text = sel.toString().trim()
-    const anchorEl = sel.anchorNode?.parentElement?.closest('[data-parrafo-id]')
-    const parrafoId = anchorEl?.dataset?.parrafoId || null
-    const rect = sel.getRangeAt(0).getBoundingClientRect()
-    onSelectText({ text, parrafoId, rect })
+    // Delay de 50ms: deja que el navegador finalice la selección antes de leerla,
+    // especialmente necesario en touch donde la selección no está 100% lista al touchend.
+    setTimeout(() => {
+      if (!onSelectText) return
+      const sel = window.getSelection()
+      if (!sel || sel.isCollapsed || !sel.toString().trim()) return
+      if (!innerRef.current?.contains(sel.anchorNode)) return
+      const text = sel.toString().trim()
+      const anchorEl = sel.anchorNode?.parentElement?.closest('[data-parrafo-id]')
+      const parrafoId = anchorEl?.dataset?.parrafoId || null
+      const rect = sel.getRangeAt(0).getBoundingClientRect()
+      onSelectText({ text, parrafoId, rect })
+    }, 50)
   }
 
   return (
     <div className="lm-page" data-screen-label={`Lector cap ${chapter?.numero ?? chapterIndex + 1}`}>
       <div className="lm-page-lines" style={{ backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent ${lineH-1}px, rgba(150,110,60,0.05) ${lineH-1}px, rgba(150,110,60,0.05) ${lineH}px)` }} />
-      <div className="lm-page-inner" data-lm-pagebox ref={innerRef} style={{ fontSize, lineHeight: LINE }} onMouseUp={handleSel} onTouchEnd={handleSel}>
+      <div className="lm-page-inner" data-lm-pagebox ref={innerRef} translate="no" style={{ fontSize, lineHeight: LINE }} onMouseUp={handleSel} onTouchEnd={handleSel} onContextMenu={(e) => e.preventDefault()}>
         {isFirst && (
           <div className="lm-chap-head">
             <div className="lm-chap-kicker" style={{ fontSize: fontSize*0.6 }}>Capítulo {chapter?.numero ?? chapterIndex + 1}</div>
@@ -144,13 +159,27 @@ function BookPage({ chapter, chapterIndex, parrafos, mediaByParrafo, isFirst, pa
         {parrafos.map((p, i) => {
           if (p.tipo === 'separador') return <div key={p.id ?? `s${i}`} className="lm-sep">❧</div>
           const sfx = (mediaByParrafo[p.id] || []).filter(m => m.origen === 'explicito' && m.tipo === 'audio')
+          const sfxTextoRef = sfx.length ? (sfx.find(s => s.metadata?.texto_ref)?.metadata?.texto_ref ?? null) : null
+          let sentences = null, sfxSentenceIdx = -1
+          if (sfxTextoRef) {
+            sentences = splitSentences(p.contenido)
+            sfxSentenceIdx = sentences.findIndex(s => s.toLowerCase().includes(sfxTextoRef.toLowerCase()))
+          }
+          const paraGlow = sfx.length > 0 && sfxSentenceIdx === -1
+          const handleSfxClick = sfx.length ? (e) => { e.stopPropagation(); onPlaySfx(sfx) } : undefined
           return (
-            <p key={p.id ?? `p${i}`} data-parrafo-id={p.id} className={'lm-para' + (p.tipo==='dialogo'?' dlg':'')} style={{ fontFamily: font }}>
-              {sfx.length > 0 && (
-                <button type="button" className="sfx" title={sfx.map(s => s.titulo || s.slug).join(', ')}
-                  onClick={(e) => { e.stopPropagation(); onPlaySfx(sfx) }}>♪</button>
-              )}
-              {p.contenido}
+            <p key={p.id ?? `p${i}`} data-parrafo-id={p.id}
+              onClick={paraGlow ? handleSfxClick : undefined}
+              className={'lm-para' + (p.tipo==='dialogo'?' dlg':'') + (paraGlow ? ' sfx-glow' : '')}
+              style={{ fontFamily: font }}>
+              {sfx.length > 0 && sfxSentenceIdx !== -1
+                ? sentences.map((s, si) =>
+                    si === sfxSentenceIdx
+                      ? <span key={si} className="sfx-glow" onClick={handleSfxClick}>{s}</span>
+                      : <span key={si}>{s}</span>
+                  )
+                : p.contenido
+              }
             </p>
           )
         })}
@@ -534,6 +563,12 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   }
   function setVol(v) { setAmbientVol(v); if (audioRef.current) audioRef.current.volume = v }
 
+  // SFX puntual (botón ♪ en párrafo)
+  const playSfx = useCallback((list) => {
+    const m = list[0]; if (!m?.url) return
+    const a = new Audio(m.url); a.volume = 0.85; a.play().catch(() => {})
+  }, [])
+
   // ── Imágenes visibles en la página actual (y anteriores del capítulo) ──
   const visibleImages = useMemo(() => {
     if (!currentChapData) return []
@@ -611,7 +646,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const selPos = useMemo(() => {
     if (!pendingSelection?.rect) return null
     const r = pendingSelection.rect
-    return { left: r.left + r.width / 2, top: r.top - 6 }
+    return { left: Math.max(80, Math.min(r.left + r.width / 2, window.innerWidth - 80)), top: r.bottom + 8 }
   }, [pendingSelection])
 
   const CAT_ITEMS = [

@@ -141,12 +141,17 @@
 .lm-chap-rule { width: 56px; height: 3px; border-radius: 2px; background: var(--accent); margin-top: 12px; }
 .lm-para { color: var(--page-ink); line-height: 1.72; margin: 0 0 0.85em; text-align: justify; hyphens: auto; text-indent: 1.2em; white-space: pre-line; }
 .lm-para.dlg { font-style: italic; text-indent: 0; }
-.lm-para .sfx {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; margin-right: 5px; vertical-align: -3px;
-  border-radius: 50%; border: 1.5px solid var(--accent); background: rgba(207,123,76,0.14);
-  color: var(--accent); font-size: 9px; cursor: pointer; padding: 0;
+/* SFX: brillo de párrafo o frase con sonido asociado */
+@keyframes sfx-pulse {
+  0%, 100% { background-color: rgba(207,123,76,0); }
+  50%       { background-color: rgba(207,123,76,0.15); }
 }
+.sfx-glow {
+  border-radius: 3px;
+  cursor: pointer;
+  animation: sfx-pulse 2.4s ease-in-out infinite;
+}
+.sfx-glow:hover { animation: none; background-color: rgba(207,123,76,0.28); }
 .lm-sep { text-align: center; color: var(--page-meta); line-height: 1.4; margin: 14px 0; letter-spacing: 0.4em; }
 .lm-pagenum {
   position: absolute; bottom: 16px; right: 30px;
@@ -211,9 +216,9 @@
 .lm-cat-tool .tile { width: 48px; height: 44px; display: flex; align-items: center; justify-content: center; }
 .lm-cat-tool .lbl { font-size: 11px; font-weight: 700; color: var(--ink); }
 
-/* popup de subrayado */
+/* popup de subrayado — aparece DEBAJO de la selección para no chocar con la barra nativa de Chrome Android */
 .lm-sel-pop {
-  position: fixed; z-index: 1300; transform: translate(-50%, -100%);
+  position: fixed; z-index: 1300; transform: translate(-50%, 0);
   background: var(--cream); border: 2px solid var(--ink); border-radius: 12px;
   padding: 6px 8px 6px 12px; display: flex; gap: 9px; align-items: center;
   box-shadow: 2px 3px 0 rgba(74,54,34,0.3), 0 10px 24px rgba(0,0,0,0.28); white-space: nowrap;
@@ -225,8 +230,8 @@
   text-shadow: 0 1px 1px rgba(0,0,0,0.2);
 }
 .lm-sel-pop::after {
-  content: ''; position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%);
-  width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 7px solid var(--ink);
+  content: ''; position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 7px solid var(--ink);
 }
 
 @keyframes lm-tray { from { opacity: 0; transform: translateX(-14px) scaleX(0.7); } to { opacity: 1; transform: translateX(0) scaleX(1); } }
@@ -415,4 +420,5 @@ input.lm-range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%
 @media (prefers-reduced-motion: reduce) {
   .lm-reel.spin { animation: none; }
   .lm-sheet, .lm-cat-tray, .lm-backdrop, .lm-img-overlay { animation: none; }
+  .sfx-glow { animation: none; background-color: rgba(207,123,76,0.12); }
 }

@@ -2,16 +2,18 @@
 import { useState, useEffect, useRef, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { theme, tint, getReaderPalette } from './clay.jsx'
+import { READING_FONTS } from './readerConstants.js'
+import '../../styles/lector.css'
 
-// ── Fuentes de lectura disponibles ──────────────────────────
-// El `css` de cada opción debe coincidir EXACTO con el valor que guarda
-// el Lector (incl. comillas) para que se marque la opción activa.
-export const READING_FONTS = [
-  { label: 'Clásica', css: "'Crimson Text', Georgia, serif" },
-  { label: 'Moderna', css: "'Lora', Georgia, serif" },
-  { label: 'Cómoda',  css: "'Merriweather', Georgia, serif" },
-  { label: 'Redonda', css: "'Baloo 2', system-ui, sans-serif" },
-]
+// Divide texto en frases conservando la puntuación y espacios intermedios.
+function splitSentences(text) {
+  const re = /[^.!?…]*[.!?…]+\s*/g
+  const parts = []
+  let m, last = 0
+  while ((m = re.exec(text)) !== null) { parts.push(m[0]); last = m.index + m[0].length }
+  if (last < text.length) parts.push(text.slice(last))
+  return parts.length ? parts : [text]
+}
 
 // ── Contenido de una página (datos reales) ──────────────────
 const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, onPlaySfx, onTextSelect, fontSize, readingFont, isFirst, chapterTitle, chapterNum, pal = getReaderPalette('light') }) {
@@ -27,7 +29,7 @@ const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, onPlay
   }
 
   return (
-    <div onMouseUp={handleMouseUp} style={{ fontFamily: readingFont || "'Crimson Text', Georgia, serif", fontSize, lineHeight: 1.85, color: pal.pageInk }}>
+    <div onMouseUp={handleMouseUp} onContextMenu={(e) => e.preventDefault()} translate="no" style={{ fontFamily: readingFont || "'Crimson Text', Georgia, serif", fontSize, lineHeight: 1.85, color: pal.pageInk }}>
       {isFirst && (
         <div style={{ marginBottom: 22 }}>
           <div style={{ fontFamily: "'Special Elite', monospace", fontSize: fontSize * 0.6, letterSpacing: '0.18em', textTransform: 'uppercase', color: pal.pageMeta }}>Capítulo {chapterNum}</div>
@@ -37,18 +39,30 @@ const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, onPlay
       )}
       {parrafos.map((p, pIdx) => {
         const sfx = (mediaByParrafo[p.id] || []).filter(m => m.origen === 'explicito' && m.tipo === 'audio')
-        const tieneSfx = sfx.length > 0
         if (p.tipo === 'separador')
           return <div key={p.id ?? `sep-${pIdx}`} style={{ textAlign: 'center', color: pal.pageMeta, margin: '20px 0', letterSpacing: '0.4em' }}>❧</div>
         const isDlg = p.tipo === 'dialogo'
+        const sfxTextoRef = sfx.length ? (sfx.find(s => s.metadata?.texto_ref)?.metadata?.texto_ref ?? null) : null
+        let sentences = null, sfxSentenceIdx = -1
+        if (sfxTextoRef) {
+          sentences = splitSentences(p.contenido)
+          sfxSentenceIdx = sentences.findIndex(s => s.toLowerCase().includes(sfxTextoRef.toLowerCase()))
+        }
+        const paraGlow = sfx.length > 0 && sfxSentenceIdx === -1
+        const handleSfxClick = sfx.length ? (e) => { e.stopPropagation(); onPlaySfx(sfx) } : undefined
         return (
           <p key={p.id ?? `p-${pIdx}`} data-parrafo-id={p.id}
-            style={{ whiteSpace: 'pre-line', margin: '0 0 0.7em', textAlign: 'justify', hyphens: 'auto', textIndent: isDlg ? 0 : '1.2em', fontStyle: isDlg ? 'italic' : 'normal', position: 'relative', paddingLeft: tieneSfx ? 26 : 0 }}>
-            {tieneSfx && (
-              <button type="button" title={sfx.map(s => s.titulo || s.slug).join(', ')} onClick={(e) => { e.stopPropagation(); onPlaySfx(sfx) }}
-                style={{ position: 'absolute', left: -2, top: 5, width: 20, height: 20, borderRadius: '50%', border: `1.5px solid ${theme.accent}`, background: 'rgba(207,123,76,0.14)', color: theme.accent, fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1 }}>♪</button>
-            )}
-            {p.contenido}
+            onClick={paraGlow ? handleSfxClick : undefined}
+            className={paraGlow ? 'sfx-glow' : undefined}
+            style={{ whiteSpace: 'pre-line', margin: '0 0 0.7em', textAlign: 'justify', hyphens: 'auto', textIndent: isDlg ? 0 : '1.2em', fontStyle: isDlg ? 'italic' : 'normal', color: pal.pageInk }}>
+            {sfx.length > 0 && sfxSentenceIdx !== -1
+              ? sentences.map((s, si) =>
+                  si === sfxSentenceIdx
+                    ? <span key={si} className="sfx-glow" onClick={handleSfxClick}>{s}</span>
+                    : <span key={si}>{s}</span>
+                )
+              : p.contenido
+            }
           </p>
         )
       })}
