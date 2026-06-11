@@ -141,12 +141,17 @@
 .lm-chap-rule { width: 56px; height: 3px; border-radius: 2px; background: var(--accent); margin-top: 12px; }
 .lm-para { color: var(--page-ink); line-height: 1.72; margin: 0 0 0.85em; text-align: justify; hyphens: auto; text-indent: 1.2em; white-space: pre-line; }
 .lm-para.dlg { font-style: italic; text-indent: 0; }
-.lm-para .sfx {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; margin-right: 5px; vertical-align: -3px;
-  border-radius: 50%; border: 1.5px solid var(--accent); background: rgba(207,123,76,0.14);
-  color: var(--accent); font-size: 9px; cursor: pointer; padding: 0;
+/* SFX: brillo de párrafo o frase con sonido asociado */
+@keyframes sfx-pulse {
+  0%, 100% { background-color: rgba(207,123,76,0); }
+  50%       { background-color: rgba(207,123,76,0.15); }
 }
+.sfx-glow {
+  border-radius: 3px;
+  cursor: pointer;
+  animation: sfx-pulse 2.4s ease-in-out infinite;
+}
+.sfx-glow:hover { animation: none; background-color: rgba(207,123,76,0.28); }
 .lm-sep { text-align: center; color: var(--page-meta); line-height: 1.4; margin: 14px 0; letter-spacing: 0.4em; }
 .lm-pagenum {
   position: absolute; bottom: 16px; right: 30px;
@@ -415,4 +420,5 @@ input.lm-range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%
 @media (prefers-reduced-motion: reduce) {
   .lm-reel.spin { animation: none; }
   .lm-sheet, .lm-cat-tray, .lm-backdrop, .lm-img-overlay { animation: none; }
+  .sfx-glow { animation: none; background-color: rgba(207,123,76,0.12); }
 }
