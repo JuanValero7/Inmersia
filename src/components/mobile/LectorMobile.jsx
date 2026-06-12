@@ -408,6 +408,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   // ── Estado de UI no compartido ──
   const [pendingSelection, setPendingSelection] = useState(null)  // { text, parrafoId, rect }
   const screenRef = useRef(null)
+  const pageAnchorRef = useRef(null)
 
   // ── Audio de ambiente (real, solo mobile) ──
   const audioRef = useRef(null)
@@ -481,10 +482,17 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   // hace no-op si los valores no cambian, así que esto solo recorta reflows.
   useLayoutEffect(() => { measureGeom() }, [measureGeom, loading, currentChapData])
   useEffect(() => {
-    let raf = 0
-    const on = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(measureGeom) }
+    let timer = null
+    let lastW = screenRef.current?.querySelector('[data-lm-pagebox]')?.clientWidth ?? window.innerWidth
+    const on = () => {
+      const box = screenRef.current?.querySelector('[data-lm-pagebox]')
+      const w = box ? box.clientWidth : window.innerWidth
+      if (w === lastW) return  // solo cambió el alto (URL bar móvil) → no repaginar
+      lastW = w
+      clearTimeout(timer); timer = setTimeout(measureGeom, 350)
+    }
     window.addEventListener('resize', on)
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', on) }
+    return () => { clearTimeout(timer); window.removeEventListener('resize', on) }
   }, [measureGeom])
 
   // ── Paginación (una sola página) ──
@@ -509,10 +517,21 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     setPendingRestore(null); restoredRef.current = true
   }, [pendingRestore, currentChapData, paginas])
 
-  // clamp si encoge
+  // preservar párrafo visible cuando la geometría cambia (e.g. URL bar móvil)
   useEffect(() => {
+    if (pendingRestore) return
+    if (pageAnchorRef.current) {
+      const newIdx = paginas.findIndex(pg => pg.some(p => p.id === pageAnchorRef.current))
+      if (newIdx >= 0) { if (newIdx !== pageIndex) setPageIndex(newIdx); return }
+    }
     if (pageIndex >= paginas.length) setPageIndex(Math.max(0, paginas.length - 1))
-  }, [paginas.length])
+  }, [paginas]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // mantener ancla actualizada tras cada navegación del usuario
+  useEffect(() => {
+    const p = paginas[pageIndex]?.[0]
+    if (p) pageAnchorRef.current = p.id
+  }, [pageIndex, paginas])
 
   // ── Guardar progreso (debounce) ──
   useEffect(() => {
