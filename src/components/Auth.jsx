@@ -85,10 +85,9 @@ export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
               onClick={onBack}
               style={{
                 position: 'absolute', top: 14, left: 16, zIndex: 2,
-                background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.35)',
-                color: '#fff', borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
-                fontFamily: "'Baloo 2', system-ui, sans-serif", fontWeight: 600, fontSize: 13,
-                backdropFilter: 'blur(6px)',
+                background: 'transparent', border: '1.5px solid rgba(74,54,34,0.35)',
+                color: '#9a6a4a', borderRadius: 8, padding: '5px 11px', cursor: 'pointer',
+                fontFamily: "'Baloo 2', system-ui, sans-serif", fontWeight: 700, fontSize: 13,
               }}
             >← Volver</button>
           )}
