@@ -70,7 +70,7 @@
   background:#f4efe1;--ink:#4a3622;--cream:#fffdf8;--accent:#cf7b4c;font-family:'Baloo 2',cursive;}
 .interior.show{opacity:1;pointer-events:auto;}
 .interior-bg{position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:#f4efe1 url('/assets/tienda/cat-books-bg.png') center 14% / min(1480px,168%) auto no-repeat;}
+  background:#f4efe1 url('/assets/tienda/cat-books-bg.webp') center 14% / min(1480px,168%) auto no-repeat;}
 .interior-bg::after{content:"";position:absolute;inset:0;background:rgba(246,241,229,0.55);}
 .interior-inner{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:80px 30px 80px;}
 .int-back{position:fixed;top:18px;left:18px;z-index:5;background:var(--cream);border:2px solid var(--ink);
@@ -181,7 +181,7 @@
   --ink:#4a3622;--cream:#fffdf8;--accent:#cf7b4c;font-family:'Baloo 2',cursive;}
 .bkp.show{transform:translateX(0);}
 .bkp::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.16;
-  background:url('/assets/tienda/cat-reading-bg.png') center 58% / min(560px,90%) auto no-repeat;}
+  background:url('/assets/tienda/cat-reading-bg.webp') center 58% / min(560px,90%) auto no-repeat;}
 .bkp-close{position:absolute;top:15px;right:15px;z-index:4;width:34px;height:34px;border-radius:999px;
   background:rgba(255,253,248,0.92);border:2px solid var(--ink);color:#7a5a3c;font-size:18px;line-height:1;
   font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;
