@@ -1,30 +1,33 @@
 // src/App.jsx
 // ─────────────────────────────────────────────────────────────
-// MODIFICADO para soportar versiones mobile por vista.
-// Cambios marcados con  // ⬅︎ MOBILE
-// Por ahora SOLO el Foro tiene variante mobile; las demás vistas
-// siguen idénticas. Cuando hagamos la mobile de otra vista, repetís
-// el patrón: importás su par lazy y agregás un  `const X = isMobile ? ...`
+// MODIFICADO: ahora muestra la LANDING pública antes del Auth.
+//   · Sin usuario y sin intención de entrar  → <Landing/> (o <LandingMobile/>)
+//   · El usuario pulsa "Iniciar sesión" / "Crear cuenta" / "Empezar a leer"
+//        → se abre <Auth/> en la pestaña correspondiente
+//   · "← Volver" en Auth regresa a la landing
+// El resto del archivo es idéntico al original.
+// Cambios marcados con  // ⬅︎ LANDING
 // ─────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { supabase } from './lib/supabase.js'
-import useIsMobile from './hooks/useIsMobile.js'   // ⬅︎ MOBILE
+import useIsMobile from './hooks/useIsMobile.js'
 import Auth from './components/Auth.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
 import TourResume from './components/TourResume.jsx'
 
 const VistaBiblioteca = lazy(() => import('./components/Biblioteca.jsx'))
-
 const VistaLectura    = lazy(() => import('./components/Lector.jsx'))
 const VistaTienda     = lazy(() => import('./components/Tienda.jsx'))
 const CartelaView     = lazy(() => import('./components/Cartelera.jsx'))
 const VistaPerfil     = lazy(() => import('./components/Perfil.jsx'))
 const VistaForo       = lazy(() => import('./components/Foro.jsx'))
-const VistaForoMobile = lazy(() => import('./components/mobile/ForoMobile.jsx'))  // ⬅︎ MOBILE
-const VistaPerfilMobile = lazy(() => import('./components/mobile/PerfilMobile.jsx'))  // ⬅︎ MOBILE
-const VistaBibliotecaMobile = lazy(() => import('./components/mobile/BibliotecaMobile.jsx'))  // ⬅︎ MOBILE
-const CarteleraMobile = lazy(() => import('./components/mobile/CarteleraMobile.jsx'))  // ⬅︎ MOBILE
-const VistaLecturaMobile = lazy(() => import('./components/mobile/LectorMobile.jsx'))  // ⬅︎ MOBILE
+const VistaForoMobile = lazy(() => import('./components/mobile/ForoMobile.jsx'))
+const VistaPerfilMobile = lazy(() => import('./components/mobile/PerfilMobile.jsx'))
+const VistaBibliotecaMobile = lazy(() => import('./components/mobile/BibliotecaMobile.jsx'))
+const CarteleraMobile = lazy(() => import('./components/mobile/CarteleraMobile.jsx'))
+const VistaLecturaMobile = lazy(() => import('./components/mobile/LectorMobile.jsx'))
+const Landing         = lazy(() => import('./components/Landing.jsx'))            // ⬅︎ LANDING
+const LandingMobile   = lazy(() => import('./components/mobile/LandingMobile.jsx')) // ⬅︎ LANDING
 
 const Fallback = (
   <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,background:'var(--bg-warm)'}}>
@@ -41,13 +44,16 @@ export default function App() {
   const [lastOpenedBookIds,   setLastOpenedBookIds]   = useState([])
   const [foroSource,          setForoSource]          = useState('biblioteca')
   const [lectorStartNotebook, setLectorStartNotebook] = useState(false)
+  const [showAuth,            setShowAuth]            = useState(false)      // ⬅︎ LANDING
+  const [authTab,             setAuthTab]             = useState('login')    // ⬅︎ LANDING
 
-  const isMobile = useIsMobile()                       // ⬅︎ MOBILE
-  const Foro = isMobile ? VistaForoMobile : VistaForo  // ⬅︎ MOBILE
-  const Perfil = isMobile ? VistaPerfilMobile : VistaPerfil   // ⬅︎ MOBILE
-  const Biblioteca = isMobile ? VistaBibliotecaMobile : VistaBiblioteca   // ⬅︎ MOBILE
-  const Cartelera = isMobile ? CarteleraMobile : CartelaView   // ⬅︎ MOBILE
-  const Lectura = isMobile ? VistaLecturaMobile : VistaLectura   // ⬅︎ MOBILE
+  const isMobile = useIsMobile()
+  const Foro = isMobile ? VistaForoMobile : VistaForo
+  const Perfil = isMobile ? VistaPerfilMobile : VistaPerfil
+  const Biblioteca = isMobile ? VistaBibliotecaMobile : VistaBiblioteca
+  const Cartelera = isMobile ? CarteleraMobile : CartelaView
+  const Lectura = isMobile ? VistaLecturaMobile : VistaLectura
+  const LandingView = isMobile ? LandingMobile : Landing   // ⬅︎ LANDING
 
   // ── Browser history ──────────────────────────────────────────
   const navigate = useCallback((newView) => {
@@ -98,6 +104,7 @@ export default function App() {
         window.history.replaceState({ view: 'auth' }, '')
         setView('auth')
         setLastOpenedBookIds([])
+        setShowAuth(false)   // ⬅︎ LANDING — al cerrar sesión volvemos a la landing
       }
     })
     return () => { mounted = false; subscription.unsubscribe() }
@@ -109,6 +116,7 @@ export default function App() {
     setLastOpenedBookIds([])
     window.history.replaceState({ view: 'auth' }, '')
     setView('auth')
+    setShowAuth(false)   // ⬅︎ LANDING
   }
 
   // ── Helpers para actualizar historial de libros ───────────────
@@ -135,13 +143,30 @@ export default function App() {
 
   if (!authReady) return Fallback
   if (view === 'reset-password') return <ResetPassword onDone={() => { window.history.replaceState({ view: 'biblioteca' }, ''); setView('biblioteca') }} />
-  if (!user) return <Auth onAuthSuccess={(u) => { setUser(u); loadLastBooks(u); window.history.replaceState({ view: 'biblioteca' }, ''); setView('biblioteca') }}/>
+
+  // ── No hay usuario ────────────────────────────────────────────  // ⬅︎ LANDING
+  if (!user) {
+    if (showAuth) {
+      return (
+        <Auth
+          initialTab={authTab}
+          onBack={() => setShowAuth(false)}
+          onAuthSuccess={(u) => { setUser(u); loadLastBooks(u); window.history.replaceState({ view: 'biblioteca' }, ''); setView('biblioteca') }}
+        />
+      )
+    }
+    return (
+      <Suspense fallback={Fallback}>
+        <LandingView onAuth={(tab) => { setAuthTab(tab === 'registro' ? 'registro' : 'login'); setShowAuth(true) }} />
+      </Suspense>
+    )
+  }
 
   return (
     <>
     <Suspense fallback={Fallback}>
       {view === 'biblioteca' && (
-        <Biblioteca                          /* ⬅︎ MOBILE (antes: VistaBiblioteca) */
+        <Biblioteca
           user={user}
           lastOpenedBookIds={lastOpenedBookIds}
           onSignOut={handleSignOut}
@@ -172,7 +197,7 @@ export default function App() {
         />
       )}
       {view === 'foro' && (
-        <Foro                                /* ⬅︎ MOBILE (antes: VistaForo) */
+        <Foro
           book={currentBook}
           user={user}
           onGoBack={() => navigate(foroSource)}

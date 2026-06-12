@@ -8,8 +8,10 @@ import '../styles/auth.css'
 const LOGO  = '/assets/inmersia-logo.png'
 const FONDO = '/assets/fondo-acuarela.webp'
 
-export default function Auth({ onAuthSuccess }) {
-  const [tab,         setTab]         = useState('login')
+// ⬅︎ LANDING: `initialTab` permite abrir en 'login' o 'registro' desde la landing.
+//             `onBack` (opcional) muestra un enlace para volver a la landing.
+export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
+  const [tab,         setTab]         = useState(initialTab === 'registro' ? 'registro' : 'login')
   const [loading,     setLoading]     = useState(false)
   const [error,       setError]       = useState('')
   const [success,     setSuccess]     = useState('')
@@ -77,6 +79,19 @@ export default function Auth({ onAuthSuccess }) {
 
       <div className="login-card">
         <div className="login-header">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              style={{
+                position: 'absolute', top: 14, left: 16, zIndex: 2,
+                background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.35)',
+                color: '#fff', borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
+                fontFamily: "'Baloo 2', system-ui, sans-serif", fontWeight: 600, fontSize: 13,
+                backdropFilter: 'blur(6px)',
+              }}
+            >← Volver</button>
+          )}
           <img className="login-logo-mark" src={LOGO} alt="Inmersia" />
           <p className="login-sub">Carnet de Acceso a la Colección</p>
         </div>

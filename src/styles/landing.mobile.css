@@ -1,0 +1,44 @@
+/* src/styles/landing.mobile.css
+   ─────────────────────────────────────────────────────────────
+   Ajustes específicos de la landing en móvil. Scopeado bajo
+   .inm-mobile (lo añade LandingMobile.jsx vía la prop `mobile`).
+   La landing base ya es responsive; aquí solo afinamos densidad,
+   targets táctiles y el tamaño del portal en pantallas chicas.
+   ───────────────────────────────────────────────────────────── */
+
+.inm-mobile { font-size: 17px; }
+
+/* Hero apilado y centrado, portal más contenido */
+.inm-mobile .inm-hero { padding: 28px 0 36px; }
+.inm-mobile .inm-hero-grid { grid-template-columns: 1fr; text-align: center; gap: 26px; }
+.inm-mobile .inm-hero-art { order: -1; margin-bottom: 6px; }
+.inm-mobile .inm-hero-h { font-size: clamp(2rem, 8.5vw, 2.8rem); }
+.inm-mobile .inm-hero-h br.inm-dbr { display: none; }
+.inm-mobile .inm-hero-lede { margin-inline: auto; }
+.inm-mobile .inm-hero-cta { justify-content: center; }
+.inm-mobile .inm-portal-scene { max-width: min(360px, 82vw); }
+
+/* La nav móvil: solo logo + botón Crear cuenta (Iniciar sesión se oculta) */
+.inm-mobile .inm-nav-right { gap: 12px; }
+.inm-mobile .inm-nav-right .inm-lnk { display: none; }
+.inm-mobile .inm-nav .inm-clay-btn { font-size: 0.95rem; padding: 0.55em 1.1em; }
+
+/* Targets táctiles cómodos (≥ 44px) */
+.inm-mobile .inm-clay-btn { padding: 0.85em 1.5em; min-height: 48px; }
+.inm-mobile .inm-quiet { display: inline-flex; min-height: 44px; align-items: center; }
+
+/* Secciones más compactas */
+.inm-mobile .inm-band { padding: 52px 0; }
+.inm-mobile .inm-feature, .inm-mobile .inm-feature.flip { grid-template-columns: 1fr; gap: 22px; }
+.inm-mobile .inm-feature + .inm-feature { margin-top: 48px; }
+.inm-mobile .inm-feature .inm-ftxt { order: 0 !important; }
+.inm-mobile .inm-feature .inm-vis-wrap { order: -1; }
+.inm-mobile .inm-ftxt p { max-width: none; }
+.inm-mobile .inm-shot { max-width: 100%; }
+
+/* Manifiesto y cierre */
+.inm-mobile .inm-q { max-width: 18ch; }
+.inm-mobile .inm-closing-msg { max-width: 16ch; }
+
+/* Footer en columna */
+.inm-mobile .inm-foot-in { flex-direction: column; text-align: center; gap: 10px; }
