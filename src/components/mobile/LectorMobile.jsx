@@ -24,6 +24,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffe
 import { supabase } from '../../lib/supabase.js'
 import useLocalStorage from '../../hooks/useLocalStorage.js'
 import { useLectorData } from '../../hooks/useLectorData.js'
+import { useXrayItems } from '../../hooks/useXrayItems.js'
 import { paginarParrafos } from '../../utils/lectorPagination.js'
 import { READING_FONTS } from '../lector/readerConstants.js'
 import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTILIZADO (igual al de PC)
@@ -438,7 +439,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const [readingFont, setReadingFont] = useLocalStorage('inm_lector_font', READING_FONT_DEFAULT)
   const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
   const [autoImages,  setAutoImages]  = useLocalStorage('inm_auto_img', true)
-  const [xrayItems,   setXrayItems]   = useState([])
+  const xrayItems = useXrayItems(sheet === 'xray', book?.libro_id, currentChapter?.numero ?? chapterIndex + 1)
 
   // ── Estado de UI no compartido ──
   const [pendingSelection, setPendingSelection] = useState(null)  // { text, parrafoId, rect }
@@ -653,29 +654,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   useEffect(() => {
     if (autoImages && currentPageNewImages.length > 0) setImageOpen(true)
   }, [pageIndex, chapterIndex, autoImages])
-
-  // Cargar personajes X-ray al abrir ese sheet
-  useEffect(() => {
-    if (sheet !== 'xray' || !book?.libro_id) return
-    let active = true
-    supabase
-      .from('cartelera_items')
-      .select('id, nombre')
-      .eq('libro_id', book.libro_id)
-      .eq('capitulo_numero', currentChapter?.numero ?? chapterIndex + 1)
-      .eq('seccion', 'personajes')
-      .order('capitulo_numero', { ascending: true })
-      .then(({ data }) => {
-        if (!active) return
-        const seen = new Set()
-        const deduped = (data || []).filter(it => {
-          if (seen.has(it.nombre)) return false
-          seen.add(it.nombre); return true
-        }).sort((a, b) => a.nombre.localeCompare(b.nombre))
-        setXrayItems(deduped)
-      })
-    return () => { active = false }
-  }, [sheet, book?.libro_id, chapterIndex])
 
   // ── Navegación de páginas ──
   const total = paginas.length

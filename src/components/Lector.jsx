@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 import useLocalStorage from '../hooks/useLocalStorage.js'
 import { useLectorData } from '../hooks/useLectorData.js'
+import { useXrayItems } from '../hooks/useXrayItems.js'
 import '../styles/lector.css'
 
 import { paginarParrafos } from '../utils/lectorPagination.js'
@@ -75,7 +76,6 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const [pendingChapter, setPendingChapter] = useState(null)
   const [explorarOpen,   setExplorarOpen]   = useState(false)
   const [xrayOpen,       setXrayOpen]       = useState(false)
-  const [xrayItems,      setXrayItems]      = useState([])
 
   // Lógica de datos compartida con LectorMobile (ver src/hooks/useLectorData.js)
   const {
@@ -350,29 +350,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const handleToggleView    = useCallback(() => setDoubleView(v => !v), [])
   const handleChapterSelect = useCallback((idx) => { setChapterIndex(idx); setPageIndex(0); setXrayOpen(false) }, [])
 
-  // X-ray: cierra al cambiar de capítulo; carga personajes cuando está abierto
+  // X-ray: cierra al cambiar de capítulo; personajes cargados por useXrayItems
   useEffect(() => { setXrayOpen(false) }, [chapterIndex])
-  useEffect(() => {
-    if (!xrayOpen || !book?.libro_id || !currentChapter) return
-    let active = true
-    supabase
-      .from('cartelera_items')
-      .select('id, nombre')
-      .eq('libro_id', book.libro_id)
-      .eq('capitulo_numero', currentChapter.numero ?? chapterIndex + 1)
-      .eq('seccion', 'personajes')
-      .order('capitulo_numero', { ascending: true })
-      .then(({ data }) => {
-        if (!active) return
-        const seen = new Set()
-        const deduped = (data || []).filter(it => {
-          if (seen.has(it.nombre)) return false
-          seen.add(it.nombre); return true
-        }).sort((a, b) => a.nombre.localeCompare(b.nombre))
-        setXrayItems(deduped)
-      })
-    return () => { active = false }
-  }, [xrayOpen, book?.libro_id, currentChapter?.id])
+  const xrayItems = useXrayItems(xrayOpen, book?.libro_id, currentChapter?.numero ?? chapterIndex + 1)
   async function handleSubmitResena() {
     if (await submitResena()) setResenaOpen(false)
   }
