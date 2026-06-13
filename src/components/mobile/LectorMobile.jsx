@@ -439,7 +439,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const [readingFont, setReadingFont] = useLocalStorage('inm_lector_font', READING_FONT_DEFAULT)
   const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
   const [autoImages,  setAutoImages]  = useLocalStorage('inm_auto_img', true)
-  const xrayItems = useXrayItems(sheet === 'xray', book?.libro_id, currentChapter?.numero ?? chapterIndex + 1)
 
   // ── Estado de UI no compartido ──
   const [pendingSelection, setPendingSelection] = useState(null)  // { text, parrafoId, rect }
@@ -489,6 +488,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   }, [chapterIndex, capitulos])
 
   const currentChapter  = capitulos[chapterIndex] || null
+  const xrayItems = useXrayItems(sheet === 'xray', book?.libro_id, currentChapter?.numero ?? chapterIndex + 1)
   const currentChapData = currentChapter ? chapterCache[currentChapter.id] : null
   const currentMedia    = currentChapData?.mediaByParrafo || {}
   const currentAmbient  = currentChapData?.ambient || null
