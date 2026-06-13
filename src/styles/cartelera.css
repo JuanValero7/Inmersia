@@ -215,7 +215,11 @@
 .cart-root .pol-empty{ display:grid; place-items:center; width:210px; height:210px; font-size:64px; font-weight:800; color:#fff; background:var(--sec); }
 .cart-root .polaroid .pcap{ position:absolute; left:0; right:0; bottom:7px; text-align:center; font-size:14px; font-weight:700; color:#8a7355; }
 .cart-root .fic-rule{ height:16px; margin:22px 0 4px; color:var(--sec); opacity:.9; }
-.cart-root .fic-desc{ position:relative; z-index:2; font-size:calc(18px * var(--fscale)); font-weight:500; line-height:34px; color:#5a4632; max-width:60ch; text-wrap:pretty; }
+.cart-root .fic-desc{ position:relative; z-index:2; font-size:calc(18px * var(--fscale)); font-weight:500; line-height:34px; color:#5a4632; max-width:60ch; text-wrap:pretty; margin:0; }
+.cart-root .fic-timeline{ display:flex; flex-direction:column; gap:0; }
+.cart-root .fic-entrada{ padding:10px 0; border-bottom:1px solid rgba(120,96,60,.12); }
+.cart-root .fic-entrada:last-child{ border-bottom:none; }
+.cart-root .fic-cap-lbl{ display:inline-block; font-size:calc(11px * var(--fscale)); font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--sec); background:rgba(213,106,82,.12); border-radius:999px; padding:2px 10px; margin-bottom:4px; }
 .cart-root .empty-pane{ position:relative; z-index:2; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; color:#a8906b; padding:40px; }
 .cart-root .empty-pane .ek{ font-size:calc(22px * var(--fscale)); font-weight:800; color:#8a7355; }
 .cart-root .empty-pane p{ margin:0; font-size:15px; font-weight:600; max-width:38ch; line-height:1.4; }

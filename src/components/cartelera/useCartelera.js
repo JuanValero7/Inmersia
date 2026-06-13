@@ -65,11 +65,30 @@ export function useCartelera(libroId, userId) {
         ? Math.round(pct / 100 * totalChaps) + 1
         : 0
 
-      // Filtrar client-side: solo ítems/predicciones de capítulos ya leídos
+      // Filtrar y agrupar por nombre canónico para evitar duplicados
+      // Items llegan ordenados por capitulo_numero ASC desde Supabase
       const agrupado = { personajes: [], lugares: [], hechos: [], datos: [] }
+      const keys = {}  // `${seccion}:::${canonico}` → index en agrupado[seccion]
       for (const it of (carteleraRes.data || [])) {
-        if (capActual > 0 && it.capitulo_numero < capActual && agrupado[it.seccion])
-          agrupado[it.seccion].push(it)
+        if (!(capActual > 0 && it.capitulo_numero < capActual)) continue
+        if (!agrupado[it.seccion]) continue
+        const canonico = it.nombre
+        const key = `${it.seccion}:::${canonico}`
+        if (key in keys) {
+          const ex = agrupado[it.seccion][keys[key]]
+          ex.allIds.push(it.id)
+          ex.entradas.push({ capitulo_numero: it.capitulo_numero, descripcion: it.descripcion })
+          if (!ex.imagen?.url && it.imagen?.url) ex.imagen = it.imagen
+          if (it.metadata) ex.metadata = it.metadata
+        } else {
+          keys[key] = agrupado[it.seccion].length
+          agrupado[it.seccion].push({
+            ...it,
+            nombre: canonico,
+            allIds: [it.id],
+            entradas: [{ capitulo_numero: it.capitulo_numero, descripcion: it.descripcion }],
+          })
+        }
       }
 
       const imgs = {}

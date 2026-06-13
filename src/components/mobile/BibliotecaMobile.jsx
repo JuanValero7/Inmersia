@@ -10,7 +10,6 @@
 import React from 'react'
 import { useBiblioteca } from '../../hooks/useBiblioteca.js'
 import { SIN_CATEGORIA_ID, COLOR_DEFAULT } from '../biblioteca/constants.js'
-import BookOpenTransition from '../biblioteca/BookOpenTransition.jsx'
 import { INK, BookCover } from './biblioteca/bibmHelpers.jsx'
 import { MobileShelves, CoverCarousel } from './biblioteca/BibShelvesMobile.jsx'
 import BibBookSheet from './biblioteca/BibBookSheet.jsx'
@@ -36,8 +35,6 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
 
   // Estado de UI/chrome (no compartido)
   const [selectedBook, setSelectedBook] = React.useState(null)
-  const [pendingBook, setPendingBook] = React.useState(null)
-  const [pendingRect, setPendingRect] = React.useState(null)
   const [search, setSearch] = React.useState('')
   // El input usa `search` (tecleo instantáneo); el filtrado usa el valor diferido
   // para no recalcular estantes/grupos en cada pulsación.
@@ -121,8 +118,8 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
     ? (categoriasMap[activeCategory]?.nombre || (activeCategory === SIN_CATEGORIA_ID ? 'Sin categoría' : ''))
     : null
 
-  const openBook = (book, rect) => { setPendingBook(book); setPendingRect(rect) }
-  const closeSheet = () => { setSelectedBook(null); setPendingBook(null); setPendingRect(null) }
+  const openBook = (book) => { setSelectedBook(book) }
+  const closeSheet = () => { setSelectedBook(null) }
 
   return (
     <div className="bibm-screen">
@@ -239,16 +236,10 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
         )}
       </div>
 
-      {/* Transición de apertura + hoja de detalle */}
-      {pendingBook && (
-        <BookOpenTransition book={pendingBook} startRect={pendingRect} color={pendingBook.color}
-          onComplete={() => setSelectedBook(pendingBook)} />
-      )}
       {selectedBook && (
         <BibBookSheet
           book={books.find(b => b.id === selectedBook.id) || selectedBook}
           user={user}
-          transparentBackdrop={!!pendingBook}
           categories={categories}
           onClose={closeSheet}
           onOpenBook={(book) => { closeSheet(); onOpenBook(book) }}

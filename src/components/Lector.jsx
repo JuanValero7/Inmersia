@@ -74,6 +74,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const [notebookOpen,   setNotebookOpen]   = useState(false)
   const [pendingChapter, setPendingChapter] = useState(null)
   const [explorarOpen,   setExplorarOpen]   = useState(false)
+  const [xrayOpen,       setXrayOpen]       = useState(false)
+  const [xrayItems,      setXrayItems]      = useState([])
 
   // Lógica de datos compartida con LectorMobile (ver src/hooks/useLectorData.js)
   const {
@@ -346,7 +348,31 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   }, [chapterIndex, capitulos.length])
 
   const handleToggleView    = useCallback(() => setDoubleView(v => !v), [])
-  const handleChapterSelect = useCallback((idx) => { setChapterIndex(idx); setPageIndex(0) }, [])
+  const handleChapterSelect = useCallback((idx) => { setChapterIndex(idx); setPageIndex(0); setXrayOpen(false) }, [])
+
+  // X-ray: cierra al cambiar de capítulo; carga personajes cuando está abierto
+  useEffect(() => { setXrayOpen(false) }, [chapterIndex])
+  useEffect(() => {
+    if (!xrayOpen || !book?.libro_id || !currentChapter) return
+    let active = true
+    supabase
+      .from('cartelera_items')
+      .select('id, nombre')
+      .eq('libro_id', book.libro_id)
+      .eq('capitulo_numero', currentChapter.numero ?? chapterIndex + 1)
+      .eq('seccion', 'personajes')
+      .order('capitulo_numero', { ascending: true })
+      .then(({ data }) => {
+        if (!active) return
+        const seen = new Set()
+        const deduped = (data || []).filter(it => {
+          if (seen.has(it.nombre)) return false
+          seen.add(it.nombre); return true
+        }).sort((a, b) => a.nombre.localeCompare(b.nombre))
+        setXrayItems(deduped)
+      })
+    return () => { active = false }
+  }, [xrayOpen, book?.libro_id, currentChapter?.id])
   async function handleSubmitResena() {
     if (await submitResena()) setResenaOpen(false)
   }
@@ -371,8 +397,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* TOP BAR */}
       <header style={{ position: 'relative', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '14px 24px 0' }}>
-        <div style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 14, padding: '9px 15px', display: 'flex', alignItems: 'center', boxShadow: `1.5px 2px 0 ${theme.ink}22` }}>
-          <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ height: 34, width: 'auto', display: 'block' }} />
+        <div style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 14, padding: '9px 15px', display: 'flex', alignItems: 'center', boxShadow: `1.5px 2px 0 ${theme.ink}22`, maxWidth: 320 }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: '#8a7355', fontFamily: "'Baloo 2', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{book?.title}</span>
         </div>
         <div style={{ display: 'flex', gap: 9, alignItems: 'center' }}>
           {isLeido && book?.libro_id && (
@@ -449,6 +475,10 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   onNextChapter={handleNextChapter}
                   onToggleView={handleToggleView}
                   onChapterSelect={handleChapterSelect}
+                  xrayOpen={xrayOpen}
+                  xrayItems={xrayItems}
+                  onToggleXray={() => setXrayOpen(v => !v)}
+                  onXrayItemClick={(itemId) => { setXrayOpen(false); onGoCartelera(itemId) }}
                   onTextSelect={handleTextSelect}
                   pageW={geom.pageW}
                   pageH={geom.pageH}

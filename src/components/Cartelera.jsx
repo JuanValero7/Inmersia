@@ -121,10 +121,17 @@ function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection }) {
   )
 }
 
-export default function CartelaView({ onGoBack, book, user, onGoForo, onGoBiblioteca }) {
+export default function CartelaView({ onGoBack, book, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed }) {
   const data = useCartelera(book?.libro_id || null, user?.id || null)
   const [view, setView] = useState({ kind: 'portada', key: null })
+  const [fichaInitItemId, setFichaInitItemId] = useState(null)
 
+  useEffect(() => {
+    if (!jumpToItemId) return
+    setFichaInitItemId(jumpToItemId)
+    setView({ kind: 'ficha', key: 'personajes' })
+    onJumpConsumed?.()
+  }, [jumpToItemId])
 
   const handlePortadaOpen = (k) => {
     if (k === 'personajes' && getTourPhase() === 'wait_personajes') setTourPhase('cart_personajes')
@@ -137,6 +144,7 @@ export default function CartelaView({ onGoBack, book, user, onGoForo, onGoBiblio
       onGoBack={onGoBack} onGoForo={onGoForo} onGoBiblioteca={onGoBiblioteca} />
   } else if (view.kind === 'ficha') {
     content = <Ficha section={seccionMeta(view.key)} items={data.itemsBySeccion[view.key] || []}
+      initialItemId={fichaInitItemId}
       onBackTablero={() => setView({ kind: 'board', key: view.key })}
       onBackPortada={() => setView({ kind: 'portada', key: null })} />
   } else {

@@ -110,9 +110,13 @@
 }
 .lm-ctrl.cap .lm-ctrl-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
 .lm-ctrl .chev { font-size: 8px; opacity: 0.7; flex-shrink: 0; }
+.lm-ctrl.cap { padding: 6px 10px; font-size: 11.5px; }
 .lm-ctrl.typo { padding: 6px 14px; }
 .lm-ctrl.typo .a-sm { font-size: 12px; line-height: 1; }
 .lm-ctrl.typo .a-lg { font-size: 18px; line-height: 1; }
+.lm-ctrl.xray { padding: 6px 10px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.02em; }
+.lm-ctrl.img-auto { padding: 6px 10px; }
+.lm-ctrl.img-auto.on { background: var(--accent); color: #fff; border-color: var(--ink); text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
 
 /* ── Zona de libro ── */
 .lm-book-area {
@@ -141,17 +145,13 @@
 .lm-chap-rule { width: 56px; height: 3px; border-radius: 2px; background: var(--accent); margin-top: 12px; }
 .lm-para { color: var(--page-ink); line-height: 1.72; margin: 0 0 0.85em; text-align: justify; hyphens: auto; text-indent: 1.2em; white-space: pre-line; }
 .lm-para.dlg { font-style: italic; text-indent: 0; }
-/* SFX: brillo de párrafo o frase con sonido asociado */
-@keyframes sfx-pulse {
-  0%, 100% { background-color: rgba(207,123,76,0); }
-  50%       { background-color: rgba(207,123,76,0.15); }
-}
+/* SFX: brillo permanente de contorno de letra con sonido asociado */
 .sfx-glow {
   border-radius: 3px;
   cursor: pointer;
-  animation: sfx-pulse 2.4s ease-in-out infinite;
+  text-shadow: 0 0 6px rgba(207,123,76,0.9), 0 0 14px rgba(207,123,76,0.6), 0 0 24px rgba(207,123,76,0.35);
 }
-.sfx-glow:hover { animation: none; background-color: rgba(207,123,76,0.28); }
+.sfx-glow:hover { text-shadow: 0 0 6px rgba(207,123,76,1), 0 0 14px rgba(207,123,76,0.85), 0 0 28px rgba(207,123,76,0.6); }
 .lm-sep { text-align: center; color: var(--page-meta); line-height: 1.4; margin: 14px 0; letter-spacing: 0.4em; }
 .lm-pagenum {
   position: absolute; bottom: 16px; right: 30px;
@@ -408,10 +408,20 @@ input.lm-range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%
 .lm-img-thumb.active { border-color: var(--accent); opacity: 1; }
 .lm-img-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .lm-img-meta { color: rgba(255,255,255,0.82); font-size: 12.5px; font-weight: 600; text-align: center; max-width: 280px; }
+.lm-img-bottom { display: flex; align-items: center; gap: 10px; }
 .lm-img-close {
   background: var(--cream); border: 2px solid var(--ink); border-radius: 999px;
   padding: 9px 22px; font-size: 13.5px; font-weight: 700; color: var(--ink); cursor: pointer;
   box-shadow: 2px 3px 0 rgba(74,54,34,0.22); font-family: inherit;
+}
+.lm-img-autotoggle {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.4); border-radius: 999px;
+  padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,0.85); cursor: pointer; font-family: inherit;
+}
+.lm-img-autotoggle.on {
+  background: var(--accent); border-color: var(--ink); color: #fff;
+  box-shadow: 1.5px 2px 0 rgba(74,54,34,0.3);
 }
 
 @keyframes lm-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -420,5 +430,5 @@ input.lm-range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%
 @media (prefers-reduced-motion: reduce) {
   .lm-reel.spin { animation: none; }
   .lm-sheet, .lm-cat-tray, .lm-backdrop, .lm-img-overlay { animation: none; }
-  .sfx-glow { animation: none; background-color: rgba(207,123,76,0.12); }
+  .sfx-glow { text-shadow: 0 0 8px rgba(207,123,76,0.6); }
 }

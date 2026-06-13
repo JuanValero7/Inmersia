@@ -252,7 +252,9 @@ export const BookReader = memo(function BookReader({
   onToggleView, onChapterSelect, onTextSelect,
   onFontSize, onReadingFont, readingTheme = 'light', onReadingTheme,
   pageW = 470, pageH = 560, fontSize = 18, readingFont = "'Crimson Text', Georgia, serif",
+  xrayOpen = false, xrayItems = [], onToggleXray, onXrayItemClick,
 }) {
+  const xrayInitial = s => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
   const pal = getReaderPalette(readingTheme)
   const total = paginas.length
   const isLast = doubleView ? pageIndex >= total - 2 : pageIndex >= total - 1
@@ -268,10 +270,37 @@ export const BookReader = memo(function BookReader({
           <ChapterSelect chapters={chapters || []} chapterIndex={chapterIndex} onChapterSelect={onChapterSelect} />
           <TypographyControl fontSize={fontSize} onFontSize={onFontSize} readingFont={readingFont} onReadingFont={onReadingFont} readingTheme={readingTheme} onReadingTheme={onReadingTheme} />
         </div>
-        <button type="button" onClick={onToggleView}
-          style={{ whiteSpace: 'nowrap', fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: theme.navBg, color: theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
-          {doubleView ? '▢ Una página' : '▢▢ Doble página'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* X-ray */}
+          <div style={{ position: 'relative' }}>
+            <button type="button" onClick={onToggleXray}
+              style={{ whiteSpace: 'nowrap', fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: xrayOpen ? theme.ink : theme.navBg, color: xrayOpen ? '#fffdf8' : theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
+              X-ray
+            </button>
+            {xrayOpen && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60, background: '#fffdf8', border: `2px solid ${theme.ink}`, borderRadius: 16, padding: '12px 16px', minWidth: 210, maxWidth: 290, maxHeight: 320, overflowY: 'auto', boxShadow: `2px 4px 0 ${theme.ink}22, 0 14px 30px rgba(0,0,0,0.22)`, fontFamily: "'Baloo 2', sans-serif" }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(74,54,34,0.5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+                  Personajes · hasta cap. {chapter.numero ?? chapterIndex + 1}
+                </div>
+                {xrayItems.length === 0
+                  ? <p style={{ fontSize: 13, color: 'rgba(74,54,34,0.5)', fontStyle: 'italic', margin: 0 }}>Sin personajes hasta este capítulo.</p>
+                  : xrayItems.map(it => (
+                    <button key={it.id} onClick={() => onXrayItemClick?.(it.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid rgba(74,54,34,0.08)', width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                      <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', background: '#d56a52', color: '#fff', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid rgba(74,54,34,0.35)' }}>
+                        {xrayInitial(it.nombre)}
+                      </span>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: '#4a3622', lineHeight: 1.2 }}>{it.nombre}</span>
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
+          {/* Toggle 1p / 2p */}
+          <button type="button" onClick={onToggleView}
+            style={{ whiteSpace: 'nowrap', fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: theme.navBg, color: theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
+            {doubleView ? '▢ Una página' : '▢▢ Doble página'}
+          </button>
+        </div>
       </div>
 
       <div className="book-shadow" style={{ display: 'flex', position: 'relative', filter: 'drop-shadow(0 16px 30px rgba(70,46,20,0.4))' }}>

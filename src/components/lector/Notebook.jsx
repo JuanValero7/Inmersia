@@ -135,7 +135,7 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
                   ? <p style={{ fontFamily: "'Baloo 2',sans-serif", fontStyle: 'italic', fontSize: 13, color: 'rgba(74,54,34,0.5)' }}>Sin subrayados en este capítulo. Seleccioná texto en el libro para guardar uno.</p>
                   : subsCap.map(s => (
                     <div key={s.id} style={{ marginBottom: 12, padding: '11px 14px', background: 'rgba(224,178,86,0.2)', borderLeft: '4px solid #e0b256', borderRadius: '0 8px 8px 0', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                      <p style={{ flex: 1, margin: 0, fontFamily: "'Crimson Text', serif", fontStyle: 'italic', fontSize: 15, lineHeight: 1.5, color: '#3a2a18' }}>“{s.texto_original}”</p>
+                      <p style={{ flex: 1, margin: 0, fontFamily: `'Baloo 2', sans-serif`, fontSize: 15, lineHeight: 1.5, color: '#3a2a18' }}>&ldquo;{s.texto_original}&rdquo;</p>
                       <button onClick={() => deleteSubrayado(s.id)} title="Eliminar" style={{ background: 'none', border: 'none', color: 'rgba(160,60,40,0.6)', fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>×</button>
                     </div>
                   ))}
@@ -150,7 +150,7 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
                   onChange={e => editDraft(selCap, type === 'pred' ? 'pred' : 'anot', e.target.value)}
                   placeholder={type === 'pred' ? 'Escribí tus predicciones…' : 'Escribí tus anotaciones…'}
                   maxLength={2000}
-                  style={{ flex: 1, border: 'none', outline: 'none', resize: 'none', background: lined, fontFamily: "'Special Elite', monospace", fontSize: 14, lineHeight: '32px', color: '#2a1f12' }} />
+                  style={{ flex: 1, border: 'none', outline: 'none', resize: 'none', background: lined, fontFamily: "'Baloo 2', sans-serif", fontSize: 14, lineHeight: '32px', color: '#2a1f12' }} />
               </div>
             )}
           </div>

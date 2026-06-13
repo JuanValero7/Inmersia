@@ -7,7 +7,6 @@ import { runGuidedBib1, runGuidedBib2 } from './tutorial.js'
 import { getTourPhase, setTourPhase, shouldStart } from './guidedTour.js'
 import BibBookModal from './biblioteca/BibBookModal.jsx'
 import ManageCategoriasModal from './biblioteca/ManageCategoriasModal.jsx'
-import BookOpenTransition from './biblioteca/BookOpenTransition.jsx'
 import { InmHeader, Swimlane } from './biblioteca/clay/HeaderSwimlane.jsx'
 import { FlatShelves, CoverShelf } from './biblioteca/clay/Shelves.jsx'
 import { INK } from './biblioteca/clay/helpers.jsx'
@@ -33,8 +32,6 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
   // Estado de UI/chrome (no compartido)
   const [notes, setNotes] = useLocalStorage('bv_notes', {});
   const [selectedBook, setSelectedBook] = React.useState(null);
-  const [pendingBook, setPendingBook] = React.useState(null);
-  const [pendingRect, setPendingRect] = React.useState(null);
   const [showManageCats, setShowManage] = React.useState(false);
   const [showFilters, setShowFilters] = React.useState(false);
   const [searchInput, setSearchInput] = React.useState('');
@@ -113,7 +110,7 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
     return nonManual.slice(0, 3)
   }, [books, lastOpenedBookIds]);
 
-  const openBook = React.useCallback((book, rect) => { setPendingBook(book); setPendingRect(rect); }, []);
+  const openBook = React.useCallback((book) => { setSelectedBook(book); }, []);
 
   const handleGoTienda = () => {
     if (getTourPhase() === 'wait_tienda') setTourPhase('tienda_calle')
@@ -192,19 +189,14 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
         )}
       </div>
 
-      {pendingBook && (
-        <BookOpenTransition book={pendingBook} startRect={pendingRect} color={pendingBook.color}
-          onComplete={() => setSelectedBook(pendingBook)} />
-      )}
       {selectedBook && (
         <BibBookModal
           book={books.find(b => b.id === selectedBook.id) || selectedBook}
           user={user}
-          transparentBackdrop={!!pendingBook}
-          onClose={() => { setSelectedBook(null); setPendingBook(null); setPendingRect(null); }}
+          onClose={() => setSelectedBook(null)}
           onOpenBook={(book) => { setSelectedBook(null); onOpenBook(book); }}
           onGoForo={(book) => { setSelectedBook(null); onGoForo(book); }}
-          onGoNotebook={(book) => { setSelectedBook(null); setPendingBook(null); setPendingRect(null); onGoNotebook(book); }}
+          onGoNotebook={(book) => { setSelectedBook(null); onGoNotebook(book); }}
           categories={categories}
           onAssignCategory={assignCategoriaToBook}
         />

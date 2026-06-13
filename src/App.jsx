@@ -44,6 +44,7 @@ export default function App() {
   const [lastOpenedBookIds,   setLastOpenedBookIds]   = useState([])
   const [foroSource,          setForoSource]          = useState('biblioteca')
   const [lectorStartNotebook, setLectorStartNotebook] = useState(false)
+  const [cartelaJumpId,       setCartelaJumpId]       = useState(null)
   const [showAuth,            setShowAuth]            = useState(false)      // ⬅︎ LANDING
   const [authTab,             setAuthTab]             = useState('login')    // ⬅︎ LANDING
 
@@ -194,6 +195,8 @@ export default function App() {
           user={user}
           onGoForo={() => { setForoSource('cartelera'); navigate('foro') }}
           onGoBiblioteca={() => navigate('biblioteca')}
+          jumpToItemId={cartelaJumpId}
+          onJumpConsumed={() => setCartelaJumpId(null)}
         />
       )}
       {view === 'foro' && (
@@ -210,7 +213,7 @@ export default function App() {
         <Lectura
           book={currentBook}
           onGoBack={() => navigate('biblioteca')}
-          onGoCartelera={() => navigate('cartelera')}
+          onGoCartelera={(itemId) => { setCartelaJumpId(itemId || null); navigate('cartelera') }}
           onGoForo={() => { setForoSource('lectura'); navigate('foro') }}
           startWithNotebook={lectorStartNotebook}
           onNotebookStarted={() => setLectorStartNotebook(false)}

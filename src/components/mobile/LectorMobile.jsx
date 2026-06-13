@@ -196,6 +196,33 @@ function BookPage({ chapter, chapterIndex, parrafos, mediaByParrafo, isFirst, pa
 }
 
 // ── Sheet: selector de capítulo ──────────────────────────────
+function XraySheet({ items, chapterNum, onClose, onItemClick }) {
+  const ini = s => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
+  return (
+    <div className="lm-backdrop" onClick={onClose}>
+      <div className="lm-sheet" onClick={e => e.stopPropagation()}>
+        <div className="lm-grip" />
+        <div className="lm-sheet-head">
+          <span className="lm-sheet-title">X-ray · hasta cap. {chapterNum}</span>
+          <button className="lm-close" onClick={onClose}><IcClose /></button>
+        </div>
+        <div style={{ overflowY: 'auto', padding: '4px 18px 28px' }}>
+          {items.length === 0
+            ? <p style={{ fontSize: 14, color: 'rgba(74,54,34,0.5)', fontStyle: 'italic', marginTop: 12 }}>Sin personajes hasta este capítulo.</p>
+            : items.map(it => (
+              <button key={it.id} onClick={() => onItemClick?.(it.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(74,54,34,0.08)', width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                <span style={{ flexShrink: 0, width: 34, height: 34, borderRadius: '50%', background: '#d56a52', color: '#fff', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid rgba(74,54,34,0.3)' }}>
+                  {ini(it.nombre)}
+                </span>
+                <span style={{ fontFamily: 'inherit', fontWeight: 700, fontSize: 15, color: '#4a3622' }}>{it.nombre}</span>
+              </button>
+            ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ChapterSheet({ chapters, current, onPick, onClose }) {
   return (
     <div className="lm-backdrop" onClick={onClose}>
@@ -325,7 +352,7 @@ function NavSheet({ onGoForo, onGoCartelera, onGoBiblioteca, onClose }) {
 }
 
 // ── Overlay: imagen(es) del capítulo ─────────────────────────
-function ImageOverlay({ images, chapter, chapterIndex, onClose }) {
+function ImageOverlay({ images, chapter, chapterIndex, onClose, autoImages, onToggleAutoImages }) {
   const [idx, setIdx] = useState(0)
   const cur = images[idx] || null
   return (
@@ -346,7 +373,13 @@ function ImageOverlay({ images, chapter, chapterIndex, onClose }) {
         </div>
       )}
       <div className="lm-img-meta">Capítulo {chapter?.numero ?? chapterIndex + 1}{chapter?.titulo ? ` · ${chapter.titulo}` : ''}</div>
-      <button className="lm-img-close" onClick={onClose}>Cerrar</button>
+      <div className="lm-img-bottom" onClick={e=>e.stopPropagation()}>
+        <button className={`lm-img-autotoggle${autoImages ? ' on' : ''}`} onClick={onToggleAutoImages}>
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4"/></svg>
+          Aparecer automático
+        </button>
+        <button className="lm-img-close" onClick={onClose}>Cerrar</button>
+      </div>
     </div>
   )
 }
@@ -404,6 +437,8 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const [fontSize,    setFontSize]    = useLocalStorage('inm_lector_fontSize', 19)
   const [readingFont, setReadingFont] = useLocalStorage('inm_lector_font', READING_FONT_DEFAULT)
   const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
+  const [autoImages,  setAutoImages]  = useLocalStorage('inm_auto_img', true)
+  const [xrayItems,   setXrayItems]   = useState([])
 
   // ── Estado de UI no compartido ──
   const [pendingSelection, setPendingSelection] = useState(null)  // { text, parrafoId, rect }
@@ -599,6 +634,49 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     return imgs
   }, [currentChapData, paginas, pageIndex])
 
+  // ── Imágenes de la página exacta actual (para auto-mostrar) ──
+  const currentPageNewImages = useMemo(() => {
+    if (!currentChapData) return []
+    const parrToPage = {}
+    paginas.forEach((page, idx) => page.forEach(p => { parrToPage[p.id] = idx }))
+    const seen = new Set(); const imgs = []
+    for (const p of currentChapData.parrafos) {
+      if (parrToPage[p.id] !== pageIndex) continue
+      for (const m of (currentChapData.mediaByParrafo[p.id] || [])) {
+        if (m.tipo === 'imagen' && m.origen === 'explicito' && !seen.has(m.media_id)) { seen.add(m.media_id); imgs.push(m) }
+      }
+    }
+    return imgs
+  }, [currentChapData, paginas, pageIndex])
+
+  // Auto-abrir imagen invasiva al llegar a una página con imagen
+  useEffect(() => {
+    if (autoImages && currentPageNewImages.length > 0) setImageOpen(true)
+  }, [pageIndex, chapterIndex, autoImages])
+
+  // Cargar personajes X-ray al abrir ese sheet
+  useEffect(() => {
+    if (sheet !== 'xray' || !book?.libro_id) return
+    let active = true
+    supabase
+      .from('cartelera_items')
+      .select('id, nombre')
+      .eq('libro_id', book.libro_id)
+      .eq('capitulo_numero', currentChapter?.numero ?? chapterIndex + 1)
+      .eq('seccion', 'personajes')
+      .order('capitulo_numero', { ascending: true })
+      .then(({ data }) => {
+        if (!active) return
+        const seen = new Set()
+        const deduped = (data || []).filter(it => {
+          if (seen.has(it.nombre)) return false
+          seen.add(it.nombre); return true
+        }).sort((a, b) => a.nombre.localeCompare(b.nombre))
+        setXrayItems(deduped)
+      })
+    return () => { active = false }
+  }, [sheet, book?.libro_id, chapterIndex])
+
   // ── Navegación de páginas ──
   const total = paginas.length
   const atStart = chapterIndex === 0 && pageIndex === 0
@@ -691,6 +769,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
           <span className="lm-ctrl-label">Cap. {currentChapter?.numero ?? chapterIndex + 1}{currentChapter?.titulo ? ` · ${currentChapter.titulo}` : ''}</span>
           <span className="chev">▼</span>
         </button>
+        <button className="lm-ctrl xray" onClick={() => setSheet('xray')} title="X-ray">X-ray</button>
         <button id="tutorial-m-typo" className="lm-ctrl typo" onClick={() => setSheet('typo')} title="Texto">
           <span className="a-sm">A</span><span className="a-lg">A</span>
         </button>
@@ -746,13 +825,14 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       )}
 
       {/* Sheets */}
+      {sheet==='xray'     && <XraySheet items={xrayItems} chapterNum={currentChapter?.numero ?? chapterIndex + 1} onClose={() => setSheet(null)} onItemClick={(itemId) => { setSheet(null); onGoCartelera(itemId) }} />}
       {sheet==='chapters' && <ChapterSheet chapters={capitulos} current={chapterIndex} onPick={pickChapter} onClose={()=>setSheet(null)} />}
       {sheet==='typo' && <TypoSheet fontSize={fontSize} onFontSize={setFontSize} readingFont={readingFont} onReadingFont={setReadingFont} readingTheme={readingTheme} onReadingTheme={setReadingTheme} onClose={()=>setSheet(null)} />}
       {sheet==='audio' && <AudioSheet ambient={currentAmbient} playing={ambientPlaying} volume={ambientVol} onToggle={toggleAmbient} onVolume={setVol} onClose={()=>setSheet(null)} />}
       {sheet==='nav' && <NavSheet onGoForo={onGoForo} onGoCartelera={() => { if (getTourPhase() === 'wait_cartelera') setTourPhase('cart_portada_1'); onGoCartelera() }} onGoBiblioteca={onGoBack} onClose={()=>setSheet(null)} />}
 
       {/* Overlay imagen */}
-      {imageOpen && <ImageOverlay images={visibleImages} chapter={currentChapter} chapterIndex={chapterIndex} onClose={()=>setImageOpen(false)} />}
+      {imageOpen && <ImageOverlay images={visibleImages} chapter={currentChapter} chapterIndex={chapterIndex} onClose={()=>setImageOpen(false)} autoImages={autoImages} onToggleAutoImages={() => setAutoImages(v => !v)} />}
 
       {/* Reseña (aparece al terminar el libro) */}
       {resenaOpen && <ResenaSheet form={resenaForm} setForm={setResenaForm} enviando={resenaEnviando} miResena={miResena} onSubmit={handleSubmitResena} onClose={()=>setResenaOpen(false)} />}

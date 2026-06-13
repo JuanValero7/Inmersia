@@ -193,18 +193,27 @@ function Portada({ book, onOpen }) {
 }
 
 // ── Vista de sección: tablero (Mural) / lista / ficha ──
-function SectionView({ sectionKey, data, onPortada, onJump, onExplore }) {
+function SectionView({ sectionKey, data, onPortada, onJump, onExplore, initialItemId }) {
   const meta = seccionMeta(sectionKey)
   const [tab, setTab] = useState('mural')      // mural | lista | ficha
   const [selId, setSelId] = useState(null)
   const [boardRef, scale] = useFitScale()
   const isNotas = sectionKey === 'notas'
   const items = data.itemsBySeccion[sectionKey] || []
-  const current = items.find(it => it.id === selId) || null
+  const current = items.find(it => it.id === selId || it.allIds?.includes(selId)) || null
   const Tablero = TABLEROS[sectionKey]
 
   // al cambiar de sección reseteamos al Mural
   useEffect(() => { setTab('mural'); setSelId(null) }, [sectionKey])
+
+  // salto directo a un item desde X-ray
+  useEffect(() => {
+    if (!initialItemId || items.length === 0) return
+    if (items.find(it => it.id === initialItemId || it.allIds?.includes(initialItemId))) {
+      setSelId(initialItemId)
+      setTab('ficha')
+    }
+  }, [initialItemId, items])
 
   const openLista = () => { if (!isNotas) setTab('lista') }
   const pick = (id) => { setSelId(id); setTab('ficha') }
@@ -251,10 +260,18 @@ function SectionView({ sectionKey, data, onPortada, onJump, onExplore }) {
   )
 }
 
-export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBiblioteca }) {
+export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed }) {
   const data = useCartelera(book?.libro_id || null, user?.id || null)
   const [view, setView] = useState({ kind: 'portada', key: null })
   const [explore, setExplore] = useState(false)
+  const [fichaInitItemId, setFichaInitItemId] = useState(null)
+
+  useEffect(() => {
+    if (!jumpToItemId) return
+    setFichaInitItemId(jumpToItemId)
+    setView({ kind: 'board', key: 'personajes' })
+    onJumpConsumed?.()
+  }, [jumpToItemId])
 
   // Tour mobile — avanza las mismas fases que el desktop según la acción.
   const openSection = (k) => {
@@ -300,6 +317,7 @@ export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBi
           onPortada={goPortada}
           onJump={openSection}
           onExplore={() => setExplore(true)}
+          initialItemId={fichaInitItemId}
         />
       )}
       {explore && <ExploreSheet {...exploreProps} />}

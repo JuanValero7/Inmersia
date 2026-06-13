@@ -17,9 +17,21 @@ function Wave({ color }) {
 }
 const initial = (s) => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
 
-export default function Ficha({ section, items = [], onBackTablero, onBackPortada }) {
+// Devuelve solo el texto nuevo de curr que no estaba en prev (descripción acumulada → delta)
+function deltaDesc(prev, curr) {
+  if (!prev) return curr
+  const p = prev.trim()
+  const c = curr.trim()
+  if (c.startsWith(p)) {
+    const rest = c.slice(p.length).replace(/^[\s.,;:\-–—]+/, '').trim()
+    return rest || c
+  }
+  return c
+}
+
+export default function Ficha({ section, items = [], onBackTablero, onBackPortada, initialItemId }) {
   const total = items.length
-  const [sel, setSel] = useState(items[0]?.id ?? null)
+  const [sel, setSel] = useState(initialItemId || items[0]?.id || null)
   const [query, setQuery] = useState('')
   const [scale, setScale] = useState(1)
 
@@ -46,7 +58,7 @@ export default function Ficha({ section, items = [], onBackTablero, onBackPortad
       getTags(it).join(' ').toLowerCase().includes(q))
   }, [query, items])
 
-  const current = items.find(it => it.id === sel) || null
+  const current = items.find(it => it.id === sel || it.allIds?.includes(sel)) || null
 
   const rootStyle = { '--sec': sec, '--idxw': '390px', '--rowpad': '13px', '--fscale': 1 }
 
@@ -146,7 +158,18 @@ export default function Ficha({ section, items = [], onBackTablero, onBackPortad
                     </div>
                   </div>
                   <Wave color={sec} />
-                  <p className="fic-desc">{current.descripcion}</p>
+                  {current.entradas?.length > 1 ? (
+                    <div className="fic-timeline">
+                      {current.entradas.map((e, i) => (
+                        <div key={e.capitulo_numero} className="fic-entrada">
+                          <span className="fic-cap-lbl">Cap. {e.capitulo_numero}</span>
+                          <p className="fic-desc">{deltaDesc(current.entradas[i - 1]?.descripcion, e.descripcion)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="fic-desc">{current.entradas?.[0]?.descripcion ?? current.descripcion}</p>
+                  )}
                 </div>
               )}
             </div>

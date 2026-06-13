@@ -15,6 +15,17 @@ import { getTags, getCap, shade, DOT_AMT } from '../cartelera/carteleraHelpers.j
 
 const initial = (s) => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
 
+function deltaDesc(prev, curr) {
+  if (!prev) return curr
+  const p = prev.trim()
+  const c = curr.trim()
+  if (c.startsWith(p)) {
+    const rest = c.slice(p.length).replace(/^[\s.,;:\-–—]+/, '').trim()
+    return rest || c
+  }
+  return c
+}
+
 function SearchIcon() {
   return (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>)
 }
@@ -99,7 +110,18 @@ export default function CarteleraMobileFicha({ section, item, onBack }) {
         </div>
 
         <Wave color={sec} />
-        <p className="cm-fic-desc">{item.descripcion}</p>
+        {item.entradas?.length > 1 ? (
+          <div className="cm-fic-timeline">
+            {item.entradas.map((e, i) => (
+              <div key={e.capitulo_numero} className="cm-fic-entrada">
+                <span className="cm-fic-cap-lbl">Cap. {e.capitulo_numero}</span>
+                <p className="cm-fic-desc">{deltaDesc(item.entradas[i - 1]?.descripcion, e.descripcion)}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="cm-fic-desc">{item.entradas?.[0]?.descripcion ?? item.descripcion}</p>
+        )}
       </div>
     </div>
   )

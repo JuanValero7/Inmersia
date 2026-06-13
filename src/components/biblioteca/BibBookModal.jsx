@@ -29,7 +29,7 @@ function Estrellas({ valor, onChange }) {
   );
 }
 
-function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook, categories, onAssignCategory, transparentBackdrop = false }) {
+function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook, categories, onAssignCategory }) {
   const bg = book.color || COLOR_BOOK_FALLBACK;
   const [saving, setSaving] = React.useState(false);
   const esManual = book.id === 'manual';
@@ -65,7 +65,7 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
   const inputBase = { width: '100%', background: '#f4ecda', border: `2px solid ${ink}`, borderRadius: 12, padding: '10px 13px', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, color: ink, outline: 'none', boxSizing: 'border-box' };
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Baloo 2', cursive", background: transparentBackdrop ? 'transparent' : 'rgba(50,34,18,0.45)', backdropFilter: transparentBackdrop ? 'none' : 'blur(5px)' }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Baloo 2', cursive", background: 'rgba(20,12,6,0.5)', backdropFilter: 'blur(8px)' }}>
       <div onClick={e => e.stopPropagation()} style={{ width: 560, maxWidth: '100%', maxHeight: '88vh', overflowY: 'auto', background: _MK_PANEL, borderRadius: 26, border: `2px solid ${ink}`, boxShadow: `3px 5px 0 ${ink}1f, 14px 20px 40px rgba(40,26,12,0.3)`, color: ink }}>
         {/* Banda superior con el color del libro */}
         <div style={{ padding: '22px 24px 18px', borderRadius: '24px 24px 0 0', borderBottom: `2px solid ${ink}`, background: `linear-gradient(135deg, ${bg} 0%, ${inmTint(bg, -0.12)} 100%)` }}>
@@ -101,28 +101,27 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button id="tutorial-abrir-libro-btn" style={primary} onClick={() => onOpenBook(book)}>
-              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button id="tutorial-abrir-libro-btn" style={{ ...primary, justifyContent: 'center', padding: '14px 24px', fontSize: 16.5 }} onClick={() => onOpenBook(book)}>
+              <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
               Abrir libro
             </button>
             {!esManual && (
-              <button style={{ ...ghost, color: '#3d6b8a' }} onClick={() => onGoForo(book)}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.4"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  Ir al Foro
-                </span>
-              </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button style={{ ...ghost, flex: 1, justifyContent: 'center', color: '#3d6b8a', fontSize: 13.5, padding: '9px 14px' }} onClick={() => onGoForo(book)}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.4"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Ir al Foro
+                  </span>
+                </button>
+                <button style={{ ...ghost, flex: 1, justifyContent: 'center', color: '#5a7a4a', fontSize: 13.5, padding: '9px 14px' }} onClick={() => onGoNotebook(book)}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Cuaderno
+                  </span>
+                </button>
+              </div>
             )}
-            {!esManual && (
-              <button style={{ ...ghost, color: '#5a7a4a' }} onClick={() => onGoNotebook(book)}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  Cuaderno
-                </span>
-              </button>
-            )}
-            <button style={ghost} onClick={onClose}>Cerrar</button>
           </div>
 
           {book.leido && !esManual && (
