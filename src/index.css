@@ -4,7 +4,7 @@
 
 /* ══ GLOBALS ════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { background-color: #1a0f07; min-height: 100vh; overflow-x: hidden; }
+body { background-color: var(--bg-warm); min-height: 100vh; overflow-x: hidden; }
 
 /* Design tokens (paleta madera + fondo cálido) */
 :root {
