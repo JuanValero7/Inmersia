@@ -14,7 +14,7 @@ import { runGuidedLector1, runGuidedLector2 } from './tutorial.js'
 import { getTourPhase, setTourPhase } from './guidedTour.js'
 import { BookReader }      from './lector/BookReader.jsx'
 import { PolaroidStack }   from './lector/PolaroidStack.jsx'
-import { RecorderPlayer, NotebookIcon } from './lector/RecorderPlayer.jsx'
+import { NotebookIcon } from './lector/RecorderPlayer.jsx'
 import { Notebook }        from './lector/Notebook.jsx'
 import { theme, ClayButton, getReaderPalette } from './lector/clay.jsx'
 
@@ -32,7 +32,7 @@ const FONT_WIDTH = {
 // Geometría de página: el libro llena la pantalla.
 // El tamaño y la fuente afectan la paginación (caracteres/línea + alto de línea).
 function computeGeom(doubleView, fontSize, readingFont) {
-  const pageH = Math.min(700, Math.max(430, window.innerHeight - 222))
+  const pageH = Math.min(760, Math.max(430, window.innerHeight - 165))
   const availW = window.innerWidth - 64
   let pageW = doubleView
     ? Math.min(Math.round(pageH * 0.92), Math.floor((availW - 34) / 2))
@@ -105,6 +105,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const [fontSize,    setFontSize]    = useLocalStorage('inm_lector_fontSize', 19)
   const [readingFont, setReadingFont] = useLocalStorage('inm_lector_font', READING_FONT_DEFAULT)
   const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
+  const [ledColor, setLedColor] = useLocalStorage('inm_lector_ledColor', 'none')
   const pal = getReaderPalette(readingTheme)
 
   // Tutorial — se lanza la primera vez que el libro carga (después de loading)
@@ -468,6 +469,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   onReadingFont={setReadingFont}
                   readingTheme={readingTheme}
                   onReadingTheme={setReadingTheme}
+                  ambient={currentAmbient}
+                  ledColor={ledColor}
+                  onLedColor={setLedColor}
                 />
           )}
         </div>
@@ -482,9 +486,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* BOTTOM BAR */}
       {!loading && !error && book?.libro_id && (
-        <div style={{ position: 'relative', zIndex: 20, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '8px 26px 18px', gap: 16 }}>
-          <div id="tutorial-recorder"><RecorderPlayer ambient={currentAmbient} /></div>
-
+        <div style={{ position: 'relative', zIndex: 20, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: '8px 26px 18px' }}>
           <button id="tutorial-cuaderno-btn" type="button" onClick={() => setNotebookOpen(true)}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, background: 'transparent', border: 'none', cursor: 'pointer' }}>
             <NotebookIcon />

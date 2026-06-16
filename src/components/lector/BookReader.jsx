@@ -3,7 +3,15 @@ import { useState, useEffect, useRef, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { theme, tint, getReaderPalette } from './clay.jsx'
 import { READING_FONTS } from './readerConstants.js'
+import { RecorderPlayer } from './RecorderPlayer.jsx'
 import '../../styles/lector.css'
+
+const LED_OPTIONS = [
+  { id: 'none',  label: 'Sin luz', hex: null,       rgb: null },
+  { id: 'blue',  label: 'Azul',    hex: '#3282ff',  rgb: '50,130,255' },
+  { id: 'red',   label: 'Rojo',    hex: '#dc3232',  rgb: '220,50,50' },
+  { id: 'green', label: 'Verde',   hex: '#28c850',  rgb: '40,200,80' },
+]
 
 // Divide texto en frases conservando la puntuación y espacios intermedios.
 function splitSentences(text) {
@@ -160,7 +168,7 @@ function ChapterSelect({ chapters, chapterIndex, onChapterSelect }) {
 }
 
 // ── Control de tipografía (tamaño + fuente) ─────────────────
-function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, readingTheme = 'light', onReadingTheme }) {
+function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, readingTheme = 'light', onReadingTheme, ledColor = 'none', onLedColor }) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState({ top: 0, left: 0 })
   const btnRef = useRef(null)
@@ -242,6 +250,23 @@ function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, r
               </div>
             </>
           )}
+          {onLedColor && (
+            <>
+              <div style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.pageMeta, margin: '16px 0 9px' }}>Luz LED</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
+                {LED_OPTIONS.map(opt => {
+                  const active = ledColor === opt.id
+                  return (
+                    <button key={opt.id} type="button" onClick={() => onLedColor(opt.id)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 9px', cursor: 'pointer', border: `1.5px solid ${active && opt.hex ? opt.hex : theme.ink}`, borderRadius: 9, background: active ? (opt.hex ? `${opt.hex}22` : 'rgba(207,123,76,0.12)') : 'transparent' }}>
+                      <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: opt.hex ?? 'transparent', border: opt.hex ? 'none' : `1.5px solid ${theme.ink}`, boxShadow: active && opt.hex ? `0 0 5px ${opt.hex}` : 'none' }} />
+                      <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: active && opt.hex ? opt.hex : theme.pageMeta }}>{opt.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </>
+          )}
         </div>,
         document.body
       )}
@@ -291,9 +316,15 @@ export const BookReader = memo(function BookReader({
   onFontSize, onReadingFont, readingTheme = 'light', onReadingTheme,
   pageW = 470, pageH = 560, fontSize = 18, readingFont = "'Crimson Text', Georgia, serif",
   xrayOpen = false, xrayItems = [], onToggleXray, onXrayItemClick,
+  ambient = null, ledColor = 'none', onLedColor = null,
 }) {
+  const [soundOpen, setSoundOpen] = useState(false)
   const xrayInitial = s => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
   const pal = getReaderPalette(readingTheme)
+  const ledOpt = LED_OPTIONS.find(o => o.id === ledColor)
+  const bookFilter = ledOpt?.rgb
+    ? `drop-shadow(0 0 8px rgba(${ledOpt.rgb},0.28)) drop-shadow(0 0 22px rgba(${ledOpt.rgb},0.13)) drop-shadow(0 16px 30px rgba(70,46,20,0.4))`
+    : 'drop-shadow(0 16px 30px rgba(70,46,20,0.4))'
   const total = paginas.length
   const isLast = doubleView ? pageIndex >= total - 2 : pageIndex >= total - 1
   const left = paginas[pageIndex] || []
@@ -302,11 +333,21 @@ export const BookReader = memo(function BookReader({
   const edge = (radius) => ({ width: 7, alignSelf: 'stretch', margin: '3px 0', background: `repeating-linear-gradient(0deg, ${pal.pageEdge}, ${pal.pageEdge} 1px, ${tint(pal.pageEdge,-0.12)} 2px, ${tint(pal.pageEdge,-0.12)} 3px)`, borderRadius: radius, flexShrink: 0 })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, position: 'relative' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 12, padding: '0 6px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <ChapterSelect chapters={chapters || []} chapterIndex={chapterIndex} onChapterSelect={onChapterSelect} />
-          <TypographyControl fontSize={fontSize} onFontSize={onFontSize} readingFont={readingFont} onReadingFont={onReadingFont} readingTheme={readingTheme} onReadingTheme={onReadingTheme} />
+          <TypographyControl fontSize={fontSize} onFontSize={onFontSize} readingFont={readingFont} onReadingFont={onReadingFont} readingTheme={readingTheme} onReadingTheme={onReadingTheme} ledColor={ledColor} onLedColor={onLedColor} />
+          <div style={{ position: 'relative' }}>
+            <button type="button" onClick={() => setSoundOpen(o => !o)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: soundOpen ? theme.accent : theme.navBg, color: soundOpen ? '#fff' : theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26`, whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 13, lineHeight: 1 }}>♪</span>
+              Sonido
+            </button>
+            <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 200, display: soundOpen ? 'block' : 'none' }}>
+              <RecorderPlayer ambient={ambient} onClose={() => setSoundOpen(false)} />
+            </div>
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {/* X-ray */}
@@ -341,7 +382,7 @@ export const BookReader = memo(function BookReader({
         </div>
       </div>
 
-      <div className="book-shadow" style={{ display: 'flex', position: 'relative', filter: 'drop-shadow(0 16px 30px rgba(70,46,20,0.4))' }}>
+      <div className="book-shadow" style={{ display: 'flex', position: 'relative', filter: bookFilter }}>
         {doubleView && <div style={edge('5px 0 0 5px')} />}
         <Leaf parrafos={left} side={doubleView ? 'left' : 'single'} pageNum={pageIndex + 1} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onPrev={onPrevPage} onNext={!doubleView ? (isLast ? onNextChapter : onNextPage) : undefined} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={pageIndex === 0} chapterTitle={chapter.titulo} chapterNum={chapter.numero ?? chapterIndex + 1} pal={pal} />
         {doubleView && <div style={{ width: 20, height: pageH, background: 'linear-gradient(to right, rgba(0,0,0,0.34) 0%, rgba(90,55,20,0.12) 45%, rgba(0,0,0,0.28) 100%)', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.42)', flexShrink: 0 }} />}

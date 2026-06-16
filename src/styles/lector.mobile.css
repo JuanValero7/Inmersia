@@ -14,7 +14,7 @@
   --ink: #4a3622;
   --accent: #cf7b4c;
   --green: #6f9457;
-  --paper: #f6f3ec;
+  --paper: #f7f4ee;
   --cream: #fffdf8;
   --muted: rgba(74,54,34,0.6);
   --page-ink: #3a2a18;
@@ -126,7 +126,7 @@
 }
 .lm-page {
   position: relative; width: 100%; max-width: 420px;
-  background: radial-gradient(ellipse at 22% 8%, #fffdf6 0%, #f7efde 48%, #f0e4c8 100%);
+  background: radial-gradient(ellipse at 22% 8%, #fdfbf0 0%, #f3e8cc 48%, #e8d8a8 100%);
   border-radius: 6px;
   box-shadow: 0 0 0 1px rgba(60,35,12,0.12), 0 16px 30px rgba(70,46,20,0.30);
   overflow: hidden;
@@ -328,7 +328,7 @@
 
 /* ══ Modo nocturno (solo hoja + fondo del lector) ══ */
 .lm-screen.night {
-  --paper: #1a150f;
+  --paper: #241e17;
   --page-ink: #e9ddc7;
   --page-meta: rgba(220,200,160,0.45);
   background-image:
@@ -336,7 +336,7 @@
     radial-gradient(62% 44% at 94% 100%, rgba(0,0,0,0.35), transparent 62%);
 }
 .lm-screen.night .lm-page {
-  background: radial-gradient(ellipse at 22% 8%, #262019 0%, #1d1813 55%, #15110d 100%);
+  background: radial-gradient(ellipse at 22% 8%, #1e1811 0%, #181310 55%, #11100a 100%);
 }
 .lm-screen.night .lm-turn.right .corner { border-color: transparent transparent #2a231b transparent; }
 .lm-screen.night .lm-turn.left .corner  { border-color: transparent #2a231b transparent transparent; }

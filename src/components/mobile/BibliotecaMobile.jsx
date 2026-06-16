@@ -79,8 +79,6 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
     return true
   }), [books, deferredSearch])
 
-  const totalPages = searchedBooks.reduce((s, b) => s + b.pages, 0)
-
   const groups = React.useMemo(() => {
     const out = categories.map(c => ({
       cat: { id: c.id, nombre: c.nombre, color: c.color },
@@ -176,9 +174,8 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
                         <div className="bibm-hero-auth">{featured.author}</div>
                         {typeof featured.progress === 'number' && (
                           <div className="bibm-hero-prog">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                            <div style={{ marginBottom: 6 }}>
                               <span style={{ fontWeight: 700, fontSize: 14, color: INK }}>{Math.round(featured.progress * 100)}% <span style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(74,54,34,0.55)' }}>leído</span></span>
-                              <span style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(74,54,34,0.55)' }}>pág. {Math.round(featured.pages * featured.progress)} / {featured.pages}</span>
                             </div>
                             <div className="bibm-bar"><div style={{ width: `${Math.round(featured.progress * 100)}%` }} /></div>
                           </div>
@@ -207,7 +204,7 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
             {/* Tu colección */}
             <div id="tutorial-m-coleccion" style={{ marginTop: 36 }}>
               <div className="bibm-col-head">
-                <div className="bibm-sec-ttl">Tu colección <span className="bibm-sec-sub">{collectionCount} {collectionCount === 1 ? 'libro' : 'libros'} · {totalPages.toLocaleString()} págs</span></div>
+                <div className="bibm-sec-ttl">Tu colección <span className="bibm-sec-sub">{collectionCount} {collectionCount === 1 ? 'libro' : 'libros'}</span></div>
                 <div className="bibm-col-actions">
                   <button id="tutorial-m-filtrar" className={'bibm-act' + (activeCategory ? ' on' : '')} onClick={() => setScreen('filter')}>
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round"/></svg>

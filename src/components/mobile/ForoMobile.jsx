@@ -19,7 +19,7 @@ import { getTourPhase, setTourPhase } from '../guidedTour.js' // ← coordinaci�
 import { runGuidedForo1Mobile } from '../tutorial.mobile.js'
 import { useForoData } from '../../hooks/useForoData.js'     // ← lógica de datos compartida
 import '../../styles/foro.css'        // base (clases que usan las sub-vistas)
-import './foro.mobile.css'            // overrides responsive del chrome
+import '../../styles/foro.mobile.css'  // overrides responsive del chrome
 
 export default function ForoMobile({ book, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera }) {
   // — MISMA lógica de datos que Foro.jsx (ver src/hooks/useForoData.js) —

@@ -45,13 +45,13 @@ function Panel({ sec, open, hoveredAny, last, idx, onEnter, onOpen }) {
         <div className="initial" style={idx > 0 ? { marginLeft: 32 } : undefined}>{sec.initial}</div>
         <div className="reveal">
           <div className="word">{sec.label}</div>
-          <div className="desc">{sec.desc}.</div>
+          <div className="desc">{sec.sub}.</div>
           <div className="go">Explorar
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"><path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </div>
         </div>
       </div>
-      <div className="stub">{sec.label}</div>
+      <div className="stub">{sec.sub}</div>
     </div>
   )
 }
@@ -81,10 +81,11 @@ export default function Portada({ subtitle, onOpen, onGoBack, onGoForo, onGoBibl
   return (
     <div className="cart-scene cart-portada">
       <div className="topbar" style={{ zIndex: 61 }}>
-        <div className="brand">
-          <span className="brand-title">Cartelera</span>
-          {subtitle && <span className="brand-sub">{subtitle}</span>}
+        <div className="cart-portada-tag">
+          <span className="cpt-label">Investigación</span>
+          {subtitle && <><span className="cpt-sep">·</span><span className="cpt-book">{subtitle}</span></>}
         </div>
+        <div className="cart-portada-hint">Elige una sección para investigar</div>
         <div className="actions">
           <div className="cart-explorar-popup" style={{ position: 'relative' }}>
             {explorarOpen && (
@@ -133,7 +134,6 @@ export default function Portada({ subtitle, onOpen, onGoBack, onGoForo, onGoBibl
               open={hover === sec.key} hoveredAny={hover !== null}
               onEnter={() => setHover(sec.key)} onOpen={onOpen} />
           ))}
-          <div className="cart-portada-hint">Pasá el cursor sobre una sección para abrirla</div>
         </div>
       </div>
     </div>

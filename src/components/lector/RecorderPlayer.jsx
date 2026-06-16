@@ -4,7 +4,7 @@ import { theme } from './clay.jsx'
 
 // Grabadora de ambiente — clay. Conserva la lógica de audio real (ambient.url),
 // sin carretes girando y con opción de minimizar.
-const RecorderPlayer = memo(function RecorderPlayer({ ambient }) {
+const RecorderPlayer = memo(function RecorderPlayer({ ambient, onClose }) {
   const [playing, setPlaying] = useState(false)
   const [volume, setVolume] = useState(0.5)
   const [min, setMin] = useState(false)
@@ -39,7 +39,7 @@ const RecorderPlayer = memo(function RecorderPlayer({ ambient }) {
 
   const disabled = !ambient?.url
 
-  if (min) {
+  if (min && !onClose) {
     return (
       <button type="button" onClick={() => setMin(false)} title="Ajustar ambiente"
         style={{ width: 48, height: 48, borderRadius: 14, background: theme.navBg, border: `2px solid ${theme.ink}`, boxShadow: `2px 3px 0 ${theme.ink}26`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
@@ -51,7 +51,7 @@ const RecorderPlayer = memo(function RecorderPlayer({ ambient }) {
 
   return (
     <div style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, boxShadow: `2px 3px 0 ${theme.ink}26`, borderRadius: 16, padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 14, width: 330, opacity: disabled ? 0.6 : 1, position: 'relative' }}>
-      <button type="button" onClick={() => setMin(true)} title="Minimizar"
+      <button type="button" onClick={() => onClose ? onClose() : setMin(true)} title="Minimizar"
         style={{ position: 'absolute', top: 6, right: 8, width: 18, height: 18, borderRadius: 6, border: `1.5px solid ${theme.ink}55`, background: 'transparent', color: theme.ink, fontSize: 11, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>–</button>
       <div style={{ display: 'flex', gap: 10 }}>
         {[0, 1].map(k => (

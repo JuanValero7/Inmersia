@@ -21,12 +21,12 @@ export const theme = {
   ink: INK,
   accent: ACCENT,
   deskBg:
-    'radial-gradient(130% 100% at 50% 0%, rgba(255,255,255,0.5), transparent 55%),' +
-    'linear-gradient(180deg,#f3ede0 0%,#efe6d2 60%,#e7dcc2 100%)',
+    'radial-gradient(130% 100% at 50% 0%, rgba(255,255,255,0.68), transparent 55%),' +
+    'linear-gradient(180deg,#f6f3ee 0%,#f2ede4 60%,#eae4d8 100%)',
   vignette: 'radial-gradient(95% 80% at 50% 38%, transparent 60%, rgba(120,90,50,0.10) 100%)',
   textColor: INK,
   subText: 'rgba(74,54,34,0.6)',
-  pageBg: 'radial-gradient(ellipse at 22% 8%, #fffdf6 0%, #f7efde 48%, #f0e4c8 100%)',
+  pageBg: 'radial-gradient(ellipse at 22% 8%, #fdfbf0 0%, #f3e8cc 48%, #e8d8a8 100%)',
   pageInk: '#3a2a18',
   pageMeta: 'rgba(120,80,30,0.5)',
   pageEdge: '#e3d6b4',
@@ -52,9 +52,9 @@ const READER_LIGHT = {
 const READER_DARK = {
   deskBg:
     'radial-gradient(130% 100% at 50% 0%, rgba(60,48,36,0.35), transparent 55%),' +
-    'linear-gradient(180deg,#211b15 0%,#1a150f 60%,#140f0a 100%)',
+    'linear-gradient(180deg,#2b231a 0%,#221c13 60%,#1b160e 100%)',
   vignette: 'radial-gradient(95% 80% at 50% 38%, transparent 55%, rgba(0,0,0,0.45) 100%)',
-  pageBg: 'radial-gradient(ellipse at 22% 8%, #262019 0%, #1d1813 55%, #15110d 100%)',
+  pageBg: 'radial-gradient(ellipse at 22% 8%, #1e1811 0%, #181310 55%, #11100a 100%)',
   pageInk: '#e9ddc7',
   pageMeta: 'rgba(220,200,160,0.45)',
   pageEdge: '#2a231b',

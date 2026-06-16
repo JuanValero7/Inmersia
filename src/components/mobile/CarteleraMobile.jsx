@@ -27,7 +27,7 @@ import {
   runGuidedCartPersonajesMobile, runGuidedCartNotasMobile,
 } from '../tutorial.mobile.js'
 import '../../styles/cartelera.css'
-import './cartelera.mobile.css'
+import '../../styles/cartelera.mobile.css'
 
 const BOARD_W = 700, BOARD_H = 860
 const TABLEROS = { personajes: TableroPersonajes, lugares: TableroLugares, hechos: TableroHechos, datos: TableroDatos }

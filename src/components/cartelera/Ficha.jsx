@@ -5,6 +5,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import clsx from 'clsx'
 import { getTags, getCap, shade, DOT_AMT } from './carteleraHelpers.js'
+import Signpost from './Signpost.jsx'
+import { getTourPhase, setTourPhase } from '../guidedTour.js'
 
 function Magnifier() {
   return (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
@@ -29,13 +31,21 @@ function deltaDesc(prev, curr) {
   return c
 }
 
-export default function Ficha({ section, items = [], onBackTablero, onBackPortada, initialItemId }) {
+export default function Ficha({ section, items = [], onBackTablero, onBackPortada, initialItemId, onGoBack, onGoForo, onGoBiblioteca, onOpenList }) {
   const total = items.length
   const [sel, setSel] = useState(initialItemId || items[0]?.id || null)
   const [query, setQuery] = useState('')
   const [scale, setScale] = useState(1)
+  const [explorarOpen, setExplorarOpen] = useState(false)
 
   const sec = section.color
+
+  useEffect(() => {
+    if (!explorarOpen) return
+    const h = (e) => { if (!e.target.closest('.cart-explorar-popup')) setExplorarOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [explorarOpen])
 
   useEffect(() => {
     const fit = () => {
@@ -65,17 +75,52 @@ export default function Ficha({ section, items = [], onBackTablero, onBackPortad
   return (
     <div className="cart-scene" style={rootStyle}>
       <div className="bg-layer" />
+      {onOpenList && <Signpost current={section.key} onOpenSection={onOpenList} />}
       <div className="topbar">
         <div className="ttl">
           <h1>{section.label}</h1>
           <span className="sub">{section.sub}</span>
         </div>
+        <div className="cart-sec-hint">Sigue leyendo para revelar una sorpresa</div>
         <div className="actions">
-          <button className="btn ghost" type="button" onClick={onBackTablero}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            Tablero
-          </button>
-          <button className="btn" type="button" onClick={onBackPortada}>Cartelera</button>
+          <button className="cart-sec-btn" type="button" onClick={onBackTablero}>Mural</button>
+          <div className="cart-explorar-popup" style={{ position: 'relative' }}>
+            {explorarOpen && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60,
+                background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 16,
+                padding: '10px 14px', display: 'flex', gap: 20, alignItems: 'flex-end',
+                boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)',
+                whiteSpace: 'nowrap',
+              }}>
+                {onGoForo && (
+                  <button type="button" onClick={() => { if (getTourPhase() === 'wait_foro') setTourPhase('foro_1'); setExplorarOpen(false); onGoForo() }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
+                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Foro</span>
+                  </button>
+                )}
+                {onGoBack && (
+                  <button type="button" onClick={() => { setExplorarOpen(false); onGoBack() }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Lectura</span>
+                  </button>
+                )}
+                {onGoBiblioteca && (
+                  <button type="button" onClick={() => { setExplorarOpen(false); onGoBiblioteca() }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Biblioteca</span>
+                  </button>
+                )}
+              </div>
+            )}
+            <button className="cart-sec-btn" type="button" onClick={() => setExplorarOpen(o => !o)}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><path d="M2 12h20"/></svg>
+              Explorar
+            </button>
+          </div>
         </div>
       </div>
 

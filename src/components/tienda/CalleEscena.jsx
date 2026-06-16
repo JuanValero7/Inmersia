@@ -79,11 +79,8 @@ export default function CalleEscena({ pendientes = 0, limite = 5, bloqueado = fa
   const overlayUp = zooming || closed
 
   const backBtn = !overlayUp && (
-    <button className="back-btn" type="button" onClick={onGoBack}
-      style={{ position: 'fixed', top: 16, left: 16, zIndex: 600 }}>
-      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-        <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+    <button className="int-back" type="button" onClick={onGoBack}
+      style={{ zIndex: 600 }}>
       Biblioteca
     </button>
   )
@@ -125,7 +122,7 @@ export default function CalleEscena({ pendientes = 0, limite = 5, bloqueado = fa
 
           {/* Tap = todo el escaparate */}
           <button className="cm-tap" type="button" onClick={enter} aria-label="Entrar a la tienda" />
-          {!opening && <span className="cm-hint">Tocá para entrar ✦</span>}
+          {!opening && <button className="cm-hint" type="button" onClick={enter}>Tocá para entrar ✦</button>}
 
           <div className={`warmflash ${zooming ? 'on' : ''}`}
             style={{ background: 'radial-gradient(circle at 52% 72%, rgba(255,216,130,0.98), rgba(255,196,110,0) 52%)' }} />

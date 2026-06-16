@@ -60,7 +60,7 @@ function Portada({ libro, cls }) {
   )
 }
 
-export default function PanelLibro({ libro, user, yaAdquirido, yaLeido, onComprar, onClose, onPreview }) {
+export default function PanelLibro({ libro, user, yaAdquirido, yaLeido, onComprar, onClose, onPreview, onEmpezarLeer }) {
   const [visible,   setVisible]   = useState(false)
   const [resenas,   setResenas]   = useState([])
   const [topQuotes, setTopQuotes] = useState([])
@@ -167,6 +167,10 @@ export default function PanelLibro({ libro, user, yaAdquirido, yaLeido, onCompra
 
       {/* CTA */}
       <div className="bkp-cta">
+        <button className="bkp-empezar-btn" onClick={onEmpezarLeer}>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Empezar a leer
+        </button>
         {yaAdquirido ? (
           <div className="bkp-adquirido">✓ Ya está en tu biblioteca</div>
         ) : (

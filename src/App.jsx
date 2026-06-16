@@ -186,7 +186,7 @@ export default function App() {
         />
       )}
       {view === 'tienda' && (
-        <VistaTienda onGoBack={() => navigate('biblioteca')} user={user}/>
+        <VistaTienda onGoBack={() => navigate('biblioteca')} user={user} onOpenBook={handleOpenBook}/>
       )}
       {view === 'cartelera' && (
         <Cartelera

@@ -74,7 +74,6 @@ function HeroFeatured({ book, onOpen }) {
   const cat = book.categoryName;
   const hasProgress = typeof book.progress === 'number';
   const pct = hasProgress ? Math.round(book.progress * 100) : 0;
-  const leidas = hasProgress ? Math.round(book.pages * book.progress) : 0;
   return (
     <div style={{ display: 'flex', gap: 48, alignItems: 'center', padding: '16px 14px 26px' }}>
       <div onClick={(e) => onOpen(book, e.currentTarget.getBoundingClientRect())}
@@ -90,9 +89,8 @@ function HeroFeatured({ book, onOpen }) {
         <div style={{ marginTop: 26, maxWidth: 520 }}>
           {hasProgress ? (
             <>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12, gap: 12 }}>
+              <div style={{ marginBottom: 12 }}>
                 <span style={{ fontWeight: 700, fontSize: 21, color: ink }}>{pct}% <span style={{ fontSize: 15, color: 'rgba(74,54,34,0.6)', fontWeight: 600 }}>completado</span></span>
-                <span style={{ fontSize: 15, color: 'rgba(74,54,34,0.6)', fontWeight: 600 }}>pág. {leidas} / {book.pages}</span>
               </div>
               <div style={{ height: 14, borderRadius: 9, background: 'rgba(74,54,34,0.16)', overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${pct}%`, borderRadius: 9, background: `linear-gradient(90deg, ${accent}, ${inmTint(accent, 0.2)})` }} />
@@ -100,14 +98,14 @@ function HeroFeatured({ book, onOpen }) {
             </>
           ) : (
             <div style={{ fontSize: 17, color: 'rgba(74,54,34,0.6)', fontWeight: 600, lineHeight: 1.5 }}>
-              {book.pages.toLocaleString()} páginas · aún no registramos tu progreso de lectura.
+              Aún no registramos tu progreso de lectura.
             </div>
           )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginTop: 28 }}>
           <button id="tutorial-empezar-leer-btn" onClick={(e) => onOpen(book, e.currentTarget.getBoundingClientRect())}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, background: accent, color: '#fff', border: `2px solid ${ink}`, borderRadius: 18, padding: '16px 32px', fontWeight: 700, fontSize: 18, fontFamily: 'inherit', cursor: 'pointer', textShadow: '0 1px 1px rgba(0,0,0,0.2)', boxShadow: `2px 2.8px 0 ${ink}33` }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 10, background: accent, color: '#fff', border: `2px solid ${ink}`, borderRadius: 999, padding: '16px 32px', fontWeight: 700, fontSize: 18, fontFamily: 'inherit', cursor: 'pointer', textShadow: '0 1px 1px rgba(0,0,0,0.2)', boxShadow: `2px 2.8px 0 ${ink}33` }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
             {hasProgress ? 'Continuar' : 'Empezar a leer'}
           </button>

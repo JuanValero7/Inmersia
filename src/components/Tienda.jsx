@@ -22,7 +22,7 @@ const LIMITE = 5   // tope de lecturas pendientes
 const NUEVOS = 5   // cuántos libros recientes llevan el listón "Nuevo"
 const PAGE_SIZE = 20
 
-export default function VistaTienda({ onGoBack, user }) {
+export default function VistaTienda({ onGoBack, user, onOpenBook }) {
   const [subView,       setSubView]       = useState('calle')   // 'calle' | 'catalogo'
   const [catalogo,      setCatalogo]      = useState([])
   const [userLibros,    setUserLibros]    = useState([])
@@ -114,6 +114,21 @@ export default function VistaTienda({ onGoBack, user }) {
     setUserLibros(prev => [...prev, { libro_id: libro.id, leido: false }])
   }
 
+  async function comprarYLeer(libro) {
+    if (!tieneLibro(libro.id)) await comprar(libro)
+    onOpenBook?.({
+      id: libro.id,
+      libro_id: libro.id,
+      title: libro.titulo,
+      author: libro.autor || 'Desconocido',
+      pages: libro.paginas || 200,
+      _baseColor: libro.color || '#cf8a6e',
+      summary: libro.descripcion || '',
+      cover: libro.portada_url || null,
+      progress: null,
+    })
+  }
+
   // ── Fachada (calle) ─────────────────────────────────────────────
   const handleEntrar = () => {
     if (getTourPhase() === 'tienda_calle') setTourPhase('tienda_interior')
@@ -145,6 +160,7 @@ export default function VistaTienda({ onGoBack, user }) {
         tieneLibro={tieneLibro}
         libroLeido={libroLeido}
         onComprar={comprar}
+        onEmpezarLeer={comprarYLeer}
         onPreview={setReelLibro}
         onVolver={onGoBack}
       />

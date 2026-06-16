@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import clsx from 'clsx'
 import { CAT_COLOR, itint, ilum } from './tiendaHelpers.jsx'
 import PanelLibro from './PanelLibro.jsx'
+import useIsMobile from '../../hooks/useIsMobile.js'
 
 // =============================================================
 // CatalogoInterior · interior de la tienda (estilo storybook)
@@ -39,6 +40,49 @@ function CoverCard({ libro }) {
   )
 }
 
+function FilterOverlay({ availableCats, selCats, onToggle, onClear, onClose }) {
+  const [entering, setEntering] = useState(true)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setEntering(false))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
+  return (
+    <div className={clsx('int-filter-ov', entering && 'entering')}>
+      <div className="int-filter-ov-head">
+        <button className="int-filter-ov-back" onClick={onClose}>‹ Volver</button>
+        <span className="int-filter-ov-title">Filtrar</span>
+        {selCats.size > 0
+          ? <button className="int-filter-ov-clear" onClick={onClear}>Quitar todo</button>
+          : <span style={{ minWidth: 72 }} />
+        }
+      </div>
+      <div className="int-filter-ov-body">
+        {availableCats.map(c => (
+          <button key={c} className={clsx('int-filter-ov-row', selCats.has(c) && 'on')} onClick={() => onToggle(c)}>
+            <span style={{
+              width: 13, height: 13, borderRadius: '50%', flexShrink: 0,
+              background: selCats.has(c) ? 'rgba(255,255,255,0.75)' : (CAT_COLOR[c] || '#cf8a6e'),
+              border: selCats.has(c) ? '2px solid rgba(255,255,255,0.55)' : '2px solid rgba(74,54,34,0.35)',
+            }} />
+            <span style={{ flex: 1 }}>{c}</span>
+            {selCats.has(c) && (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+              </svg>
+            )}
+          </button>
+        ))}
+      </div>
+      <div className="int-filter-ov-foot">
+        <button className="int-filter-ov-apply" onClick={onClose}>
+          {selCats.size > 0 ? `Aplicar · ${selCats.size} categoría${selCats.size > 1 ? 's' : ''}` : 'Listo'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function BookCard({ libro, adquirido, onOpen }) {
   const c = libro.color || '#cf8a6e'
   const catCol = CAT_COLOR[libro.categorias?.[0]] || '#cf8a6e'
@@ -66,14 +110,22 @@ function BookCard({ libro, adquirido, onOpen }) {
   )
 }
 
-export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMore, onLoadMore, user, tieneLibro, libroLeido, onComprar, onPreview, onVolver }) {
-  const [cat,    setCat]    = useState('Todos')
-  const [qInput, setQInput] = useState('')
-  const [q,      setQ]      = useState('')
-  const [sel,    setSel]    = useState(null)
+export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMore, onLoadMore, user, tieneLibro, libroLeido, onComprar, onPreview, onVolver, onEmpezarLeer }) {
+  const isMobile = useIsMobile()
+  const [selCats,     setSelCats]     = useState(new Set())
+  const [qInput,      setQInput]      = useState('')
+  const [q,           setQ]           = useState('')
+  const [sel,         setSel]         = useState(null)
+  const [showFilters, setShowFilters] = useState(false)
 
-  const cats  = useMemo(() => ['Todos', ...new Set(catalogo.flatMap(b => b.categorias || []))], [catalogo])
+  const availableCats = useMemo(() => [...new Set(catalogo.flatMap(b => b.categorias || []))].sort(), [catalogo])
   const query = q.trim().toLowerCase()
+
+  const toggleCat = (c) => setSelCats(prev => {
+    const next = new Set(prev)
+    if (next.has(c)) next.delete(c); else next.add(c)
+    return next
+  })
 
   const handleQChange = (value) => {
     setQInput(value)
@@ -83,19 +135,22 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
     if (e.key === 'Enter') setQ(qInput)
     if (e.key === 'Escape') { setQInput(''); setQ('') }
   }
-  const list  = useMemo(() => catalogo.filter(b => {
-    const okCat = cat === 'Todos' || (b.categorias || []).includes(cat)
-    const okQ = !query ||
-      (b.titulo || '').toLowerCase().includes(query) ||
-      (b.autor  || '').toLowerCase().includes(query)
-    return okCat && okQ
-  }), [catalogo, cat, query])
-  const reset = () => { setCat('Todos'); setQ(''); setQInput('') }
+  const list  = useMemo(() => {
+    const filtered = catalogo.filter(b => {
+      const okCat = selCats.size === 0 || (b.categorias || []).some(c => selCats.has(c))
+      const okQ = !query ||
+        (b.titulo || '').toLowerCase().includes(query) ||
+        (b.autor  || '').toLowerCase().includes(query)
+      return okCat && okQ
+    })
+    return filtered.sort((a, b) => (tieneLibro(a.id) ? 1 : 0) - (tieneLibro(b.id) ? 1 : 0))
+  }, [catalogo, selCats, query, tieneLibro])
+  const reset = () => { setSelCats(new Set()); setQ(''); setQInput(''); setShowFilters(false) }
 
   return (
     <div className="interior show">
       <div className="interior-bg" />
-      <button className="int-back" onClick={onVolver}>‹ Biblioteca</button>
+      <button className="int-back" onClick={onVolver}>Biblioteca</button>
 
       <div className="interior-inner">
         <h1 className="int-title">Catálogo</h1>
@@ -113,17 +168,25 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
         </div>
 
         {/* Filtro por categoría */}
-        {cats.length > 1 && (
+        {availableCats.length > 0 && (
           <div className="int-filterbar">
-            <span className="int-filter-label">Filtrar</span>
-            <div className="int-chips">
-              {cats.map(c => (
-                <button key={c} className={clsx('int-chip', cat === c && 'on')} onClick={() => setCat(c)}>
-                  {c !== 'Todos' && <span className="dot" style={{ background: CAT_COLOR[c] || '#cf8a6e' }} />}
-                  {c}
-                </button>
-              ))}
-            </div>
+            <button className={clsx('int-chip', selCats.size > 0 && 'on')}
+              onClick={() => isMobile ? setShowFilters(true) : setShowFilters(v => !v)}>
+              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3">
+                <path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round" />
+              </svg>
+              Filtrar{selCats.size > 0 ? ` · ${selCats.size}` : ''}
+            </button>
+            {!isMobile && showFilters && (
+              <div className="int-chips">
+                {availableCats.map(c => (
+                  <button key={c} className={clsx('int-chip', selCats.has(c) && 'on')} onClick={() => toggleCat(c)}>
+                    <span className="dot" style={{ background: CAT_COLOR[c] || '#cf8a6e' }} />
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
         <p className="int-count">{list.length} {list.length === 1 ? 'aventura' : 'aventuras'}</p>
@@ -150,12 +213,23 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
           <div className="int-empty">
             <div className="int-empty-mark">✦</div>
             <div className="int-empty-text">
-              {query ? <>No encontramos nada para «{q}»</> : 'No hay libros en esta categoría.'}
+              {query ? <>No encontramos nada para «{q}»</> : 'No hay libros con esas categorías.'}
             </div>
             <button className="int-empty-reset" onClick={reset}>Ver todo el catálogo</button>
           </div>
         )}
       </div>
+
+      {/* Mobile: overlay filtro pantalla completa */}
+      {isMobile && showFilters && (
+        <FilterOverlay
+          availableCats={availableCats}
+          selCats={selCats}
+          onToggle={toggleCat}
+          onClear={() => { setSelCats(new Set()); setShowFilters(false) }}
+          onClose={() => setShowFilters(false)}
+        />
+      )}
 
       {/* Panel lateral de detalle */}
       <div className={clsx('bkp-scrim', sel && 'show')} onClick={() => setSel(null)} />
@@ -169,6 +243,7 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
           onComprar={() => { onComprar(sel); setSel(null) }}
           onClose={() => setSel(null)}
           onPreview={() => onPreview(sel)}
+          onEmpezarLeer={() => { onEmpezarLeer(sel); setSel(null) }}
         />
       )}
     </div>

@@ -41,7 +41,7 @@
 .bibm-logo img { height: 24px; width: auto; display: block; }
 .bibm-tienda { display: inline-flex; align-items: center; gap: 7px; background: var(--cream); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 8px 15px; font-family: inherit; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.18); transition: transform 0.12s, box-shadow 0.12s; flex-shrink: 0; }
 .bibm-tienda:active { transform: translateY(1.5px); box-shadow: 0.5px 1px 0 rgba(74,54,34,0.18); }
-.bibm-avatar { width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; background: linear-gradient(135deg, #cf7b4c, #6f9457); color: #fff; font-weight: 800; font-size: 16px; border: 2px solid var(--ink); cursor: pointer; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.2); display: flex; align-items: center; justify-content: center; transition: transform 0.12s; }
+.bibm-avatar { width: 40px; height: 40px; flex-shrink: 0; border-radius: 999px; background: linear-gradient(135deg, #cf7b4c, #6f9457); color: #fff; font-weight: 800; font-size: 16px; border: 2px solid var(--ink); cursor: pointer; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.2); display: flex; align-items: center; justify-content: center; transition: transform 0.12s; }
 .bibm-avatar:active { transform: translateY(1.5px); }
 .bibm-search { margin-top: 11px; display: flex; align-items: center; gap: 11px; background: rgba(255,253,247,0.94); border: 2px solid var(--ink); border-radius: 999px; padding: 10px 16px; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.12); }
 .bibm-search input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-weight: 600; font-size: 14.5px; color: var(--ink); }
@@ -76,7 +76,7 @@
 /* ── Encabezado colección + acciones ── */
 .bibm-col-head { display: flex; flex-direction: column; gap: 12px; }
 .bibm-col-actions { display: flex; gap: 9px; }
-.bibm-act { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: var(--cream); color: var(--accent); border: 2px solid var(--ink); border-radius: 13px; padding: 11px 14px; font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.2); transition: transform 0.12s; }
+.bibm-act { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: var(--cream); color: var(--accent); border: 2px solid var(--ink); border-radius: 999px; padding: 11px 14px; font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.2); transition: transform 0.12s; }
 .bibm-act:active { transform: translateY(1.5px); }
 .bibm-act.on { background: var(--accent); color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
 .bibm-act.manage { color: var(--green); }
@@ -91,7 +91,7 @@
 .bibm-ta::placeholder { color: rgba(74,54,34,0.4); font-weight: 600; }
 .bibm-row { width: 100%; display: flex; align-items: center; justify-content: space-between; background: var(--cream); border: 2px solid var(--ink); border-radius: 14px; padding: 12px 15px; font-size: 14px; font-weight: 700; color: var(--ink); cursor: pointer; font-family: inherit; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.12); }
 .bibm-chip { display: inline-flex; align-items: center; border: 2px solid var(--ink); background: var(--cream); color: #5a4632; border-radius: 999px; padding: 6px 13px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 1.2px 1.6px 0 rgba(74,54,34,0.16); }
-.bibm-btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; background: var(--accent); color: #fff; border: 2px solid var(--ink); border-radius: 15px; padding: 13px 22px; font-weight: 700; font-size: 15px; font-family: inherit; cursor: pointer; text-shadow: 0 1px 1px rgba(0,0,0,0.2); box-shadow: 2px 2.8px 0 rgba(74,54,34,0.26); transition: transform 0.12s; }
+.bibm-btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; background: var(--accent); color: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 13px 22px; font-weight: 700; font-size: 15px; font-family: inherit; cursor: pointer; text-shadow: 0 1px 1px rgba(0,0,0,0.2); box-shadow: 2px 2.8px 0 rgba(74,54,34,0.26); transition: transform 0.12s; }
 .bibm-btn:active { transform: translateY(1.5px); }
 .bibm-btn:disabled { opacity: 0.5; }
 .bibm-btn.ghost { background: var(--cream); color: var(--ink); text-shadow: none; padding: 13px 18px; box-shadow: 1.8px 2.4px 0 rgba(74,54,34,0.2); }
