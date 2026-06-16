@@ -99,6 +99,7 @@ function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection }) {
             ? <TableroNotas pct={data.porcentaje} scale={scale} principal={data.principal}
                 onOpenSection={onOpenSection} />
             : <Tablero pct={data.porcentaje} scale={scale} imageUrl={data.principal[sectionKey]?.url}
+                videoUrl={data.principal[sectionKey]?.videoUrl}
                 onOpenList={() => onOpenList(sectionKey)} />}
         </div>
       </div>

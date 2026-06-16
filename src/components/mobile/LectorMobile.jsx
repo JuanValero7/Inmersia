@@ -45,6 +45,19 @@ function splitSentences(text) {
   return parts.length ? parts : [text]
 }
 
+function findPrefixAtEnd(text, ref, minLen = 5) {
+  const tl = text.toLowerCase(), rl = ref.toLowerCase()
+  for (let len = rl.length - 1; len >= minLen; len--)
+    if (tl.endsWith(rl.slice(0, len))) return text.length - len
+  return -1
+}
+function findSuffixAtStart(text, ref, minLen = 5) {
+  const tl = text.toLowerCase(), rl = ref.toLowerCase()
+  for (let offset = 1; offset <= rl.length - minLen; offset++)
+    if (tl.startsWith(rl.slice(offset))) return rl.length - offset
+  return -1
+}
+
 // Factor de ancho medio de carácter por fuente (estima caracteres/línea).
 const FONT_WIDTH = {
   "'Crimson Text', Georgia, serif": 0.46,
@@ -160,27 +173,49 @@ function BookPage({ chapter, chapterIndex, parrafos, mediaByParrafo, isFirst, pa
         {parrafos.map((p, i) => {
           if (p.tipo === 'separador') return <div key={p.id ?? `s${i}`} className="lm-sep">❧</div>
           const sfx = (mediaByParrafo[p.id] || []).filter(m => m.origen === 'explicito' && m.tipo === 'audio')
-          const sfxTextoRef = sfx.length ? (sfx.find(s => s.metadata?.texto_ref)?.metadata?.texto_ref ?? null) : null
-          let sentences = null, sfxSentenceIdx = -1
-          if (sfxTextoRef) {
-            sentences = splitSentences(p.contenido)
-            sfxSentenceIdx = sentences.findIndex(s => s.toLowerCase().includes(sfxTextoRef.toLowerCase()))
+          const text = p.contenido || ''
+          const textLower = text.toLowerCase()
+          const anchors = []
+          const sfxUnanchored = []
+          for (const s of sfx) {
+            const ref = s.metadata?.texto_ref
+            if (ref) {
+              const pos = textLower.indexOf(ref.toLowerCase())
+              if (pos !== -1) {
+                anchors.push({ start: pos, end: pos + ref.length, s })
+              } else {
+                const partialStart = findPrefixAtEnd(text, ref)
+                if (partialStart !== -1) {
+                  anchors.push({ start: partialStart, end: text.length, s })
+                } else {
+                  const partialEnd = findSuffixAtStart(text, ref)
+                  if (partialEnd !== -1) anchors.push({ start: 0, end: partialEnd, s })
+                }
+              }
+            } else {
+              sfxUnanchored.push(s)
+            }
           }
-          const paraGlow = sfx.length > 0 && sfxSentenceIdx === -1
-          const handleSfxClick = sfx.length ? (e) => { e.stopPropagation(); onPlaySfx(sfx) } : undefined
+          anchors.sort((a, b) => a.start - b.start)
+          let sfxContent = null
+          if (anchors.length > 0) {
+            sfxContent = []
+            let last = 0
+            for (const { start, end, s } of anchors) {
+              if (last < start) sfxContent.push(<span key={`t${last}`}>{text.slice(last, start)}</span>)
+              sfxContent.push(<span key={`s${start}`} className="sfx-glow" onClick={(e) => { e.stopPropagation(); onPlaySfx(s) }}>{text.slice(start, end)}</span>)
+              last = end
+            }
+            if (last < text.length) sfxContent.push(<span key={`t${last}`}>{text.slice(last)}</span>)
+          }
+          const paraGlow = sfxUnanchored.length > 0 && anchors.length === 0
+          const handleParaClick = paraGlow ? (e) => { e.stopPropagation(); onPlaySfx(sfxUnanchored[0]) } : undefined
           return (
             <p key={p.id ?? `p${i}`} data-parrafo-id={p.id}
-              onClick={paraGlow ? handleSfxClick : undefined}
+              onClick={paraGlow ? handleParaClick : undefined}
               className={'lm-para' + (p.tipo==='dialogo'?' dlg':'') + (paraGlow ? ' sfx-glow' : '')}
               style={{ fontFamily: font }}>
-              {sfx.length > 0 && sfxSentenceIdx !== -1
-                ? sentences.map((s, si) =>
-                    si === sfxSentenceIdx
-                      ? <span key={si} className="sfx-glow" onClick={handleSfxClick}>{s}</span>
-                      : <span key={si}>{s}</span>
-                  )
-                : p.contenido
-              }
+              {sfxContent ?? p.contenido}
             </p>
           )
         })}
@@ -499,10 +534,24 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     const box = screenRef.current?.querySelector('[data-lm-pagebox]')
     if (!box) return
     const cs = getComputedStyle(box)
-    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
-    const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)
+    const padX    = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
+    const padBottom = parseFloat(cs.paddingBottom)
+    const padY    = parseFloat(cs.paddingTop) + padBottom
     const contentW = Math.max(120, box.clientWidth - padX)
-    const contentH = Math.max(160, box.clientHeight - padY)
+    let   contentH = box.clientHeight - padY
+
+    // El botón del gato flota sobre la página (z-index alto, position:absolute
+    // en lm-book-area) y tapa visualmente la parte inferior del contenido.
+    // Medimos el solapamiento real y lo descontamos de contentH para que el
+    // paginador no coloque texto en esa zona oculta.
+    const catBtn = screenRef.current?.querySelector('.lm-cat-btn')
+    if (catBtn) {
+      const contentBottom = box.getBoundingClientRect().bottom - padBottom
+      const catTop        = catBtn.getBoundingClientRect().top
+      contentH -= Math.max(0, contentBottom - catTop)
+    }
+
+    contentH = Math.max(160, contentH)
     const wf = FONT_WIDTH[readingFont] || 0.46
     const charsPerLine = Math.max(20, Math.floor(contentW / (fontSize * wf)))
     const lineHeight = Math.round(fontSize * LINE)
@@ -535,11 +584,12 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const paginas = useMemo(() => {
     if (!currentChapData?.parrafos) return [[]]
     const GAP = Math.round(fontSize * 0.7)
-    const firstPageMaxH = Math.max(geom.lineHeight * 3, geom.maxH - geom.titleH)
+    const maxH = Math.min(geom.maxH, 17 * geom.lineHeight)
+    const firstPageMaxH = Math.max(geom.lineHeight * 3, maxH - geom.titleH)
     return paginarParrafos(currentChapData.parrafos, false, {
       charsPerLine: geom.charsPerLine,
       lineHeight: geom.lineHeight,
-      maxH: geom.maxH,
+      maxH,
       firstPageMaxH,
       paragraphGap: GAP,
     })

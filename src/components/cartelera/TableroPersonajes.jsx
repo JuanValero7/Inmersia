@@ -53,19 +53,26 @@ function Frame({ it }) {
   )
 }
 
-export default function TableroPersonajes({ pct = 0, scale = 1, imageUrl, onOpenList }) {
+export default function TableroPersonajes({ pct = 0, scale = 1, imageUrl, videoUrl, onOpenList }) {
   const { items, order } = useMemo(buildLayout, [])
   const revealed = Math.round(Math.max(0, Math.min(100, pct)) / 100 * TOTAL)
   const shown = useMemo(() => order.slice(0, revealed), [order, revealed])
-  // El clip-path solo cambia cuando cambia cuántas polaroids están reveladas;
-  // se memoiza para no rearmar hasta 30 paths en cada render (p. ej. al escalar).
   const clip = useMemo(() => shown.length
     ? `path('${shown.map(i => { const it = items[i]; return quadPath(it.cx, it.cy, it.w, it.h, it.rot) }).join(' ')}')`
     : `path('M 0 0 Z')`, [shown, items])
 
+  const containerStyle = { width: BOARD_W, height: BOARD_H, transform: `scale(${scale})`, cursor: onOpenList ? 'pointer' : 'default' }
+
+  if (pct >= 100 && videoUrl) {
+    return (
+      <div className="cart-canvas" style={containerStyle} onClick={onOpenList} title={onOpenList ? 'Ver la lista' : undefined}>
+        <video src={videoUrl} autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+      </div>
+    )
+  }
+
   return (
-    <div className="cart-canvas" style={{ width: BOARD_W, height: BOARD_H, transform: `scale(${scale})`, cursor: onOpenList ? 'pointer' : 'default' }}
-      onClick={onOpenList} title={onOpenList ? 'Ver la lista' : undefined}>
+    <div className="cart-canvas" style={containerStyle} onClick={onOpenList} title={onOpenList ? 'Ver la lista' : undefined}>
       <div className="cart-foto" style={{ clipPath: clip, WebkitClipPath: clip }}>
         {imageUrl ? <img src={imageUrl} alt="" /> : <div className="cart-foto-empty" />}
       </div>

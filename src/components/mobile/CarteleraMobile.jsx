@@ -242,7 +242,8 @@ function SectionView({ sectionKey, data, onPortada, onJump, onExplore, initialIt
           <div className="cart-canvas-box" style={{ width: BOARD_W * scale, height: BOARD_H * scale }}>
             {isNotas
               ? <TableroNotas pct={data.porcentaje} scale={scale} principal={data.principal} onOpenSection={onJump} />
-              : <Tablero pct={data.porcentaje} scale={scale} imageUrl={data.principal[sectionKey]?.url} />}
+              : <Tablero pct={data.porcentaje} scale={scale} imageUrl={data.principal[sectionKey]?.url}
+                  videoUrl={data.principal[sectionKey]?.videoUrl} />}
           </div>
         </div>
       )}

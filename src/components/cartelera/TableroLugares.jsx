@@ -110,10 +110,19 @@ function Reveal({ percent }) {
   return <canvas ref={cvs} className="cart-coat" />
 }
 
-export default function TableroLugares({ pct = 0, scale = 1, imageUrl, onOpenList }) {
+export default function TableroLugares({ pct = 0, scale = 1, imageUrl, videoUrl, onOpenList }) {
+  const containerStyle = { width: BOARD_W, height: BOARD_H, transform: `scale(${scale})`, cursor: onOpenList ? 'pointer' : 'default' }
+
+  if (pct >= 100 && videoUrl) {
+    return (
+      <div className="cart-canvas cart-board" style={containerStyle} onClick={onOpenList} title={onOpenList ? 'Ver la lista' : undefined}>
+        <video src={videoUrl} autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+      </div>
+    )
+  }
+
   return (
-    <div className="cart-canvas cart-board" style={{ width: BOARD_W, height: BOARD_H, transform: `scale(${scale})`, cursor: onOpenList ? 'pointer' : 'default' }}
-      onClick={onOpenList} title={onOpenList ? 'Ver la lista' : undefined}>
+    <div className="cart-canvas cart-board" style={containerStyle} onClick={onOpenList} title={onOpenList ? 'Ver la lista' : undefined}>
       <div className="cart-foto">
         {imageUrl ? <img src={imageUrl} alt="" /> : <div className="cart-foto-empty" />}
       </div>

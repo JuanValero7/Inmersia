@@ -150,9 +150,9 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
   }, [chapterCache])
 
   // SFX puntual (botón ♪ en párrafo)
-  const playSfx = useCallback((mediaList) => {
-    const m = mediaList[0]; if (!m?.url) return
-    const a = new Audio(m.url); a.volume = 0.85; a.play().catch(() => {})
+  const playSfx = useCallback((media) => {
+    if (!media?.url) return
+    const a = new Audio(media.url); a.volume = 0.85; a.play().catch(() => {})
   }, [])
 
   // Persistir avance de capítulo al cerrar el cuaderno (idéntico en ambos)

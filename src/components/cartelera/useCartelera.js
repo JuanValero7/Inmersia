@@ -51,7 +51,7 @@ export function useCartelera(libroId, userId) {
           .eq('libro_id', libroId)
           .order('capitulo_numero', { ascending: true }),
         supabase.from('cartelera_principal')
-          .select('seccion, imagen:biblioteca_media!imagen_media_id(url, titulo)')
+          .select('seccion, imagen:biblioteca_media!imagen_media_id(url, titulo), video:biblioteca_media!video_media_id(url)')
           .eq('libro_id', libroId),
         supabase.from('capitulos')
           .select('id', { count: 'exact', head: true })
@@ -93,7 +93,9 @@ export function useCartelera(libroId, userId) {
 
       const imgs = {}
       for (const row of (principalRes.data || [])) {
-        if (row.imagen?.url) imgs[row.seccion] = row.imagen
+        if (row.imagen?.url || row.video?.url) {
+          imgs[row.seccion] = { ...row.imagen, videoUrl: row.video?.url || null }
+        }
       }
 
       if (!cancelled) {
