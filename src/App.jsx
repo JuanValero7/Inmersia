@@ -11,6 +11,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { supabase } from './lib/supabase.js'
 import useIsMobile from './hooks/useIsMobile.js'
+import { useSuperuser } from './hooks/useSuperuser.js'
 import Auth from './components/Auth.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
 import TourResume from './components/TourResume.jsx'
@@ -49,6 +50,7 @@ export default function App() {
   const [authTab,             setAuthTab]             = useState('login')    // ⬅︎ LANDING
 
   const isMobile = useIsMobile()
+  const isSuperuser = useSuperuser(user ?? null)
   const Foro = isMobile ? VistaForoMobile : VistaForo
   const Perfil = isMobile ? VistaPerfilMobile : VistaPerfil
   const Biblioteca = isMobile ? VistaBibliotecaMobile : VistaBiblioteca
@@ -186,7 +188,7 @@ export default function App() {
         />
       )}
       {view === 'tienda' && (
-        <VistaTienda onGoBack={() => navigate('biblioteca')} user={user} onOpenBook={handleOpenBook}/>
+        <VistaTienda onGoBack={() => navigate('biblioteca')} user={user} onOpenBook={handleOpenBook} isSuperuser={isSuperuser}/>
       )}
       {view === 'cartelera' && (
         <Cartelera
@@ -197,6 +199,7 @@ export default function App() {
           onGoBiblioteca={() => navigate('biblioteca')}
           jumpToItemId={cartelaJumpId}
           onJumpConsumed={() => setCartelaJumpId(null)}
+          isSuperuser={isSuperuser}
         />
       )}
       {view === 'foro' && (
@@ -217,6 +220,7 @@ export default function App() {
           onGoForo={() => { setForoSource('lectura'); navigate('foro') }}
           startWithNotebook={lectorStartNotebook}
           onNotebookStarted={() => setLectorStartNotebook(false)}
+          isSuperuser={isSuperuser}
         />
       )}
     </Suspense>

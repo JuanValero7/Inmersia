@@ -22,7 +22,7 @@ const LIMITE = 5   // tope de lecturas pendientes
 const NUEVOS = 5   // cuántos libros recientes llevan el listón "Nuevo"
 const PAGE_SIZE = 20
 
-export default function VistaTienda({ onGoBack, user, onOpenBook }) {
+export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = false }) {
   const [subView,       setSubView]       = useState('calle')   // 'calle' | 'catalogo'
   const [catalogo,      setCatalogo]      = useState([])
   const [userLibros,    setUserLibros]    = useState([])
@@ -33,7 +33,7 @@ export default function VistaTienda({ onGoBack, user, onOpenBook }) {
   const [reelLibro,     setReelLibro]     = useState(null)
 
   const pendientes      = userLibros.filter(l => !l.leido).length
-  const accesoBloqueado = pendientes >= LIMITE
+  const accesoBloqueado = !isSuperuser && pendientes >= LIMITE
   const tieneLibro = id => userLibros.some(l => l.libro_id === id)
   const libroLeido = id => userLibros.some(l => l.libro_id === id && l.leido)
 

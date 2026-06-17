@@ -13,7 +13,7 @@ import { supabase } from '../../lib/supabase.js'
 
 const VACIO = { personajes: [], lugares: [], hechos: [], datos: [] }
 
-export function useCartelera(libroId, userId) {
+export function useCartelera(libroId, userId, isSuperuser = false) {
   const [loading, setLoading]       = useState(true)
   const [capituloActual, setCap]    = useState(0)
   const [porcentaje, setPorcentaje] = useState(0)
@@ -70,7 +70,7 @@ export function useCartelera(libroId, userId) {
       const agrupado = { personajes: [], lugares: [], hechos: [], datos: [] }
       const keys = {}  // `${seccion}:::${canonico}` → index en agrupado[seccion]
       for (const it of (carteleraRes.data || [])) {
-        if (!(capActual > 0 && it.capitulo_numero < capActual)) continue
+        if (!isSuperuser && !(capActual > 0 && it.capitulo_numero < capActual)) continue
         if (!agrupado[it.seccion]) continue
         const canonico = it.nombre
         const key = `${it.seccion}:::${canonico}`
@@ -109,7 +109,7 @@ export function useCartelera(libroId, userId) {
 
     cargar()
     return () => { cancelled = true }
-  }, [libroId, userId])
+  }, [libroId, userId, isSuperuser])
 
   return { loading, capituloActual, porcentaje, itemsBySeccion, principal }
 }

@@ -29,6 +29,7 @@ import { paginarParrafos } from '../../utils/lectorPagination.js'
 import { READING_FONTS } from '../lector/readerConstants.js'
 import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTILIZADO (igual al de PC)
 import { INK, ACCENT } from '../lector/clay.jsx'
+import SuperuserSoundsPanel from '../lector/SuperuserSoundsPanel.jsx'
 import { getTourPhase, setTourPhase } from '../guidedTour.js'
 import { runGuidedLector1Mobile, runGuidedLector2Mobile } from '../tutorial.mobile.js'
 import '../../styles/lector.mobile.css'
@@ -446,15 +447,16 @@ function ResenaSheet({ form, setForm, enviando, miResena, onSubmit, onClose }) {
 // ═══════════════════════════════════════════════════════════════
 //  COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════════
-export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted }) {
+export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false }) {
   // ── Estado de navegación de lectura (UI) ──
   const [chapterIndex, setChapterIndex] = useState(0)
   const [pageIndex,    setPageIndex]    = useState(0)
   const [sheet,        setSheetRaw]     = useState(null)   // 'chapters' | 'typo' | 'audio' | 'nav'
   const [imageOpen,    setImageOpen]    = useState(false)
   const [notebookOpen, setNotebookOpen] = useState(false)
-  const [catOpen,      setCatOpen]      = useState(false)
+  const [catOpen,        setCatOpen]        = useState(false)
   const [pendingChapter, setPendingChapter] = useState(null)
+  const [adminPanelOpen, setAdminPanelOpen] = useState(false)
 
   // Lógica de datos compartida con el Lector de escritorio (ver src/hooks/useLectorData.js)
   const {
@@ -463,6 +465,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
     fetchChapter, playSfx, persistChapterAdvance, subrayar,
+    quitarMedia, marcarMedia, sugerirMedia,
     miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
   } = useLectorData(book, setChapterIndex, setPageIndex)
 
@@ -789,6 +792,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         {isLeido && book?.libro_id && (
           <button className="lm-explore lm-resena-btn" onClick={() => { setSheetRaw(null); setCatOpen(false); setResenaOpen(true) }} title="Escribir reseña" aria-label="Escribir reseña"><IcStar /></button>
         )}
+        {isSuperuser && !loading && !error && book?.libro_id && (
+          <button className="lm-explore" onClick={() => setAdminPanelOpen(v => !v)} title="Panel de media" style={{ fontSize: 14, fontWeight: 700, background: adminPanelOpen ? '#8b4d2a' : undefined, color: adminPanelOpen ? '#fff' : undefined }}>⚙</button>
+        )}
       </header>
 
       {/* Controles */}
@@ -874,6 +880,18 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         capituloNum={capitulos[chapterIndex]?.numero ?? chapterIndex + 1}
         capitulos={capitulos}
       />
+
+      {/* Panel de superusuario */}
+      {isSuperuser && adminPanelOpen && (
+        <SuperuserSoundsPanel
+          parrafos={currentChapData?.parrafos || []}
+          mediaByParrafo={currentMedia}
+          onQuitar={quitarMedia}
+          onMarcar={marcarMedia}
+          onSugerir={sugerirMedia}
+          onClose={() => setAdminPanelOpen(false)}
+        />
+      )}
     </div>
   )
 }

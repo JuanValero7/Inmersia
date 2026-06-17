@@ -261,8 +261,8 @@ function SectionView({ sectionKey, data, onPortada, onJump, onExplore, initialIt
   )
 }
 
-export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed }) {
-  const data = useCartelera(book?.libro_id || null, user?.id || null)
+export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false }) {
+  const data = useCartelera(book?.libro_id || null, user?.id || null, isSuperuser)
   // Lazy init: si viene con jumpToItemId (desde X-ray) arranca directo en el tablero,
   // evitando el render de la portada antes de que el efecto lo corrija.
   const [view, setView] = useState(() =>

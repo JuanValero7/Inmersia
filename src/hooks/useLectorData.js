@@ -180,6 +180,64 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
     })
   }
 
+  // ── Operaciones de superusuario ───────────────────────────────
+
+  // Elimina el vínculo explícito entre un párrafo y un media.
+  // Actualiza el cache local para reflejar el cambio sin recargar.
+  async function quitarMedia(parrafoId, mediaId, capituloId) {
+    const { error } = await supabase
+      .from('elementos_interactivos')
+      .delete()
+      .eq('parrafo_id', parrafoId)
+      .eq('media_id', mediaId)
+    if (error) { console.error('quitarMedia:', error.message); return false }
+    setChapterCache(prev => {
+      const entry = prev[capituloId]
+      if (!entry) return prev
+      const updated = { ...entry.mediaByParrafo }
+      if (updated[parrafoId]) {
+        updated[parrafoId] = updated[parrafoId].filter(m => m.media_id !== mediaId)
+      }
+      return { ...prev, [capituloId]: { ...entry, mediaByParrafo: { ...updated } } }
+    })
+    return true
+  }
+
+  // Marca un media como destacado en biblioteca_media.
+  async function marcarMedia(mediaId) {
+    const { error } = await supabase
+      .from('biblioteca_media')
+      .update({ destacado: true })
+      .eq('id', mediaId)
+    if (error) { console.error('marcarMedia:', error.message); return false }
+    return true
+  }
+
+  // Crea un vínculo explícito entre un párrafo y un media.
+  // Actualiza el cache local para reflejar el cambio sin recargar.
+  async function sugerirMedia(parrafoId, mediaId, capituloId) {
+    const { error } = await supabase
+      .from('elementos_interactivos')
+      .insert({ parrafo_id: parrafoId, media_id: mediaId })
+    if (error) { console.error('sugerirMedia:', error.message); return false }
+    const { data: m } = await supabase
+      .from('biblioteca_media')
+      .select('id, slug, tipo, url, titulo, descripcion, metadata')
+      .eq('id', mediaId)
+      .single()
+    if (m) {
+      setChapterCache(prev => {
+        const entry = prev[capituloId]
+        if (!entry) return prev
+        const updated = { ...entry.mediaByParrafo }
+        const nuevo = { parrafo_id: parrafoId, media_id: m.id, slug: m.slug, tipo: m.tipo, url: m.url, titulo: m.titulo, descripcion: m.descripcion, metadata: m.metadata, origen: 'explicito' }
+        updated[parrafoId] = [...(updated[parrafoId] || []), nuevo]
+        return { ...prev, [capituloId]: { ...entry, mediaByParrafo: { ...updated } } }
+      })
+    }
+    return true
+  }
+
   return {
     // datos
     userId, capitulos, chapterCache, loading, loadingCap, error,
@@ -188,6 +246,8 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
     setLoadingCap, setError,
     // operaciones
     fetchChapter, playSfx, persistChapterAdvance, subrayar,
+    // superusuario
+    quitarMedia, marcarMedia, sugerirMedia,
     // reseña
     miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
   }

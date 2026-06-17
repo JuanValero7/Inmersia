@@ -161,8 +161,8 @@ function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection, onG
   )
 }
 
-export default function CartelaView({ onGoBack, book, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed }) {
-  const data = useCartelera(book?.libro_id || null, user?.id || null)
+export default function CartelaView({ onGoBack, book, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false }) {
+  const data = useCartelera(book?.libro_id || null, user?.id || null, isSuperuser)
   const [view, setView] = useState({ kind: 'portada', key: null })
   const [fichaInitItemId, setFichaInitItemId] = useState(null)
 

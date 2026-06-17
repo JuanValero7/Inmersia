@@ -17,6 +17,7 @@ import { PolaroidStack }   from './lector/PolaroidStack.jsx'
 import { NotebookIcon } from './lector/RecorderPlayer.jsx'
 import { Notebook }        from './lector/Notebook.jsx'
 import { theme, ClayButton, getReaderPalette } from './lector/clay.jsx'
+import SuperuserSoundsPanel from './lector/SuperuserSoundsPanel.jsx'
 
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
 
@@ -68,7 +69,7 @@ function EstrellaLector({ valor, onChange }) {
   )
 }
 
-export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted }) {
+export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false }) {
   const [chapterIndex,   setChapterIndex]   = useState(0)
   const [pageIndex,      setPageIndex]      = useState(0)
   const [doubleView,     setDoubleView]     = useState(true)
@@ -84,6 +85,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
     fetchChapter, playSfx, persistChapterAdvance, subrayar,
+    quitarMedia, marcarMedia, sugerirMedia,
     miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
   } = useLectorData(book, setChapterIndex, setPageIndex)
 
@@ -120,6 +122,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   }, [loading, book?.libro_id])
 
   const [pendingSelection,  setPendingSelection]  = useState(null)
+  const [adminPanelOpen,    setAdminPanelOpen]    = useState(false)
 
   const [geom, setGeom] = useState(() => computeGeom(true, fontSize, readingFont))
   useEffect(() => {
@@ -382,6 +385,12 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
           <span style={{ fontSize: 18, fontWeight: 700, color: '#8a7355', fontFamily: "'Baloo 2', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{book?.title}</span>
         </div>
         <div style={{ display: 'flex', gap: 9, alignItems: 'center' }}>
+          {isSuperuser && !loading && !error && book?.libro_id && (
+            <button type="button" onClick={() => setAdminPanelOpen(v => !v)} title="Panel de media (superusuario)"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13, cursor: 'pointer', border: `2px solid ${adminPanelOpen ? theme.accent : theme.ink}`, borderRadius: 999, padding: '8px 14px', background: adminPanelOpen ? theme.accent : theme.navBg, color: adminPanelOpen ? '#fff' : theme.navText, boxShadow: `1.6px 2.4px 0 ${theme.ink}30` }}>
+              ⚙ Media
+            </button>
+          )}
           {isLeido && book?.libro_id && (
             <NavButton onClick={() => setResenaOpen(true)} title="Escribir reseña"
               icon="M12 3l2.6 5.4L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.4-.6z"
@@ -534,10 +543,22 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       {pendingSelection && (
         <div className="subrayado-popup" style={{ position: 'fixed', top: pendingSelection.rect.bottom + 8, left: Math.max(12, pendingSelection.rect.left), zIndex: 1300, background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 12, padding: '7px 10px', display: 'flex', gap: 9, alignItems: 'center', boxShadow: `2px 3px 0 ${theme.ink}30, 0 10px 24px rgba(0,0,0,0.3)` }}>
           <span style={{ fontFamily: "'Crimson Text', serif", fontStyle: 'italic', fontSize: 13, color: theme.navText, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            “{pendingSelection.text.length > 45 ? pendingSelection.text.slice(0, 45) + '…' : pendingSelection.text}”
+            {'"'}{pendingSelection.text.length > 45 ? pendingSelection.text.slice(0, 45) + '...' : pendingSelection.text}{'"'}
           </span>
           <ClayButton variant="primary" onClick={handleSubrayar} style={{ padding: '5px 13px', fontSize: 12 }}>Subrayar</ClayButton>
         </div>
+      )}
+
+      {/* Panel de superusuario */}
+      {isSuperuser && adminPanelOpen && (
+        <SuperuserSoundsPanel
+          parrafos={currentChapData?.parrafos || []}
+          mediaByParrafo={currentMedia}
+          onQuitar={quitarMedia}
+          onMarcar={marcarMedia}
+          onSugerir={sugerirMedia}
+          onClose={() => setAdminPanelOpen(false)}
+        />
       )}
     </div>
   )
