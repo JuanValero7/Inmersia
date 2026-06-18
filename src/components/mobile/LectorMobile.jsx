@@ -465,7 +465,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
     fetchChapter, playSfx, persistChapterAdvance, subrayar,
-    quitarMedia, marcarMedia, sugerirMedia,
+    quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
     miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
   } = useLectorData(book, setChapterIndex, setPageIndex)
 
@@ -889,6 +889,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
           onQuitar={quitarMedia}
           onMarcar={marcarMedia}
           onSugerir={sugerirMedia}
+          onBorrarParrafo={borrarParrafo}
           onClose={() => setAdminPanelOpen(false)}
         />
       )}

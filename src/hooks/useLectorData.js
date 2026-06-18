@@ -214,11 +214,14 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
   }
 
   // Crea un vínculo explícito entre un párrafo y un media.
+  // textoRef (opcional): frase exacta del párrafo a la que anclar el audio.
   // Actualiza el cache local para reflejar el cambio sin recargar.
-  async function sugerirMedia(parrafoId, mediaId, capituloId) {
+  async function sugerirMedia(parrafoId, mediaId, capituloId, textoRef = null) {
+    const payload = { parrafo_id: parrafoId, media_id: mediaId }
+    if (textoRef) payload.metadata = { texto_ref: textoRef }
     const { error } = await supabase
       .from('elementos_interactivos')
-      .insert({ parrafo_id: parrafoId, media_id: mediaId })
+      .insert(payload)
     if (error) { console.error('sugerirMedia:', error.message); return false }
     const { data: m } = await supabase
       .from('biblioteca_media')
@@ -230,11 +233,28 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
         const entry = prev[capituloId]
         if (!entry) return prev
         const updated = { ...entry.mediaByParrafo }
-        const nuevo = { parrafo_id: parrafoId, media_id: m.id, slug: m.slug, tipo: m.tipo, url: m.url, titulo: m.titulo, descripcion: m.descripcion, metadata: m.metadata, origen: 'explicito' }
+        const mergedMeta = textoRef ? { ...(m.metadata || {}), texto_ref: textoRef } : (m.metadata || {})
+        const nuevo = { parrafo_id: parrafoId, media_id: m.id, slug: m.slug, tipo: m.tipo, url: m.url, titulo: m.titulo, descripcion: m.descripcion, metadata: mergedMeta, origen: 'explicito' }
         updated[parrafoId] = [...(updated[parrafoId] || []), nuevo]
         return { ...prev, [capituloId]: { ...entry, mediaByParrafo: { ...updated } } }
       })
     }
+    return true
+  }
+
+  // Elimina un párrafo permanentemente via RPC (SECURITY DEFINER).
+  // La función de DB actualiza progreso_lectura antes de borrar.
+  async function borrarParrafo(parrafoId, capituloId) {
+    const { error } = await supabase.rpc('delete_parrafo_superuser', { p_id: parrafoId })
+    if (error) { console.error('borrarParrafo:', error.message); return false }
+    setChapterCache(prev => {
+      const entry = prev[capituloId]
+      if (!entry) return prev
+      const parrafos = entry.parrafos.filter(p => p.id !== parrafoId)
+      const mediaByParrafo = { ...entry.mediaByParrafo }
+      delete mediaByParrafo[parrafoId]
+      return { ...prev, [capituloId]: { ...entry, parrafos, mediaByParrafo } }
+    })
     return true
   }
 
@@ -247,7 +267,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
     // operaciones
     fetchChapter, playSfx, persistChapterAdvance, subrayar,
     // superusuario
-    quitarMedia, marcarMedia, sugerirMedia,
+    quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
     // reseña
     miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
   }

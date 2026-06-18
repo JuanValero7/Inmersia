@@ -1,9 +1,8 @@
 // src/components/lector/SuperuserSoundsPanel.jsx
 // Panel lateral exclusivo del superusuario para gestionar la media del capítulo.
-// Pestaña "Ver": lista toda la media explícita del capítulo con botones quitar (✕)
-//   y marcar destacado (★). La media de origen 'tag' solo se puede marcar.
-// Pestaña "Sugerir": selector de párrafo + búsqueda de biblioteca_media + vincular.
-import { useState, useEffect } from 'react'
+// Pestaña "Ver": lista toda la media explícita + tag del capítulo con ★ y ✕.
+// Pestaña "Sugerir": búsqueda de párrafo + anclar frase + borrar párrafo + vincular media.
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase.js'
 import { theme } from './clay.jsx'
 
@@ -67,7 +66,7 @@ const s = {
     background: active ? theme.accent : 'transparent',
     color: active ? '#fff' : theme.ink,
   }),
-  searchInput: {
+  input: {
     width: '100%', padding: '7px 10px',
     border: `1.5px solid ${theme.ink}44`, borderRadius: 8,
     fontFamily: "'Baloo 2', sans-serif", fontSize: 12,
@@ -85,6 +84,34 @@ const s = {
     border: `1.5px solid ${theme.accent}`, borderRadius: 7,
     background: theme.accent, color: '#fff',
     cursor: 'pointer', fontSize: 11, fontWeight: 700,
+  },
+  playBtn: (active) => ({
+    width: 22, height: 22, flexShrink: 0,
+    border: `1.5px solid ${active ? '#c0392b' : `${theme.ink}44`}`,
+    borderRadius: 5, cursor: 'pointer', fontSize: 10,
+    background: active ? '#c0392b22' : 'transparent',
+    color: active ? '#c0392b' : `${theme.ink}88`,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    lineHeight: 1,
+  }),
+  aviso: {
+    fontSize: 11, color: '#c0392b', marginTop: 4,
+    padding: '4px 8px', background: '#c0392b11', borderRadius: 6,
+    border: '1px solid #c0392b33',
+  },
+  borrarBtn: {
+    padding: '5px 12px', alignSelf: 'flex-start',
+    border: '1.5px solid #c0392b', borderRadius: 7,
+    background: 'transparent', color: '#c0392b',
+    cursor: 'pointer', fontSize: 11, fontWeight: 700,
+  },
+  confirmRow: {
+    display: 'flex', alignItems: 'center', gap: 6,
+    padding: '7px 10px', borderRadius: 7,
+    background: '#c0392b11', border: '1px solid #c0392b33',
+  },
+  divider: {
+    borderTop: `1px solid ${theme.ink}18`, marginTop: 4, paddingTop: 10,
   },
 }
 
@@ -106,22 +133,43 @@ function tipoIcon(tipo) {
   return '▶'
 }
 
-export default function SuperuserSoundsPanel({ parrafos = [], mediaByParrafo = {}, onQuitar, onMarcar, onSugerir, onClose }) {
-  const [tab, setTab]                   = useState('ver')
-  const [marcados, setMarcados]         = useState({})
+export default function SuperuserSoundsPanel({
+  parrafos = [], mediaByParrafo = {},
+  onQuitar, onMarcar, onSugerir, onBorrarParrafo, onClose,
+}) {
+  const [tab, setTab]               = useState('ver')
+  const [marcados, setMarcados]     = useState({})
+
+  // Sugerir tab state
+  const [parrafoBusqueda, setParrafoBusqueda] = useState('')
   const [sugerirParrafoId, setSugerirParrafoId] = useState('')
-  const [allMedia, setAllMedia]         = useState([])
+  const [textoRef, setTextoRef]     = useState('')
+  const [textoRefAviso, setTextoRefAviso] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(null)
+
+  // Media browser state
+  const [allMedia, setAllMedia]     = useState([])
   const [loadingMedia, setLoadingMedia] = useState(false)
-  const [tipoFiltro, setTipoFiltro]     = useState('todos')
-  const [busqueda, setBusqueda]         = useState('')
+  const [tipoFiltro, setTipoFiltro] = useState('todos')
+  const [busqueda, setBusqueda]     = useState('')
 
-  // Inicializar párrafo destino con el primero que no sea separador
+  // Audio preview
+  const [playingId, setPlayingId]   = useState(null)
+  const audioRef = useRef(null)
+
+  // Sync selection with visible options (accounts for search filter and deletions)
   useEffect(() => {
-    const primero = parrafos.find(p => p.tipo !== 'separador')
-    if (primero) setSugerirParrafoId(primero.id)
-  }, [parrafos])
+    const visibles = parrafos.filter(p => {
+      if (p.tipo === 'separador') return false
+      if (!parrafoBusqueda) return true
+      return (p.contenido || '').toLowerCase().includes(parrafoBusqueda.toLowerCase())
+    })
+    if (!sugerirParrafoId || !visibles.find(p => p.id === sugerirParrafoId)) {
+      setSugerirParrafoId(visibles[0]?.id || '')
+    }
+  }, [parrafos, parrafoBusqueda])
 
-  // Cargar toda la biblioteca_media al abrir la pestaña Sugerir
+  // Load all biblioteca_media when Sugerir tab opens
   useEffect(() => {
     if (tab !== 'sugerir') return
     setLoadingMedia(true)
@@ -132,13 +180,38 @@ export default function SuperuserSoundsPanel({ parrafos = [], mediaByParrafo = {
       .then(({ data }) => { setAllMedia(data || []); setLoadingMedia(false) })
   }, [tab])
 
-  // Toda la media del capítulo: explícita + tag
+  // Stop audio on unmount or tab change away from sugerir
+  useEffect(() => {
+    return () => { if (audioRef.current) { audioRef.current.pause(); audioRef.current = null } }
+  }, [])
+
+  useEffect(() => {
+    if (tab !== 'sugerir' && audioRef.current) {
+      audioRef.current.pause(); audioRef.current = null
+      setPlayingId(null)
+    }
+  }, [tab])
+
+  // Clear texto_ref warning when phrase or paragraph changes
+  useEffect(() => { setTextoRefAviso('') }, [textoRef, sugerirParrafoId])
+
+  // Clear delete confirmation when paragraph changes
+  useEffect(() => { setConfirmDelete(null) }, [sugerirParrafoId])
+
+  // ── Computed ──────────────────────────────────────────────
+
   const todaMedia = []
   for (const p of parrafos) {
     for (const m of (mediaByParrafo[p.id] || [])) {
       todaMedia.push({ parrafo: p, media: m })
     }
   }
+
+  const parrafosFiltered = parrafos.filter(p => {
+    if (p.tipo === 'separador') return false
+    if (!parrafoBusqueda) return true
+    return (p.contenido || '').toLowerCase().includes(parrafoBusqueda.toLowerCase())
+  })
 
   const mediaFiltrada = allMedia.filter(m => {
     if (tipoFiltro !== 'todos' && m.tipo !== tipoFiltro) return false
@@ -151,6 +224,8 @@ export default function SuperuserSoundsPanel({ parrafos = [], mediaByParrafo = {
     )
   })
 
+  // ── Handlers ──────────────────────────────────────────────
+
   const handleMarcar = async (mediaId) => {
     const ok = await onMarcar(mediaId)
     if (ok) setMarcados(prev => ({ ...prev, [mediaId]: true }))
@@ -158,8 +233,47 @@ export default function SuperuserSoundsPanel({ parrafos = [], mediaByParrafo = {
 
   const handleVincular = (mediaId) => {
     const p = parrafos.find(p => p.id === sugerirParrafoId)
-    if (p) onSugerir(sugerirParrafoId, mediaId, p.capitulo_id)
+    if (!p) return
+    const phrase = textoRef.trim()
+    let finalTextoRef = null
+    if (phrase) {
+      if ((p.contenido || '').includes(phrase)) {
+        finalTextoRef = phrase
+      } else {
+        setTextoRefAviso('Frase no encontrada en el párrafo — el sonido se vincula al párrafo completo.')
+      }
+    }
+    onSugerir(sugerirParrafoId, mediaId, p.capitulo_id, finalTextoRef)
   }
+
+  const handlePlay = (m) => {
+    if (playingId === m.id) {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+      setPlayingId(null)
+      return
+    }
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+    const audio = new Audio(m.url)
+    audio.volume = 0.85
+    audio.onended = () => { audioRef.current = null; setPlayingId(null) }
+    audio.play().catch(() => {})
+    audioRef.current = audio
+    setPlayingId(m.id)
+  }
+
+  const handleBorrar = async (parrafoId) => {
+    if (confirmDelete !== parrafoId) { setConfirmDelete(parrafoId); return }
+    setConfirmDelete(null)
+    const p = parrafos.find(q => q.id === parrafoId)
+    if (!p) return
+    const ok = await onBorrarParrafo(parrafoId, p.capitulo_id)
+    if (ok && sugerirParrafoId === parrafoId) {
+      const remaining = parrafos.filter(q => q.tipo !== 'separador' && q.id !== parrafoId)
+      setSugerirParrafoId(remaining[0]?.id || '')
+    }
+  }
+
+  // ── Render ────────────────────────────────────────────────
 
   return (
     <div style={s.panel}>
@@ -179,7 +293,7 @@ export default function SuperuserSoundsPanel({ parrafos = [], mediaByParrafo = {
 
       <div style={s.body}>
 
-        {/* ── Pestaña VER ────────────────────────────────────────── */}
+        {/* ── Pestaña VER ──────────────────────────────────── */}
         {tab === 'ver' && (
           todaMedia.length === 0
             ? <p style={s.empty}>No hay media en este capítulo.</p>
@@ -210,55 +324,134 @@ export default function SuperuserSoundsPanel({ parrafos = [], mediaByParrafo = {
             ))
         )}
 
-        {/* ── Pestaña SUGERIR ─────────────────────────────────────── */}
+        {/* ── Pestaña SUGERIR ──────────────────────────────── */}
         {tab === 'sugerir' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+            {/* Búsqueda de párrafo */}
             <div>
-              <label style={s.label}>PÁRRAFO DESTINO</label>
+              <label style={s.label}>BUSCAR PÁRRAFO</label>
+              <input
+                type="text"
+                placeholder="Filtrar por texto del párrafo…"
+                value={parrafoBusqueda}
+                onChange={e => setParrafoBusqueda(e.target.value)}
+                style={s.input}
+              />
+            </div>
+
+            {/* Selector de párrafo */}
+            <div>
+              <label style={s.label}>PÁRRAFO DESTINO {parrafoBusqueda ? `(${parrafosFiltered.length})` : ''}</label>
               <select value={sugerirParrafoId} onChange={e => setSugerirParrafoId(e.target.value)} style={s.select}>
-                {parrafos.filter(p => p.tipo !== 'separador').map(p => (
-                  <option key={p.id} value={p.id}>
-                    §{p.numero}: {(p.contenido || '').slice(0, 50)}…
-                  </option>
-                ))}
+                {parrafosFiltered.length === 0
+                  ? <option value="">Sin resultados</option>
+                  : parrafosFiltered.map(p => (
+                    <option key={p.id} value={p.id}>
+                      §{p.numero}: {(p.contenido || '').slice(0, 50)}…
+                    </option>
+                  ))
+                }
               </select>
-            </div>
-
-            <div style={s.filterRow}>
-              {TIPOS.map(t => (
-                <button key={t} type="button" onClick={() => setTipoFiltro(t)} style={s.filterBtn(tipoFiltro === t)}>
-                  {t}
-                </button>
-              ))}
-            </div>
-
-            <input
-              type="text"
-              placeholder="Buscar por título, slug o tag…"
-              value={busqueda}
-              onChange={e => setBusqueda(e.target.value)}
-              style={s.searchInput}
-            />
-
-            {loadingMedia
-              ? <p style={{ ...s.empty, marginTop: 16 }}>Cargando…</p>
-              : mediaFiltrada.length === 0
-                ? <p style={{ ...s.empty, marginTop: 16 }}>Sin resultados.</p>
-                : mediaFiltrada.map(m => (
-                  <div key={m.id} style={s.mediaCard}>
-                    <span style={{ fontSize: 16, flexShrink: 0 }}>{tipoIcon(m.tipo)}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: theme.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {m.titulo || m.slug}
-                      </div>
-                      <div style={{ fontSize: 10, color: `${theme.ink}66` }}>{m.slug}</div>
-                    </div>
-                    <button type="button" onClick={() => handleVincular(m.id)} style={s.vincularBtn}>
-                      + Vincular
-                    </button>
+              {(() => {
+                const sel = parrafos.find(p => p.id === sugerirParrafoId)
+                if (!sel) return null
+                return (
+                  <div style={{ fontSize: 10.5, color: `${theme.ink}88`, marginTop: 4, padding: '4px 8px', background: 'rgba(255,255,255,0.4)', borderRadius: 6, fontStyle: 'italic' }}>
+                    §{sel.numero}: {(sel.contenido || '').slice(0, 90)}{(sel.contenido || '').length > 90 ? '…' : ''}
                   </div>
-                ))
-            }
+                )
+              })()}
+            </div>
+
+            {/* Anclar a frase */}
+            <div>
+              <label style={s.label}>ANCLAR A FRASE (opcional)</label>
+              <input
+                type="text"
+                placeholder="Fragmento exacto del párrafo…"
+                value={textoRef}
+                onChange={e => setTextoRef(e.target.value)}
+                style={s.input}
+              />
+              {textoRefAviso && <div style={s.aviso}>⚠ {textoRefAviso}</div>}
+            </div>
+
+            {/* Borrar párrafo */}
+            {sugerirParrafoId && (
+              confirmDelete === sugerirParrafoId
+                ? (
+                  <div style={s.confirmRow}>
+                    <span style={{ fontSize: 11, color: '#c0392b', flex: 1, fontWeight: 700 }}>
+                      ¿Borrar este párrafo permanentemente?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleBorrar(sugerirParrafoId)}
+                      style={{ ...s.borrarBtn, background: '#c0392b', color: '#fff', border: 'none' }}
+                    >Sí</button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(null)}
+                      style={{ ...s.borrarBtn, border: `1.5px solid ${theme.ink}44`, color: theme.ink }}
+                    >No</button>
+                  </div>
+                )
+                : (
+                  <button type="button" onClick={() => handleBorrar(sugerirParrafoId)} style={s.borrarBtn}>
+                    🗑 Borrar párrafo
+                  </button>
+                )
+            )}
+
+            {/* Buscador de media + lista */}
+            <div style={s.divider}>
+              <div style={s.filterRow}>
+                {TIPOS.map(t => (
+                  <button key={t} type="button" onClick={() => setTipoFiltro(t)} style={s.filterBtn(tipoFiltro === t)}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+
+              <input
+                type="text"
+                placeholder="Buscar por título, slug o tag…"
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                style={{ ...s.input, marginBottom: 8 }}
+              />
+
+              {loadingMedia
+                ? <p style={{ ...s.empty, marginTop: 16 }}>Cargando…</p>
+                : mediaFiltrada.length === 0
+                  ? <p style={{ ...s.empty, marginTop: 16 }}>Sin resultados.</p>
+                  : mediaFiltrada.map(m => (
+                    <div key={m.id} style={s.mediaCard}>
+                      <span style={{ fontSize: 16, flexShrink: 0 }}>{tipoIcon(m.tipo)}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: theme.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {m.titulo || m.slug}
+                        </div>
+                        <div style={{ fontSize: 10, color: `${theme.ink}66` }}>{m.slug}</div>
+                      </div>
+                      {m.tipo === 'audio' && (
+                        <button
+                          type="button"
+                          title={playingId === m.id ? 'Detener' : 'Escuchar'}
+                          onClick={() => handlePlay(m)}
+                          style={s.playBtn(playingId === m.id)}
+                        >
+                          {playingId === m.id ? '■' : '▶'}
+                        </button>
+                      )}
+                      <button type="button" onClick={() => handleVincular(m.id)} style={s.vincularBtn}>
+                        + Vincular
+                      </button>
+                    </div>
+                  ))
+              }
+            </div>
           </div>
         )}
 
