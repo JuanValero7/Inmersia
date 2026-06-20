@@ -3,8 +3,11 @@
 // Lee todo de Supabase con useCartelera. Mantiene la firma original:
 //   <CartelaView onGoBack book user onGoForo />
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
+
+const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
 import { useCartelera } from './cartelera/useCartelera.js'
-import { seccionMeta } from './cartelera/carteleraHelpers.js'
+import { seccionMeta, getSecciones } from './cartelera/carteleraHelpers.js'
 import Portada from './cartelera/Portada.jsx'
 import Signpost from './cartelera/Signpost.jsx'
 import Ficha from './cartelera/Ficha.jsx'
@@ -17,7 +20,8 @@ import '../styles/cartelera.css'
 import { runGuidedCartPersonajes, runGuidedCartNotas } from './tutorial.js'
 import { getTourPhase, setTourPhase } from './guidedTour.js'
 
-const TABLEROS = { personajes: TableroPersonajes, lugares: TableroLugares, hechos: TableroHechos, datos: TableroDatos }
+const TABLEROS_FICCION    = { personajes: TableroPersonajes, lugares: TableroLugares, hechos: TableroHechos, datos: TableroDatos }
+const TABLEROS_NOFICCION  = { glosario: TableroPersonajes, datos: TableroLugares, referencias: TableroHechos, resumen: TableroDatos }
 const BOARD_W = 700, BOARD_H = 860
 
 function useFitScale(ref) {
@@ -54,11 +58,11 @@ function Filters() {
   )
 }
 
-function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection, onGoBack, onGoForo, onGoBiblioteca }) {
+function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection, onGoBack, onGoForo, onGoBiblioteca, secciones, tableros, esNoficcion }) {
   const meta = seccionMeta(sectionKey)
   const stageRef = useRef(null)
   const scale = useFitScale(stageRef)
-  const Tablero = TABLEROS[sectionKey]
+  const Tablero = tableros[sectionKey]
   const [explorarOpen, setExplorarOpen] = useState(false)
 
   useEffect(() => {
@@ -87,7 +91,7 @@ function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection, onG
   return (
     <div className="cart-scene" style={{ '--sec': meta.color }}>
       <div className="bg-layer" />
-      <Signpost current={sectionKey} onOpenSection={onOpenSection} />
+      <Signpost current={sectionKey} onOpenSection={onOpenSection} secciones={secciones} />
       <div className="topbar">
         <div className="ttl"><h1>{meta.label}</h1><span className="sub">{meta.sub}</span></div>
         <div className="cart-sec-hint">Sigue leyendo para revelar una sorpresa</div>
@@ -136,7 +140,7 @@ function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection, onG
         <div className="cart-canvas-box" style={{ width: BOARD_W * scale, height: BOARD_H * scale }}>
           {sectionKey === 'notas'
             ? <TableroNotas pct={data.porcentaje} scale={scale} principal={data.principal}
-                onOpenSection={onOpenSection} />
+                onOpenSection={onOpenSection} esNoficcion={esNoficcion} />
             : <Tablero pct={data.porcentaje} scale={scale} imageUrl={data.principal[sectionKey]?.url}
                 videoUrl={data.principal[sectionKey]?.videoUrl}
                 onOpenList={() => onOpenList(sectionKey)} />}
@@ -162,9 +166,21 @@ function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection, onG
 }
 
 export default function CartelaView({ onGoBack, book, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false }) {
+  const esNoficcion = book?.es_ficcion === false
+  const secciones  = getSecciones(esNoficcion)
+  const tableros   = esNoficcion ? TABLEROS_NOFICCION : TABLEROS_FICCION
   const data = useCartelera(book?.libro_id || null, user?.id || null, isSuperuser)
-  const [view, setView] = useState({ kind: 'portada', key: null })
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [view, setView] = useState(() => {
+    const s = searchParams.get('seccion')
+    return s && VALID_SECCIONES.includes(s) ? { kind: 'board', key: s } : { kind: 'portada', key: null }
+  })
   const [fichaInitItemId, setFichaInitItemId] = useState(null)
+
+  useEffect(() => {
+    if (view.key) setSearchParams({ seccion: view.key }, { replace: true })
+    else setSearchParams({}, { replace: true })
+  }, [view.key, setSearchParams])
 
   useEffect(() => {
     if (!jumpToItemId) return
@@ -180,11 +196,12 @@ export default function CartelaView({ onGoBack, book, user, onGoForo, onGoBiblio
 
   let content
   if (view.kind === 'portada') {
-    content = <Portada subtitle={book?.title} onOpen={handlePortadaOpen}
+    content = <Portada subtitle={book?.title} onOpen={handlePortadaOpen} secciones={secciones}
       onGoBack={onGoBack} onGoForo={onGoForo} onGoBiblioteca={onGoBiblioteca} />
   } else if (view.kind === 'ficha') {
     content = <Ficha section={seccionMeta(view.key)} items={data.itemsBySeccion[view.key] || []}
       initialItemId={fichaInitItemId}
+      secciones={secciones}
       onBackTablero={() => setView({ kind: 'board', key: view.key })}
       onBackPortada={() => setView({ kind: 'portada', key: null })}
       onGoBack={onGoBack}
@@ -192,7 +209,7 @@ export default function CartelaView({ onGoBack, book, user, onGoForo, onGoBiblio
       onGoBiblioteca={onGoBiblioteca}
       onOpenList={(k) => setView({ kind: 'ficha', key: k })} />
   } else {
-    content = <BoardView sectionKey={view.key} data={data}
+    content = <BoardView sectionKey={view.key} data={data} secciones={secciones} tableros={tableros} esNoficcion={esNoficcion}
       onPortada={() => setView({ kind: 'portada', key: null })}
       onOpenList={(k) => setView({ kind: 'ficha', key: k })}
       onOpenSection={(k) => setView({ kind: 'board', key: k })}

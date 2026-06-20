@@ -69,7 +69,7 @@ function EstrellaLector({ valor, onChange }) {
   )
 }
 
-export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false }) {
+export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, onRequestAuth }) {
   const [chapterIndex,   setChapterIndex]   = useState(0)
   const [pageIndex,      setPageIndex]      = useState(0)
   const [doubleView,     setDoubleView]     = useState(true)
@@ -77,6 +77,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const [pendingChapter, setPendingChapter] = useState(null)
   const [explorarOpen,   setExplorarOpen]   = useState(false)
   const [xrayOpen,       setXrayOpen]       = useState(false)
+  const [showPaywall,    setShowPaywall]    = useState(false)
 
   // Lógica de datos compartida con LectorMobile (ver src/hooks/useLectorData.js)
   const {
@@ -110,16 +111,18 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const [ledColor, setLedColor] = useLocalStorage('inm_lector_ledColor', 'none')
   const pal = getReaderPalette(readingTheme)
 
-  // Tutorial — se lanza la primera vez que el libro carga (después de loading)
+  // Tutorial — se lanza la primera vez que el libro carga (después de loading).
+  // No se dispara para invitados: el localStorage de fases es global y marcaría
+  // el tutorial como visto antes de que el usuario se registre.
   useEffect(() => {
-    if (loading || !book?.libro_id) return
+    if (guestMode || loading || !book?.libro_id) return
     const phase = getTourPhase()
     let t
     if (phase === 'wait_lector') {
       t = setTimeout(() => runGuidedLector1(), 900)
     }
     return () => clearTimeout(t)
-  }, [loading, book?.libro_id])
+  }, [guestMode, loading, book?.libro_id])
 
   const [pendingSelection,  setPendingSelection]  = useState(null)
   const [adminPanelOpen,    setAdminPanelOpen]    = useState(false)
@@ -342,14 +345,22 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   function handleNextPage() {
     const step = doubleView ? 2 : 1
     const next = pageIndex + step
-    if (next < currentPaginas.length) setPageIndex(next)
+    if (next < currentPaginas.length) {
+      setPageIndex(next)
+    } else if (guestMode && chapterIndex >= capitulos.length - 1) {
+      setShowPaywall(true)
+    }
   }
   const handleNextChapter = useCallback(() => {
     const next = chapterIndex + 1
-    if (next >= capitulos.length) return
+    if (next >= capitulos.length) {
+      if (guestMode) setShowPaywall(true)
+      return
+    }
+    if (guestMode) { setChapterIndex(next); setPageIndex(0); return }
     if (getTourPhase() === 'wait_chapter') setTourPhase('notebook_1')
     setPendingChapter(next); setNotebookOpen(true)
-  }, [chapterIndex, capitulos.length])
+  }, [chapterIndex, capitulos.length, guestMode])
 
   const handleToggleView    = useCallback(() => setDoubleView(v => !v), [])
   const handleChapterSelect = useCallback((idx) => { setChapterIndex(idx); setPageIndex(0); setXrayOpen(false) }, [])
@@ -363,7 +374,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
   async function handleCloseNotebook() {
     setNotebookOpen(false)
-    if (getTourPhase() === 'lector_2') {
+    if (!guestMode && getTourPhase() === 'lector_2') {
       setTimeout(() => runGuidedLector2(), 500)
     }
     if (pendingChapter !== null) {
@@ -410,7 +421,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
                   <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Foro</span>
                 </button>
-                <button type="button" onClick={() => { if (getTourPhase() === 'wait_cartelera') setTourPhase('cart_portada_1'); setExplorarOpen(false); onGoCartelera() }}
+                <button type="button" onClick={() => { if (!guestMode && getTourPhase() === 'wait_cartelera') setTourPhase('cart_portada_1'); setExplorarOpen(false); onGoCartelera() }}
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                   <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Investigación</span>
@@ -481,6 +492,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   ambient={currentAmbient}
                   ledColor={ledColor}
                   onLedColor={setLedColor}
+                  esNoficcion={book?.es_ficcion === false}
                 />
           )}
         </div>
@@ -494,7 +506,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       </div>
 
       {/* BOTTOM BAR */}
-      {!loading && !error && book?.libro_id && (
+      {!loading && !error && book?.libro_id && !guestMode && (
         <div style={{ position: 'relative', zIndex: 20, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: '8px 26px 18px' }}>
           <button id="tutorial-cuaderno-btn" type="button" onClick={() => setNotebookOpen(true)}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, background: 'transparent', border: 'none', cursor: 'pointer' }}>
@@ -546,6 +558,32 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
             {'"'}{pendingSelection.text.length > 45 ? pendingSelection.text.slice(0, 45) + '...' : pendingSelection.text}{'"'}
           </span>
           <ClayButton variant="primary" onClick={handleSubrayar} style={{ padding: '5px 13px', fontSize: 12 }}>Subrayar</ClayButton>
+        </div>
+      )}
+
+      {/* Paywall de invitado */}
+      {showPaywall && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(20,12,4,0.82)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 20, padding: '40px 48px', maxWidth: 420, width: '100%', textAlign: 'center', boxShadow: '3px 6px 0 rgba(74,54,34,0.25), 0 20px 40px rgba(0,0,0,0.35)' }}>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>📚</div>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: '#2c1a0e', margin: '0 0 12px' }}>
+              Seguí leyendo en Inmersia
+            </h2>
+            <p style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 15, color: '#6b4c34', lineHeight: 1.55, margin: '0 0 28px' }}>
+              Ya leíste los dos capítulos de muestra.<br />
+              Creá tu cuenta gratis para continuar.
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => onRequestAuth?.('registro')}
+                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#8b4d2a', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
+                Crear cuenta
+              </button>
+              <button type="button" onClick={() => onRequestAuth?.('login')}
+                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#fffdf8', color: '#4a3622', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
+                Iniciar sesión
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

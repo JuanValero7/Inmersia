@@ -7,7 +7,7 @@ import { SECCIONES, shade as tint } from './carteleraHelpers.js'
 import { getTourPhase, setTourPhase } from '../guidedTour.js'
 import { runGuidedCartPortada1, runGuidedCartPortada2 } from '../tutorial.js'
 
-const SECTIONS = SECCIONES.map(s => ({ ...s, initial: s.label[0] }))
+// SECTIONS se construye desde la prop en el componente raíz
 
 const BOLT = `polygon(
   0 0, 100% 0,
@@ -56,7 +56,8 @@ function Panel({ sec, open, hoveredAny, last, idx, onEnter, onOpen }) {
   )
 }
 
-export default function Portada({ subtitle, onOpen, onGoBack, onGoForo, onGoBiblioteca }) {
+export default function Portada({ subtitle, onOpen, onGoBack, onGoForo, onGoBiblioteca, secciones = SECCIONES }) {
+  const SECTIONS = secciones.map(s => ({ ...s, initial: s.label[0] }))
   const [hover, setHover] = useState(null)
   const [explorarOpen, setExplorarOpen] = useState(false)
 

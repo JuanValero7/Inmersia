@@ -279,6 +279,8 @@
 .int-filter-ov-clear{background:transparent;border:none;font-family:inherit;font-weight:700;font-size:13px;
   color:var(--accent);cursor:pointer;padding:4px 0;min-width:72px;text-align:right;}
 .int-filter-ov-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+.int-filter-ov-section{margin:4px 0 2px;font-family:'Baloo 2',cursive;font-weight:800;font-size:11px;
+  letter-spacing:.08em;text-transform:uppercase;color:rgba(74,54,34,0.5);}
 .int-filter-ov-row{display:flex;align-items:center;gap:13px;padding:15px 16px;border-radius:14px;width:100%;
   background:var(--cream);border:2px solid rgba(74,54,34,0.45);color:var(--ink);cursor:pointer;
   font-family:inherit;font-weight:700;font-size:15.5px;text-align:left;

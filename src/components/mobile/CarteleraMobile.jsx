@@ -12,9 +12,12 @@
 //   { onGoBack, book, user, onGoForo, onGoBiblioteca }
 // ─────────────────────────────────────────────────────────────
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
+
+const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
 import clsx from 'clsx'
 import { useCartelera } from '../cartelera/useCartelera.js'
-import { SECCIONES, seccionMeta, shade } from '../cartelera/carteleraHelpers.js'
+import { SECCIONES, seccionMeta, shade, getSecciones } from '../cartelera/carteleraHelpers.js'
 import TableroPersonajes from '../cartelera/TableroPersonajes.jsx'
 import TableroLugares from '../cartelera/TableroLugares.jsx'
 import TableroHechos from '../cartelera/TableroHechos.jsx'
@@ -30,8 +33,8 @@ import '../../styles/cartelera.css'
 import '../../styles/cartelera.mobile.css'
 
 const BOARD_W = 700, BOARD_H = 860
-const TABLEROS = { personajes: TableroPersonajes, lugares: TableroLugares, hechos: TableroHechos, datos: TableroDatos }
-const ORDER = ['personajes', 'lugares', 'hechos', 'datos', 'notas']
+const TABLEROS_FICCION   = { personajes: TableroPersonajes, lugares: TableroLugares, hechos: TableroHechos, datos: TableroDatos }
+const TABLEROS_NOFICCION = { glosario: TableroPersonajes, datos: TableroLugares, referencias: TableroHechos, resumen: TableroDatos }
 
 // borde inferior rasgado (acuarela) por panel de la portada
 const TORN = [
@@ -103,9 +106,9 @@ function Header({ book, onBack, onExplore }) {
 }
 
 // ── Gato-dock: salta a las otras 4 secciones ──
-function CatDock({ currentKey, onJump }) {
+function CatDock({ currentKey, onJump, secciones = SECCIONES }) {
   const [open, setOpen] = useState(false)
-  const others = ORDER.filter(k => k !== currentKey).map(seccionMeta)
+  const others = secciones.filter(s => s.key !== currentKey).map(s => seccionMeta(s.key))
   return (
     <div className="cm-cat-dock">
       <button type="button" id="tutorial-m-catdock" className="cm-cat-btn" onClick={() => setOpen(o => !o)} aria-label="Otras categorías">
@@ -154,12 +157,12 @@ function ExploreSheet({ onClose, onGoBack, onGoForo, onGoBiblioteca }) {
 }
 
 // ── Portada vertical ──
-function Portada({ book, onOpen }) {
+function Portada({ book, onOpen, secciones = SECCIONES }) {
   return (
     <div className="pv-intro-stack" style={{ display: 'contents' }}>
       <div className="pv-intro"><span className="k">Cartelera · {book?.title || ''}</span></div>
       <div id="tutorial-m-paneles" className="pv-stack">
-        {SECCIONES.map((sec, i) => {
+        {secciones.map((sec, i) => {
           const light = shade(sec.color, 0.16), dark = shade(sec.color, -0.20)
           const blot1 = shade(sec.color, 0.10), blot2 = shade(sec.color, -0.12)
           const last = i === SECCIONES.length - 1
@@ -193,7 +196,7 @@ function Portada({ book, onOpen }) {
 }
 
 // ── Vista de sección: tablero (Mural) / lista / ficha ──
-function SectionView({ sectionKey, data, onPortada, onJump, onExplore, initialItemId }) {
+function SectionView({ sectionKey, data, onPortada, onJump, onExplore, initialItemId, secciones = SECCIONES, tableros = TABLEROS_FICCION, esNoficcion = false }) {
   const meta = seccionMeta(sectionKey)
   const [tab, setTab] = useState('mural')      // mural | lista | ficha
   const [selId, setSelId] = useState(null)
@@ -201,7 +204,7 @@ function SectionView({ sectionKey, data, onPortada, onJump, onExplore, initialIt
   const isNotas = sectionKey === 'notas'
   const items = data.itemsBySeccion[sectionKey] || []
   const current = items.find(it => it.id === selId || it.allIds?.includes(selId)) || null
-  const Tablero = TABLEROS[sectionKey]
+  const Tablero = tableros[sectionKey]
 
   // al cambiar de sección reseteamos al Mural
   useEffect(() => { setTab('mural'); setSelId(null) }, [sectionKey])
@@ -241,7 +244,7 @@ function SectionView({ sectionKey, data, onPortada, onJump, onExplore, initialIt
         <div className="cm-board-area" ref={boardRef} onClick={isNotas ? undefined : openLista}>
           <div className="cart-canvas-box" style={{ width: BOARD_W * scale, height: BOARD_H * scale }}>
             {isNotas
-              ? <TableroNotas pct={data.porcentaje} scale={scale} principal={data.principal} onOpenSection={onJump} />
+              ? <TableroNotas pct={data.porcentaje} scale={scale} principal={data.principal} onOpenSection={onJump} esNoficcion={esNoficcion} />
               : <Tablero pct={data.porcentaje} scale={scale} imageUrl={data.principal[sectionKey]?.url}
                   videoUrl={data.principal[sectionKey]?.videoUrl} />}
           </div>
@@ -256,19 +259,29 @@ function SectionView({ sectionKey, data, onPortada, onJump, onExplore, initialIt
         <CarteleraMobileFicha section={meta} item={current} onBack={() => setTab('lista')} />
       )}
 
-      <CatDock currentKey={sectionKey} onJump={onJump} />
+      <CatDock currentKey={sectionKey} onJump={onJump} secciones={secciones} />
     </div>
   )
 }
 
 export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false }) {
+  const esNoficcion = book?.es_ficcion === false
+  const secciones  = getSecciones(esNoficcion)
+  const tableros   = esNoficcion ? TABLEROS_NOFICCION : TABLEROS_FICCION
   const data = useCartelera(book?.libro_id || null, user?.id || null, isSuperuser)
-  // Lazy init: si viene con jumpToItemId (desde X-ray) arranca directo en el tablero,
-  // evitando el render de la portada antes de que el efecto lo corrija.
-  const [view, setView] = useState(() =>
-    jumpToItemId ? { kind: 'board', key: 'personajes' } : { kind: 'portada', key: null }
-  )
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Lazy init: jumpToItemId tiene prioridad; si no, lee ?seccion= de la URL.
+  const [view, setView] = useState(() => {
+    if (jumpToItemId) return { kind: 'board', key: 'personajes' }
+    const s = searchParams.get('seccion')
+    return s && VALID_SECCIONES.includes(s) ? { kind: 'board', key: s } : { kind: 'portada', key: null }
+  })
   const [explore, setExplore] = useState(false)
+
+  useEffect(() => {
+    if (view.key) setSearchParams({ seccion: view.key }, { replace: true })
+    else setSearchParams({}, { replace: true })
+  }, [view.key, setSearchParams])
   const [fichaInitItemId, setFichaInitItemId] = useState(() => jumpToItemId || null)
 
   useEffect(() => {
@@ -313,7 +326,7 @@ export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBi
       {view.kind === 'portada' ? (
         <div className="cm-screen">
           <Header book={book} onBack={null} onExplore={() => setExplore(true)} />
-          <Portada book={book} onOpen={openSection} />
+          <Portada book={book} onOpen={openSection} secciones={secciones} />
         </div>
       ) : (
         <SectionView
@@ -323,6 +336,9 @@ export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBi
           onJump={openSection}
           onExplore={() => setExplore(true)}
           initialItemId={fichaInitItemId}
+          secciones={secciones}
+          tableros={tableros}
+          esNoficcion={esNoficcion}
         />
       )}
       {explore && <ExploreSheet {...exploreProps} />}

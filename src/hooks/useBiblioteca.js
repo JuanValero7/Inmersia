@@ -51,13 +51,14 @@ export function useBiblioteca(user, lastOpenedBookIds) {
   const fetchUserBooks = useCallback(async () => {
     setLoadingBooks(true)
     const { data } = await supabase.from('bibliotecas_usuarios')
-      .select('leido, categoria_id, libros(id, titulo, autor, paginas, descripcion, color, portada_url, metadata)')
+      .select('leido, categoria_id, libros(id, slug, titulo, autor, paginas, descripcion, color, portada_url, metadata, es_ficcion)')
       .eq('user_id', user.id)
     // Filtra filas cuyo libro fue borrado o no es accesible por RLS
     // (Supabase devuelve libros: null y reventaría el .map).
     const mapped = (data || []).filter(r => r.libros).map(r => ({
       id: r.libros.id,
       libro_id: r.libros.id,
+      slug: r.libros.slug,
       categoria_id: r.categoria_id,
       title: r.libros.titulo,
       author: r.libros.autor || 'Desconocido',
@@ -66,6 +67,7 @@ export function useBiblioteca(user, lastOpenedBookIds) {
       summary: r.libros.descripcion || '',
       leido: r.leido,
       cover: r.libros.portada_url || null,        // null → portada generada
+      es_ficcion: r.libros.es_ficcion ?? true,
       // TODO progreso de lectura: cuando agregues la columna `progreso`
       // (numeric 0..1) a bibliotecas_usuarios, súmala al .select() de arriba
       // y cambia esta línea por:  progress: typeof r.progreso === 'number' ? r.progreso : null,

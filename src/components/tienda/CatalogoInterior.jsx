@@ -40,43 +40,67 @@ function CoverCard({ libro }) {
   )
 }
 
-function FilterOverlay({ availableCats, selCats, onToggle, onClear, onClose }) {
+const TIPOS = [
+  { key: 'todos',     label: 'Todos' },
+  { key: 'ficcion',   label: 'Ficción' },
+  { key: 'noficcion', label: 'No ficción' },
+]
+
+function FilterOverlay({ availableCats, selCats, onToggle, onClear, onClose, filtroTipo, onFiltroTipo }) {
   const [entering, setEntering] = useState(true)
   useEffect(() => {
     const id = requestAnimationFrame(() => setEntering(false))
     return () => cancelAnimationFrame(id)
   }, [])
 
+  const hasAny = selCats.size > 0 || filtroTipo !== 'todos'
+
   return (
     <div className={clsx('int-filter-ov', entering && 'entering')}>
       <div className="int-filter-ov-head">
         <button className="int-filter-ov-back" onClick={onClose}>‹ Volver</button>
         <span className="int-filter-ov-title">Filtrar</span>
-        {selCats.size > 0
+        {hasAny
           ? <button className="int-filter-ov-clear" onClick={onClear}>Quitar todo</button>
           : <span style={{ minWidth: 72 }} />
         }
       </div>
       <div className="int-filter-ov-body">
-        {availableCats.map(c => (
-          <button key={c} className={clsx('int-filter-ov-row', selCats.has(c) && 'on')} onClick={() => onToggle(c)}>
-            <span style={{
-              width: 13, height: 13, borderRadius: '50%', flexShrink: 0,
-              background: selCats.has(c) ? 'rgba(255,255,255,0.75)' : (CAT_COLOR[c] || '#cf8a6e'),
-              border: selCats.has(c) ? '2px solid rgba(255,255,255,0.55)' : '2px solid rgba(74,54,34,0.35)',
-            }} />
-            <span style={{ flex: 1 }}>{c}</span>
-            {selCats.has(c) && (
+        <p className="int-filter-ov-section">Tipo</p>
+        {TIPOS.map(({ key, label }) => (
+          <button key={key} className={clsx('int-filter-ov-row', filtroTipo === key && 'on')} onClick={() => onFiltroTipo(key)}>
+            <span style={{ flex: 1 }}>{label}</span>
+            {filtroTipo === key && (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
               </svg>
             )}
           </button>
         ))}
+        {availableCats.length > 0 && (
+          <>
+            <p className="int-filter-ov-section">Categoría</p>
+            {availableCats.map(c => (
+              <button key={c} className={clsx('int-filter-ov-row', selCats.has(c) && 'on')} onClick={() => onToggle(c)}>
+                <span style={{
+                  width: 13, height: 13, borderRadius: '50%', flexShrink: 0,
+                  background: selCats.has(c) ? 'rgba(255,255,255,0.75)' : (CAT_COLOR[c] || '#cf8a6e'),
+                  border: selCats.has(c) ? '2px solid rgba(255,255,255,0.55)' : '2px solid rgba(74,54,34,0.35)',
+                }} />
+                <span style={{ flex: 1 }}>{c}</span>
+                {selCats.has(c) && (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </>
+        )}
       </div>
       <div className="int-filter-ov-foot">
         <button className="int-filter-ov-apply" onClick={onClose}>
-          {selCats.size > 0 ? `Aplicar · ${selCats.size} categoría${selCats.size > 1 ? 's' : ''}` : 'Listo'}
+          {hasAny ? 'Aplicar filtros' : 'Listo'}
         </button>
       </div>
     </div>
@@ -110,7 +134,7 @@ function BookCard({ libro, adquirido, onOpen }) {
   )
 }
 
-export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMore, onLoadMore, user, tieneLibro, libroLeido, onComprar, onPreview, onVolver, onEmpezarLeer }) {
+export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMore, onLoadMore, user, tieneLibro, libroLeido, onComprar, onPreview, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo }) {
   const isMobile = useIsMobile()
   const [selCats,     setSelCats]     = useState(new Set())
   const [qInput,      setQInput]      = useState('')
@@ -137,15 +161,17 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
   }
   const list  = useMemo(() => {
     const filtered = catalogo.filter(b => {
-      const okCat = selCats.size === 0 || (b.categorias || []).some(c => selCats.has(c))
-      const okQ = !query ||
+      const okCat  = selCats.size === 0 || (b.categorias || []).some(c => selCats.has(c))
+      const okQ    = !query ||
         (b.titulo || '').toLowerCase().includes(query) ||
         (b.autor  || '').toLowerCase().includes(query)
-      return okCat && okQ
+      const okTipo = filtroTipo === 'todos' ||
+        (filtroTipo === 'ficcion' ? b.es_ficcion !== false : b.es_ficcion === false)
+      return okCat && okQ && okTipo
     })
     return filtered.sort((a, b) => (tieneLibro(a.id) ? 1 : 0) - (tieneLibro(b.id) ? 1 : 0))
-  }, [catalogo, selCats, query, tieneLibro])
-  const reset = () => { setSelCats(new Set()); setQ(''); setQInput(''); setShowFilters(false) }
+  }, [catalogo, selCats, query, filtroTipo, tieneLibro])
+  const reset = () => { setSelCats(new Set()); setQ(''); setQInput(''); setShowFilters(false); onFiltroTipo?.('todos') }
 
   return (
     <div className="interior show">
@@ -167,16 +193,33 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
           {qInput && <button className="int-search-clear" onClick={() => { setQInput(''); setQ('') }} aria-label="Limpiar">×</button>}
         </div>
 
+        {/* Filtro por tipo — solo desktop; en mobile vive dentro del overlay */}
+        {!isMobile && (
+          <div className="int-filterbar">
+            {TIPOS.map(({ key, label }) => (
+              <button key={key} className={clsx('int-chip', filtroTipo === key && 'on')}
+                onClick={() => onFiltroTipo?.(key)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Filtro por categoría */}
         {availableCats.length > 0 && (
           <div className="int-filterbar">
-            <button className={clsx('int-chip', selCats.size > 0 && 'on')}
-              onClick={() => isMobile ? setShowFilters(true) : setShowFilters(v => !v)}>
-              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3">
-                <path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round" />
-              </svg>
-              Filtrar{selCats.size > 0 ? ` · ${selCats.size}` : ''}
-            </button>
+            {(() => {
+              const activeCount = selCats.size + (isMobile && filtroTipo !== 'todos' ? 1 : 0)
+              return (
+                <button className={clsx('int-chip', activeCount > 0 && 'on')}
+                  onClick={() => isMobile ? setShowFilters(true) : setShowFilters(v => !v)}>
+                  <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3">
+                    <path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round" />
+                  </svg>
+                  Filtrar{activeCount > 0 ? ` · ${activeCount}` : ''}
+                </button>
+              )
+            })()}
             {!isMobile && showFilters && (
               <div className="int-chips">
                 {availableCats.map(c => (
@@ -226,8 +269,10 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
           availableCats={availableCats}
           selCats={selCats}
           onToggle={toggleCat}
-          onClear={() => { setSelCats(new Set()); setShowFilters(false) }}
+          onClear={() => { setSelCats(new Set()); onFiltroTipo?.('todos'); setShowFilters(false) }}
           onClose={() => setShowFilters(false)}
+          filtroTipo={filtroTipo}
+          onFiltroTipo={onFiltroTipo}
         />
       )}
 

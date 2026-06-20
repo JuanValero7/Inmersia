@@ -5,8 +5,8 @@ import { getTourPhase, setTourPhase } from '../guidedTour.js'
 
 const YS = [8.6, 25.8, 44.5, 64.5] // posición vertical de cada cartel (% de la imagen)
 
-export default function Signpost({ current, onOpenSection }) {
-  const others = SECCIONES.filter(s => s.key !== current).slice(0, 4)
+export default function Signpost({ current, onOpenSection, secciones = SECCIONES }) {
+  const others = secciones.filter(s => s.key !== current).slice(0, 4)
 
   const handleClick = (key) => {
     if (key === 'notas' && getTourPhase() === 'wait_notas') setTourPhase('cart_notas')

@@ -110,7 +110,7 @@ export default function PanelLibro({ libro, user, yaAdquirido, yaLeido, onCompra
     }))
 
     setResenas(resenasConNombre)
-    const mine = resenasConNombre.find(r => r.user_id === user.id) || null
+    const mine = resenasConNombre.find(r => r.user_id === user?.id) || null
     setMiResena(mine)
     if (mine) setForm({ rating: mine.rating, texto: mine.texto || '' })
 
@@ -121,7 +121,7 @@ export default function PanelLibro({ libro, user, yaAdquirido, yaLeido, onCompra
     })
     setTopQuotes(Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 3))
     setLoading(false)
-  }, [libro.id, user.id])
+  }, [libro.id, user?.id])
 
   useEffect(() => { fetchDatos() }, [fetchDatos])
 
@@ -167,16 +167,25 @@ export default function PanelLibro({ libro, user, yaAdquirido, yaLeido, onCompra
 
       {/* CTA */}
       <div className="bkp-cta">
-        <button className="bkp-empezar-btn" onClick={onEmpezarLeer}>
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-          Empezar a leer
-        </button>
-        {yaAdquirido ? (
-          <div className="bkp-adquirido">✓ Ya está en tu biblioteca</div>
+        {user ? (
+          <>
+            <button className="bkp-empezar-btn" onClick={onEmpezarLeer}>
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              Empezar a leer
+            </button>
+            {yaAdquirido ? (
+              <div className="bkp-adquirido">✓ Ya está en tu biblioteca</div>
+            ) : (
+              <button className="bkp-cta-btn" onClick={onComprar}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6.5A8.9 8.9 0 006 4.2c-1 0-2 .2-3 .5v14a8.9 8.9 0 013-.5 8.9 8.9 0 016 2.3 8.9 8.9 0 016-2.3 8.9 8.9 0 013 .5v-14c-1-.3-2-.5-3-.5a8.9 8.9 0 00-6 2.3v14"/></svg>
+                Añadir a mi Biblioteca
+              </button>
+            )}
+          </>
         ) : (
-          <button className="bkp-cta-btn" onClick={onComprar}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6.5A8.9 8.9 0 006 4.2c-1 0-2 .2-3 .5v14a8.9 8.9 0 013-.5 8.9 8.9 0 016 2.3 8.9 8.9 0 016-2.3 8.9 8.9 0 013 .5v-14c-1-.3-2-.5-3-.5a8.9 8.9 0 00-6 2.3v14"/></svg>
-            Añadir a mi Biblioteca
+          <button className="bkp-empezar-btn" onClick={onEmpezarLeer}>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            Leer muestra
           </button>
         )}
       </div>
@@ -255,7 +264,7 @@ export default function PanelLibro({ libro, user, yaAdquirido, yaLeido, onCompra
           <p className="bkp-empty">Aún no hay reseñas.</p>
         ) : (
           resenas.map(r => (
-            <div key={r.id} className={clsx('bkp-resena', r.user_id === user.id && 'bkp-resena-mia')}>
+            <div key={r.id} className={clsx('bkp-resena', r.user_id === user?.id && 'bkp-resena-mia')}>
               <div className="bkp-resena-head">
                 <Estrellas valor={r.rating} size={13} />
                 <span className="bkp-resena-autor">{r.perfiles?.nombre || 'Lector'}</span>

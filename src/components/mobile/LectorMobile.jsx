@@ -30,6 +30,7 @@ import { READING_FONTS } from '../lector/readerConstants.js'
 import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTILIZADO (igual al de PC)
 import { INK, ACCENT } from '../lector/clay.jsx'
 import SuperuserSoundsPanel from '../lector/SuperuserSoundsPanel.jsx'
+import { useWhiteNoise, TIPOS_RUIDO, AMBIENCIAS } from '../../hooks/useWhiteNoise.js'
 import { getTourPhase, setTourPhase } from '../guidedTour.js'
 import { runGuidedLector1Mobile, runGuidedLector2Mobile } from '../tutorial.mobile.js'
 import '../../styles/lector.mobile.css'
@@ -325,6 +326,67 @@ function TypoSheet({ fontSize, onFontSize, readingFont, onReadingFont, readingTh
   )
 }
 
+// ── Sheet: ruido blanco (no ficción) ─────────────────────────
+function WhiteNoiseSheet({ onClose }) {
+  const { tipo, setTipo, volNoise, setVolNoise, ambiente, setAmbiente, volAmb, setVolAmb } = useWhiteNoise()
+  const pill = (active) => ({
+    fontSize: 12, fontWeight: 700, padding: '5px 13px', borderRadius: 999,
+    border: `1.5px solid ${active ? ACCENT : `${INK}44`}`,
+    background: active ? ACCENT : 'transparent',
+    color: active ? '#fff' : INK, cursor: 'pointer',
+  })
+  return (
+    <div className="lm-backdrop" onClick={onClose}>
+      <div className="lm-sheet" onClick={e => e.stopPropagation()}>
+        <div className="lm-grip" />
+        <div className="lm-sheet-head">
+          <span className="lm-sheet-title">Ambiente sonoro</span>
+          <button className="lm-close" onClick={onClose}>✕</button>
+        </div>
+        <div style={{ padding: '4px 18px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Ruido */}
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: `${INK}77`, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Ruido</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+              {TIPOS_RUIDO.map(({ key, label }) => (
+                <button key={key} type="button" style={pill(tipo === key)} onClick={() => setTipo(key)}>{label}</button>
+              ))}
+            </div>
+            <div className="lm-vol" style={{ opacity: tipo === 'off' ? 0.35 : 1 }}>
+              <div className="lm-vol-row">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M11 5L6 9H3v6h3l5 4z" strokeLinejoin="round"/></svg>
+                <input className="lm-range" type="range" min="0" max="1" step="0.01"
+                  value={volNoise} disabled={tipo === 'off'}
+                  onChange={e => setVolNoise(parseFloat(e.target.value))} />
+                <span style={{ fontSize: 11, minWidth: 30, color: INK }}>{Math.round(volNoise * 100)}%</span>
+              </div>
+            </div>
+          </div>
+          <div style={{ height: 1, background: `${INK}18` }} />
+          {/* Ambiente */}
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: `${INK}77`, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Ambiente</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+              {AMBIENCIAS.map(({ key, label }) => (
+                <button key={key} type="button" style={pill(ambiente === key)} onClick={() => setAmbiente(key)}>{label}</button>
+              ))}
+            </div>
+            <div className="lm-vol" style={{ opacity: ambiente === 'ninguno' ? 0.35 : 1 }}>
+              <div className="lm-vol-row">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M11 5L6 9H3v6h3l5 4z" strokeLinejoin="round"/></svg>
+                <input className="lm-range" type="range" min="0" max="1" step="0.01"
+                  value={volAmb} disabled={ambiente === 'ninguno'}
+                  onChange={e => setVolAmb(parseFloat(e.target.value))} />
+                <span style={{ fontSize: 11, minWidth: 30, color: INK }}>{Math.round(volAmb * 100)}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Sheet: audio (ambiente del capítulo) ─────────────────────
 function AudioSheet({ ambient, playing, volume, onToggle, onVolume, onClose }) {
   const disabled = !ambient?.url
@@ -447,7 +509,7 @@ function ResenaSheet({ form, setForm, enviando, miResena, onSubmit, onClose }) {
 // ═══════════════════════════════════════════════════════════════
 //  COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════════
-export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false }) {
+export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, onRequestAuth }) {
   // ── Estado de navegación de lectura (UI) ──
   const [chapterIndex, setChapterIndex] = useState(0)
   const [pageIndex,    setPageIndex]    = useState(0)
@@ -457,6 +519,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const [catOpen,        setCatOpen]        = useState(false)
   const [pendingChapter, setPendingChapter] = useState(null)
   const [adminPanelOpen, setAdminPanelOpen] = useState(false)
+  const [showPaywall,    setShowPaywall]    = useState(false)
 
   // Lógica de datos compartida con el Lector de escritorio (ver src/hooks/useLectorData.js)
   const {
@@ -497,14 +560,16 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     if (startWithNotebook) { setNotebookOpen(true); onNotebookStarted?.() }
   }, [startWithNotebook])
 
-  // Tutorial mobile — al cargar el libro, si venimos de la fase wait_lector
+  // Tutorial mobile — al cargar el libro, si venimos de la fase wait_lector.
+  // No se dispara para invitados: el localStorage de fases es global y marcaría
+  // el tutorial como visto antes de que el usuario se registre.
   useEffect(() => {
-    if (loading || !book?.libro_id) return
+    if (guestMode || loading || !book?.libro_id) return
     if (getTourPhase() === 'wait_lector') {
       const t = setTimeout(() => runGuidedLector1Mobile(), 900)
       return () => clearTimeout(t)
     }
-  }, [loading, book?.libro_id])
+  }, [guestMode, loading, book?.libro_id])
 
   // cargar capítulo actual cuando cambia
   useEffect(() => {
@@ -732,9 +797,12 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     if (pageIndex < total - 1) { setPageIndex(p => p + 1); return }
     // fin del capítulo → abrir cuaderno antes de avanzar (igual que el escritorio)
     if (chapterIndex < capitulos.length - 1) {
+      if (guestMode) { setChapterIndex(chapterIndex + 1); setPageIndex(0); return }
       if (getTourPhase() === 'wait_chapter') setTourPhase('notebook_1')
       setPendingChapter(chapterIndex + 1); setNotebookOpen(true)
+      return
     }
+    if (guestMode) setShowPaywall(true)
   }
   function pickChapter(i) { setChapterIndex(i); setPageIndex(0); setSheet(null); setPendingSelection(null) }
 
@@ -745,7 +813,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
   async function handleCloseNotebook() {
     setNotebookOpen(false)
-    if (getTourPhase() === 'lector_2') {
+    if (!guestMode && getTourPhase() === 'lector_2') {
       setTimeout(() => runGuidedLector2Mobile(), 500)
     }
     if (pendingChapter !== null) {
@@ -775,7 +843,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const CAT_ITEMS = [
     { key: 'audio',    label: 'Audio',    icon: <CassetteIcon />,       act: () => setSheet('audio') },
     { key: 'imagen',   label: 'Imagen',   icon: <PolaroidsIcon />,      act: openImage },
-    { key: 'cuaderno', label: 'Cuaderno', icon: <SpiralNotebookIcon />, act: openNotebook },
+    ...(!guestMode ? [{ key: 'cuaderno', label: 'Cuaderno', icon: <SpiralNotebookIcon />, act: openNotebook }] : []),
   ]
 
   const page = paginas[pageIndex] || []
@@ -824,7 +892,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
                 fontSize={fontSize} font={readingFont}
                 atStart={atStart} nextIsChapter={atChapterEnd && !atEndOfBook}
                 onPrev={handlePrev}
-                onNext={atEndOfBook ? undefined : handleNext}
+                onNext={atEndOfBook && !guestMode ? undefined : handleNext}
                 onPlaySfx={playSfx} onSelectText={handleSelectText}
               />
         )}
@@ -862,8 +930,11 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       {sheet==='xray'     && <XraySheet items={xrayItems} chapterNum={currentChapter?.numero ?? chapterIndex + 1} onClose={() => setSheet(null)} onItemClick={(itemId) => { setSheet(null); onGoCartelera(itemId) }} />}
       {sheet==='chapters' && <ChapterSheet chapters={capitulos} current={chapterIndex} onPick={pickChapter} onClose={()=>setSheet(null)} />}
       {sheet==='typo' && <TypoSheet fontSize={fontSize} onFontSize={setFontSize} readingFont={readingFont} onReadingFont={setReadingFont} readingTheme={readingTheme} onReadingTheme={setReadingTheme} onClose={()=>setSheet(null)} />}
-      {sheet==='audio' && <AudioSheet ambient={currentAmbient} playing={ambientPlaying} volume={ambientVol} onToggle={toggleAmbient} onVolume={setVol} onClose={()=>setSheet(null)} />}
-      {sheet==='nav' && <NavSheet onGoForo={onGoForo} onGoCartelera={() => { if (getTourPhase() === 'wait_cartelera') setTourPhase('cart_portada_1'); onGoCartelera() }} onGoBiblioteca={onGoBack} onClose={()=>setSheet(null)} />}
+      {sheet==='audio' && (book?.es_ficcion === false
+        ? <WhiteNoiseSheet onClose={() => setSheet(null)} />
+        : <AudioSheet ambient={currentAmbient} playing={ambientPlaying} volume={ambientVol} onToggle={toggleAmbient} onVolume={setVol} onClose={() => setSheet(null)} />
+      )}
+      {sheet==='nav' && <NavSheet onGoForo={onGoForo} onGoCartelera={() => { if (!guestMode && getTourPhase() === 'wait_cartelera') setTourPhase('cart_portada_1'); onGoCartelera() }} onGoBiblioteca={onGoBack} onClose={()=>setSheet(null)} />}
 
       {/* Overlay imagen */}
       {imageOpen && <ImageOverlay images={visibleImages} chapter={currentChapter} chapterIndex={chapterIndex} onClose={()=>setImageOpen(false)} autoImages={autoImages} onToggleAutoImages={() => setAutoImages(v => !v)} />}
@@ -880,6 +951,32 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         capituloNum={capitulos[chapterIndex]?.numero ?? chapterIndex + 1}
         capitulos={capitulos}
       />
+
+      {/* Paywall de invitado */}
+      {showPaywall && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(20,12,4,0.82)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 20, padding: '36px 32px', maxWidth: 380, width: '100%', textAlign: 'center', boxShadow: '3px 6px 0 rgba(74,54,34,0.25), 0 20px 40px rgba(0,0,0,0.35)' }}>
+            <div style={{ fontSize: 40, marginBottom: 14 }}>📚</div>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: '#2c1a0e', margin: '0 0 10px' }}>
+              Seguí leyendo en Inmersia
+            </h2>
+            <p style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 14, color: '#6b4c34', lineHeight: 1.55, margin: '0 0 24px' }}>
+              Ya leíste los dos capítulos de muestra.<br />
+              Creá tu cuenta gratis para continuar.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => onRequestAuth?.('registro')}
+                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#8b4d2a', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
+                Crear cuenta
+              </button>
+              <button type="button" onClick={() => onRequestAuth?.('login')}
+                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#fffdf8', color: '#4a3622', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
+                Iniciar sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Panel de superusuario */}
       {isSuperuser && adminPanelOpen && (

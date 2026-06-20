@@ -1,34 +1,26 @@
-// src/App.jsx
-// ─────────────────────────────────────────────────────────────
-// MODIFICADO: ahora muestra la LANDING pública antes del Auth.
-//   · Sin usuario y sin intención de entrar  → <Landing/> (o <LandingMobile/>)
-//   · El usuario pulsa "Iniciar sesión" / "Crear cuenta" / "Empezar a leer"
-//        → se abre <Auth/> en la pestaña correspondiente
-//   · "← Volver" en Auth regresa a la landing
-// El resto del archivo es idéntico al original.
-// Cambios marcados con  // ⬅︎ LANDING
-// ─────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { Routes, Route, Navigate, useNavigate, Outlet, useLocation } from 'react-router-dom'
 import { supabase } from './lib/supabase.js'
 import useIsMobile from './hooks/useIsMobile.js'
 import { useSuperuser } from './hooks/useSuperuser.js'
 import Auth from './components/Auth.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
 import TourResume from './components/TourResume.jsx'
+import { LectorRoute } from './components/LectorRoute.jsx'
 
-const VistaBiblioteca = lazy(() => import('./components/Biblioteca.jsx'))
-const VistaLectura    = lazy(() => import('./components/Lector.jsx'))
-const VistaTienda     = lazy(() => import('./components/Tienda.jsx'))
-const CartelaView     = lazy(() => import('./components/Cartelera.jsx'))
-const VistaPerfil     = lazy(() => import('./components/Perfil.jsx'))
-const VistaForo       = lazy(() => import('./components/Foro.jsx'))
-const VistaForoMobile = lazy(() => import('./components/mobile/ForoMobile.jsx'))
-const VistaPerfilMobile = lazy(() => import('./components/mobile/PerfilMobile.jsx'))
+const VistaBiblioteca       = lazy(() => import('./components/Biblioteca.jsx'))
+const VistaLectura          = lazy(() => import('./components/Lector.jsx'))
+const VistaTienda           = lazy(() => import('./components/Tienda.jsx'))
+const CartelaView           = lazy(() => import('./components/Cartelera.jsx'))
+const VistaPerfil           = lazy(() => import('./components/Perfil.jsx'))
+const VistaForo             = lazy(() => import('./components/Foro.jsx'))
+const VistaForoMobile       = lazy(() => import('./components/mobile/ForoMobile.jsx'))
+const VistaPerfilMobile     = lazy(() => import('./components/mobile/PerfilMobile.jsx'))
 const VistaBibliotecaMobile = lazy(() => import('./components/mobile/BibliotecaMobile.jsx'))
-const CarteleraMobile = lazy(() => import('./components/mobile/CarteleraMobile.jsx'))
-const VistaLecturaMobile = lazy(() => import('./components/mobile/LectorMobile.jsx'))
-const Landing         = lazy(() => import('./components/Landing.jsx'))            // ⬅︎ LANDING
-const LandingMobile   = lazy(() => import('./components/mobile/LandingMobile.jsx')) // ⬅︎ LANDING
+const CarteleraMobile       = lazy(() => import('./components/mobile/CarteleraMobile.jsx'))
+const VistaLecturaMobile    = lazy(() => import('./components/mobile/LectorMobile.jsx'))
+const Landing               = lazy(() => import('./components/Landing.jsx'))
+const LandingMobile         = lazy(() => import('./components/mobile/LandingMobile.jsx'))
 
 const Fallback = (
   <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,background:'var(--bg-warm)'}}>
@@ -37,8 +29,27 @@ const Fallback = (
   </div>
 )
 
+// Redirige a /auth si no hay sesión activa
+function ProtectedRoute({ user }) {
+  if (!user) return <Navigate to="/auth" replace />
+  return <Outlet />
+}
+
+// Página de login/registro — lee la pestaña inicial del state de navegación
+function AuthPage({ setUser, loadLastBooks }) {
+  const location = useLocation()
+  const navigate  = useNavigate()
+  const initialTab = location.state?.tab ?? 'login'
+  return (
+    <Auth
+      initialTab={initialTab}
+      onBack={() => navigate('/')}
+      onAuthSuccess={(u) => { setUser(u); loadLastBooks(u); navigate('/biblioteca', { replace: true }) }}
+    />
+  )
+}
+
 export default function App() {
-  const [view,                setView]                = useState('auth')
   const [user,                setUser]                = useState(undefined)
   const [authReady,           setAuthReady]           = useState(false)
   const [currentBook,         setCurrentBook]         = useState(null)
@@ -46,35 +57,18 @@ export default function App() {
   const [foroSource,          setForoSource]          = useState('biblioteca')
   const [lectorStartNotebook, setLectorStartNotebook] = useState(false)
   const [cartelaJumpId,       setCartelaJumpId]       = useState(null)
-  const [showAuth,            setShowAuth]            = useState(false)      // ⬅︎ LANDING
-  const [authTab,             setAuthTab]             = useState('login')    // ⬅︎ LANDING
 
-  const isMobile = useIsMobile()
+  const navigate    = useNavigate()
+  const isMobile    = useIsMobile()
   const isSuperuser = useSuperuser(user ?? null)
-  const Foro = isMobile ? VistaForoMobile : VistaForo
-  const Perfil = isMobile ? VistaPerfilMobile : VistaPerfil
-  const Biblioteca = isMobile ? VistaBibliotecaMobile : VistaBiblioteca
-  const Cartelera = isMobile ? CarteleraMobile : CartelaView
-  const Lectura = isMobile ? VistaLecturaMobile : VistaLectura
-  const LandingView = isMobile ? LandingMobile : Landing   // ⬅︎ LANDING
 
-  // ── Browser history ──────────────────────────────────────────
-  const navigate = useCallback((newView) => {
-    window.history.pushState({ view: newView }, '')
-    setView(newView)
-  }, [])
+  const Foro        = isMobile ? VistaForoMobile       : VistaForo
+  const Perfil      = isMobile ? VistaPerfilMobile     : VistaPerfil
+  const Biblioteca  = isMobile ? VistaBibliotecaMobile : VistaBiblioteca
+  const Cartelera   = isMobile ? CarteleraMobile       : CartelaView
+  const Lectura     = isMobile ? VistaLecturaMobile    : VistaLectura
+  const LandingView = isMobile ? LandingMobile         : Landing
 
-  useEffect(() => {
-    const handlePopState = (e) => {
-      const v = e.state?.view
-      if (!v || v === 'auth' || v === 'reset-password') return
-      setView(v)
-    }
-    window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
-  }, [])
-
-  // Lee los últimos libros abiertos de localStorage (nuevo key, fallback al anterior)
   const loadLastBooks = useCallback((u) => {
     if (!u) return
     const savedNew = localStorage.getItem(`inm_last_books_${u.id}`)
@@ -86,7 +80,6 @@ export default function App() {
     }
   }, [])
 
-  // ── Auth ──────────────────────────────────────────────────────
   useEffect(() => {
     let mounted = true
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -94,35 +87,26 @@ export default function App() {
       const u = session?.user ?? null
       setUser(u)
       setAuthReady(true)
-      if (u) {
-        window.history.replaceState({ view: 'biblioteca' }, '')
-        setView('biblioteca')
-        loadLastBooks(u)
-      }
+      if (u) loadLastBooks(u)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
-      if (event === 'PASSWORD_RECOVERY') { setView('reset-password'); return }
-      if (!session) {
-        window.history.replaceState({ view: 'auth' }, '')
-        setView('auth')
+      if (event === 'PASSWORD_RECOVERY') { navigate('/reset-password'); return }
+      if (event === 'SIGNED_OUT') {
         setLastOpenedBookIds([])
-        setShowAuth(false)   // ⬅︎ LANDING — al cerrar sesión volvemos a la landing
+        navigate('/')
       }
     })
     return () => { mounted = false; subscription.unsubscribe() }
-  }, [loadLastBooks])
+  }, [loadLastBooks, navigate])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     setUser(null)
     setLastOpenedBookIds([])
-    window.history.replaceState({ view: 'auth' }, '')
-    setView('auth')
-    setShowAuth(false)   // ⬅︎ LANDING
+    navigate('/')
   }
 
-  // ── Helpers para actualizar historial de libros ───────────────
   function pushBookId(bookId, currentUser) {
     setLastOpenedBookIds(prev => {
       const next = [bookId, ...prev.filter(id => id !== bookId)].slice(0, 3)
@@ -131,100 +115,145 @@ export default function App() {
     })
   }
 
-  const handleOpenBook = (book) => {
+  const handleOpenBook = useCallback((book) => {
     pushBookId(book.id, user)
     setCurrentBook(book)
-    navigate('lectura')
-  }
+    navigate(`/libro/${book.slug || book.id}`)
+  }, [user, navigate])
 
   const handleGoNotebook = useCallback((book) => {
     pushBookId(book.id, user)
     setCurrentBook(book)
     setLectorStartNotebook(true)
-    navigate('lectura')
+    navigate(`/libro/${book.slug || book.id}`)
   }, [user, navigate])
 
   if (!authReady) return Fallback
-  if (view === 'reset-password') return <ResetPassword onDone={() => { window.history.replaceState({ view: 'biblioteca' }, ''); setView('biblioteca') }} />
-
-  // ── No hay usuario ────────────────────────────────────────────  // ⬅︎ LANDING
-  if (!user) {
-    if (showAuth) {
-      return (
-        <Auth
-          initialTab={authTab}
-          onBack={() => setShowAuth(false)}
-          onAuthSuccess={(u) => { setUser(u); loadLastBooks(u); window.history.replaceState({ view: 'biblioteca' }, ''); setView('biblioteca') }}
-        />
-      )
-    }
-    return (
-      <Suspense fallback={Fallback}>
-        <LandingView onAuth={(tab) => { setAuthTab(tab === 'registro' ? 'registro' : 'login'); setShowAuth(true) }} />
-      </Suspense>
-    )
-  }
 
   return (
     <>
-    <Suspense fallback={Fallback}>
-      {view === 'biblioteca' && (
-        <Biblioteca
-          user={user}
-          lastOpenedBookIds={lastOpenedBookIds}
-          onSignOut={handleSignOut}
-          onOpenBook={handleOpenBook}
-          onGoTienda={() => navigate('tienda')}
-          onGoPerfil={() => navigate('perfil')}
-          onGoForo={(book) => { setCurrentBook(book); setForoSource('biblioteca'); navigate('foro') }}
-          onGoNotebook={handleGoNotebook}
-        />
-      )}
-      {view === 'perfil' && (
-        <Perfil
-          user={user}
-          onGoBack={() => navigate('biblioteca')}
-          onSignOut={handleSignOut}
-        />
-      )}
-      {view === 'tienda' && (
-        <VistaTienda onGoBack={() => navigate('biblioteca')} user={user} onOpenBook={handleOpenBook} isSuperuser={isSuperuser}/>
-      )}
-      {view === 'cartelera' && (
-        <Cartelera
-          onGoBack={() => navigate('lectura')}
-          book={currentBook}
-          user={user}
-          onGoForo={() => { setForoSource('cartelera'); navigate('foro') }}
-          onGoBiblioteca={() => navigate('biblioteca')}
-          jumpToItemId={cartelaJumpId}
-          onJumpConsumed={() => setCartelaJumpId(null)}
-          isSuperuser={isSuperuser}
-        />
-      )}
-      {view === 'foro' && (
-        <Foro
-          book={currentBook}
-          user={user}
-          onGoBack={() => navigate(foroSource)}
-          onGoLectura={() => navigate('lectura')}
-          onGoBiblioteca={() => navigate('biblioteca')}
-          onGoCartelera={() => navigate('cartelera')}
-        />
-      )}
-      {view === 'lectura' && (
-        <Lectura
-          book={currentBook}
-          onGoBack={() => navigate('biblioteca')}
-          onGoCartelera={(itemId) => { setCartelaJumpId(itemId || null); navigate('cartelera') }}
-          onGoForo={() => { setForoSource('lectura'); navigate('foro') }}
-          startWithNotebook={lectorStartNotebook}
-          onNotebookStarted={() => setLectorStartNotebook(false)}
-          isSuperuser={isSuperuser}
-        />
-      )}
-    </Suspense>
-    <TourResume />
+      <Suspense fallback={Fallback}>
+        <Routes>
+
+          {/* Raíz: landing pública o redirección a biblioteca */}
+          <Route path="/" element={
+            user
+              ? <Navigate to="/biblioteca" replace />
+              : <LandingView onAuth={(tab) => navigate('/auth', { state: { tab } })} />
+          } />
+
+          {/* Auth */}
+          <Route path="/auth" element={
+            user
+              ? <Navigate to="/biblioteca" replace />
+              : <AuthPage setUser={setUser} loadLastBooks={loadLastBooks} />
+          } />
+
+          {/* Reset de contraseña (Supabase redirige aquí) */}
+          <Route path="/reset-password" element={
+            <ResetPassword onDone={() => navigate('/biblioteca', { replace: true })} />
+          } />
+
+          {/* Tienda — pública para explorar; comprar y leer requiere auth */}
+          <Route path="/tienda" element={
+            <VistaTienda
+              onGoBack={() => navigate(user ? '/biblioteca' : '/')}
+              user={user}
+              onOpenBook={handleOpenBook}
+              isSuperuser={isSuperuser}
+            />
+          } />
+
+          {/* Lector — público para invitados (máx. 2 caps por RLS) y completo para usuarios */}
+          <Route path="/libro/:slug" element={
+            <LectorRoute
+              LectorCmp={Lectura}
+              user={user}
+              currentBook={currentBook}
+              isSuperuser={isSuperuser}
+              lectorStartNotebook={lectorStartNotebook}
+              setLectorStartNotebook={setLectorStartNotebook}
+              setCartelaJumpId={setCartelaJumpId}
+              setForoSource={setForoSource}
+            />
+          } />
+
+          {/* Rutas protegidas (requieren sesión) */}
+          <Route element={<ProtectedRoute user={user} />}>
+
+            <Route path="/biblioteca" element={
+              <Biblioteca
+                user={user}
+                lastOpenedBookIds={lastOpenedBookIds}
+                onSignOut={handleSignOut}
+                onOpenBook={handleOpenBook}
+                onGoTienda={() => navigate('/tienda')}
+                onGoPerfil={() => navigate('/perfil')}
+                onGoForo={(book) => {
+                  setCurrentBook(book)
+                  setForoSource('biblioteca')
+                  navigate(`/foro/${book.slug || book.id}`)
+                }}
+                onGoNotebook={handleGoNotebook}
+              />
+            } />
+
+            <Route path="/perfil" element={
+              <Perfil
+                user={user}
+                onGoBack={() => navigate('/biblioteca')}
+                onSignOut={handleSignOut}
+              />
+            } />
+
+            {/* Cartelera y Foro dependen de currentBook en esta fase.
+                Si se accede directamente sin book en estado, redirige a biblioteca. */}
+            <Route path="/cartelera/:slug" element={
+              currentBook
+                ? <Cartelera
+                    onGoBack={() => navigate(`/libro/${currentBook.slug || currentBook.id}`)}
+                    book={currentBook}
+                    user={user}
+                    onGoForo={() => {
+                      setForoSource('cartelera')
+                      navigate(`/foro/${currentBook.slug || currentBook.id}`)
+                    }}
+                    onGoBiblioteca={() => navigate('/biblioteca')}
+                    jumpToItemId={cartelaJumpId}
+                    onJumpConsumed={() => setCartelaJumpId(null)}
+                    isSuperuser={isSuperuser}
+                  />
+                : <Navigate to="/biblioteca" replace />
+            } />
+
+            <Route path="/foro/:slug" element={
+              currentBook
+                ? <Foro
+                    book={currentBook}
+                    user={user}
+                    onGoBack={() => {
+                      const dest = foroSource === 'cartelera'
+                        ? `/cartelera/${currentBook.slug || currentBook.id}`
+                        : foroSource === 'lectura'
+                          ? `/libro/${currentBook.slug || currentBook.id}`
+                          : '/biblioteca'
+                      navigate(dest)
+                    }}
+                    onGoLectura={() => navigate(`/libro/${currentBook.slug || currentBook.id}`)}
+                    onGoBiblioteca={() => navigate('/biblioteca')}
+                    onGoCartelera={() => navigate(`/cartelera/${currentBook.slug || currentBook.id}`)}
+                  />
+                : <Navigate to="/biblioteca" replace />
+            } />
+
+          </Route>
+
+          {/* Cualquier ruta desconocida → raíz */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+
+        </Routes>
+      </Suspense>
+      <TourResume />
     </>
   )
 }

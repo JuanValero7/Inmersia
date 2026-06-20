@@ -31,7 +31,7 @@ function deltaDesc(prev, curr) {
   return c
 }
 
-export default function Ficha({ section, items = [], onBackTablero, onBackPortada, initialItemId, onGoBack, onGoForo, onGoBiblioteca, onOpenList }) {
+export default function Ficha({ section, items = [], onBackTablero, onBackPortada, initialItemId, onGoBack, onGoForo, onGoBiblioteca, onOpenList, secciones }) {
   const total = items.length
   const [sel, setSel] = useState(initialItemId || items[0]?.id || null)
   const [query, setQuery] = useState('')
@@ -75,7 +75,7 @@ export default function Ficha({ section, items = [], onBackTablero, onBackPortad
   return (
     <div className="cart-scene" style={rootStyle}>
       <div className="bg-layer" />
-      {onOpenList && <Signpost current={section.key} onOpenSection={onOpenList} />}
+      {onOpenList && <Signpost current={section.key} onOpenSection={onOpenList} secciones={secciones} />}
       <div className="topbar">
         <div className="ttl">
           <h1>{section.label}</h1>

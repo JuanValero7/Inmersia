@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 import { theme, tint, getReaderPalette } from './clay.jsx'
 import { READING_FONTS } from './readerConstants.js'
 import { RecorderPlayer } from './RecorderPlayer.jsx'
+import WhiteNoisePlayer from './WhiteNoisePlayer.jsx'
 import '../../styles/lector.css'
 
 const LED_OPTIONS = [
@@ -316,7 +317,7 @@ export const BookReader = memo(function BookReader({
   onFontSize, onReadingFont, readingTheme = 'light', onReadingTheme,
   pageW = 470, pageH = 560, fontSize = 18, readingFont = "'Crimson Text', Georgia, serif",
   xrayOpen = false, xrayItems = [], onToggleXray, onXrayItemClick,
-  ambient = null, ledColor = 'none', onLedColor = null,
+  ambient = null, ledColor = 'none', onLedColor = null, esNoficcion = false,
 }) {
   const [soundOpen, setSoundOpen] = useState(false)
   const xrayInitial = s => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
@@ -341,11 +342,14 @@ export const BookReader = memo(function BookReader({
           <div style={{ position: 'relative' }}>
             <button type="button" onClick={() => setSoundOpen(o => !o)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: soundOpen ? theme.accent : theme.navBg, color: soundOpen ? '#fff' : theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26`, whiteSpace: 'nowrap' }}>
-              <span style={{ fontSize: 13, lineHeight: 1 }}>♪</span>
+              <span style={{ fontSize: 13, lineHeight: 1 }}>{esNoficcion ? '≋' : '♪'}</span>
               Sonido
             </button>
             <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 200, display: soundOpen ? 'block' : 'none' }}>
-              <RecorderPlayer ambient={ambient} onClose={() => setSoundOpen(false)} />
+              {esNoficcion
+                ? <WhiteNoisePlayer onClose={() => setSoundOpen(false)} />
+                : <RecorderPlayer ambient={ambient} onClose={() => setSoundOpen(false)} />
+              }
             </div>
           </div>
         </div>

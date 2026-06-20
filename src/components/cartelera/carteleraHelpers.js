@@ -9,7 +9,20 @@ export const SECCIONES = [
   { key: 'notas',      label: 'Notas',      singular: 'Nota',      sub: 'Tus predicciones y apuntes',     color: '#cf8ea4' },
 ]
 
-export const seccionMeta = (key) => SECCIONES.find(s => s.key === key)
+// No-ficción: mismos colores que sus equivalentes visuales de ficción
+// Glosario=Personajes, Datos=Lugares, Referencias=Hechos, Resumen=Datos
+export const SECCIONES_NOFICCION = [
+  { key: 'glosario',    label: 'Glosario',    singular: 'Término',    sub: 'Conceptos clave del libro',      color: '#d56a52' },
+  { key: 'datos',       label: 'Datos',       singular: 'Dato',       sub: 'Referencias del mundo real',     color: '#86ad9e' },
+  { key: 'referencias', label: 'Referencias', singular: 'Referencia', sub: 'Ideas y obras citadas',          color: '#e0b256' },
+  { key: 'resumen',     label: 'Resumen',     singular: 'Capítulo',   sub: 'Lo esencial de cada capítulo',  color: '#7d8db5' },
+  { key: 'notas',       label: 'Notas',       singular: 'Nota',       sub: 'Tus predicciones y apuntes',    color: '#cf8ea4' },
+]
+
+export const getSecciones = (esNoficcion) => esNoficcion ? SECCIONES_NOFICCION : SECCIONES
+
+export const seccionMeta = (key) =>
+  SECCIONES.find(s => s.key === key) || SECCIONES_NOFICCION.find(s => s.key === key)
 
 // tags viven en metadata.tags (jsonb)
 export const getTags = (item) => {

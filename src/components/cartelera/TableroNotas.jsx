@@ -15,19 +15,35 @@ const MINI_SCALE = MINI_W / BOARD_W
 const MINI_H = Math.round(BOARD_H * MINI_SCALE)
 const TOTAL_NOTES = 60
 
-const TABLEROS = {
+const TABLEROS_FICCION = {
   personajes: TableroPersonajes,
   lugares: TableroLugares,
   hechos: TableroHechos,
   datos: TableroDatos,
 }
+const TABLEROS_NOFICCION = {
+  glosario: TableroPersonajes,
+  datos: TableroLugares,
+  referencias: TableroHechos,
+  resumen: TableroDatos,
+}
 
-const EMBEDS = [
+// Posiciones idénticas en ficción y no ficción (mismo layout del corcho)
+const EMBEDS_FICCION = [
   { key: 'personajes', label: 'Personajes', cx: 150, cy: 178, rot: -4, pin: '#c23b2e' },
   { key: 'hechos',     label: 'Hechos',     cx: 552, cy: 190, rot: 4,  pin: '#e0b256' },
   { key: 'lugares',    label: 'Lugares',    cx: 154, cy: 672, rot: 3,  pin: '#5a8a78' },
   { key: 'datos',      label: 'Datos',      cx: 548, cy: 684, rot: -4, pin: '#7d8db5' },
 ]
+const EMBEDS_NOFICCION = [
+  { key: 'glosario',    label: 'Glosario',    cx: 150, cy: 178, rot: -4, pin: '#c23b2e' },
+  { key: 'referencias', label: 'Referencias', cx: 552, cy: 190, rot: 4,  pin: '#e0b256' },
+  { key: 'datos',       label: 'Datos',       cx: 154, cy: 672, rot: 3,  pin: '#5a8a78' },
+  { key: 'resumen',     label: 'Resumen',     cx: 548, cy: 684, rot: -4, pin: '#7d8db5' },
+]
+
+// Usado solo para el cálculo de exclusión de notas (mismas posiciones en ambos tipos)
+const EMBEDS = EMBEDS_FICCION
 
 const CENTER = { cx: BOARD_W * 0.5, cy: BOARD_H * 0.5, w: 214, h: 234, rot: -3 }
 
@@ -70,8 +86,8 @@ const ALL_NOTAS = (() => {
   return out
 })()
 
-function Miniatura({ e, pct, imageUrl, onClick }) {
-  const Tablero = TABLEROS[e.key]
+function Miniatura({ e, pct, imageUrl, onClick, tableros }) {
+  const Tablero = tableros[e.key]
   return (
     <div className="cart-embed" style={{ left: e.cx, top: e.cy, transform: `translate(-50%,-50%) rotate(${e.rot}deg)` }}>
       <button type="button" className="embox" onClick={onClick} aria-label={`Abrir ${e.label}`}>
@@ -86,21 +102,23 @@ function Miniatura({ e, pct, imageUrl, onClick }) {
   )
 }
 
-export default function TableroNotas({ pct = 0, scale = 1, principal = {}, onOpenSection }) {
+export default function TableroNotas({ pct = 0, scale = 1, principal = {}, onOpenSection, esNoficcion = false }) {
+  const embeds   = esNoficcion ? EMBEDS_NOFICCION : EMBEDS_FICCION
+  const tableros = esNoficcion ? TABLEROS_NOFICCION : TABLEROS_FICCION
   const visibleCount = Math.round(Math.max(0, Math.min(100, pct)) / 100 * TOTAL_NOTES)
   const visibleNotas = ALL_NOTAS.slice(0, visibleCount)
 
   // hilos: loop entre las 4 miniaturas + cada nota a la miniatura más cercana
   const links = useMemo(() => {
     const out = []
-    for (let k = 0; k < EMBEDS.length; k++) out.push([EMBEDS[k], EMBEDS[(k + 1) % EMBEDS.length]])
+    for (let k = 0; k < embeds.length; k++) out.push([embeds[k], embeds[(k + 1) % embeds.length]])
     for (const n of visibleNotas) {
-      let best = EMBEDS[0], bd = Infinity
-      for (const e of EMBEDS) { const d = Math.hypot(n.x - e.cx, n.y - e.cy); if (d < bd) { bd = d; best = e } }
+      let best = embeds[0], bd = Infinity
+      for (const e of embeds) { const d = Math.hypot(n.x - e.cx, n.y - e.cy); if (d < bd) { bd = d; best = e } }
       out.push([{ cx: n.x, cy: n.y }, best])
     }
     return out
-  }, [visibleCount])
+  }, [visibleCount, esNoficcion])
 
   return (
     <div className="cart-canvas cart-cork" style={{ width: BOARD_W, height: BOARD_H, transform: `scale(${scale})` }}>
@@ -136,8 +154,9 @@ export default function TableroNotas({ pct = 0, scale = 1, principal = {}, onOpe
       </svg>
 
       {/* miniaturas en vivo */}
-      {EMBEDS.map(e => (
+      {embeds.map(e => (
         <Miniatura key={e.key} e={e} pct={pct} imageUrl={principal[e.key]?.url}
+          tableros={tableros}
           onClick={() => onOpenSection && onOpenSection(e.key)} />
       ))}
     </div>

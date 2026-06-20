@@ -31,13 +31,14 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
   const [hasMore,       setHasMore]       = useState(false)
   const [catalogOffset, setCatalogOffset] = useState(0)
   const [reelLibro,     setReelLibro]     = useState(null)
+  const [filtroTipo,    setFiltroTipo]    = useState('todos') // 'todos' | 'ficcion' | 'noficcion'
 
   const pendientes      = userLibros.filter(l => !l.leido).length
   const accesoBloqueado = !isSuperuser && pendientes >= LIMITE
   const tieneLibro = id => userLibros.some(l => l.libro_id === id)
   const libroLeido = id => userLibros.some(l => l.libro_id === id && l.leido)
 
-  const COLS_BASE = 'id, titulo, autor, paginas, descripcion, color, portada_url, anio, categorias, moods'
+  const COLS_BASE = 'id, slug, titulo, autor, paginas, descripcion, color, portada_url, anio, categorias, moods, es_ficcion'
 
   // Invalida peticiones en vuelo: si llega una más nueva (o se desmonta), las
   // anteriores se descartan y no pisan el estado ni hacen setState fuera de tiempo.
@@ -72,15 +73,17 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
     setHasMore(libros.length === PAGE_SIZE)
 
     if (reset) {
-      const { data: ub } = await supabase
-        .from('bibliotecas_usuarios').select('libro_id, leido').eq('user_id', user.id)
-      if (myId !== reqIdRef.current) return
-      setUserLibros(ub || [])
+      if (user?.id) {
+        const { data: ub } = await supabase
+          .from('bibliotecas_usuarios').select('libro_id, leido').eq('user_id', user.id)
+        if (myId !== reqIdRef.current) return
+        setUserLibros(ub || [])
+      }
       setLoading(false)
     } else {
       setLoadingMore(false)
     }
-  }, [user.id])
+  }, [user?.id])
 
   const fetchTienda = useCallback(() => {
     setCatalogOffset(0)
@@ -109,6 +112,7 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
   }, [subView])
 
   async function comprar(libro) {
+    if (!user?.id) return
     const { error } = await supabase.from('bibliotecas_usuarios').insert({ user_id: user.id, libro_id: libro.id, leido: false })
     if (error) { console.error('No se pudo adquirir el libro:', error.message); return }
     setUserLibros(prev => [...prev, { libro_id: libro.id, leido: false }])
@@ -119,6 +123,7 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
     onOpenBook?.({
       id: libro.id,
       libro_id: libro.id,
+      slug: libro.slug,
       title: libro.titulo,
       author: libro.autor || 'Desconocido',
       pages: libro.paginas || 200,
@@ -163,6 +168,8 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
         onEmpezarLeer={comprarYLeer}
         onPreview={setReelLibro}
         onVolver={onGoBack}
+        filtroTipo={filtroTipo}
+        onFiltroTipo={setFiltroTipo}
       />
 
       {reelLibro && (

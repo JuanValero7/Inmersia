@@ -11,13 +11,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase.js'
 
-const VACIO = { personajes: [], lugares: [], hechos: [], datos: [] }
-
 export function useCartelera(libroId, userId, isSuperuser = false) {
   const [loading, setLoading]       = useState(true)
   const [capituloActual, setCap]    = useState(0)
   const [porcentaje, setPorcentaje] = useState(0)
-  const [itemsBySeccion, setItems]  = useState(VACIO)
+  const [itemsBySeccion, setItems]  = useState({})
   const [principal, setPrincipal]   = useState({})
 
   useEffect(() => {
@@ -28,7 +26,7 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
 
       if (!libroId || !userId) {
         if (!cancelled) {
-          setCap(0); setPorcentaje(0); setItems(VACIO); setPrincipal({})
+          setCap(0); setPorcentaje(0); setItems({}); setPrincipal({})
           setLoading(false)
         }
         return
@@ -67,11 +65,11 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
 
       // Filtrar y agrupar por nombre canónico para evitar duplicados
       // Items llegan ordenados por capitulo_numero ASC desde Supabase
-      const agrupado = { personajes: [], lugares: [], hechos: [], datos: [] }
+      const agrupado = {}
       const keys = {}  // `${seccion}:::${canonico}` → index en agrupado[seccion]
       for (const it of (carteleraRes.data || [])) {
         if (!isSuperuser && !(capActual > 0 && it.capitulo_numero < capActual)) continue
-        if (!agrupado[it.seccion]) continue
+        if (!agrupado[it.seccion]) agrupado[it.seccion] = []
         const canonico = it.nombre
         const key = `${it.seccion}:::${canonico}`
         if (key in keys) {
