@@ -272,7 +272,7 @@ export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBi
   const [searchParams, setSearchParams] = useSearchParams()
   // Lazy init: jumpToItemId tiene prioridad; si no, lee ?seccion= de la URL.
   const [view, setView] = useState(() => {
-    if (jumpToItemId) return { kind: 'board', key: 'personajes' }
+    if (jumpToItemId) return { kind: 'board', key: secciones[0].key }
     const s = searchParams.get('seccion')
     return s && VALID_SECCIONES.includes(s) ? { kind: 'board', key: s } : { kind: 'portada', key: null }
   })
@@ -287,7 +287,7 @@ export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBi
   useEffect(() => {
     if (!jumpToItemId) return
     setFichaInitItemId(jumpToItemId)
-    setView({ kind: 'board', key: 'personajes' })
+    setView({ kind: 'board', key: secciones[0].key })
     onJumpConsumed?.()
   }, [jumpToItemId])
 

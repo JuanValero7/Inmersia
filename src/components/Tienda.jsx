@@ -130,6 +130,7 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
       _baseColor: libro.color || '#cf8a6e',
       summary: libro.descripcion || '',
       cover: libro.portada_url || null,
+      es_ficcion: libro.es_ficcion ?? true,
       progress: null,
     })
   }
