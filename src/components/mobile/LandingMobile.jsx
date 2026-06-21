@@ -9,6 +9,6 @@
 import Landing from '../Landing.jsx'
 import '../../styles/landing.mobile.css'
 
-export default function LandingMobile({ onAuth }) {
-  return <Landing mobile onAuth={onAuth} />
+export default function LandingMobile({ onAuth, onGoTienda }) {
+  return <Landing mobile onAuth={onAuth} onGoTienda={onGoTienda} />
 }

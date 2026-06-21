@@ -204,35 +204,67 @@
   flex: 1; display: flex; align-items: flex-end; justify-content: space-around; gap: 4px;
   margin-bottom: 6px;
   background: #fff; border: 2px solid var(--ink); border-radius: 18px;
-  padding: 8px 8px 6px; box-shadow: 2.5px 3.5px 0 rgba(74,54,34,0.22), 0 8px 22px rgba(0,0,0,0.16);
+  padding: 8px 4px 6px; box-shadow: 2.5px 3.5px 0 rgba(74,54,34,0.22), 0 8px 22px rgba(0,0,0,0.16);
   transform-origin: left bottom; animation: lm-tray 0.26s cubic-bezier(.34,1.56,.64,1);
 }
 .lm-cat-tool {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
   background: none; border: none; cursor: pointer; font-family: inherit;
-  padding: 2px 5px 0; border-radius: 12px; -webkit-tap-highlight-color: transparent;
+  padding: 2px 3px 0; border-radius: 10px; -webkit-tap-highlight-color: transparent;
 }
 .lm-cat-tool:active { background: rgba(207,123,76,0.12); }
-.lm-cat-tool .tile { width: 48px; height: 44px; display: flex; align-items: center; justify-content: center; }
-.lm-cat-tool .lbl { font-size: 11px; font-weight: 700; color: var(--ink); }
+.lm-cat-tool .tile { width: 40px; height: 38px; display: flex; align-items: center; justify-content: center; }
+.lm-cat-tool .lbl { font-size: 10px; font-weight: 700; color: var(--ink); }
 
-/* popup de subrayado — aparece DEBAJO de la selección para no chocar con la barra nativa de Chrome Android */
-.lm-sel-pop {
-  position: fixed; z-index: 1300; transform: translate(-50%, 0);
-  background: var(--cream); border: 2px solid var(--ink); border-radius: 12px;
-  padding: 6px 8px 6px 12px; display: flex; gap: 9px; align-items: center;
-  box-shadow: 2px 3px 0 rgba(74,54,34,0.3), 0 10px 24px rgba(0,0,0,0.28); white-space: nowrap;
+/* Banner modo subrayado — pointer-events none para no bloquear la navegación */
+.lm-sub-banner {
+  position: absolute; bottom: 132px; left: 50%; transform: translateX(-50%);
+  z-index: 50; display: flex; align-items: center; gap: 10px;
+  background: var(--accent); color: #fff; border: 2px solid var(--ink);
+  border-radius: 999px; padding: 6px 8px 6px 16px;
+  font-family: 'Baloo 2', system-ui, sans-serif; font-size: 12px; font-weight: 700;
+  box-shadow: 2px 3px 0 rgba(74,54,34,0.3), 0 6px 18px rgba(0,0,0,0.2);
+  white-space: nowrap; animation: lm-fade .2s ease;
+  pointer-events: none;
 }
-.lm-sel-pop .q { font-family: 'Crimson Text', serif; font-style: italic; font-size: 12.5px; color: var(--ink); max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
-.lm-sel-pop button {
-  background: var(--accent); color: #fff; border: 2px solid var(--ink); border-radius: 999px;
-  padding: 4px 13px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
-  text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+.lm-sub-banner button {
+  background: rgba(0,0,0,0.18); border: none; color: #fff; border-radius: 50%;
+  width: 22px; height: 22px; cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent; pointer-events: auto;
 }
-.lm-sel-pop::after {
-  content: ''; position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
-  width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 7px solid var(--ink);
+
+/* Sheet de confirmación */
+.lm-csub-body {
+  padding: 0 20px 8px; overflow-y: auto; flex: 1;
+  display: flex; flex-direction: column; gap: 14px;
 }
+.lm-csub-label {
+  display: block; font-family: 'Baloo 2', system-ui, sans-serif;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
+  text-transform: uppercase; color: rgba(74,54,34,0.45); margin-bottom: 5px;
+}
+.lm-csub-text {
+  font-family: 'Crimson Text', Georgia, serif; font-size: 15.5px; line-height: 1.65;
+  color: var(--ink); margin: 0; font-style: italic;
+}
+.lm-csub-text--prev {
+  opacity: 0.55; border-left: 3px solid var(--accent); padding-left: 10px;
+}
+.lm-csub-actions {
+  display: flex; gap: 8px; padding: 12px 20px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  border-top: 1.5px solid rgba(74,54,34,0.1); flex-shrink: 0;
+}
+.lm-csub-btn {
+  flex: 1; padding: 11px 4px; border-radius: 999px; font-family: inherit;
+  font-size: 12.5px; font-weight: 700; border: 2px solid var(--ink); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.lm-csub-btn--discard  { background: var(--cream); color: var(--ink); }
+.lm-csub-btn--continue { background: var(--paper); color: var(--ink); }
+.lm-csub-btn--save     { background: var(--accent); color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.18); }
+.lm-csub-btn:disabled  { opacity: 0.55; cursor: not-allowed; }
 
 @keyframes lm-tray { from { opacity: 0; transform: translateX(-14px) scaleX(0.7); } to { opacity: 1; transform: translateX(0) scaleX(1); } }
 

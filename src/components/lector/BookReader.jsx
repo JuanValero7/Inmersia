@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { theme, tint, getReaderPalette } from './clay.jsx'
 import { READING_FONTS } from './readerConstants.js'
+import { findPrefixAtEnd, findSuffixAtStart } from '../../utils/readerHelpers.js'
 import { RecorderPlayer } from './RecorderPlayer.jsx'
 import WhiteNoisePlayer from './WhiteNoisePlayer.jsx'
 import '../../styles/lector.css'
@@ -13,32 +14,6 @@ const LED_OPTIONS = [
   { id: 'red',   label: 'Rojo',    hex: '#dc3232',  rgb: '220,50,50' },
   { id: 'green', label: 'Verde',   hex: '#28c850',  rgb: '40,200,80' },
 ]
-
-// Divide texto en frases conservando la puntuación y espacios intermedios.
-function splitSentences(text) {
-  const re = /[^.!?…]*[.!?…]+\s*/g
-  const parts = []
-  let m, last = 0
-  while ((m = re.exec(text)) !== null) { parts.push(m[0]); last = m.index + m[0].length }
-  if (last < text.length) parts.push(text.slice(last))
-  return parts.length ? parts : [text]
-}
-
-// Cuando la paginación corta un párrafo en medio de un texto_ref:
-// Busca el inicio del ref al final del fragmento (el texto empieza aquí, continúa en la próxima página).
-function findPrefixAtEnd(text, ref, minLen = 5) {
-  const tl = text.toLowerCase(), rl = ref.toLowerCase()
-  for (let len = rl.length - 1; len >= minLen; len--)
-    if (tl.endsWith(rl.slice(0, len))) return text.length - len
-  return -1
-}
-// Busca el final del ref al inicio del fragmento (el texto empezó en la página anterior, termina aquí).
-function findSuffixAtStart(text, ref, minLen = 5) {
-  const tl = text.toLowerCase(), rl = ref.toLowerCase()
-  for (let offset = 1; offset <= rl.length - minLen; offset++)
-    if (tl.startsWith(rl.slice(offset))) return rl.length - offset
-  return -1
-}
 
 // ── Contenido de una página (datos reales) ──────────────────
 const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, onPlaySfx, onTextSelect, fontSize, readingFont, isFirst, chapterTitle, chapterNum, pal = getReaderPalette('light') }) {
@@ -335,8 +310,8 @@ export const BookReader = memo(function BookReader({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, position: 'relative' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 12, padding: '0 6px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 12, padding: '0 6px', flexWrap: 'wrap', rowGap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <ChapterSelect chapters={chapters || []} chapterIndex={chapterIndex} onChapterSelect={onChapterSelect} />
           <TypographyControl fontSize={fontSize} onFontSize={onFontSize} readingFont={readingFont} onReadingFont={onReadingFont} readingTheme={readingTheme} onReadingTheme={onReadingTheme} ledColor={ledColor} onLedColor={onLedColor} />
           <div style={{ position: 'relative' }}>
@@ -353,7 +328,7 @@ export const BookReader = memo(function BookReader({
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 'auto' }}>
           {/* X-ray */}
           <div style={{ position: 'relative' }}>
             <button type="button" onClick={onToggleXray}
@@ -363,10 +338,10 @@ export const BookReader = memo(function BookReader({
             {xrayOpen && (
               <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60, background: '#fffdf8', border: `2px solid ${theme.ink}`, borderRadius: 16, padding: '12px 16px', minWidth: 210, maxWidth: 290, maxHeight: 320, overflowY: 'auto', boxShadow: `2px 4px 0 ${theme.ink}22, 0 14px 30px rgba(0,0,0,0.22)`, fontFamily: "'Baloo 2', sans-serif" }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(74,54,34,0.5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-                  Personajes · hasta cap. {chapter.numero ?? chapterIndex + 1}
+                  {esNoficcion ? 'Glosario' : 'Personajes'} · cap. {chapter.numero ?? chapterIndex + 1}
                 </div>
                 {xrayItems.length === 0
-                  ? <p style={{ fontSize: 13, color: 'rgba(74,54,34,0.5)', fontStyle: 'italic', margin: 0 }}>Sin personajes hasta este capítulo.</p>
+                  ? <p style={{ fontSize: 13, color: 'rgba(74,54,34,0.5)', fontStyle: 'italic', margin: 0 }}>{esNoficcion ? 'Sin términos en este capítulo.' : 'Sin personajes en este capítulo.'}</p>
                   : xrayItems.map(it => (
                     <button key={it.id} onClick={() => onXrayItemClick?.(it.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid rgba(74,54,34,0.08)', width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
                       <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', background: '#d56a52', color: '#fff', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid rgba(74,54,34,0.35)' }}>

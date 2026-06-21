@@ -7,9 +7,9 @@
 // =============================================================
 import React from 'react'
 import { INK, ACCENT } from './bibmHelpers.jsx'
+import { SIN_CATEGORIA_ID } from '../../biblioteca/constants.js'
 
 const PALETTE = ['#7d5bbe', '#3d7ea6', '#e0913f', '#d8553f', '#2fa18d', '#4f93c4', '#6e5f93', '#d56f97', '#5a8c5a', '#bd6a34']
-const SIN_CATEGORIA_ID = '__sin_categoria'
 
 function ScreenShell({ title, onClose, children, footer }) {
   const [entering, setEntering] = React.useState(true)

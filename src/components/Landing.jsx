@@ -17,7 +17,7 @@ const LOGO = '/assets/inmersia-logo.png'
 const LOGO_STACKED = '/assets/landing/inmersia-logo-stacked.png'
 const BOOK = '/assets/landing/libro2-cutout.webp'
 
-export default function Landing({ onAuth, mobile = false }) {
+export default function Landing({ onAuth, onGoTienda, mobile = false }) {
   const rootRef = useRef(null)
   const queRef = useRef(null)
   useReveal(rootRef)
@@ -47,7 +47,7 @@ export default function Landing({ onAuth, mobile = false }) {
         <div className="inm-wrap inm-hero-grid">
           <div>
             <h1 className="inm-hero-h">
-              Las mejores<br className="inm-dbr" />historias <em>nunca</em><br className="inm-dbr" />estuvieron en el<br className="inm-dbr" />feed.
+              Las mejores{' '}<br className="inm-dbr" />historias <em>nunca</em>{' '}<br className="inm-dbr" />estuvieron en el{' '}<br className="inm-dbr" />feed.
             </h1>
             <p className="inm-hero-lede">
               Inmersia convierte cada libro en un mundo para habitar, no en una pantalla más para
@@ -124,7 +124,10 @@ export default function Landing({ onAuth, mobile = false }) {
         <div className="inm-wrap inm-closing-in">
           <img className="inm-closing-logo" src={LOGO_STACKED} alt="Inmersia" data-reveal />
           <p className="inm-closing-msg" data-reveal>Abre tu imaginación. <em>Nosotros nos encargamos del resto.</em></p>
-          <a className="inm-clay-btn inm-clay-lg" href="#registro" onClick={go('registro')} data-reveal>Crear una cuenta</a>
+          <div className="inm-closing-ctas" data-reveal>
+            <a className="inm-clay-btn inm-clay-lg" href="#registro" onClick={go('registro')}>Crear una cuenta</a>
+            <a className="inm-quiet inm-quiet-lg" href="/tienda" onClick={(e) => { e.preventDefault(); onGoTienda?.() }}>Explorar nuestro catálogo →</a>
+          </div>
         </div>
       </section>
 

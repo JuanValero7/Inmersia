@@ -18,22 +18,14 @@ import { NotebookIcon } from './lector/RecorderPlayer.jsx'
 import { Notebook }        from './lector/Notebook.jsx'
 import { theme, ClayButton, getReaderPalette } from './lector/clay.jsx'
 import SuperuserSoundsPanel from './lector/SuperuserSoundsPanel.jsx'
+import { FONT_WIDTH } from './lector/readerConstants.js'
 
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
-
-// Factor de ancho medio de carácter por fuente (para estimar caracteres/línea).
-// Baloo 2 y Merriweather son más anchas que Crimson/Lora.
-const FONT_WIDTH = {
-  "'Crimson Text', Georgia, serif": 0.46,
-  "'Lora', Georgia, serif": 0.46,
-  "'Merriweather', Georgia, serif": 0.50,
-  "'Baloo 2', system-ui, sans-serif": 0.52,
-}
 
 // Geometría de página: el libro llena la pantalla.
 // El tamaño y la fuente afectan la paginación (caracteres/línea + alto de línea).
 function computeGeom(doubleView, fontSize, readingFont) {
-  const pageH = Math.min(760, Math.max(430, window.innerHeight - 165))
+  const pageH = Math.min(760, Math.max(360, window.innerHeight - 230))
   const availW = window.innerWidth - 64
   let pageW = doubleView
     ? Math.min(Math.round(pageH * 0.92), Math.floor((availW - 34) / 2))
@@ -365,9 +357,10 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const handleToggleView    = useCallback(() => setDoubleView(v => !v), [])
   const handleChapterSelect = useCallback((idx) => { setChapterIndex(idx); setPageIndex(0); setXrayOpen(false) }, [])
 
-  // X-ray: cierra al cambiar de capítulo; personajes cargados por useXrayItems
+  // X-ray: cierra al cambiar de capítulo; personajes/glosario cargados por useXrayItems
+  const esNoficcion = book?.es_ficcion === false
   useEffect(() => { setXrayOpen(false) }, [chapterIndex])
-  const xrayItems = useXrayItems(xrayOpen, book?.libro_id, currentChapter?.numero ?? chapterIndex + 1)
+  const xrayItems = useXrayItems(xrayOpen, book?.libro_id, currentChapter?.numero ?? chapterIndex + 1, esNoficcion ? 'glosario' : 'personajes')
   async function handleSubmitResena() {
     if (await submitResena()) setResenaOpen(false)
   }
@@ -391,11 +384,11 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       <div style={{ position: 'absolute', inset: 0, background: pal.vignette, pointerEvents: 'none', zIndex: 1 }} />
 
       {/* TOP BAR */}
-      <header style={{ position: 'relative', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '14px 24px 0' }}>
-        <div style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 14, padding: '9px 15px', display: 'flex', alignItems: 'center', boxShadow: `1.5px 2px 0 ${theme.ink}22`, maxWidth: 320 }}>
+      <header style={{ position: 'relative', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', rowGap: 8, gap: 14, padding: '14px 24px 0' }}>
+        <div style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 14, padding: '9px 15px', display: 'flex', alignItems: 'center', boxShadow: `1.5px 2px 0 ${theme.ink}22`, flex: '1 1 auto', minWidth: 0, maxWidth: 320 }}>
           <span style={{ fontSize: 18, fontWeight: 700, color: '#8a7355', fontFamily: "'Baloo 2', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{book?.title}</span>
         </div>
-        <div style={{ display: 'flex', gap: 9, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexShrink: 0 }}>
           {isSuperuser && !loading && !error && book?.libro_id && (
             <button type="button" onClick={() => setAdminPanelOpen(v => !v)} title="Panel de media (superusuario)"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13, cursor: 'pointer', border: `2px solid ${adminPanelOpen ? theme.accent : theme.ink}`, borderRadius: 999, padding: '8px 14px', background: adminPanelOpen ? theme.accent : theme.navBg, color: adminPanelOpen ? '#fff' : theme.navText, boxShadow: `1.6px 2.4px 0 ${theme.ink}30` }}>
@@ -445,7 +438,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       </header>
 
       {/* CONTENIDO */}
-      <div style={{ position: 'relative', zIndex: 10, flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 24px 0' }}>
+      <div style={{ position: 'relative', zIndex: 10, flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px' }}>
         <div style={{ position: 'relative', zIndex: 2 }}>
           {loading && <div style={msgStyle}>Cargando libro…</div>}
           {!loading && !book?.libro_id && (
@@ -492,7 +485,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   ambient={currentAmbient}
                   ledColor={ledColor}
                   onLedColor={setLedColor}
-                  esNoficcion={book?.es_ficcion === false}
+                  esNoficcion={esNoficcion}
                 />
           )}
         </div>

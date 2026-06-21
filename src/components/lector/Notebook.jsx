@@ -20,6 +20,7 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
   const [selCap, setSelCap] = useState(capituloNum)
   const [tabCaps, setTabCaps] = useState([])
   const [subrayados, setSubrayados] = useState([])
+  const [subTruncated, setSubTruncated] = useState(false)
   // drafts por capítulo: { [num]: { pred, anot, anotId, loaded, dirty } }
   const [drafts, setDrafts] = useState({})
 
@@ -41,14 +42,16 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
     const [predList, anotList, subRes] = await Promise.all([
       supabase.from('predicciones_usuario').select('capitulo_num').eq('user_id', userId).eq('libro_id', libroId),
       supabase.from('anotaciones_usuario').select('capitulo_num').eq('user_id', userId).eq('libro_id', libroId),
-      supabase.from('subrayados_usuario').select('id, texto_original, capitulo_num').eq('user_id', userId).eq('libro_id', libroId).order('capitulo_num'),
+      supabase.from('subrayados_usuario').select('id, texto_original, capitulo_num').eq('user_id', userId).eq('libro_id', libroId).order('capitulo_num').limit(200),
     ])
     const nums = new Set([capituloNum])
     predList.data?.forEach(r => nums.add(r.capitulo_num))
     anotList.data?.forEach(r => nums.add(r.capitulo_num))
     subRes.data?.forEach(r => nums.add(r.capitulo_num))
     setTabCaps([...nums].sort((a, b) => a - b))
-    setSubrayados(subRes.data || [])
+    const subs = subRes.data || []
+    setSubrayados(subs)
+    setSubTruncated(subs.length === 200)
     loadChapter(capituloNum)
   }
 
@@ -131,6 +134,11 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             {type === 'sub' ? (
               <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
+                {subTruncated && (
+                  <p style={{ fontFamily: "'Baloo 2',sans-serif", fontSize: 12, color: 'rgba(160,100,40,0.8)', background: 'rgba(224,178,86,0.15)', borderRadius: 8, padding: '8px 12px', marginBottom: 12 }}>
+                    Solo se muestran los primeros 200 subrayados del libro.
+                  </p>
+                )}
                 {subsCap.length === 0
                   ? <p style={{ fontFamily: "'Baloo 2',sans-serif", fontStyle: 'italic', fontSize: 13, color: 'rgba(74,54,34,0.5)' }}>Sin subrayados en este capítulo. Seleccioná texto en el libro para guardar uno.</p>
                   : subsCap.map(s => (

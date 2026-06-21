@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 
-export function useXrayItems(isOpen, bookId, chapterNum) {
+export function useXrayItems(isOpen, bookId, chapterNum, seccion = 'personajes') {
   const [items, setItems] = useState([])
 
   useEffect(() => {
@@ -15,7 +15,7 @@ export function useXrayItems(isOpen, bookId, chapterNum) {
       .select('id, nombre')
       .eq('libro_id', bookId)
       .eq('capitulo_numero', chapterNum)
-      .eq('seccion', 'personajes')
+      .eq('seccion', seccion)
       .order('capitulo_numero', { ascending: true })
       .then(({ data }) => {
         if (!active) return
@@ -27,7 +27,7 @@ export function useXrayItems(isOpen, bookId, chapterNum) {
         )
       })
     return () => { active = false }
-  }, [isOpen, bookId, chapterNum])
+  }, [isOpen, bookId, chapterNum, seccion])
 
   return items
 }

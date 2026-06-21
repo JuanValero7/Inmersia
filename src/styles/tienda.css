@@ -73,10 +73,31 @@
   background:#f4efe1 url('/assets/tienda/cat-books-bg.webp') center 14% / min(1480px,168%) auto no-repeat;}
 .interior-bg::after{content:"";position:absolute;inset:0;background:rgba(246,241,229,0.55);}
 .interior-inner{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:80px 30px 80px;}
-.int-back{position:fixed;top:18px;right:18px;z-index:5;background:var(--cream);border:2px solid var(--ink);
+.int-back-row{position:fixed;top:18px;right:18px;z-index:5;display:flex;gap:10px;}
+.int-back{background:var(--cream);border:2px solid var(--ink);
   color:#9a6238;font-family:inherit;font-weight:700;font-size:14px;padding:9px 17px;border-radius:999px;cursor:pointer;
   transition:transform .12s,box-shadow .12s;white-space:nowrap;box-shadow:1.6px 2px 0 rgba(74,54,34,0.26);}
 .int-back:hover{transform:translateY(-1px);box-shadow:1.6px 3px 0 rgba(74,54,34,0.3);}
+
+/* ── Nav guest (visitante no logueado en tienda) ───────────── */
+.tienda-guest-nav{position:fixed;top:0;left:0;right:0;z-index:5;background:rgba(244,239,225,0.92);
+  backdrop-filter:blur(10px);border-bottom:1.5px solid rgba(74,54,34,0.14);}
+.tienda-guest-nav-in{display:flex;align-items:center;justify-content:space-between;
+  max-width:1000px;margin:0 auto;padding:12px 30px;gap:16px;}
+.tienda-guest-logo{height:26px;}
+.tienda-guest-volver{font-family:inherit;font-weight:700;font-size:14px;color:#9a6238;
+  background:none;border:none;cursor:pointer;padding:7px 12px;border-radius:999px;
+  transition:background .12s;}
+.tienda-guest-volver:hover{background:rgba(74,54,34,0.08);}
+.tienda-guest-actions{display:flex;align-items:center;gap:18px;}
+.tienda-guest-lnk{font-family:inherit;font-weight:600;font-size:0.93rem;color:#4a3622;
+  background:none;border:none;cursor:pointer;padding:0;transition:color .12s;}
+.tienda-guest-lnk:hover{color:#b5613a;}
+.tienda-guest-btn{font-family:inherit;font-weight:700;font-size:0.9rem;color:#fff;
+  background:#cf7b4c;border:2px solid #4a3622;border-radius:12px;padding:0.5em 1.1em;cursor:pointer;
+  box-shadow:2px 2.8px 0 rgba(74,54,34,0.33);transition:transform .12s,box-shadow .12s,filter .12s;}
+.tienda-guest-btn:hover{transform:translate(-1px,-1px);filter:brightness(1.04);box-shadow:3px 4px 0 rgba(74,54,34,0.33);}
+.interior:has(.tienda-guest-nav) .interior-inner{padding-top:62px;}
 .int-title{text-align:center;font-size:40px;font-weight:800;color:#4a3622;margin:0;letter-spacing:.01em;
   text-shadow:0 1px 0 rgba(255,253,247,0.7);}
 .int-sub{text-align:center;color:#8a6a48;margin:5px 0 26px;font-size:16px;font-weight:600;}
@@ -370,6 +391,15 @@
   /* Aviso "Cerrado" */
   .closed-title{font-size:34px;}
   .closed-text{font-size:15.5px;margin:12px 0 24px;}
+
+  /* Nav guest en mobile: oculta "Iniciar sesión", compacta el nav */
+  .tienda-guest-nav-in{padding:10px 16px;}
+  .tienda-guest-lnk{display:none;}
+  .tienda-guest-logo{height:22px;}
+  .tienda-guest-volver{padding:7px 6px;font-size:13px;}
+  .tienda-guest-btn{font-size:0.85rem;padding:0.45em 0.9em;}
+  /* Con el nav sticky en flujo, el interior-inner no necesita tanto top padding */
+  .interior:has(.tienda-guest-nav) .interior-inner{padding-top:50px;}
 }
 
 /* ════════════════════════════════════════════════════════════════

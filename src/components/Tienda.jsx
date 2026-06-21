@@ -23,7 +23,7 @@ const NUEVOS = 5   // cuántos libros recientes llevan el listón "Nuevo"
 const PAGE_SIZE = 20
 
 export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = false }) {
-  const [subView,       setSubView]       = useState('calle')   // 'calle' | 'catalogo'
+  const [subView,       setSubView]       = useState(!user ? 'catalogo' : 'calle')   // 'calle' | 'catalogo'
   const [catalogo,      setCatalogo]      = useState([])
   const [userLibros,    setUserLibros]    = useState([])
   const [loading,       setLoading]       = useState(false)

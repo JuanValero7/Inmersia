@@ -1,5 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
+
+const LOGO = '/assets/inmersia-logo.png'
 import { CAT_COLOR, itint, ilum } from './tiendaHelpers.jsx'
 import PanelLibro from './PanelLibro.jsx'
 import useIsMobile from '../../hooks/useIsMobile.js'
@@ -136,6 +139,7 @@ function BookCard({ libro, adquirido, onOpen }) {
 
 export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMore, onLoadMore, user, tieneLibro, libroLeido, onComprar, onPreview, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo }) {
   const isMobile = useIsMobile()
+  const navigate = useNavigate()
   const [selCats,     setSelCats]     = useState(new Set())
   const [qInput,      setQInput]      = useState('')
   const [q,           setQ]           = useState('')
@@ -144,6 +148,20 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
 
   const availableCats = useMemo(() => [...new Set(catalogo.flatMap(b => b.categorias || []))].sort(), [catalogo])
   const query = q.trim().toLowerCase()
+
+  // En mobile, intercepta el botón "Atrás" de Android para cerrar el panel
+  // en vez de navegar al historial del browser.
+  useEffect(() => {
+    if (!isMobile || !sel) return
+    window.history.pushState({ _inmPanel: sel.id }, '')
+    let closedByBack = false
+    const handlePop = () => { closedByBack = true; setSel(null) }
+    window.addEventListener('popstate', handlePop)
+    return () => {
+      window.removeEventListener('popstate', handlePop)
+      if (!closedByBack) window.history.go(-1)
+    }
+  }, [isMobile, sel])
 
   const toggleCat = (c) => setSelCats(prev => {
     const next = new Set(prev)
@@ -176,7 +194,22 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
   return (
     <div className="interior show">
       <div className="interior-bg" />
-      <button className="int-back" onClick={onVolver}>Biblioteca</button>
+      {user ? (
+        <div className="int-back-row">
+          <button className="int-back" onClick={onVolver}>Biblioteca</button>
+        </div>
+      ) : (
+        <header className="tienda-guest-nav">
+          <div className="tienda-guest-nav-in">
+            <button className="tienda-guest-volver" onClick={onVolver}>← Volver</button>
+            <img src={LOGO} alt="Inmersia" className="tienda-guest-logo" />
+            <nav className="tienda-guest-actions">
+              <button className="tienda-guest-lnk" onClick={() => navigate('/auth', { state: { tab: 'login' } })}>Iniciar sesión</button>
+              <button className="tienda-guest-btn" onClick={() => navigate('/auth', { state: { tab: 'registro' } })}>Crear cuenta</button>
+            </nav>
+          </div>
+        </header>
+      )}
 
       <div className="interior-inner">
         <h1 className="int-title">Catálogo</h1>

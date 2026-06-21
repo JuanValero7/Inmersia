@@ -54,3 +54,21 @@ input.inm-vol::-moz-range-thumb {
   text-shadow: 0 0 6px rgba(207,123,76,1), 0 0 14px rgba(207,123,76,0.85), 0 0 28px rgba(207,123,76,0.6);
 }
 
+/* ── Responsive: barras de lector ─────────────────────────────
+   En pantallas angostas los botones reducen padding y el header
+   envuelve el título antes de que los botones salgan de pantalla. */
+@media (max-width: 860px) {
+  /* Botones de la barra de ajustes (capítulo, A/A, sonido, etc.) */
+  #tutorial-chapter-btn,
+  #tutorial-typography-btn {
+    padding: 4px 9px;
+  }
+}
+
+@media (max-width: 720px) {
+  /* Header: limitar más el ancho del título para no empujar los botones de nav */
+  .desk > header > div:first-child {
+    max-width: 200px !important;
+  }
+}
+

@@ -1,4 +1,4 @@
-// src/components/mobile/LectorMobile.jsx
+﻿// src/components/mobile/LectorMobile.jsx
 // ─────────────────────────────────────────────────────────────
 // CÁSCARA MOBILE DEL LECTOR INMERSIVO (estética clay / acuarela).
 //
@@ -12,9 +12,10 @@
 //   · mascota (gato) abajo-izq → al tocarla despliega, en horizontal y sobre
 //                            fondo blanco, los 3 accesos: Audio · Imagen · Cuaderno
 //
-// NO se duplica la lógica de negocio: reutiliza TAL CUAL el <Notebook>, la
-// utilidad paginarParrafos(), READING_FONTS y el theme del Lector de
-// escritorio. Solo se replica el wiring de datos Supabase (capítulos,
+// NO se duplica la lógica de negocio: reutiliza TAL CUAL el <Notebook> y el
+// theme del Lector de escritorio. La paginación SÍ es propia de mobile
+// (paginarParrafosMobileDOM), porque sus restricciones de alto/desborde difieren.
+// Solo se replica el wiring de datos Supabase (capítulos,
 // párrafos, media, progreso de lectura, subrayados), idéntico a Lector.jsx.
 //
 // Mismo contrato de props que Lector.jsx (VistaLectura):
@@ -25,48 +26,20 @@ import { supabase } from '../../lib/supabase.js'
 import useLocalStorage from '../../hooks/useLocalStorage.js'
 import { useLectorData } from '../../hooks/useLectorData.js'
 import { useXrayItems } from '../../hooks/useXrayItems.js'
-import { paginarParrafos } from '../../utils/lectorPagination.js'
-import { READING_FONTS } from '../lector/readerConstants.js'
+import { paginarParrafosMobileDOM } from '../../utils/lectorPaginationMobile.js'
 import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTILIZADO (igual al de PC)
 import { INK, ACCENT } from '../lector/clay.jsx'
 import SuperuserSoundsPanel from '../lector/SuperuserSoundsPanel.jsx'
-import { useWhiteNoise, TIPOS_RUIDO, AMBIENCIAS } from '../../hooks/useWhiteNoise.js'
+import { useAmbientPlayer } from '../../hooks/useAmbientPlayer.js'
+import MobileBookPage from './lector/MobileBookPage.jsx'
+import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
 import { getTourPhase, setTourPhase } from '../guidedTour.js'
 import { runGuidedLector1Mobile, runGuidedLector2Mobile } from '../tutorial.mobile.js'
 import '../../styles/lector.mobile.css'
 
+import { FONT_WIDTH } from '../lector/readerConstants.js'
+
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
-
-// Divide texto en frases conservando la puntuación y espacios intermedios.
-function splitSentences(text) {
-  const re = /[^.!?…]*[.!?…]+\s*/g
-  const parts = []
-  let m, last = 0
-  while ((m = re.exec(text)) !== null) { parts.push(m[0]); last = m.index + m[0].length }
-  if (last < text.length) parts.push(text.slice(last))
-  return parts.length ? parts : [text]
-}
-
-function findPrefixAtEnd(text, ref, minLen = 5) {
-  const tl = text.toLowerCase(), rl = ref.toLowerCase()
-  for (let len = rl.length - 1; len >= minLen; len--)
-    if (tl.endsWith(rl.slice(0, len))) return text.length - len
-  return -1
-}
-function findSuffixAtStart(text, ref, minLen = 5) {
-  const tl = text.toLowerCase(), rl = ref.toLowerCase()
-  for (let offset = 1; offset <= rl.length - minLen; offset++)
-    if (tl.startsWith(rl.slice(offset))) return rl.length - offset
-  return -1
-}
-
-// Factor de ancho medio de carácter por fuente (estima caracteres/línea).
-const FONT_WIDTH = {
-  "'Crimson Text', Georgia, serif": 0.46,
-  "'Lora', Georgia, serif": 0.46,
-  "'Merriweather', Georgia, serif": 0.50,
-  "'Baloo 2', system-ui, sans-serif": 0.52,
-}
 const LINE = 1.72  // alto de línea (coincide con .lm-para en el CSS)
 
 // ── Iconos lineales ──────────────────────────────────────────
@@ -75,25 +48,9 @@ const Compass = () => (
     <circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><path d="M2 12h20"/>
   </svg>
 )
-const IcClose = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
-)
 const IcStar = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l2.6 5.4L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.4-.6z"/></svg>
 )
-
-// Estrellas de rating (mismo comportamiento que el escritorio)
-function EstrellaLector({ valor, onChange }) {
-  const [hover, setHover] = useState(0)
-  return (
-    <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-      {[1,2,3,4,5].map(n => (
-        <span key={n} onClick={() => onChange?.(n)} onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)}
-          style={{ fontSize: 34, cursor: 'pointer', userSelect: 'none', WebkitTapHighlightColor: 'transparent', color: n <= (hover || valor) ? ACCENT : 'rgba(74,54,34,0.2)', transition: 'color 0.1s' }}>★</span>
-      ))}
-    </div>
-  )
-}
 
 // ── Iconos ilustrados clay (con volumen) ─────────────────────
 function CassetteIcon() {
@@ -137,372 +94,18 @@ function SpiralNotebookIcon() {
     </span>
   )
 }
-
-// ── Página del libro (una sola hoja) ─────────────────────────
-function BookPage({ chapter, chapterIndex, parrafos, mediaByParrafo, isFirst, pageNum, fontSize, font,
-                    atStart, nextIsChapter, onPrev, onNext, onPlaySfx, onSelectText }) {
-  const lineH = Math.round(fontSize * LINE)
-  const innerRef = useRef(null)
-
-  function handleSel() {
-    // Delay de 50ms: deja que el navegador finalice la selección antes de leerla,
-    // especialmente necesario en touch donde la selección no está 100% lista al touchend.
-    setTimeout(() => {
-      if (!onSelectText) return
-      const sel = window.getSelection()
-      if (!sel || sel.isCollapsed || !sel.toString().trim()) return
-      if (!innerRef.current?.contains(sel.anchorNode)) return
-      const text = sel.toString().trim()
-      const anchorEl = sel.anchorNode?.parentElement?.closest('[data-parrafo-id]')
-      const parrafoId = anchorEl?.dataset?.parrafoId || null
-      const rect = sel.getRangeAt(0).getBoundingClientRect()
-      onSelectText({ text, parrafoId, rect })
-    }, 50)
-  }
-
+function HighlighterIcon({ active }) {
+  const bodyFill = active ? '#f9d96e' : ACCENT
+  const lineFill = active ? '#f5e87a' : '#fbeed4'
   return (
-    <div className="lm-page" data-screen-label={`Lector cap ${chapter?.numero ?? chapterIndex + 1}`}>
-      <div className="lm-page-lines" style={{ backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent ${lineH-1}px, rgba(150,110,60,0.05) ${lineH-1}px, rgba(150,110,60,0.05) ${lineH}px)` }} />
-      <div className="lm-page-inner" data-lm-pagebox ref={innerRef} translate="no" style={{ fontSize, lineHeight: LINE }} onMouseUp={handleSel} onTouchEnd={handleSel} onContextMenu={(e) => e.preventDefault()}>
-        {isFirst && (
-          <div className="lm-chap-head">
-            <div className="lm-chap-kicker" style={{ fontSize: fontSize*0.6 }}>Capítulo {chapter?.numero ?? chapterIndex + 1}</div>
-            <div className="lm-chap-title" style={{ fontSize: fontSize*1.55 }}>{chapter?.titulo}</div>
-            <div className="lm-chap-rule" />
-          </div>
-        )}
-        {parrafos.length === 0 && <div className="lm-page-msg">— fin del capítulo —</div>}
-        {parrafos.map((p, i) => {
-          if (p.tipo === 'separador') return <div key={p.id ?? `s${i}`} className="lm-sep">❧</div>
-          const sfx = (mediaByParrafo[p.id] || []).filter(m => m.origen === 'explicito' && m.tipo === 'audio')
-          const text = p.contenido || ''
-          const textLower = text.toLowerCase()
-          const anchors = []
-          const sfxUnanchored = []
-          for (const s of sfx) {
-            const ref = s.metadata?.texto_ref
-            if (ref) {
-              const pos = textLower.indexOf(ref.toLowerCase())
-              if (pos !== -1) {
-                anchors.push({ start: pos, end: pos + ref.length, s })
-              } else {
-                const partialStart = findPrefixAtEnd(text, ref)
-                if (partialStart !== -1) {
-                  anchors.push({ start: partialStart, end: text.length, s })
-                } else {
-                  const partialEnd = findSuffixAtStart(text, ref)
-                  if (partialEnd !== -1) anchors.push({ start: 0, end: partialEnd, s })
-                }
-              }
-            } else {
-              sfxUnanchored.push(s)
-            }
-          }
-          anchors.sort((a, b) => a.start - b.start)
-          let sfxContent = null
-          if (anchors.length > 0) {
-            sfxContent = []
-            let last = 0
-            for (const { start, end, s } of anchors) {
-              if (last < start) sfxContent.push(<span key={`t${last}`}>{text.slice(last, start)}</span>)
-              sfxContent.push(<span key={`s${start}`} className="sfx-glow" onClick={(e) => { e.stopPropagation(); onPlaySfx(s) }}>{text.slice(start, end)}</span>)
-              last = end
-            }
-            if (last < text.length) sfxContent.push(<span key={`t${last}`}>{text.slice(last)}</span>)
-          }
-          const paraGlow = sfxUnanchored.length > 0 && anchors.length === 0
-          const handleParaClick = paraGlow ? (e) => { e.stopPropagation(); onPlaySfx(sfxUnanchored[0]) } : undefined
-          return (
-            <p key={p.id ?? `p${i}`} data-parrafo-id={p.id}
-              onClick={paraGlow ? handleParaClick : undefined}
-              className={'lm-para' + (p.tipo==='dialogo'?' dlg':'') + (paraGlow ? ' sfx-glow' : '')}
-              style={{ fontFamily: font }}>
-              {sfxContent ?? p.contenido}
-            </p>
-          )
-        })}
-      </div>
-      <div className="lm-pagenum">{pageNum}</div>
-      <div className={'lm-turn left' + (atStart?' disabled':'')} onClick={atStart?undefined:onPrev}>
-        <span>‹</span><div className="corner" />
-      </div>
-      <div className={'lm-turn right' + (onNext?'':' disabled') + (nextIsChapter?' next-chapter':'')} onClick={onNext || undefined}>
-        <span>{nextIsChapter ? '✦' : '›'}</span><div className="corner" />
-      </div>
-    </div>
-  )
-}
-
-// ── Sheet: selector de capítulo ──────────────────────────────
-function XraySheet({ items, chapterNum, onClose, onItemClick }) {
-  const ini = s => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
-  return (
-    <div className="lm-backdrop" onClick={onClose}>
-      <div className="lm-sheet" onClick={e => e.stopPropagation()}>
-        <div className="lm-grip" />
-        <div className="lm-sheet-head">
-          <span className="lm-sheet-title">X-ray · hasta cap. {chapterNum}</span>
-          <button className="lm-close" onClick={onClose}><IcClose /></button>
-        </div>
-        <div style={{ overflowY: 'auto', padding: '4px 18px 28px' }}>
-          {items.length === 0
-            ? <p style={{ fontSize: 14, color: 'rgba(74,54,34,0.5)', fontStyle: 'italic', marginTop: 12 }}>Sin personajes hasta este capítulo.</p>
-            : items.map(it => (
-              <button key={it.id} onClick={() => onItemClick?.(it.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(74,54,34,0.08)', width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
-                <span style={{ flexShrink: 0, width: 34, height: 34, borderRadius: '50%', background: '#d56a52', color: '#fff', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid rgba(74,54,34,0.3)' }}>
-                  {ini(it.nombre)}
-                </span>
-                <span style={{ fontFamily: 'inherit', fontWeight: 700, fontSize: 15, color: '#4a3622' }}>{it.nombre}</span>
-              </button>
-            ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function ChapterSheet({ chapters, current, onPick, onClose }) {
-  return (
-    <div className="lm-backdrop" onClick={onClose}>
-      <div className="lm-sheet" onClick={e=>e.stopPropagation()}>
-        <div className="lm-grip" />
-        <div className="lm-sheet-head"><span className="lm-sheet-title">Capítulos</span>
-          <button className="lm-close" onClick={onClose}><IcClose /></button></div>
-        <div className="lm-chap-list">
-          {chapters.map((c, i) => (
-            <button key={c.id ?? i} className={'lm-chap-row' + (i===current?' active':'')} onClick={() => onPick(i)}>
-              <span className="lm-chap-num">{String(c.numero ?? i+1).padStart(2,'0')}</span>
-              <span className="lm-chap-meta">
-                <span className="t">{c.titulo || `Capítulo ${c.numero ?? i+1}`}</span>
-              </span>
-              {i===current && <span className="lm-reading-badge">Leyendo</span>}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Sheet: tipografía ────────────────────────────────────────
-function TypoSheet({ fontSize, onFontSize, readingFont, onReadingFont, readingTheme = 'light', onReadingTheme, onClose }) {
-  const MIN = 16, MAX = 24
-  return (
-    <div className="lm-backdrop" onClick={onClose}>
-      <div className="lm-sheet" onClick={e=>e.stopPropagation()}>
-        <div className="lm-grip" />
-        <div className="lm-sheet-head"><span className="lm-sheet-title">Texto</span>
-          <button className="lm-close" onClick={onClose}><IcClose /></button></div>
-        <div className="lm-typo-body">
-          <div className="lm-typo-label">Tamaño</div>
-          <div className="lm-size-row">
-            <button className="lm-size-btn" style={{ fontSize: 15 }} disabled={fontSize<=MIN} onClick={() => onFontSize(Math.max(MIN, fontSize-1))}>A</button>
-            <div className="lm-size-track"><div className="lm-size-fill" style={{ width: `${((fontSize-MIN)/(MAX-MIN))*100}%` }} /></div>
-            <button className="lm-size-btn" style={{ fontSize: 22 }} disabled={fontSize>=MAX} onClick={() => onFontSize(Math.min(MAX, fontSize+1))}>A</button>
-          </div>
-          <div className="lm-typo-label">Fuente</div>
-          <div className="lm-font-grid">
-            {READING_FONTS.map((f) => (
-              <button key={f.label} className={'lm-font-card' + (f.css===readingFont?' active':'')} onClick={() => onReadingFont(f.css)}>
-                <span className="ag" style={{ fontFamily: f.css }}>Ag</span>
-                <span className="nm">{f.label}</span>
-              </button>
-            ))}
-          </div>
-          {onReadingTheme && (<>
-            <div className="lm-typo-label">Tema</div>
-            <div className="lm-theme-row">
-              {[{ id: 'light', label: 'Claro' }, { id: 'dark', label: 'Noche' }].map(t => (
-                <button key={t.id} className={'lm-theme-card ' + t.id + (readingTheme===t.id?' active':'')} onClick={() => onReadingTheme(t.id)}>
-                  <span className="sw">A</span>
-                  <span className="nm">{t.label}</span>
-                </button>
-              ))}
-            </div>
-          </>)}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Sheet: ruido blanco (no ficción) ─────────────────────────
-function WhiteNoiseSheet({ onClose }) {
-  const { tipo, setTipo, volNoise, setVolNoise, ambiente, setAmbiente, volAmb, setVolAmb } = useWhiteNoise()
-  const pill = (active) => ({
-    fontSize: 12, fontWeight: 700, padding: '5px 13px', borderRadius: 999,
-    border: `1.5px solid ${active ? ACCENT : `${INK}44`}`,
-    background: active ? ACCENT : 'transparent',
-    color: active ? '#fff' : INK, cursor: 'pointer',
-  })
-  return (
-    <div className="lm-backdrop" onClick={onClose}>
-      <div className="lm-sheet" onClick={e => e.stopPropagation()}>
-        <div className="lm-grip" />
-        <div className="lm-sheet-head">
-          <span className="lm-sheet-title">Ambiente sonoro</span>
-          <button className="lm-close" onClick={onClose}>✕</button>
-        </div>
-        <div style={{ padding: '4px 18px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Ruido */}
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 800, color: `${INK}77`, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Ruido</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-              {TIPOS_RUIDO.map(({ key, label }) => (
-                <button key={key} type="button" style={pill(tipo === key)} onClick={() => setTipo(key)}>{label}</button>
-              ))}
-            </div>
-            <div className="lm-vol" style={{ opacity: tipo === 'off' ? 0.35 : 1 }}>
-              <div className="lm-vol-row">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M11 5L6 9H3v6h3l5 4z" strokeLinejoin="round"/></svg>
-                <input className="lm-range" type="range" min="0" max="1" step="0.01"
-                  value={volNoise} disabled={tipo === 'off'}
-                  onChange={e => setVolNoise(parseFloat(e.target.value))} />
-                <span style={{ fontSize: 11, minWidth: 30, color: INK }}>{Math.round(volNoise * 100)}%</span>
-              </div>
-            </div>
-          </div>
-          <div style={{ height: 1, background: `${INK}18` }} />
-          {/* Ambiente */}
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 800, color: `${INK}77`, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Ambiente</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-              {AMBIENCIAS.map(({ key, label }) => (
-                <button key={key} type="button" style={pill(ambiente === key)} onClick={() => setAmbiente(key)}>{label}</button>
-              ))}
-            </div>
-            <div className="lm-vol" style={{ opacity: ambiente === 'ninguno' ? 0.35 : 1 }}>
-              <div className="lm-vol-row">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M11 5L6 9H3v6h3l5 4z" strokeLinejoin="round"/></svg>
-                <input className="lm-range" type="range" min="0" max="1" step="0.01"
-                  value={volAmb} disabled={ambiente === 'ninguno'}
-                  onChange={e => setVolAmb(parseFloat(e.target.value))} />
-                <span style={{ fontSize: 11, minWidth: 30, color: INK }}>{Math.round(volAmb * 100)}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Sheet: audio (ambiente del capítulo) ─────────────────────
-function AudioSheet({ ambient, playing, volume, onToggle, onVolume, onClose }) {
-  const disabled = !ambient?.url
-  return (
-    <div className="lm-backdrop" onClick={onClose}>
-      <div className="lm-sheet" onClick={e=>e.stopPropagation()}>
-        <div className="lm-grip" />
-        <div className="lm-sheet-head"><span className="lm-sheet-title">Ambiente</span>
-          <button className="lm-close" onClick={onClose}><IcClose /></button></div>
-        <div className="lm-audio-body">
-          <div className="lm-audio-track">♪ {ambient ? (ambient.titulo || ambient.slug || 'ambiente') : 'sin ambiente en este capítulo'}</div>
-          <div className="lm-reels">
-            <div className={'lm-reel' + (playing?' spin':'')} />
-            <div className={'lm-reel' + (playing?' spin':'')} />
-          </div>
-          <div className="lm-meter">
-            {Array.from({length:18}).map((_,i) => {
-              const on = playing && i < Math.round(volume*18)
-              return <i key={i} className={on?'on':''} style={{ height: 6 + (i%5)*4 }} />
-            })}
-          </div>
-          <div className="lm-audio-ctrls">
-            <button className="lm-play" disabled={disabled} onClick={onToggle}>{playing?'❚❚':'▶'}</button>
-            <div className="lm-vol">
-              <div className="lm-vol-row">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M11 5L6 9H3v6h3l5 4z" strokeLinejoin="round"/></svg>
-                <input className="lm-range" type="range" min="0" max="1" step="0.01" value={volume} onChange={e=>onVolume(parseFloat(e.target.value))} />
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H3v6h3l5 4z" strokeLinejoin="round"/><path d="M16 9a3 3 0 010 6" strokeLinecap="round"/><path d="M19 6.5a6.5 6.5 0 010 11" strokeLinecap="round"/></svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Sheet: navegación (Explorar) ─────────────────────────────
-function NavSheet({ onGoForo, onGoCartelera, onGoBiblioteca, onClose }) {
-  const items = [
-    { label:'Biblioteca',    act: onGoBiblioteca, icon:<g><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></g> },
-    { label:'Investigación', act: onGoCartelera,  icon:<g><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></g> },
-    { label:'Foro',          act: onGoForo,       icon:<path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/> },
-  ]
-  return (
-    <div className="lm-backdrop" onClick={onClose}>
-      <div className="lm-sheet" onClick={e=>e.stopPropagation()}>
-        <div className="lm-grip" />
-        <div className="lm-sheet-head"><span className="lm-sheet-title">Ir a…</span>
-          <button className="lm-close" onClick={onClose}><IcClose /></button></div>
-        <div className="lm-nav-grid">
-          {items.map(it => (
-            <button key={it.label} onClick={() => { onClose(); it.act?.() }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{it.icon}</svg>
-              <span>{it.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Overlay: imagen(es) del capítulo ─────────────────────────
-function ImageOverlay({ images, chapter, chapterIndex, onClose, autoImages, onToggleAutoImages }) {
-  const [idx, setIdx] = useState(0)
-  const cur = images[idx] || null
-  return (
-    <div className="lm-img-overlay" onClick={onClose}>
-      <div className="lm-polaroid" onClick={e=>e.stopPropagation()}>
-        <div className="pic">
-          {cur?.url ? <img src={cur.url} alt={cur.titulo || ''} /> : <span className="ph-label">sin imagen para este capítulo</span>}
-        </div>
-        <div className="cap">{cur ? (cur.titulo || cur.slug || 'escena') : '—'}</div>
-      </div>
-      {images.length > 1 && (
-        <div className="lm-img-thumbs" onClick={e=>e.stopPropagation()}>
-          {images.map((img, i) => (
-            <button key={img.media_id ?? i} className={'lm-img-thumb' + (i===idx?' active':'')} onClick={() => setIdx(i)}>
-              <img src={img.url} alt="" />
-            </button>
-          ))}
-        </div>
-      )}
-      <div className="lm-img-meta">Capítulo {chapter?.numero ?? chapterIndex + 1}{chapter?.titulo ? ` · ${chapter.titulo}` : ''}</div>
-      <div className="lm-img-bottom" onClick={e=>e.stopPropagation()}>
-        <button className={`lm-img-autotoggle${autoImages ? ' on' : ''}`} onClick={onToggleAutoImages}>
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4"/></svg>
-          Aparecer automático
-        </button>
-        <button className="lm-img-close" onClick={onClose}>Cerrar</button>
-      </div>
-    </div>
-  )
-}
-
-// ── Sheet: reseña (aparece al terminar el libro) ─────────────
-function ResenaSheet({ form, setForm, enviando, miResena, onSubmit, onClose }) {
-  return (
-    <div className="lm-backdrop" onClick={onClose}>
-      <div className="lm-sheet" onClick={e=>e.stopPropagation()}>
-        <div className="lm-grip" />
-        <div className="lm-sheet-head"><span className="lm-sheet-title">{miResena ? 'Editar mi reseña' : 'Escribir una reseña'}</span>
-          <button className="lm-close" onClick={onClose}><IcClose /></button></div>
-        <div className="lm-resena-body">
-          <EstrellaLector valor={form.rating} onChange={r => setForm(f => ({ ...f, rating: r }))} />
-          <textarea className="lm-resena-ta" rows={4} maxLength={1000}
-            placeholder="Escribe tu reseña (opcional)…"
-            value={form.texto} onChange={e => setForm(f => ({ ...f, texto: e.target.value }))} />
-          <div className="lm-resena-actions">
-            <button className="lm-resena-cancel" onClick={onClose}>Cancelar</button>
-            <button className="lm-resena-save" disabled={!form.rating || enviando} onClick={onSubmit}>{enviando ? 'Guardando…' : 'Guardar'}</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <span style={{ width: 48, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+        <rect x="5" y="3" width="24" height="15" rx="4" fill={bodyFill} stroke={INK} strokeWidth="2"/>
+        <polygon points="5,18 29,18 22,30 12,30" fill="#c68f3a" stroke={INK} strokeWidth="2" strokeLinejoin="round"/>
+        <rect x="1" y="31" width="32" height="4" rx="2" fill={lineFill} stroke={`${INK}66`} strokeWidth="1.5"/>
+        <rect x="9" y="5" width="7" height="3" rx="1.5" fill="rgba(255,255,255,0.45)"/>
+      </svg>
+    </span>
   )
 }
 
@@ -542,14 +145,13 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const [autoImages,  setAutoImages]  = useLocalStorage('inm_auto_img', true)
 
   // ── Estado de UI no compartido ──
-  const [pendingSelection, setPendingSelection] = useState(null)  // { text, parrafoId, rect }
-  const screenRef = useRef(null)
+  const [modoSubrayado,  setModoSubrayado]  = useState(false)
+  const [pendingConfirm, setPendingConfirm] = useState(null)   // { text, parrafoId }
+  const [segmentos,      setSegmentos]      = useState([])     // acumulado de páginas anteriores
+  const [guardandoSub,   setGuardandoSub]   = useState(false)
+  const selTimerRef   = useRef(null)
+  const screenRef     = useRef(null)
   const pageAnchorRef = useRef(null)
-
-  // ── Audio de ambiente (real, solo mobile) ──
-  const audioRef = useRef(null)
-  const [ambientPlaying, setAmbientPlaying] = useState(false)
-  const [ambientVol, setAmbientVol] = useState(0.5)
 
   const setSheet   = (v) => { setSheetRaw(v); setCatOpen(false) }
   const openImage  = () => { setImageOpen(true); setCatOpen(false) }
@@ -591,17 +193,28 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   }, [chapterIndex, capitulos])
 
   const currentChapter  = capitulos[chapterIndex] || null
-  const xrayItems = useXrayItems(sheet === 'xray', book?.libro_id, currentChapter?.numero ?? chapterIndex + 1)
+  const esNoficcion = book?.es_ficcion === false
+  const xrayItems = useXrayItems(sheet === 'xray', book?.libro_id, currentChapter?.numero ?? chapterIndex + 1, esNoficcion ? 'glosario' : 'personajes')
   const currentChapData = currentChapter ? chapterCache[currentChapter.id] : null
   const currentMedia    = currentChapData?.mediaByParrafo || {}
   const currentAmbient  = currentChapData?.ambient || null
+  const { playing: ambientPlaying, volume: ambientVol, toggle: toggleAmbient, setVol } = useAmbientPlayer(currentAmbient?.url)
+
+  // ── Paginación a prueba de fallos (medida del DOM real) ──
+  // No estimamos: paginarParrafosMobileDOM maqueta el texto en un contenedor
+  // oculto y corta donde el offsetHeight real supera el alto disponible, así una
+  // página NUNCA desborda. `paginas` es estado (no memo) porque la cómputa un
+  // efecto que toca el DOM. `paginadoChap` = id del capítulo ya paginado: la
+  // restauración de progreso espera a que la paginación de ESTE capítulo exista.
+  const [paginas,      setPaginas]      = useState([[]])
+  const [paginadoChap, setPaginadoChap] = useState(null)
 
   // ── Geometría de página (medida del DOM) ──
   const [geom, setGeom] = useState({ charsPerLine: 38, lineHeight: Math.round(19*LINE), maxH: 480, titleH: 90 })
   const measureGeom = useCallback(() => {
     const box = screenRef.current?.querySelector('[data-lm-pagebox]')
     if (!box) return
-    const cs = getComputedStyle(box)
+    const cs = window.getComputedStyle(box)
     const padX    = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
     const padBottom = parseFloat(cs.paddingBottom)
     const padY    = parseFloat(cs.paddingTop) + padBottom
@@ -648,28 +261,55 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     return () => { clearTimeout(timer); window.removeEventListener('resize', on) }
   }, [measureGeom])
 
-  // ── Paginación (una sola página) ──
-  const paginas = useMemo(() => {
-    if (!currentChapData?.parrafos) return [[]]
-    const GAP = Math.round(fontSize * 0.7)
-    const maxH = Math.min(geom.maxH, 17 * geom.lineHeight)
-    const firstPageMaxH = Math.max(geom.lineHeight * 3, maxH - geom.titleH)
-    return paginarParrafos(currentChapData.parrafos, false, {
-      charsPerLine: geom.charsPerLine,
-      lineHeight: geom.lineHeight,
-      maxH,
-      firstPageMaxH,
-      paragraphGap: GAP,
-    })
-  }, [currentChapData?.parrafos, fontSize, geom])
+  // ── Paginación a prueba de fallos (maqueta el DOM real y corta donde toca) ──
+  // Lee el ancho de texto real de la hoja, lo pasa a paginarParrafosMobileDOM y
+  // guarda el resultado en estado. Se re-ejecuta cuando cambian capítulo, fuente
+  // o geometría, y de nuevo en document.fonts.ready (las fuentes web suelen NO
+  // estar listas en la 1ª carga; con la fuente de respaldo el alto difiere).
+  const measuredReady = paginadoChap === currentChapter?.id
 
-  // restaurar página exacta al volver
   useEffect(() => {
-    if (!pendingRestore || !currentChapData) return
+    const parrafos = currentChapData?.parrafos
+    if (!parrafos?.length || !currentChapter) { setPaginas([[]]); setPaginadoChap(null); return }
+    const box = screenRef.current?.querySelector('[data-lm-pagebox]')
+    if (!box) return
+    const cs   = window.getComputedStyle(box)
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
+    const contentW = Math.max(120, box.clientWidth - padX)
+    const chapId   = currentChapter.id
+    let cancelled  = false
+
+    const paginar = () => {
+      if (cancelled) return
+      const pages = paginarParrafosMobileDOM(parrafos, {
+        contentW,
+        maxH: geom.maxH,
+        fontSize,
+        readingFont,
+        lineHeightRatio: LINE,
+        lineHeight: geom.lineHeight,
+        chapterHead: { kicker: `Capítulo ${currentChapter.numero ?? ''}`, titulo: currentChapter.titulo || '' },
+      })
+      if (cancelled) return
+      setPaginas(pages)
+      setPaginadoChap(chapId)
+    }
+
+    paginar()
+    if (document.fonts?.ready) document.fonts.ready.then(paginar)
+    return () => { cancelled = true }
+  }, [currentChapData?.parrafos, currentChapter?.id, fontSize, readingFont, geom.maxH, geom.lineHeight])
+
+  // restaurar página exacta al volver.
+  // Espera a que la paginación DEFINITIVA (medida) esté lista: con la paginación
+  // transitoria los límites de página difieren y restaurábamos mal (o nos
+  // rendíamos dejando al lector en la página 0 = inicio del capítulo).
+  useEffect(() => {
+    if (!pendingRestore || !currentChapData || !measuredReady) return
     const idx = paginas.findIndex(pg => pg.some(p => p.id === pendingRestore))
     if (idx >= 0) setPageIndex(idx)
     setPendingRestore(null); restoredRef.current = true
-  }, [pendingRestore, currentChapData, paginas])
+  }, [pendingRestore, currentChapData, paginas, measuredReady])
 
   // preservar párrafo visible cuando la geometría cambia (e.g. URL bar móvil)
   useEffect(() => {
@@ -715,28 +355,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     return () => clearTimeout(t)
   }, [chapterIndex, pageIndex, paginas.length, capitulos.length, userId, book?.libro_id])
 
-  // ── Audio ambiente: vincular al url del capítulo ──
-  useEffect(() => {
-    const a = new Audio(); a.loop = true; a.volume = ambientVol; audioRef.current = a
-    return () => { a.pause(); a.src = '' }
-  }, [])
-  useEffect(() => {
-    const a = audioRef.current; if (!a) return
-    const wasPlaying = ambientPlaying
-    a.pause()
-    if (currentAmbient?.url) {
-      a.src = currentAmbient.url; a.load()
-      if (wasPlaying) a.play().catch(() => setAmbientPlaying(false))
-    } else { a.src = ''; setAmbientPlaying(false) }
-  }, [currentAmbient?.url])
-  function toggleAmbient() {
-    const a = audioRef.current; if (!a || !currentAmbient?.url) return
-    if (ambientPlaying) { a.pause(); setAmbientPlaying(false) }
-    else a.play().then(() => setAmbientPlaying(true)).catch(() => {})
-  }
-  function setVol(v) { setAmbientVol(v); if (audioRef.current) audioRef.current.volume = v }
-
-
   // ── Imágenes visibles en la página actual (y anteriores del capítulo) ──
   const visibleImages = useMemo(() => {
     if (!currentChapData) return []
@@ -780,20 +398,30 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const atChapterEnd = pageIndex >= total - 1
 
   function handlePrev() {
-    setPendingSelection(null); setCatOpen(false)
+    setCatOpen(false)
     if (pageIndex > 0) { setPageIndex(p => p - 1); return }
     if (chapterIndex > 0) {
       const prevCap = capitulos[chapterIndex - 1]
       const prevEntry = chapterCache[prevCap.id]
       setChapterIndex(chapterIndex - 1)
       if (prevEntry) {
-        const prevPages = paginarParrafos(prevEntry.parrafos, false, { charsPerLine: geom.charsPerLine, lineHeight: geom.lineHeight, maxH: geom.maxH, firstPageMaxH: Math.max(geom.lineHeight*3, geom.maxH - geom.titleH), paragraphGap: Math.round(fontSize*0.7) })
+        // Paginamos el capítulo anterior con el mismo método DOM para saltar a su
+        // ÚLTIMA página. Mismo ancho de hoja, así que reusamos el contentW actual.
+        const box = screenRef.current?.querySelector('[data-lm-pagebox]')
+        const cs  = box ? window.getComputedStyle(box) : null
+        const padX = cs ? parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) : 60
+        const contentW = box ? Math.max(120, box.clientWidth - padX) : 320
+        const prevChap = capitulos[chapterIndex - 1]
+        const prevPages = paginarParrafosMobileDOM(prevEntry.parrafos, {
+          contentW, maxH: geom.maxH, fontSize, readingFont, lineHeightRatio: LINE, lineHeight: geom.lineHeight,
+          chapterHead: { kicker: `Capítulo ${prevChap?.numero ?? ''}`, titulo: prevChap?.titulo || '' },
+        })
         setPageIndex(Math.max(0, prevPages.length - 1))
       } else setPageIndex(0)
     }
   }
   function handleNext() {
-    setPendingSelection(null); setCatOpen(false)
+    setCatOpen(false)
     if (pageIndex < total - 1) { setPageIndex(p => p + 1); return }
     // fin del capítulo → abrir cuaderno antes de avanzar (igual que el escritorio)
     if (chapterIndex < capitulos.length - 1) {
@@ -804,7 +432,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     }
     if (guestMode) setShowPaywall(true)
   }
-  function pickChapter(i) { setChapterIndex(i); setPageIndex(0); setSheet(null); setPendingSelection(null) }
+  function pickChapter(i) { setChapterIndex(i); setPageIndex(0); setSheet(null) }
 
   // ── Cuaderno: al cerrar, persistir avance de capítulo si venía de "fin de capítulo" ──
   async function handleSubmitResena() {
@@ -822,28 +450,58 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     }
   }
 
-  // ── Subrayado desde la selección de texto ──
-  function handleSelectText(info) {
-    if (!info) { setPendingSelection(null); return }
-    setPendingSelection(info)
+  // ── Modo subrayado mobile ──
+  useEffect(() => {
+    if (!modoSubrayado || pendingConfirm) return
+    function onSelChange() {
+      clearTimeout(selTimerRef.current)
+      selTimerRef.current = setTimeout(() => {
+        const sel = window.getSelection()
+        if (!sel || sel.isCollapsed || !sel.toString().trim()) return
+        const bookBox = screenRef.current?.querySelector('[data-lm-pagebox]')
+        if (!bookBox?.contains(sel.anchorNode)) return
+        const text = sel.toString().trim()
+        const parrafoId = sel.anchorNode?.parentElement?.closest('[data-parrafo-id]')?.dataset?.parrafoId || null
+        window.getSelection()?.removeAllRanges()
+        setPendingConfirm({ text, parrafoId })
+      }, 2500) // 2.5s: tiempo para arrastrar los handles de Chrome; al capturar, limpia la selección para restaurar la navegación
+    }
+    document.addEventListener('selectionchange', onSelChange)
+    return () => { document.removeEventListener('selectionchange', onSelChange); clearTimeout(selTimerRef.current) }
+  }, [modoSubrayado, pendingConfirm])
+
+  function activarModoSubrayado() {
+    const activating = !modoSubrayado
+    setModoSubrayado(activating)
+    if (!activating) { setSegmentos([]); setPendingConfirm(null); window.getSelection()?.removeAllRanges() }
+    setCatOpen(false)
   }
-  async function confirmSubrayar() {
-    if (!pendingSelection || !userId || !book?.libro_id) { setPendingSelection(null); return }
-    await subrayar(pendingSelection.text, pendingSelection.parrafoId, chapterIndex)
-    setPendingSelection(null)
+  function descartarSubrayado() {
+    setModoSubrayado(false); setSegmentos([]); setPendingConfirm(null)
     window.getSelection()?.removeAllRanges()
   }
-  // posición del popup de subrayado, relativa al viewport
-  const selPos = useMemo(() => {
-    if (!pendingSelection?.rect) return null
-    const r = pendingSelection.rect
-    return { left: Math.max(80, Math.min(r.left + r.width / 2, window.innerWidth - 80)), top: r.bottom + 8 }
-  }, [pendingSelection])
+  function continuarSiguientePagina() {
+    setSegmentos(prev => [...prev, pendingConfirm])
+    setPendingConfirm(null)
+    window.getSelection()?.removeAllRanges()
+  }
+  async function guardarSubrayado() {
+    if (!userId || !book?.libro_id) return
+    setGuardandoSub(true)
+    try {
+      const todos = [...segmentos, pendingConfirm]
+      await subrayar(todos.map(s => s.text).join(' '), todos[0].parrafoId, chapterIndex)
+    } finally {
+      setGuardandoSub(false); setModoSubrayado(false); setSegmentos([]); setPendingConfirm(null)
+      window.getSelection()?.removeAllRanges()
+    }
+  }
 
   const CAT_ITEMS = [
     { key: 'audio',    label: 'Audio',    icon: <CassetteIcon />,       act: () => setSheet('audio') },
     { key: 'imagen',   label: 'Imagen',   icon: <PolaroidsIcon />,      act: openImage },
     ...(!guestMode ? [{ key: 'cuaderno', label: 'Cuaderno', icon: <SpiralNotebookIcon />, act: openNotebook }] : []),
+    ...(!guestMode ? [{ key: 'subrayar', label: modoSubrayado ? 'Apagar ✏' : 'Subrayar', icon: <HighlighterIcon active={modoSubrayado} />, act: activarModoSubrayado }] : []),
   ]
 
   const page = paginas[pageIndex] || []
@@ -885,7 +543,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         {!loading && !error && book?.libro_id && currentChapter && (
           loadingCap && !currentChapData
             ? <div className="lm-page"><div className="lm-page-inner" data-lm-pagebox><div className="lm-page-msg">Cargando capítulo…</div></div></div>
-            : <BookPage
+            : <MobileBookPage
                 chapter={currentChapter} chapterIndex={chapterIndex}
                 parrafos={page} mediaByParrafo={currentMedia}
                 isFirst={pageIndex===0} pageNum={pageIndex+1}
@@ -893,7 +551,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
                 atStart={atStart} nextIsChapter={atChapterEnd && !atEndOfBook}
                 onPrev={handlePrev}
                 onNext={atEndOfBook && !guestMode ? undefined : handleNext}
-                onPlaySfx={playSfx} onSelectText={handleSelectText}
+                onPlaySfx={playSfx}
               />
         )}
 
@@ -902,7 +560,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
           <div className="lm-cat-dock">
             <button id="tutorial-m-dock" className="lm-cat-btn" onClick={() => setCatOpen(o => !o)} title="Herramientas" aria-label="Herramientas">
               {/* La mascota negra de Inmersia. Ruta servida desde /public. */}
-              <img className="lm-cat-img" src="/assets/lector/cat-mascot.png" alt="Mascota de Inmersia" />
+              <img className="lm-cat-img" src="/assets/lector/cat-mascot.png" alt="Mascota de Inmersia" onLoad={measureGeom} />
             </button>
             {catOpen && (
               <div className="lm-cat-tray">
@@ -916,18 +574,35 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
             )}
           </div>
         )}
+
+        {/* Banner de modo subrayado */}
+        {modoSubrayado && !pendingConfirm && (
+          <div className="lm-sub-banner">
+            <span>
+              {segmentos.length > 0
+                ? `${segmentos.length} segmento${segmentos.length > 1 ? 's' : ''} · selecciona el siguiente`
+                : '✏ Selecciona el texto a subrayar'}
+            </span>
+            <button onClick={descartarSubrayado}>&#x2715;</button>
+          </div>
+        )}
+
       </div>
 
-      {/* Popup de subrayado */}
-      {pendingSelection && selPos && (
-        <div className="lm-sel-pop" style={{ left: selPos.left, top: selPos.top }}>
-          <span className="q">“{pendingSelection.text.length > 28 ? pendingSelection.text.slice(0,28)+'…' : pendingSelection.text}”</span>
-          <button onClick={confirmSubrayar}>Subrayar</button>
-        </div>
+      {/* Sheet de confirmación de subrayado */}
+      {pendingConfirm && (
+        <ConfirmSubrayadoSheet
+          segmentos={segmentos}
+          pendingConfirm={pendingConfirm}
+          onDescartar={descartarSubrayado}
+          onContinuar={continuarSiguientePagina}
+          onGuardar={guardarSubrayado}
+          guardando={guardandoSub}
+        />
       )}
 
       {/* Sheets */}
-      {sheet==='xray'     && <XraySheet items={xrayItems} chapterNum={currentChapter?.numero ?? chapterIndex + 1} onClose={() => setSheet(null)} onItemClick={(itemId) => { setSheet(null); onGoCartelera(itemId) }} />}
+      {sheet==='xray'     && <XraySheet items={xrayItems} chapterNum={currentChapter?.numero ?? chapterIndex + 1} esNoficcion={esNoficcion} onClose={() => setSheet(null)} onItemClick={(itemId) => { setSheet(null); onGoCartelera(itemId) }} />}
       {sheet==='chapters' && <ChapterSheet chapters={capitulos} current={chapterIndex} onPick={pickChapter} onClose={()=>setSheet(null)} />}
       {sheet==='typo' && <TypoSheet fontSize={fontSize} onFontSize={setFontSize} readingFont={readingFont} onReadingFont={setReadingFont} readingTheme={readingTheme} onReadingTheme={setReadingTheme} onClose={()=>setSheet(null)} />}
       {sheet==='audio' && (book?.es_ficcion === false

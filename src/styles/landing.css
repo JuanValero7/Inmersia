@@ -169,6 +169,8 @@
 .inm-closing-msg { font-family: 'Playfair Display', serif; font-weight: 700; font-size: clamp(2rem, 4.6vw, 3.5rem);
   line-height: 1.12; letter-spacing: -0.01em; max-width: 18ch; margin: 0 auto 1.1em; }
 .inm-closing-msg em { font-style: italic; color: var(--inm-accent-2); }
+.inm-closing-ctas { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.inm-quiet-lg { font-size: 1.08rem; border-bottom-width: 2px; padding-bottom: 3px; }
 
 /* footer */
 .inm-footer { background: #2c2013; color: rgba(237, 224, 203, 0.66); padding: 40px 0; }

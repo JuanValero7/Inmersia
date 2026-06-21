@@ -1,41 +1,13 @@
 // Plain JavaScript (.jsx)
-import { useState, useEffect, useRef, memo } from 'react'
+import { useState, memo } from 'react'
 import { theme } from './clay.jsx'
+import { useAmbientPlayer } from '../../hooks/useAmbientPlayer.js'
 
 // Grabadora de ambiente — clay. Conserva la lógica de audio real (ambient.url),
 // sin carretes girando y con opción de minimizar.
 const RecorderPlayer = memo(function RecorderPlayer({ ambient, onClose }) {
-  const [playing, setPlaying] = useState(false)
-  const [volume, setVolume] = useState(0.5)
   const [min, setMin] = useState(false)
-  const audioRef = useRef(null)
-
-  useEffect(() => {
-    const a = new Audio(); a.loop = true; a.volume = volume; audioRef.current = a
-    return () => { a.pause(); a.src = '' }
-  }, [])
-
-  useEffect(() => {
-    const a = audioRef.current; if (!a) return
-    const wasPlaying = playing
-    a.pause()
-    if (ambient?.url) {
-      a.src = ambient.url; a.load()
-      if (wasPlaying) a.play().catch(() => setPlaying(false))
-    } else {
-      a.src = ''; setPlaying(false)
-    }
-  }, [ambient?.url])
-
-  function toggle() {
-    const a = audioRef.current; if (!a || !ambient?.url) return
-    if (playing) { a.pause(); setPlaying(false) }
-    else a.play().then(() => setPlaying(true)).catch(() => {})
-  }
-  function handleVolume(e) {
-    const v = parseFloat(e.target.value); setVolume(v)
-    if (audioRef.current) audioRef.current.volume = v
-  }
+  const { playing, volume, toggle, setVol } = useAmbientPlayer(ambient?.url)
 
   const disabled = !ambient?.url
 
@@ -69,7 +41,7 @@ const RecorderPlayer = memo(function RecorderPlayer({ ambient, onClose }) {
             return <div key={i} style={{ flex: 1, height: 3 + (i % 4) * 1.6, background: on ? theme.meter : 'rgba(74,54,34,0.16)', borderRadius: 1, transition: 'background .12s' }} />
           })}
         </div>
-        <input type="range" min="0" max="1" step="0.01" value={volume} onChange={handleVolume} className="inm-vol" style={{ width: '100%', marginTop: 8, color: theme.accent }} />
+        <input type="range" min="0" max="1" step="0.01" value={volume} onChange={e => setVol(parseFloat(e.target.value))} className="inm-vol" style={{ width: '100%', marginTop: 8, color: theme.accent }} />
       </div>
       <button type="button" disabled={disabled} onClick={toggle} title={playing ? 'Pausar' : 'Reproducir'}
         style={{ width: 40, height: 40, flexShrink: 0, borderRadius: '50%', border: `2px solid ${theme.ink}`, background: theme.accent, color: '#fff', fontSize: 14, cursor: disabled ? 'default' : 'pointer', boxShadow: `1.6px 2.4px 0 ${theme.ink}40`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

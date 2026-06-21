@@ -175,7 +175,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
     await supabase.from('subrayados_usuario').insert({
       user_id: userId, libro_id: book.libro_id,
       capitulo_num: cap?.numero ?? chapterIndex + 1,
-      texto_original: text,
+      texto_original: text.slice(0, 1000),
       parrafo_id: parrafoId || null,
     })
   }

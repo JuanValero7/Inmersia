@@ -1,5 +1,4 @@
 import React from 'react'
-import useLocalStorage from '../hooks/useLocalStorage.js'
 import { useBiblioteca } from '../hooks/useBiblioteca.js'
 import { SIN_CATEGORIA_ID, COLOR_DEFAULT } from './biblioteca/constants.js'
 import '../styles/biblioteca.css'
@@ -30,7 +29,6 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
   } = useBiblioteca(user, lastOpenedBookIds)
 
   // Estado de UI/chrome (no compartido)
-  const [notes, setNotes] = useLocalStorage('bv_notes', {});
   const [selectedBook, setSelectedBook] = React.useState(null);
   const [showManageCats, setShowManage] = React.useState(false);
   const [showFilters, setShowFilters] = React.useState(false);
@@ -178,7 +176,7 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
               </div>
             )}
 
-            <div style={{ marginTop: 28 }}>
+            <div style={{ marginTop: 28, overflowX: 'auto' }}>
               {groups.length === 0
                 ? <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(74,54,34,0.5)', fontWeight: 600, fontSize: 16 }}>No hay libros que mostrar.</div>
                 : <FlatShelves groups={groups} activeCat={activeCategory === 'none' ? SIN_CATEGORIA_ID : activeCategory} onOpen={openBook} />}

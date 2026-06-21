@@ -3,7 +3,10 @@
 // Cuando se pasan measuredHeights (medidos desde el DOM), usa alturas reales.
 // En caso contrario usa estimación por conteo de caracteres como fallback.
 
-const FILL_FACTOR     = 0.88   // fracción de línea usada en prosa (fallback)
+export const FILL_FACTOR = 0.82  // fracción de línea usada en prosa (fallback).
+// 0.82 en vez de 0.88: compensa la subestimación de ~6% del ancho de carácter
+// en los FONT_WIDTH (ej. Crimson Text 0.46). Mobile no tiene measuredHeights
+// y depende de este estimador; desktop lo ignora porque usa alturas DOM reales.
 const MIN_SPLIT_LINES = 2      // mínimo de líneas en cada mitad al dividir un párrafo
 
 // ── Altura de un párrafo ─────────────────────────────────────────────
@@ -67,7 +70,7 @@ export function paginarParrafos(parrafos, isDouble = true, opts = {}) {
     // Nota: esto cubre también el caso cur.length === 0, donde un párrafo
     // más largo que la página completa debe dividirse en lugar de desbordarse.
     const free       = mH() - curH
-    const linesAvail = Math.floor(free / lineH)
+    const linesAvail = Math.floor(Math.max(0, free - GAP) / lineH)
     const text       = p.contenido || ''
 
     // Calcular posición de corte usando altura medida cuando existe

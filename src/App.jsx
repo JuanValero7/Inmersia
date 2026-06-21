@@ -139,7 +139,10 @@ export default function App() {
           <Route path="/" element={
             user
               ? <Navigate to="/biblioteca" replace />
-              : <LandingView onAuth={(tab) => navigate('/auth', { state: { tab } })} />
+              : <LandingView
+                  onAuth={(tab) => navigate('/auth', { state: { tab } })}
+                  onGoTienda={() => navigate('/tienda')}
+                />
           } />
 
           {/* Auth */}

@@ -47,12 +47,19 @@ export function useBiblioteca(user, lastOpenedBookIds) {
   }, [user.id])
   useEffect(() => { fetchCategories() }, [fetchCategories])
 
-  // Libros
+  // Libros + progreso de lectura en paralelo
   const fetchUserBooks = useCallback(async () => {
     setLoadingBooks(true)
-    const { data } = await supabase.from('bibliotecas_usuarios')
-      .select('leido, categoria_id, libros(id, slug, titulo, autor, paginas, descripcion, color, portada_url, metadata, es_ficcion)')
-      .eq('user_id', user.id)
+    const [{ data }, { data: progresos }] = await Promise.all([
+      supabase.from('bibliotecas_usuarios')
+        .select('leido, categoria_id, libros(id, slug, titulo, autor, paginas, descripcion, color, portada_url, metadata, es_ficcion)')
+        .eq('user_id', user.id),
+      supabase.from('progreso_lectura')
+        .select('libro_id, porcentaje')
+        .eq('user_id', user.id),
+    ])
+    const progMap = {}
+    ;(progresos || []).forEach(p => { progMap[p.libro_id] = p.porcentaje })
     // Filtra filas cuyo libro fue borrado o no es accesible por RLS
     // (Supabase devuelve libros: null y reventaría el .map).
     const mapped = (data || []).filter(r => r.libros).map(r => ({
@@ -66,12 +73,9 @@ export function useBiblioteca(user, lastOpenedBookIds) {
       _baseColor: r.libros.color || COLOR_BOOK_FALLBACK2,
       summary: r.libros.descripcion || '',
       leido: r.leido,
-      cover: r.libros.portada_url || null,        // null → portada generada
+      cover: r.libros.portada_url || null,
       es_ficcion: r.libros.es_ficcion ?? true,
-      // TODO progreso de lectura: cuando agregues la columna `progreso`
-      // (numeric 0..1) a bibliotecas_usuarios, súmala al .select() de arriba
-      // y cambia esta línea por:  progress: typeof r.progreso === 'number' ? r.progreso : null,
-      progress: null,
+      progress: typeof progMap[r.libros.id] === 'number' ? progMap[r.libros.id] / 100 : null,
     }))
     setRawBooks([MANUAL_USUARIO, ...mapped])
     setLoadingBooks(false)

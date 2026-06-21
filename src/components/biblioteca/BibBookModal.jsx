@@ -5,9 +5,8 @@ import { runGuidedModal } from '../tutorial.js'
 import { useResena } from '../../hooks/useResena.js'
 
 // =============================================================
-// ACUARELA · BibBookModal — MISMAS conexiones que el real
-// (reseñas, notas, asignar categoría, abrir libro, ir al foro).
-// Solo cambia la estética a acuarela/clay.
+// ACUARELA · BibBookModal
+// Reseñas, asignar categoría, abrir libro, ir al foro, cuaderno.
 // =============================================================
 
 const _MK_INK = '#4a3622';
