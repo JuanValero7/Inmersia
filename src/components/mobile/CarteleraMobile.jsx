@@ -71,8 +71,7 @@ function useFitScale() {
     }
     fit()
     const ro = new ResizeObserver(fit); ro.observe(el)
-    window.addEventListener('resize', fit)
-    return () => { ro.disconnect(); window.removeEventListener('resize', fit) }
+    return () => { ro.disconnect() }
   }, [])
   return [ref, scale]
 }
@@ -165,7 +164,7 @@ function Portada({ book, onOpen, secciones = SECCIONES }) {
         {secciones.map((sec, i) => {
           const light = shade(sec.color, 0.16), dark = shade(sec.color, -0.20)
           const blot1 = shade(sec.color, 0.10), blot2 = shade(sec.color, -0.12)
-          const last = i === SECCIONES.length - 1
+          const last = i === secciones.length - 1
           const clip = TORN[i % TORN.length]
           return (
             <button key={sec.key} type="button" className="pv-panel"

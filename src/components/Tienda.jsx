@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase.js'
-import LibroReel from './tienda/LibroReel.jsx'
 import CalleEscena from './tienda/CalleEscena.jsx'
 import CatalogoInterior from './tienda/CatalogoInterior.jsx'
 import '../styles/tienda.css'
@@ -30,7 +29,6 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
   const [loadingMore,   setLoadingMore]   = useState(false)
   const [hasMore,       setHasMore]       = useState(false)
   const [catalogOffset, setCatalogOffset] = useState(0)
-  const [reelLibro,     setReelLibro]     = useState(null)
   const [filtroTipo,    setFiltroTipo]    = useState('todos') // 'todos' | 'ficcion' | 'noficcion'
 
   const pendientes      = userLibros.filter(l => !l.leido).length
@@ -167,15 +165,11 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
         libroLeido={libroLeido}
         onComprar={comprar}
         onEmpezarLeer={comprarYLeer}
-        onPreview={setReelLibro}
         onVolver={onGoBack}
         filtroTipo={filtroTipo}
         onFiltroTipo={setFiltroTipo}
       />
 
-      {reelLibro && (
-        <LibroReel libro={reelLibro} onClose={() => setReelLibro(null)} />
-      )}
     </>
   )
 }

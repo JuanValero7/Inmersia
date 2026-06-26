@@ -2,11 +2,14 @@
 // Ficha de una sección (cuaderno a dos páginas): índice a la izquierda, detalle
 // a la derecha. Los items vienen ya filtrados por capítulo desde Supabase, así
 // que acá no hay lógica de spoilers. Sin relaciones (fuera del MVP).
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import clsx from 'clsx'
-import { getTags, getCap, shade, DOT_AMT } from './carteleraHelpers.js'
+import { getTags, getCap, shade, DOT_AMT, initial, deltaDesc } from './carteleraHelpers.js'
 import Signpost from './Signpost.jsx'
+import ExplorarPopup from './ExplorarPopup.jsx'
 import { getTourPhase, setTourPhase } from '../guidedTour.js'
+
+const BOOK_W = 1180, BOOK_H = 760
 
 function Magnifier() {
   return (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
@@ -17,47 +20,31 @@ function Wave({ color }) {
     stroke={color} strokeWidth="3" strokeLinecap="round">
     <path d="M2 8 Q22 1 42 8 T82 8 T122 8 T162 8 T202 8 T242 8 T282 8 T318 8" /></svg>)
 }
-const initial = (s) => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
-
-// Devuelve solo el texto nuevo de curr que no estaba en prev (descripción acumulada → delta)
-function deltaDesc(prev, curr) {
-  if (!prev) return curr
-  const p = prev.trim()
-  const c = curr.trim()
-  if (c.startsWith(p)) {
-    const rest = c.slice(p.length).replace(/^[\s.,;:\-–—]+/, '').trim()
-    return rest || c
-  }
-  return c
-}
 
 export default function Ficha({ section, items = [], onBackTablero, onBackPortada, initialItemId, onGoBack, onGoForo, onGoBiblioteca, onOpenList, secciones }) {
   const total = items.length
   const [sel, setSel] = useState(initialItemId || items[0]?.id || null)
   const [query, setQuery] = useState('')
   const [scale, setScale] = useState(1)
-  const [explorarOpen, setExplorarOpen] = useState(false)
+  const stageRef = useRef(null)
 
   const sec = section.color
 
   useEffect(() => {
-    if (!explorarOpen) return
-    const h = (e) => { if (!e.target.closest('.cart-explorar-popup')) setExplorarOpen(false) }
-    document.addEventListener('mousedown', h)
-    return () => document.removeEventListener('mousedown', h)
-  }, [explorarOpen])
-
-  useEffect(() => {
+    const el = stageRef.current; if (!el) return
     const fit = () => {
-      const sw = (window.innerWidth - 64) / 1180
-      const sh = (window.innerHeight - 188) / 760
-      setScale(Math.max(0.32, Math.min(sw, sh, 1)))
+      const w = el.clientWidth, h = el.clientHeight
+      if (!w || !h) return
+      setScale(Math.max(0.32, Math.min(w / BOOK_W, h / BOOK_H, 1)))
     }
+    let rafId = null
+    const ro = new ResizeObserver(() => {
+      if (rafId) cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(fit)
+    })
+    ro.observe(el)
     fit()
-    let raf = 0
-    const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(fit) }
-    window.addEventListener('resize', onResize)
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize) }
+    return () => { ro.disconnect(); if (rafId) cancelAnimationFrame(rafId) }
   }, [])
 
   const filtered = useMemo(() => {
@@ -70,7 +57,7 @@ export default function Ficha({ section, items = [], onBackTablero, onBackPortad
 
   const current = items.find(it => it.id === sel || it.allIds?.includes(sel)) || null
 
-  const rootStyle = { '--sec': sec, '--idxw': '390px', '--rowpad': '13px', '--fscale': 1 }
+  const rootStyle = { '--sec': sec, '--idxw': '390px', '--rowpad': '13px' }
 
   return (
     <div className="cart-scene" style={rootStyle}>
@@ -84,47 +71,11 @@ export default function Ficha({ section, items = [], onBackTablero, onBackPortad
         <div className="cart-sec-hint">Sigue leyendo para revelar una sorpresa</div>
         <div className="actions">
           <button className="cart-sec-btn" type="button" onClick={onBackTablero}>Mural</button>
-          <div className="cart-explorar-popup" style={{ position: 'relative' }}>
-            {explorarOpen && (
-              <div style={{
-                position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60,
-                background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 16,
-                padding: '10px 14px', display: 'flex', gap: 20, alignItems: 'flex-end',
-                boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)',
-                whiteSpace: 'nowrap',
-              }}>
-                {onGoForo && (
-                  <button type="button" onClick={() => { if (getTourPhase() === 'wait_foro') setTourPhase('foro_1'); setExplorarOpen(false); onGoForo() }}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
-                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Foro</span>
-                  </button>
-                )}
-                {onGoBack && (
-                  <button type="button" onClick={() => { setExplorarOpen(false); onGoBack() }}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
-                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Lectura</span>
-                  </button>
-                )}
-                {onGoBiblioteca && (
-                  <button type="button" onClick={() => { setExplorarOpen(false); onGoBiblioteca() }}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Biblioteca</span>
-                  </button>
-                )}
-              </div>
-            )}
-            <button className="cart-sec-btn" type="button" onClick={() => setExplorarOpen(o => !o)}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><path d="M2 12h20"/></svg>
-              Explorar
-            </button>
-          </div>
+          <ExplorarPopup onGoForo={onGoForo} onGoBack={onGoBack} onGoBiblioteca={onGoBiblioteca} />
         </div>
       </div>
 
-      <div className="stage">
+      <div className="stage" ref={stageRef}>
         <div className="book-scale" style={{ transform: `scale(${scale})` }}>
           <div className="book">
             {/* índice */}
@@ -158,7 +109,7 @@ export default function Ficha({ section, items = [], onBackTablero, onBackPortad
                   <div className="idx-vacio">Sin datos disponibles todavía. Avanzá en la lectura para revelar nuevas pistas.</div>
                 )}
                 {total > 0 && filtered.length === 0 && (
-                  <div className="idx-vacio">Sin resultados para “{query}”.</div>
+                  <div className="idx-vacio">Sin resultados para "{query}".</div>
                 )}
               </div>
             </div>

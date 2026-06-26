@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 
 const LOGO = '/assets/inmersia-logo.png'
 import { CAT_COLOR, itint, ilum } from './tiendaHelpers.jsx'
 import PanelLibro from './PanelLibro.jsx'
+import LibroReel from './LibroReel.jsx'
 import useIsMobile from '../../hooks/useIsMobile.js'
 
 // =============================================================
@@ -137,14 +138,16 @@ function BookCard({ libro, adquirido, onOpen }) {
   )
 }
 
-export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMore, onLoadMore, user, tieneLibro, libroLeido, onComprar, onPreview, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo }) {
+export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMore, onLoadMore, user, tieneLibro, libroLeido, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo }) {
   const isMobile = useIsMobile()
   const navigate = useNavigate()
   const [selCats,     setSelCats]     = useState(new Set())
   const [qInput,      setQInput]      = useState('')
   const [q,           setQ]           = useState('')
   const [sel,         setSel]         = useState(null)
+  const [reelLibro,   setReelLibro]   = useState(null)
   const [showFilters, setShowFilters] = useState(false)
+  const navigatingAwayRef             = useRef(false)
 
   const availableCats = useMemo(() => [...new Set(catalogo.flatMap(b => b.categorias || []))].sort(), [catalogo])
   const query = q.trim().toLowerCase()
@@ -153,13 +156,15 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
   // en vez de navegar al historial del browser.
   useEffect(() => {
     if (!isMobile || !sel) return
+    navigatingAwayRef.current = false  // reset al abrir panel
     window.history.pushState({ _inmPanel: sel.id }, '')
     let closedByBack = false
     const handlePop = () => { closedByBack = true; setSel(null) }
     window.addEventListener('popstate', handlePop)
     return () => {
       window.removeEventListener('popstate', handlePop)
-      if (!closedByBack) window.history.go(-1)
+      // No deshacer la entrada del historial si estamos navegando al lector
+      if (!closedByBack && !navigatingAwayRef.current) window.history.go(-1)
     }
   }, [isMobile, sel])
 
@@ -190,6 +195,13 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
     return filtered.sort((a, b) => (tieneLibro(a.id) ? 1 : 0) - (tieneLibro(b.id) ? 1 : 0))
   }, [catalogo, selCats, query, filtroTipo, tieneLibro])
   const reset = () => { setSelCats(new Set()); setQ(''); setQInput(''); setShowFilters(false); onFiltroTipo?.('todos') }
+
+  // Al cerrar el reel: si fue auto-abierto desde la tarjeta (sel vacío) → abre panel;
+  // si fue abierto desde el botón preview del panel → solo cierra el reel.
+  function handleReelClose() {
+    if (!sel) setSel(reelLibro)
+    setReelLibro(null)
+  }
 
   return (
     <div className="interior show">
@@ -274,7 +286,7 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
           <>
             <div className="int-grid">
               {list.map(b => (
-                <BookCard key={b.id} libro={b} adquirido={tieneLibro(b.id)} onOpen={setSel} />
+                <BookCard key={b.id} libro={b} adquirido={tieneLibro(b.id)} onOpen={setReelLibro} />
               ))}
             </div>
             {hasMore && (
@@ -320,10 +332,12 @@ export default function CatalogoInterior({ catalogo, loading, loadingMore, hasMo
           yaLeido={libroLeido(sel.id)}
           onComprar={() => { onComprar(sel); setSel(null) }}
           onClose={() => setSel(null)}
-          onPreview={() => onPreview(sel)}
-          onEmpezarLeer={() => { onEmpezarLeer(sel); setSel(null) }}
+          onPreview={() => setReelLibro(sel)}
+          onEmpezarLeer={() => { navigatingAwayRef.current = true; onEmpezarLeer(sel); setSel(null) }}
         />
       )}
+
+      {reelLibro && <LibroReel libro={reelLibro} onClose={handleReelClose} />}
     </div>
   )
 }

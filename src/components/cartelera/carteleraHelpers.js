@@ -49,3 +49,18 @@ export function shade(hex, amt) {
 }
 
 export const DOT_AMT = [0.02, -0.14, 0.16, -0.26, 0.30]
+
+// Primera letra significativa (ignora artículos El/La/Los/Las)
+export const initial = (s) => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
+
+// Extrae solo el texto nuevo de curr que no estaba en prev (descripción acumulada → delta)
+export function deltaDesc(prev, curr) {
+  if (!prev) return curr
+  const p = prev.trim()
+  const c = curr.trim()
+  if (c.startsWith(p)) {
+    const rest = c.slice(p.length).replace(/^[\s.,;:\-–—]+/, '').trim()
+    return rest || c
+  }
+  return c
+}

@@ -79,10 +79,11 @@ export default function CalleEscena({ pendientes = 0, limite = 5, bloqueado = fa
   const overlayUp = zooming || closed
 
   const backBtn = !overlayUp && (
-    <button className="int-back" type="button" onClick={onGoBack}
-      style={{ zIndex: 600 }}>
-      Biblioteca
-    </button>
+    <div className="int-back-row" style={{ zIndex: 600 }}>
+      <button className="int-back" type="button" onClick={onGoBack}>
+        Biblioteca
+      </button>
+    </div>
   )
 
   const cerrado = (zooming || closed) && (

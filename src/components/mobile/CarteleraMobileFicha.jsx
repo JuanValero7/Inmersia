@@ -11,20 +11,7 @@
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo } from 'react'
 import clsx from 'clsx'
-import { getTags, getCap, shade, DOT_AMT } from '../cartelera/carteleraHelpers.js'
-
-const initial = (s) => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
-
-function deltaDesc(prev, curr) {
-  if (!prev) return curr
-  const p = prev.trim()
-  const c = curr.trim()
-  if (c.startsWith(p)) {
-    const rest = c.slice(p.length).replace(/^[\s.,;:\-–—]+/, '').trim()
-    return rest || c
-  }
-  return c
-}
+import { getTags, getCap, shade, DOT_AMT, initial, deltaDesc } from '../cartelera/carteleraHelpers.js'
 
 function SearchIcon() {
   return (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>)
@@ -60,7 +47,7 @@ export function CarteleraMobileLista({ section, items = [], onPick }) {
       {items.length === 0 ? (
         <div className="cm-list-empty">Sin datos disponibles todavía. Avanzá en la lectura para revelar nuevas pistas.</div>
       ) : filtered.length === 0 ? (
-        <div className="cm-list-empty">Sin resultados para “{query}”.</div>
+        <div className="cm-list-empty">Sin resultados para "{query}".</div>
       ) : (
         <div className="cm-rows">
           {filtered.map(it => {
