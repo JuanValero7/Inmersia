@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useNavigate, Outlet, useLocation } from 'react-router-dom'
 import { supabase } from './lib/supabase.js'
 import useIsMobile from './hooks/useIsMobile.js'
@@ -11,6 +11,7 @@ import { LectorRoute } from './components/LectorRoute.jsx'
 const VistaBiblioteca       = lazy(() => import('./components/Biblioteca.jsx'))
 const VistaLectura          = lazy(() => import('./components/Lector.jsx'))
 const VistaTienda           = lazy(() => import('./components/Tienda.jsx'))
+const VistaTiendaMobile     = lazy(() => import('./components/mobile/TiendaMobile.jsx'))
 const CartelaView           = lazy(() => import('./components/Cartelera.jsx'))
 const VistaPerfil           = lazy(() => import('./components/Perfil.jsx'))
 const VistaForo             = lazy(() => import('./components/Foro.jsx'))
@@ -55,28 +56,41 @@ export default function App() {
   const [currentBook,         setCurrentBook]         = useState(null)
   const [lastOpenedBookIds,   setLastOpenedBookIds]   = useState([])
   const [foroSource,          setForoSource]          = useState('biblioteca')
+  const [carteleraSource,     setCarteleraSource]     = useState('lectura')
   const [lectorStartNotebook, setLectorStartNotebook] = useState(false)
   const [cartelaJumpId,       setCartelaJumpId]       = useState(null)
 
   const navigate    = useNavigate()
+  const location    = useLocation()
   const isMobile    = useIsMobile()
   const isSuperuser = useSuperuser(user ?? null)
+
+  // Bloquear el tipo de lector mientras el usuario está leyendo: si isMobile
+  // cambia en mitad de la sesión (p. ej. al rotar un teléfono grande que cruza
+  // el breakpoint de 820 px), no queremos que React desmonte el lector y lo
+  // remonte desde cero, perdiendo la posición de lectura.
+  const inLector = location.pathname.startsWith('/libro/')
+  const lectorMobileRef = useRef(isMobile)
+  if (!inLector) lectorMobileRef.current = isMobile
+  const lectorEsMobile = inLector ? lectorMobileRef.current : isMobile
 
   const Foro        = isMobile ? VistaForoMobile       : VistaForo
   const Perfil      = isMobile ? VistaPerfilMobile     : VistaPerfil
   const Biblioteca  = isMobile ? VistaBibliotecaMobile : VistaBiblioteca
   const Cartelera   = isMobile ? CarteleraMobile       : CartelaView
-  const Lectura     = isMobile ? VistaLecturaMobile    : VistaLectura
+  const Lectura     = lectorEsMobile ? VistaLecturaMobile : VistaLectura
   const LandingView = isMobile ? LandingMobile         : Landing
+  const Tienda      = isMobile ? VistaTiendaMobile     : VistaTienda
 
-  const loadLastBooks = useCallback((u) => {
+  const loadLastBooks = useCallback(async (u) => {
     if (!u) return
-    const savedNew = localStorage.getItem(`inm_last_books_${u.id}`)
-    const savedOld = localStorage.getItem(`inm_last_book_${u.id}`)
-    if (savedNew) {
-      try { setLastOpenedBookIds(JSON.parse(savedNew)) } catch { /* ignore */ }
-    } else if (savedOld) {
-      setLastOpenedBookIds([savedOld])
+    const { data } = await supabase
+      .from('preferencias_usuario')
+      .select('ultimos_libros')
+      .eq('user_id', u.id)
+      .single()
+    if (data?.ultimos_libros?.length) {
+      setLastOpenedBookIds(data.ultimos_libros)
     }
   }, [])
 
@@ -110,7 +124,11 @@ export default function App() {
   function pushBookId(bookId, currentUser) {
     setLastOpenedBookIds(prev => {
       const next = [bookId, ...prev.filter(id => id !== bookId)].slice(0, 3)
-      if (currentUser) localStorage.setItem(`inm_last_books_${currentUser.id}`, JSON.stringify(next))
+      if (currentUser) {
+        supabase
+          .from('preferencias_usuario')
+          .upsert({ user_id: currentUser.id, ultimos_libros: next, updated_at: new Date().toISOString() })
+      }
       return next
     })
   }
@@ -159,7 +177,7 @@ export default function App() {
 
           {/* Tienda — pública para explorar; comprar y leer requiere auth */}
           <Route path="/tienda" element={
-            <VistaTienda
+            <Tienda
               onGoBack={() => navigate(user ? '/biblioteca' : '/')}
               user={user}
               onOpenBook={handleOpenBook}
@@ -178,6 +196,7 @@ export default function App() {
               setLectorStartNotebook={setLectorStartNotebook}
               setCartelaJumpId={setCartelaJumpId}
               setForoSource={setForoSource}
+              setCarteleraSource={setCarteleraSource}
             />
           } />
 
@@ -214,7 +233,14 @@ export default function App() {
             <Route path="/cartelera/:slug" element={
               currentBook
                 ? <Cartelera
-                    onGoBack={() => navigate(`/libro/${currentBook.slug || currentBook.id}`)}
+                    onGoBack={() => {
+                      const dest = carteleraSource === 'foro'
+                        ? `/foro/${currentBook.slug || currentBook.id}`
+                        : `/libro/${currentBook.slug || currentBook.id}`
+                      navigate(dest)
+                    }}
+                    onGoLectura={() => navigate(`/libro/${currentBook.slug || currentBook.id}`)}
+                    backSource={carteleraSource}
                     book={currentBook}
                     user={user}
                     onGoForo={() => {
@@ -244,7 +270,10 @@ export default function App() {
                     }}
                     onGoLectura={() => navigate(`/libro/${currentBook.slug || currentBook.id}`)}
                     onGoBiblioteca={() => navigate('/biblioteca')}
-                    onGoCartelera={() => navigate(`/cartelera/${currentBook.slug || currentBook.id}`)}
+                    onGoCartelera={() => {
+                      setCarteleraSource('foro')
+                      navigate(`/cartelera/${currentBook.slug || currentBook.id}`)
+                    }}
                   />
                 : <Navigate to="/biblioteca" replace />
             } />

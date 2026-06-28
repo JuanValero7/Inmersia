@@ -130,7 +130,7 @@ export default function CartelaView({ onGoBack, book, user, onGoForo, onGoBiblio
   const [searchParams, setSearchParams] = useSearchParams()
   const [view, setView] = useState(() => {
     const s = searchParams.get('seccion')
-    return s && VALID_SECCIONES.includes(s) ? { kind: 'board', key: s } : { kind: 'portada', key: null }
+    return s && VALID_SECCIONES.includes(s) ? { kind: 'ficha', key: s } : { kind: 'portada', key: null }
   })
   const [fichaInitItemId, setFichaInitItemId] = useState(null)
 
@@ -142,13 +142,13 @@ export default function CartelaView({ onGoBack, book, user, onGoForo, onGoBiblio
   useEffect(() => {
     if (!jumpToItemId) return
     setFichaInitItemId(jumpToItemId)
-    setView({ kind: 'ficha', key: 'personajes' })
+    setView({ kind: 'ficha', key: esNoficcion ? 'glosario' : 'personajes' })
     onJumpConsumed?.()
   }, [jumpToItemId])
 
   const handlePortadaOpen = (k) => {
     if (k === 'personajes' && getTourPhase() === 'wait_personajes') setTourPhase('cart_personajes')
-    setView({ kind: 'board', key: k })
+    setView({ kind: 'ficha', key: k })
   }
 
   let content

@@ -143,7 +143,7 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
 
       {/* Contenido */}
       <div className="bibm-noscroll bibm-scroll">
-        <div className="bibm-greeting">¡Hola otra vez, {displayName.split(' ')[0]}!</div>
+        <div className="bibm-greeting">¡Bienvenido, {displayName.split(' ')[0]}!</div>
 
         {loadingBooks ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(74,54,34,0.5)', fontSize: 15, fontWeight: 600 }}>Cargando tu biblioteca…</div>

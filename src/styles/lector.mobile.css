@@ -66,6 +66,13 @@
 .lm-explore:active { transform: translateY(1px); }
 /* botón de reseña (★) — aparece al terminar el libro */
 .lm-resena-btn { background: var(--accent); color: #fff; }
+/* botón "Crear cuenta" en modo guest — reemplaza la brújula Explorar */
+.lm-create-account-btn {
+  width: auto; height: auto; border-radius: 999px;
+  padding: 0 14px; font-size: 12px; font-weight: 700;
+  font-family: inherit; background: var(--accent); color: #fff;
+  border-color: var(--ink);
+}
 
 /* sheet de reseña */
 .lm-resena-body { padding: 10px 22px 22px; display: flex; flex-direction: column; gap: 16px; }

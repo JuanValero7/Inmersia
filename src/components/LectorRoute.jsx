@@ -23,7 +23,7 @@ function mapLibro(data) {
   }
 }
 
-export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, lectorStartNotebook, setLectorStartNotebook, setCartelaJumpId, setForoSource }) {
+export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, lectorStartNotebook, setLectorStartNotebook, setCartelaJumpId, setForoSource, setCarteleraSource }) {
   const { slug } = useParams()
   const navigate = useNavigate()
   const [guestBook, setGuestBook] = useState(null)
@@ -58,7 +58,7 @@ export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, lectorS
       guestMode={!user}
       onRequestAuth={(tab) => navigate('/auth', { state: { tab: tab || 'login' } })}
       onGoBack={() => navigate(user ? '/biblioteca' : '/')}
-      onGoCartelera={(itemId) => { setCartelaJumpId(itemId || null); navigate(`/cartelera/${book.slug || book.id}`) }}
+      onGoCartelera={(itemId) => { setCartelaJumpId(itemId || null); setCarteleraSource?.('lectura'); navigate(`/cartelera/${book.slug || book.id}`) }}
       onGoForo={() => { setForoSource('lectura'); navigate(`/foro/${book.slug || book.id}`) }}
       startWithNotebook={lectorStartNotebook}
       onNotebookStarted={() => setLectorStartNotebook(false)}

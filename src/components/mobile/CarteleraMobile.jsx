@@ -128,9 +128,9 @@ function CatDock({ currentKey, onJump, secciones = SECCIONES }) {
 }
 
 // ── Bottom-sheet "Explorar" (mismas salidas que el desktop) ──
-function ExploreSheet({ onClose, onGoBack, onGoForo, onGoBiblioteca }) {
+function ExploreSheet({ onClose, onGoLectura, onGoForo, onGoBiblioteca }) {
   const opts = [
-    onGoBack && { key: 'lectura', label: 'Lectura', fn: onGoBack },
+    onGoLectura && { key: 'lectura', label: 'Lectura', fn: onGoLectura },
     onGoBiblioteca && { key: 'biblioteca', label: 'Biblioteca', fn: onGoBiblioteca },
     onGoForo && { key: 'foro', label: 'Foro', fn: onGoForo },
   ].filter(Boolean)
@@ -195,34 +195,39 @@ function Portada({ book, onOpen, secciones = SECCIONES }) {
 }
 
 // ── Vista de sección: tablero (Mural) / lista / ficha ──
-function SectionView({ sectionKey, data, onPortada, onJump, onExplore, initialItemId, secciones = SECCIONES, tableros = TABLEROS_FICCION, esNoficcion = false }) {
+function SectionView({ sectionKey, data, onGoBack, backSource, onJump, onExplore, initialItemId, secciones = SECCIONES, tableros = TABLEROS_FICCION, esNoficcion = false }) {
   const meta = seccionMeta(sectionKey)
-  const [tab, setTab] = useState('mural')      // mural | lista | ficha
+  const [tab, setTab] = useState(isNotas ? 'mural' : 'lista')      // mural | lista | ficha
   const [selId, setSelId] = useState(null)
+  const [fichaFromXray, setFichaFromXray] = useState(false)
   const [boardRef, scale] = useFitScale()
   const isNotas = sectionKey === 'notas'
   const items = data.itemsBySeccion[sectionKey] || []
   const current = items.find(it => it.id === selId || it.allIds?.includes(selId)) || null
   const Tablero = tableros[sectionKey]
 
-  // al cambiar de sección reseteamos al Mural
-  useEffect(() => { setTab('mural'); setSelId(null) }, [sectionKey])
+  // al cambiar de sección reseteamos a Lista (o Mural si es Notas)
+  useEffect(() => { setTab(isNotas ? 'mural' : 'lista'); setSelId(null); setFichaFromXray(false) }, [sectionKey])
 
-  // salto directo a un item desde X-ray
+  // salto directo a un item desde X-ray: back desde ficha va al origen, no a la lista
   useEffect(() => {
     if (!initialItemId || items.length === 0) return
     if (items.find(it => it.id === initialItemId || it.allIds?.includes(initialItemId))) {
       setSelId(initialItemId)
       setTab('ficha')
+      setFichaFromXray(true)
     }
   }, [initialItemId, items])
 
   const openLista = () => { if (!isNotas) setTab('lista') }
-  const pick = (id) => { setSelId(id); setTab('ficha') }
+  const pick = (id) => { setSelId(id); setTab('ficha'); setFichaFromXray(false) }
+
+  const fichaBackLabel = 'Lista'
+  const fichaOnBack   = () => setTab('lista')
 
   return (
     <div className="cm-screen" style={{ '--sec': meta.color }}>
-      <Header book={data.book} onBack={onPortada} onExplore={onExplore} />
+      <Header book={data.book} onBack={onGoBack} onExplore={onExplore} />
 
       <div className="cm-subhead">
         <div className="cm-sec-name">
@@ -255,7 +260,7 @@ function SectionView({ sectionKey, data, onPortada, onJump, onExplore, initialIt
       )}
 
       {tab === 'ficha' && !isNotas && (
-        <CarteleraMobileFicha section={meta} item={current} onBack={() => setTab('lista')} />
+        <CarteleraMobileFicha section={meta} item={current} onBack={fichaOnBack} backLabel={fichaBackLabel} />
       )}
 
       <CatDock currentKey={sectionKey} onJump={onJump} secciones={secciones} />
@@ -263,7 +268,7 @@ function SectionView({ sectionKey, data, onPortada, onJump, onExplore, initialIt
   )
 }
 
-export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false }) {
+export default function CarteleraMobile({ onGoBack, onGoLectura, book, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false, backSource = 'lectura' }) {
   const esNoficcion = book?.es_ficcion === false
   const secciones  = getSecciones(esNoficcion)
   const tableros   = esNoficcion ? TABLEROS_NOFICCION : TABLEROS_FICCION
@@ -296,11 +301,6 @@ export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBi
     if (k === 'notas' && getTourPhase() === 'wait_notas') setTourPhase('cart_notas')
     setView({ kind: 'board', key: k })
   }
-  const goPortada = () => {
-    if (getTourPhase() === 'wait_portada_2') setTourPhase('cart_portada_2')
-    setView({ kind: 'portada', key: null })
-  }
-
   // Lanza el popover correcto al entrar a cada vista del tour.
   useEffect(() => {
     const phase = getTourPhase()
@@ -316,7 +316,7 @@ export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBi
   }, [view])
 
   const goForoTour = () => { if (getTourPhase() === 'wait_foro') setTourPhase('foro_1'); onGoForo() }
-  const exploreProps = { onClose: () => setExplore(false), onGoBack, onGoForo: goForoTour, onGoBiblioteca }
+  const exploreProps = { onClose: () => setExplore(false), onGoLectura, onGoForo: goForoTour, onGoBiblioteca }
   const dataWithBook = { ...data, book }
 
   return (
@@ -324,14 +324,15 @@ export default function CarteleraMobile({ onGoBack, book, user, onGoForo, onGoBi
       <Filters />
       {view.kind === 'portada' ? (
         <div className="cm-screen">
-          <Header book={book} onBack={null} onExplore={() => setExplore(true)} />
+          <Header book={book} onBack={onGoBack} onExplore={() => setExplore(true)} />
           <Portada book={book} onOpen={openSection} secciones={secciones} />
         </div>
       ) : (
         <SectionView
           sectionKey={view.key}
           data={dataWithBook}
-          onPortada={goPortada}
+          onGoBack={onGoBack}
+          backSource={backSource}
           onJump={openSection}
           onExplore={() => setExplore(true)}
           initialItemId={fichaInitItemId}

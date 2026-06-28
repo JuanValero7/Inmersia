@@ -59,8 +59,8 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
 
   const ink = _MK_INK;
   const label = { fontSize: 11, fontWeight: 800, color: 'rgba(74,54,34,0.6)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 };
-  const primary = { display: 'flex', alignItems: 'center', gap: 8, background: _MK_ACCENT, color: '#fff', border: `2px solid ${ink}`, borderRadius: 14, padding: '11px 20px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14.5, cursor: 'pointer', textShadow: '0 1px 1px rgba(0,0,0,0.2)', boxShadow: `1.8px 2.4px 0 ${ink}33` };
-  const ghost = { background: _MK_PANEL, color: '#5a4632', border: `2px solid ${ink}`, borderRadius: 14, padding: '11px 18px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14.5, cursor: 'pointer', boxShadow: `1.8px 2.4px 0 ${ink}26` };
+  const primary = { display: 'flex', alignItems: 'center', gap: 8, background: _MK_ACCENT, color: '#fff', border: `2px solid ${ink}`, borderRadius: 999, padding: '11px 20px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14.5, cursor: 'pointer', textShadow: '0 1px 1px rgba(0,0,0,0.2)', boxShadow: `1.8px 2.4px 0 ${ink}33` };
+  const ghost = { background: _MK_PANEL, color: '#5a4632', border: `2px solid ${ink}`, borderRadius: 999, padding: '11px 18px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14.5, cursor: 'pointer', boxShadow: `1.8px 2.4px 0 ${ink}26` };
   const inputBase = { width: '100%', background: '#f4ecda', border: `2px solid ${ink}`, borderRadius: 12, padding: '10px 13px', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, color: ink, outline: 'none', boxSizing: 'border-box' };
 
   return (

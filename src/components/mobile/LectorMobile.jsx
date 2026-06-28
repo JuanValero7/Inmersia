@@ -116,6 +116,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   // ── Estado de navegación de lectura (UI) ──
   const [chapterIndex, setChapterIndex] = useState(0)
   const [pageIndex,    setPageIndex]    = useState(0)
+  const [goToLastPage, setGoToLastPage] = useState(false)
   const [sheet,        setSheetRaw]     = useState(null)   // 'chapters' | 'typo' | 'audio' | 'nav'
   const [imageOpen,    setImageOpen]    = useState(false)
   const [notebookOpen, setNotebookOpen] = useState(false)
@@ -257,8 +258,13 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       lastW = w
       clearTimeout(timer); timer = setTimeout(measureGeom, 350)
     }
+    // orientationchange dispara ANTES de que el layout se actualice; reseteamos
+    // lastW para que el resize posterior forzosamente remida aunque el ancho
+    // coincida (algunos browsers envían valores intermedios durante la animación).
+    const onOrient = () => { lastW = -1; clearTimeout(timer); timer = setTimeout(measureGeom, 400) }
     window.addEventListener('resize', on)
-    return () => { clearTimeout(timer); window.removeEventListener('resize', on) }
+    window.addEventListener('orientationchange', onOrient)
+    return () => { clearTimeout(timer); window.removeEventListener('resize', on); window.removeEventListener('orientationchange', onOrient) }
   }, [measureGeom])
 
   // ── Paginación a prueba de fallos (maqueta el DOM real y corta donde toca) ──
@@ -309,7 +315,19 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     const idx = paginas.findIndex(pg => pg.some(p => p.id === pendingRestore))
     if (idx >= 0) setPageIndex(idx)
     setPendingRestore(null); restoredRef.current = true
+    setGoToLastPage(false)
   }, [pendingRestore, currentChapData, paginas, measuredReady])
+
+  // al navegar hacia atrás entre capítulos, esperar la paginación real del DOM
+  // para saltar a la última página correcta del capítulo anterior
+  useEffect(() => {
+    if (!goToLastPage) return
+    if (paginadoChap !== currentChapter?.id) return
+    const last = paginas.length - 1
+    if (last < 0) return
+    setPageIndex(last)
+    setGoToLastPage(false)
+  }, [goToLastPage, paginas, paginadoChap, currentChapter?.id])
 
   // preservar párrafo visible cuando la geometría cambia (e.g. URL bar móvil)
   useEffect(() => {
@@ -405,19 +423,20 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       const prevEntry = chapterCache[prevCap.id]
       setChapterIndex(chapterIndex - 1)
       if (prevEntry) {
-        // Paginamos el capítulo anterior con el mismo método DOM para saltar a su
-        // ÚLTIMA página. Mismo ancho de hoja, así que reusamos el contentW actual.
+        // Capítulo cacheado: paginar sincrónicamente para saltar a la última página
         const box = screenRef.current?.querySelector('[data-lm-pagebox]')
         const cs  = box ? window.getComputedStyle(box) : null
         const padX = cs ? parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) : 60
         const contentW = box ? Math.max(120, box.clientWidth - padX) : 320
-        const prevChap = capitulos[chapterIndex - 1]
         const prevPages = paginarParrafosMobileDOM(prevEntry.parrafos, {
           contentW, maxH: geom.maxH, fontSize, readingFont, lineHeightRatio: LINE, lineHeight: geom.lineHeight,
-          chapterHead: { kicker: `Capítulo ${prevChap?.numero ?? ''}`, titulo: prevChap?.titulo || '' },
+          chapterHead: { kicker: `Capítulo ${prevCap?.numero ?? ''}`, titulo: prevCap?.titulo || '' },
         })
         setPageIndex(Math.max(0, prevPages.length - 1))
-      } else setPageIndex(0)
+      } else {
+        // Capítulo no cacheado: flag para saltar a la última página cuando cargue
+        setGoToLastPage(true)
+      }
     }
   }
   function handleNext() {
@@ -432,7 +451,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     }
     if (guestMode) setShowPaywall(true)
   }
-  function pickChapter(i) { setChapterIndex(i); setPageIndex(0); setSheet(null) }
+  function pickChapter(i) { setChapterIndex(i); setPageIndex(0); setSheet(null); setGoToLastPage(false) }
 
   // ── Cuaderno: al cerrar, persistir avance de capítulo si venía de "fin de capítulo" ──
   async function handleSubmitResena() {
@@ -446,6 +465,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     }
     if (pendingChapter !== null) {
       await persistChapterAdvance(pendingChapter)
+      setGoToLastPage(false)
       setChapterIndex(pendingChapter); setPageIndex(0); setPendingChapter(null)
     }
   }
@@ -514,7 +534,13 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
           <h1>{book?.title || 'Libro'}</h1>
           <p>{book?.author || ''}</p>
         </div>
-        <button id="tutorial-m-explorar" className="lm-explore" onClick={() => setSheet('nav')} title="Explorar"><Compass /></button>
+        {guestMode ? (
+          <button type="button" className="lm-explore lm-create-account-btn" onClick={() => onRequestAuth?.('registro')} title="Crear cuenta">
+            Crear cuenta
+          </button>
+        ) : (
+          <button id="tutorial-m-explorar" className="lm-explore" onClick={() => setSheet('nav')} title="Explorar"><Compass /></button>
+        )}
         {isLeido && book?.libro_id && (
           <button className="lm-explore lm-resena-btn" onClick={() => { setSheetRaw(null); setCatOpen(false); setResenaOpen(true) }} title="Escribir reseña" aria-label="Escribir reseña"><IcStar /></button>
         )}

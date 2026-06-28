@@ -127,7 +127,7 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
         onGoPerfil={onGoPerfil} onGoTienda={handleGoTienda} onSignOut={onSignOut} />
 
       <div style={{ padding: '26px 32px 56px' }}>
-        <div style={{ fontWeight: 800, fontSize: 32, letterSpacing: '-0.01em', color: headerInk }}>¡Hola otra vez, {displayName.split(' ')[0]}!</div>
+        <div style={{ fontWeight: 800, fontSize: 32, letterSpacing: '-0.01em', color: headerInk }}>¡Bienvenido, {displayName.split(' ')[0]}!</div>
 
         {loadingBooks ? (
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(74,54,34,0.5)', fontSize: 17, fontWeight: 600 }}>Cargando tu biblioteca…</div>

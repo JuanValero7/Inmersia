@@ -2,14 +2,14 @@
 // Lector inmersivo — orquestador principal (estética clay / acuarela).
 // Solo estado, queries Supabase y composicion de vistas.
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase.js'
 import useLocalStorage from '../hooks/useLocalStorage.js'
 import { useLectorData } from '../hooks/useLectorData.js'
 import { useXrayItems } from '../hooks/useXrayItems.js'
 import '../styles/lector.css'
 
-import { paginarParrafos } from '../utils/lectorPagination.js'
+import { paginarParrafosDesktopDOM } from '../utils/lectorPagination.js'
 import { runGuidedLector1, runGuidedLector2 } from './tutorial.js'
 import { getTourPhase, setTourPhase } from './guidedTour.js'
 import { BookReader }      from './lector/BookReader.jsx'
@@ -26,7 +26,7 @@ const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
 // El tamaño y la fuente afectan la paginación (caracteres/línea + alto de línea).
 function computeGeom(doubleView, fontSize, readingFont) {
   const pageH = Math.min(760, Math.max(360, window.innerHeight - 230))
-  const availW = window.innerWidth - 64
+  const availW = Math.max(960, window.innerWidth) - 64
   let pageW = doubleView
     ? Math.min(Math.round(pageH * 0.92), Math.floor((availW - 34) / 2))
     : Math.min(Math.round(pageH * 1.6), availW)
@@ -64,6 +64,7 @@ function EstrellaLector({ valor, onChange }) {
 export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, onRequestAuth }) {
   const [chapterIndex,   setChapterIndex]   = useState(0)
   const [pageIndex,      setPageIndex]      = useState(0)
+  const [goToLastPage,   setGoToLastPage]   = useState(false)
   const [doubleView,     setDoubleView]     = useState(true)
   const [notebookOpen,   setNotebookOpen]   = useState(false)
   const [pendingChapter, setPendingChapter] = useState(null)
@@ -127,12 +128,6 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     window.addEventListener('resize', onResize)
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize) }
   }, [doubleView, fontSize, readingFont])
-  const pagiOpts = useMemo(() => ({ charsPerLine: geom.charsPerLine, lineHeight: geom.lineHeight, maxH: geom.maxH }), [geom])
-
-  // Estados para medición DOM (el useEffect va después de currentChapData)
-  const [measuredHeights, setMeasuredHeights] = useState({})
-  const [titleH,          setTitleH]          = useState(0)
-
   // ── Reseña (UI) ──
   const [resenaOpen, setResenaOpen] = useState(false)
 
@@ -145,12 +140,6 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
         let entry = chapterCache[cap.id]
         if (!entry) { setLoadingCap(true); entry = await fetchChapter(cap) }
         if (cancelled || !entry) return
-        if (pendingRestore) {
-          const pags = paginarParrafos(entry.parrafos, doubleView, pagiOpts)
-          const idx  = pags.findIndex(pg => pg.some(p => p.id === pendingRestore))
-          if (idx >= 0) setPageIndex(doubleView ? idx - (idx % 2) : idx)
-          setPendingRestore(null); restoredRef.current = true
-        }
       } catch (err) {
         if (!cancelled) setError(err.message || String(err))
       } finally {
@@ -165,92 +154,58 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const currentMedia    = currentChapData?.mediaByParrafo || {}
   const currentAmbient  = currentChapData?.ambient || null
 
-  // ── Medición real de alturas desde el DOM ─────────────────────────
-  // Va aquí porque necesita currentChapter y currentChapData declarados arriba.
+  const [currentPaginas, setCurrentPaginas] = useState([[]])
+
+  // Paginación DOM real: misma técnica que el mobile (offsetHeight + búsqueda
+  // binaria). Reemplaza el sistema previo de measuredHeights + estimación, que
+  // dejaba espacios en blanco al sobreestimar alturas de párrafos fragmentados.
   useEffect(() => {
     const parrafos = currentChapData?.parrafos
-    if (!parrafos?.length || !currentChapter) {
-      setMeasuredHeights({})
-      setTitleH(0)
-      return
-    }
+    if (!parrafos?.length || !currentChapter) { setCurrentPaginas([[]]); return }
+    let cancelled = false
+    ;(async () => {
+      await document.fonts.ready
+      if (cancelled) return
+      const pages = paginarParrafosDesktopDOM(parrafos, {
+        pageW:       geom.pageW,
+        pageH:       geom.pageH,
+        fontSize,
+        readingFont,
+        chapterHead: { numero: currentChapter.numero ?? chapterIndex + 1, titulo: currentChapter.titulo },
+      })
+      if (!cancelled) setCurrentPaginas(pages)
+    })()
+    return () => { cancelled = true }
+  }, [currentChapData?.parrafos, currentChapter?.id, chapterIndex, fontSize, readingFont, geom.pageW, geom.pageH])
 
-    const { pageW } = computeGeom(doubleView, fontSize, readingFont)
-    const pad      = Math.round(pageW * 0.11)
-    const contentW = pageW - 2 * pad
-
-    const container = document.createElement('div')
-    container.style.cssText =
-      `position:fixed;top:-9999px;left:-9999px;visibility:hidden;pointer-events:none;` +
-      `width:${contentW}px;font-family:${readingFont};font-size:${fontSize}px;` +
-      `line-height:1.85;overflow:visible;`
-    document.body.appendChild(container)
-
-    // Encabezado de capítulo (reserva espacio en la primera página)
-    const headEl = document.createElement('div')
-    headEl.style.marginBottom = '22px'
-    const capLabel = document.createElement('div')
-    capLabel.style.cssText = `font-family:'Special Elite',monospace;font-size:${fontSize * 0.6}px;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:6px`
-    capLabel.textContent = `Capítulo ${currentChapter.numero ?? ''}`
-    const capTitle = document.createElement('div')
-    capTitle.style.cssText = `font-family:'Playfair Display',serif;font-size:${fontSize * 1.7}px;font-weight:700;line-height:1.1`
-    capTitle.textContent = currentChapter.titulo || ''
-    const capLine = document.createElement('div')
-    capLine.style.cssText = `width:60px;height:3px;margin-top:14px`
-    headEl.appendChild(capLabel)
-    headEl.appendChild(capTitle)
-    headEl.appendChild(capLine)
-    container.appendChild(headEl)
-
-    // Todos los párrafos en una sola pasada (un único reflow del browser)
-    const items = parrafos.map(p => {
-      const el = document.createElement('p')
-      if (p.tipo === 'separador') {
-        el.style.cssText = `margin:0;padding:0;text-align:center;letter-spacing:0.4em;`
-        el.textContent   = '❧'
-      } else {
-        el.style.cssText =
-          `margin:0;padding:0;white-space:pre-line;text-align:justify;hyphens:auto;` +
-          `text-indent:${p.tipo === 'dialogo' ? '0' : '1.2em'};` +
-          `font-style:${p.tipo === 'dialogo' ? 'italic' : 'normal'};`
-        el.textContent = p.contenido || ''
-      }
-      container.appendChild(el)
-      return { p, el }
-    })
-
-    // Lectura única del layout (un solo reflow)
-    const measuredTitleH = headEl.offsetHeight
-    const heights = {}
-    for (const { p, el } of items) heights[p.id] = el.offsetHeight
-
-    document.body.removeChild(container)
-    setTitleH(measuredTitleH)
-    setMeasuredHeights(heights)
-  }, [currentChapData?.parrafos, currentChapter?.id, fontSize, readingFont, doubleView])
-
-  const currentPaginas = useMemo(() => {
-    if (!currentChapData?.parrafos) return [[]]
-    const { charsPerLine, lineHeight, maxH } = computeGeom(doubleView, fontSize, readingFont)
-    const GAP           = Math.round(fontSize * 0.7)
-    const firstPageMaxH = Math.max(lineHeight * 3, maxH - titleH)
-    const origLens      = {}
-    for (const p of currentChapData.parrafos) origLens[p.id] = (p.contenido || '').length
-    return paginarParrafos(currentChapData.parrafos, doubleView, {
-      charsPerLine,
-      lineHeight,
-      maxH,
-      firstPageMaxH,
-      paragraphGap:    GAP,
-      measuredHeights: Object.keys(measuredHeights).length > 0 ? measuredHeights : null,
-      originalLengths: origLens,
-    })
-  }, [currentChapData?.parrafos, doubleView, fontSize, readingFont, measuredHeights, titleH])
+  // Restaurar posición de lectura guardada una vez que currentPaginas está lista.
+  useEffect(() => {
+    if (!pendingRestore) return
+    const idx = currentPaginas.findIndex(pg => pg.some(p => p.id === pendingRestore))
+    if (idx < 0) return
+    setPageIndex(doubleView ? idx - (idx % 2) : idx)
+    setPendingRestore(null)
+    restoredRef.current = true
+    setGoToLastPage(false)
+  }, [pendingRestore, currentPaginas, doubleView])
 
   // si cambia la geometría, evitar quedar fuera de rango
   useEffect(() => {
     if (pageIndex >= currentPaginas.length) setPageIndex(Math.max(0, currentPaginas.length - (doubleView ? 2 : 1)))
   }, [currentPaginas.length])
+
+  // al navegar hacia atrás entre capítulos, esperar a que currentPaginas
+  // corresponda al capítulo actual antes de saltar a la última página
+  useEffect(() => {
+    if (!goToLastPage || !currentChapData) return
+    const firstParrId = currentChapData.parrafos?.[0]?.id
+    const paginasReady = !firstParrId || currentPaginas.some(pg => pg.some(p => p.id === firstParrId))
+    if (!paginasReady) return
+    const last = currentPaginas.length - 1
+    if (last < 0) return
+    setPageIndex(doubleView ? Math.max(0, last - (last % 2)) : last)
+    setGoToLastPage(false)
+  }, [goToLastPage, currentPaginas, currentChapData, doubleView])
 
   useEffect(() => {
     if (!restoredRef.current || !userId || !book?.libro_id) return
@@ -321,20 +276,18 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     return imgs
   }, [currentChapData, currentPaginas, pageIndex, doubleView])
 
-  function handlePrevPage() {
+  const handlePrevPage = useCallback(() => {
     const step = doubleView ? 2 : 1
     if (pageIndex > 0) { setPageIndex(p => Math.max(0, p - step)); return }
     if (chapterIndex > 0) {
-      const prevEntry = chapterCache[capitulos[chapterIndex - 1].id]
       setChapterIndex(chapterIndex - 1)
-      if (prevEntry) {
-        const prevPages = paginarParrafos(prevEntry.parrafos, doubleView, pagiOpts)
-        const last = prevPages.length - 1
-        setPageIndex(doubleView ? Math.max(0, last - (last % 2)) : last)
-      } else { setPageIndex(0) }
+      // Siempre esperar la paginación con measuredHeights reales para calcular
+      // la última página correcta, independientemente de si el capítulo está cacheado.
+      setGoToLastPage(true)
     }
-  }
-  function handleNextPage() {
+  }, [doubleView, pageIndex, chapterIndex])
+
+  const handleNextPage = useCallback(() => {
     const step = doubleView ? 2 : 1
     const next = pageIndex + step
     if (next < currentPaginas.length) {
@@ -342,7 +295,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     } else if (guestMode && chapterIndex >= capitulos.length - 1) {
       setShowPaywall(true)
     }
-  }
+  }, [doubleView, pageIndex, currentPaginas.length, guestMode, chapterIndex, capitulos.length])
   const handleNextChapter = useCallback(() => {
     const next = chapterIndex + 1
     if (next >= capitulos.length) {
@@ -354,8 +307,62 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     setPendingChapter(next); setNotebookOpen(true)
   }, [chapterIndex, capitulos.length, guestMode])
 
+  // ── Teclado: flechas para paginar, espacio para SFX ─────────
+  const sfxIndexRef = useRef(0)
+
+  const visibleSfx = useMemo(() => {
+    const pages = [currentPaginas[pageIndex] || []]
+    if (doubleView) pages.push(currentPaginas[pageIndex + 1] || [])
+    const result = []
+    for (const p of pages.flat()) {
+      for (const m of (currentMedia[p.id] || [])) {
+        if (m.origen !== 'explicito' || m.tipo !== 'audio') continue
+        const ref = m.metadata?.texto_ref
+        if (ref) {
+          // Solo incluir si el texto anclado está en el fragmento visible de esta página
+          if ((p.contenido || '').toLowerCase().includes(ref.toLowerCase())) result.push(m)
+        } else {
+          result.push(m)
+        }
+      }
+    }
+    return result
+  }, [currentPaginas, pageIndex, doubleView, currentMedia])
+
+  useEffect(() => { sfxIndexRef.current = 0 }, [pageIndex, chapterIndex])
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (notebookOpen || showPaywall || resenaOpen || adminPanelOpen) return
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        const isLastPage = doubleView
+          ? pageIndex >= currentPaginas.length - 2
+          : pageIndex >= currentPaginas.length - 1
+        if (isLastPage) handleNextChapter()
+        else handleNextPage()
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        handlePrevPage()
+      } else if (e.key === ' ') {
+        if (visibleSfx.length === 0) return
+        e.preventDefault()
+        playSfx(visibleSfx[sfxIndexRef.current % visibleSfx.length])
+        sfxIndexRef.current++
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [
+    notebookOpen, showPaywall, resenaOpen, adminPanelOpen,
+    pageIndex, chapterIndex, currentPaginas, doubleView,
+    visibleSfx, handleNextPage, handleNextChapter, handlePrevPage, playSfx,
+  ])
+
   const handleToggleView    = useCallback(() => setDoubleView(v => !v), [])
-  const handleChapterSelect = useCallback((idx) => { setChapterIndex(idx); setPageIndex(0); setXrayOpen(false) }, [])
+  const handleChapterSelect = useCallback((idx) => { setChapterIndex(idx); setPageIndex(0); setXrayOpen(false); setGoToLastPage(false) }, [])
 
   // X-ray: cierra al cambiar de capítulo; personajes/glosario cargados por useXrayItems
   const esNoficcion = book?.es_ficcion === false
@@ -372,6 +379,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     }
     if (pendingChapter !== null) {
       await persistChapterAdvance(pendingChapter)
+      setGoToLastPage(false)
       setChapterIndex(pendingChapter); setPageIndex(0); setPendingChapter(null)
     }
   }
@@ -384,7 +392,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       <div style={{ position: 'absolute', inset: 0, background: pal.vignette, pointerEvents: 'none', zIndex: 1 }} />
 
       {/* TOP BAR */}
-      <header style={{ position: 'relative', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', rowGap: 8, gap: 14, padding: '14px 24px 0' }}>
+      <header style={{ position: 'relative', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '14px 24px 0' }}>
         <div style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 14, padding: '9px 15px', display: 'flex', alignItems: 'center', boxShadow: `1.5px 2px 0 ${theme.ink}22`, flex: '1 1 auto', minWidth: 0, maxWidth: 320 }}>
           <span style={{ fontSize: 18, fontWeight: 700, color: '#8a7355', fontFamily: "'Baloo 2', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{book?.title}</span>
         </div>
@@ -400,40 +408,47 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
               icon="M12 3l2.6 5.4L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.4-.6z"
               label="Reseña" />
           )}
-          <div className="inm-explorar-popup" style={{ position: 'relative' }}>
-            {explorarOpen && (
-              <div style={{
-                position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60,
-                background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 16,
-                padding: '10px 14px', display: 'flex', gap: 20, alignItems: 'flex-end',
-                boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)',
-                whiteSpace: 'nowrap',
-              }}>
-                <button type="button" onClick={() => { setExplorarOpen(false); onGoForo() }}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
-                  <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Foro</span>
-                </button>
-                <button type="button" onClick={() => { if (!guestMode && getTourPhase() === 'wait_cartelera') setTourPhase('cart_portada_1'); setExplorarOpen(false); onGoCartelera() }}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                  <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Investigación</span>
-                </button>
-                <button type="button" onClick={() => { setExplorarOpen(false); onGoBack() }}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                  <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Biblioteca</span>
-                </button>
-              </div>
-            )}
-            <button id="tutorial-explorar-header" type="button" onClick={() => setExplorarOpen(o => !o)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 999, padding: '9px 16px', color: theme.ink, fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: `1.5px 2px 0 rgba(74,54,34,0.20)` }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><path d="M2 12h20"/>
-              </svg>
-              Explorar
+          {guestMode ? (
+            <button type="button" onClick={() => onRequestAuth?.('registro')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#cf7b4c', border: '2px solid #4a3622', borderRadius: 999, padding: '9px 16px', color: '#fff', fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '1.5px 2px 0 rgba(74,54,34,0.30)' }}>
+              Crear cuenta
             </button>
-          </div>
+          ) : (
+            <div className="inm-explorar-popup" style={{ position: 'relative' }}>
+              {explorarOpen && (
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60,
+                  background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 16,
+                  padding: '10px 14px', display: 'flex', gap: 20, alignItems: 'flex-end',
+                  boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)',
+                  whiteSpace: 'nowrap',
+                }}>
+                  <button type="button" onClick={() => { setExplorarOpen(false); onGoForo() }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
+                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Foro</span>
+                  </button>
+                  <button type="button" onClick={() => { if (getTourPhase() === 'wait_cartelera') setTourPhase('cart_portada_1'); setExplorarOpen(false); onGoCartelera() }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Investigación</span>
+                  </button>
+                  <button type="button" onClick={() => { setExplorarOpen(false); onGoBack() }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Biblioteca</span>
+                  </button>
+                </div>
+              )}
+              <button id="tutorial-explorar-header" type="button" onClick={() => setExplorarOpen(o => !o)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 999, padding: '9px 16px', color: theme.ink, fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: `1.5px 2px 0 rgba(74,54,34,0.20)` }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><path d="M2 12h20"/>
+                </svg>
+                Explorar
+              </button>
+            </div>
+          )}
         </div>
       </header>
 

@@ -295,6 +295,26 @@ export const BookReader = memo(function BookReader({
   ambient = null, ledColor = 'none', onLedColor = null, esNoficcion = false,
 }) {
   const [soundOpen, setSoundOpen] = useState(false)
+  const soundRef = useRef(null)
+  const xrayRef  = useRef(null)
+
+  useEffect(() => {
+    if (!soundOpen) return
+    function handleOutside(e) {
+      if (soundRef.current && !soundRef.current.contains(e.target)) setSoundOpen(false)
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [soundOpen])
+
+  useEffect(() => {
+    if (!xrayOpen) return
+    function handleOutside(e) {
+      if (xrayRef.current && !xrayRef.current.contains(e.target)) onToggleXray?.()
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [xrayOpen])
   const xrayInitial = s => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
   const pal = getReaderPalette(readingTheme)
   const ledOpt = LED_OPTIONS.find(o => o.id === ledColor)
@@ -310,11 +330,11 @@ export const BookReader = memo(function BookReader({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, position: 'relative' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 12, padding: '0 6px', flexWrap: 'wrap', rowGap: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 12, padding: '0 6px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <ChapterSelect chapters={chapters || []} chapterIndex={chapterIndex} onChapterSelect={onChapterSelect} />
           <TypographyControl fontSize={fontSize} onFontSize={onFontSize} readingFont={readingFont} onReadingFont={onReadingFont} readingTheme={readingTheme} onReadingTheme={onReadingTheme} ledColor={ledColor} onLedColor={onLedColor} />
-          <div style={{ position: 'relative' }}>
+          <div ref={soundRef} style={{ position: 'relative' }}>
             <button type="button" onClick={() => setSoundOpen(o => !o)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: soundOpen ? theme.accent : theme.navBg, color: soundOpen ? '#fff' : theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26`, whiteSpace: 'nowrap' }}>
               <span style={{ fontSize: 13, lineHeight: 1 }}>{esNoficcion ? '≋' : '♪'}</span>
@@ -330,7 +350,7 @@ export const BookReader = memo(function BookReader({
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 'auto' }}>
           {/* X-ray */}
-          <div style={{ position: 'relative' }}>
+          <div ref={xrayRef} style={{ position: 'relative' }}>
             <button type="button" onClick={onToggleXray}
               style={{ whiteSpace: 'nowrap', fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: xrayOpen ? theme.ink : theme.navBg, color: xrayOpen ? '#fffdf8' : theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
               X-ray

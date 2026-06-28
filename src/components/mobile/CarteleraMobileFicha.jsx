@@ -69,12 +69,12 @@ export function CarteleraMobileLista({ section, items = [], onPick }) {
   )
 }
 
-export default function CarteleraMobileFicha({ section, item, onBack }) {
+export default function CarteleraMobileFicha({ section, item, onBack, backLabel = 'Lista' }) {
   const sec = section.color
   if (!item) return null
   return (
     <div className="cm-ficha-wrap">
-      <button type="button" className="cm-fic-back" onClick={onBack}><BackIcon s={14} /> Lista</button>
+      <button type="button" className="cm-fic-back" onClick={onBack}><BackIcon s={14} /> {backLabel}</button>
 
       <div className="cm-ficha" key={item.id}>
         <div className="cm-polaroid">

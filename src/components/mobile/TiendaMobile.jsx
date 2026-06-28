@@ -1,31 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { supabase } from '../lib/supabase.js'
-import CalleEscena from './tienda/CalleEscena.jsx'
-import CatalogoInterior from './tienda/CatalogoInterior.jsx'
-import '../styles/tienda.css'
-import { runGuidedTiendaCalle, runGuidedTiendaInterior } from './tutorial.js'
-import { getTourPhase, setTourPhase } from './guidedTour.js'
+import { supabase } from '../../lib/supabase.js'
+import CalleEscena from '../tienda/CalleEscena.jsx'
+import CatalogoInteriorMobile from './tienda/CatalogoInteriorMobile.jsx'
+import '../../styles/tienda.css'
+import { runGuidedTiendaCalle, runGuidedTiendaInterior } from '../tutorial.js'
+import { getTourPhase, setTourPhase } from '../guidedTour.js'
 
-// =============================================================
-// VistaTienda · Tienda Inmersia (estilo "Calle con imágenes")
-// Cáscara de datos + orquestación. Conserva TODA la lógica real:
-//   · fetch de catálogo (`libros`) y biblioteca del usuario
-//   · bloqueo por lecturas pendientes (>= LIMITE)
-//   · alta de compra en `bibliotecas_usuarios`
-//   · preview con LibroReel
-// La fachada (CalleEscena) y el interior (CatalogoInterior + PanelLibro)
-// son solo presentación.
-// =============================================================
+const LIMITE = 5
+const NUEVOS = 5
 
-const LIMITE = 5   // tope de lecturas pendientes
-const NUEVOS = 5   // cuántos libros recientes llevan el listón "Nuevo"
-
-export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = false }) {
-  const [subView,    setSubView]    = useState(!user ? 'catalogo' : 'calle')   // 'calle' | 'catalogo'
+export default function VistaTiendaMobile({ onGoBack, user, onOpenBook, isSuperuser = false }) {
+  const [subView,    setSubView]    = useState(!user ? 'catalogo' : 'calle')
   const [catalogo,   setCatalogo]   = useState([])
   const [userLibros, setUserLibros] = useState([])
   const [loading,    setLoading]    = useState(false)
-  const [filtroTipo, setFiltroTipo] = useState('todos') // 'todos' | 'ficcion' | 'noficcion'
+  const [filtroTipo, setFiltroTipo] = useState('todos')
 
   const pendientes      = userLibros.filter(l => !l.leido).length
   const accesoBloqueado = !isSuperuser && pendientes >= LIMITE
@@ -104,7 +93,6 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
     })
   }
 
-  // ── Fachada (calle) ─────────────────────────────────────────────
   const handleEntrar = () => {
     if (getTourPhase() === 'tienda_calle') setTourPhase('tienda_interior')
     setSubView('catalogo')
@@ -122,10 +110,9 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
     )
   }
 
-  // ── Interior (catálogo) ─────────────────────────────────────────
   return (
     <>
-      <CatalogoInterior
+      <CatalogoInteriorMobile
         catalogo={catalogo}
         loading={loading}
         user={user}
@@ -137,7 +124,6 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
         filtroTipo={filtroTipo}
         onFiltroTipo={setFiltroTipo}
       />
-
     </>
   )
 }
