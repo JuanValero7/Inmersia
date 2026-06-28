@@ -88,7 +88,7 @@ export default function App() {
       .from('preferencias_usuario')
       .select('ultimos_libros')
       .eq('user_id', u.id)
-      .single()
+      .maybeSingle()
     if (data?.ultimos_libros?.length) {
       setLastOpenedBookIds(data.ultimos_libros)
     }
