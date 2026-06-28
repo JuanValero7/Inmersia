@@ -197,7 +197,7 @@ function Portada({ book, onOpen, secciones = SECCIONES }) {
 // ── Vista de sección: tablero (Mural) / lista / ficha ──
 function SectionView({ sectionKey, data, onGoBack, backSource, onJump, onExplore, initialItemId, secciones = SECCIONES, tableros = TABLEROS_FICCION, esNoficcion = false }) {
   const meta = seccionMeta(sectionKey)
-  const [tab, setTab] = useState(isNotas ? 'mural' : 'lista')      // mural | lista | ficha
+  const [tab, setTab] = useState(sectionKey === 'notas' ? 'mural' : 'lista')      // mural | lista | ficha
   const [selId, setSelId] = useState(null)
   const [fichaFromXray, setFichaFromXray] = useState(false)
   const [boardRef, scale] = useFitScale()
