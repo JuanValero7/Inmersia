@@ -3,7 +3,6 @@
 // Gestiona su propio estado open/close y el dismiss al hacer click fuera.
 // La integración con el tour de Foro vive aquí.
 import { useState, useEffect } from 'react'
-import { getTourPhase, setTourPhase } from '../guidedTour.js'
 
 const BTN_STYLE = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }
 const LBL_STYLE = { fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }
@@ -33,7 +32,6 @@ export default function ExplorarPopup({ onGoForo, onGoBack, onGoBiblioteca, btnC
   }, [open])
 
   const handleGoForo = () => {
-    if (getTourPhase() === 'wait_foro') setTourPhase('foro_1')
     close()
     onGoForo()
   }

@@ -14,17 +14,15 @@ import { INK, BookCover } from './biblioteca/bibmHelpers.jsx'
 import { MobileShelves, CoverCarousel } from './biblioteca/BibShelvesMobile.jsx'
 import BibBookSheet from './biblioteca/BibBookSheet.jsx'
 import { FilterScreen, ManageScreen } from './biblioteca/BibScreensMobile.jsx'
-import { getTourPhase, setTourPhase, shouldStart } from '../guidedTour.js'
-import { runGuidedBib1Mobile, runGuidedBib2Mobile } from '../tutorial.mobile.js'
 import '../../styles/biblioteca.mobile.css'
 
 const HERO_TABS = [
   { id: 'seguir', label: 'Seguir leyendo' },
   { id: 'novedades', label: 'Novedades' },
-  { id: 'recom', label: 'Recomendaciones' },
+  { id: 'recom', label: 'Para ti' },
 ]
 
-export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoTienda, onGoPerfil, onGoForo, onGoNotebook }) {
+export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoNotebook }) {
   // Lógica de datos compartida con Biblioteca desktop (ver src/hooks/useBiblioteca.js)
   const {
     loadingBooks, categories, categoriasMap, books, featured, displayName, inicial,
@@ -42,23 +40,6 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
   const [activeCategory, setActiveCategory] = React.useState(null) // null | uuid | SIN_CATEGORIA_ID
   const [heroTab, setHeroTab] = React.useState('seguir')
   const [screen, setScreen] = React.useState(null) // null | 'filter' | 'manage'
-
-  // Tutorial mobile — arranca una sola vez al terminar la primera carga
-  // (mismo patrón que el desktop). No se relanza en recargas posteriores.
-  const tourStartedRef = React.useRef(false)
-  React.useEffect(() => {
-    if (loadingBooks || tourStartedRef.current) return
-    tourStartedRef.current = true
-    const phase = getTourPhase()
-    let t
-    if (phase === 'bib_1' || shouldStart()) {
-      if (shouldStart()) setTourPhase('bib_1')
-      t = setTimeout(() => runGuidedBib1Mobile(), 700)
-    } else if (phase === 'bib_2') {
-      t = setTimeout(() => runGuidedBib2Mobile(), 700)
-    }
-    return () => clearTimeout(t)
-  }, [loadingBooks])
 
   // ── Wrappers que sincronizan estado de UI tras las primitivas del hook ──
   async function deleteCategoria(id) {
@@ -126,11 +107,17 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
         <div className="bibm-header">
           <div className="bibm-logo"><img src="/assets/inmersia-logo.png" alt="Inmersia" /></div>
           <div style={{ flex: 1 }} />
-          <button id="tutorial-m-tienda" className="bibm-tienda" onClick={() => { if (getTourPhase() === 'wait_tienda') setTourPhase('tienda_calle'); onGoTienda() }} title="Ir a la Tienda">
+          <button className="bibm-avatar" onClick={onGoPerfil} title="Mi perfil">{inicial}</button>
+        </div>
+        <div style={{ display:'flex', gap:8, marginTop:8, width:'100%' }}>
+          <button className="bibm-tienda" style={{ flex:1, justifyContent:'center' }} onClick={onGoTienda} title="Ir a la Tienda">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4m1.6 8L5 5H3m4 8a2 2 0 100 4 2 2 0 000-4zm10 0a2 2 0 100 4 2 2 0 000-4z" strokeLinecap="round" strokeLinejoin="round"/></svg>
             Tienda
           </button>
-          <button className="bibm-avatar" onClick={onGoPerfil} title="Mi perfil">{inicial}</button>
+          <button className="bibm-tienda" style={{ flex:1, justifyContent:'center' }} onClick={onGoAlbum} title="Mi álbum">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="3" width="7" height="9" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="14" y="3" width="7" height="5" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="14" y="12" width="7" height="9" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="3" y="16" width="7" height="5" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Álbum
+          </button>
         </div>
         <div className="bibm-search">
           <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={INK} strokeWidth="2.4"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35" strokeLinecap="round"/></svg>
@@ -202,15 +189,15 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
             )}
 
             {/* Tu colección */}
-            <div id="tutorial-m-coleccion" style={{ marginTop: 36 }}>
+            <div style={{ marginTop: 36 }}>
               <div className="bibm-col-head">
                 <div className="bibm-sec-ttl">Tu colección <span className="bibm-sec-sub">{collectionCount} {collectionCount === 1 ? 'libro' : 'libros'}</span></div>
                 <div className="bibm-col-actions">
-                  <button id="tutorial-m-filtrar" className={'bibm-act' + (activeCategory ? ' on' : '')} onClick={() => setScreen('filter')}>
+                  <button className={'bibm-act' + (activeCategory ? ' on' : '')} onClick={() => setScreen('filter')}>
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round"/></svg>
                     Filtrar{activeCategory ? ' · 1' : ''}
                   </button>
-                  <button id="tutorial-m-gestionar" className="bibm-act manage" onClick={() => setScreen('manage')}>
+                  <button className="bibm-act manage" onClick={() => setScreen('manage')}>
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     Gestionar
                   </button>

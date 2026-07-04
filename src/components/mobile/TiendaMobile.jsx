@@ -3,8 +3,6 @@ import { supabase } from '../../lib/supabase.js'
 import CalleEscena from '../tienda/CalleEscena.jsx'
 import CatalogoInteriorMobile from './tienda/CatalogoInteriorMobile.jsx'
 import '../../styles/tienda.css'
-import { runGuidedTiendaCalle, runGuidedTiendaInterior } from '../tutorial.js'
-import { getTourPhase, setTourPhase } from '../guidedTour.js'
 
 const LIMITE = 5
 const NUEVOS = 5
@@ -56,19 +54,6 @@ export default function VistaTiendaMobile({ onGoBack, user, onOpenBook, isSuperu
 
   useEffect(() => { fetchTienda() }, [fetchTienda])
 
-  useEffect(() => {
-    const t = setTimeout(() => { if (getTourPhase() === 'tienda_calle') runGuidedTiendaCalle() }, 700)
-    return () => clearTimeout(t)
-  }, [])
-
-  useEffect(() => {
-    if (subView !== 'catalogo') return
-    if (getTourPhase() === 'tienda_interior') {
-      const t = setTimeout(() => runGuidedTiendaInterior(), 700)
-      return () => clearTimeout(t)
-    }
-  }, [subView])
-
   async function comprar(libro) {
     if (!user?.id) return
     const { error } = await supabase.from('bibliotecas_usuarios').insert({ user_id: user.id, libro_id: libro.id, leido: false })
@@ -94,7 +79,6 @@ export default function VistaTiendaMobile({ onGoBack, user, onOpenBook, isSuperu
   }
 
   const handleEntrar = () => {
-    if (getTourPhase() === 'tienda_calle') setTourPhase('tienda_interior')
     setSubView('catalogo')
   }
 

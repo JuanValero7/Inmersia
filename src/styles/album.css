@@ -1,0 +1,352 @@
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,700;1,700&display=swap');
+
+/* =============================================================
+   Inmersia · Álbum de barajitas — estilos. Scopeado en .album-root.
+   Estética "clay / papel" coherente con la Cartelera y el Lector.
+   ============================================================= */
+
+.album-root {
+  --ink: #4a3622; --ink-soft: #6b4f34; --ink-faint: #cdbfa6;
+  --terra: #cf7b4c; --terra-d: #b5613a;
+  --crema: #fffdf8; --papel: #f6f3ec; --papel-warm: #efe7d4; --aged: #f3ead2;
+  --rojo: #c1453a; --verde: #5f8a72; --oro: #cf9b3f; --azul: #5d6f9c; --rosa: #b5617f;
+  --foil: #bd9a4e; --tinta: #241a10;
+  --serif: 'Crimson Text', Georgia, serif;
+  --ui: 'Baloo 2', system-ui, sans-serif;
+  --clay: 2px 2.8px 0 rgba(74,54,34,.28);
+  --clay-lg: 0 22px 48px rgba(74,54,34,.22), 3px 5px 0 rgba(74,54,34,.16);
+  --row: 118px;
+
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: var(--ui);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 34px 26px 46px;
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(255,255,255,.55), transparent 55%),
+    radial-gradient(circle at 22% 12%, #efe9db, #d9d0bd 90%);
+  background-attachment: fixed;
+}
+.album-root * { box-sizing: border-box; }
+
+/* ── barra superior: back + buscador ─────────────────────────── */
+.album-topbar {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 auto 26px;
+}
+.album-back {
+  display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0;
+  background: var(--papel-warm); color: var(--ink);
+  border: 2.5px solid var(--ink); border-radius: 999px;
+  padding: 10px 16px; font-family: var(--ui); font-weight: 700; font-size: 14px;
+  cursor: pointer; box-shadow: var(--clay);
+  transition: transform .14s ease, box-shadow .14s ease;
+}
+.album-back:hover { transform: translateY(-2px); box-shadow: 3px 5px 0 rgba(74,54,34,.24); }
+
+.album-search {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 11px;
+  background: var(--crema); border: 2.5px solid var(--ink); border-radius: 999px;
+  padding: 11px 20px; box-shadow: var(--clay);
+}
+.album-search svg { flex: none; color: var(--terra-d); }
+.album-search input {
+  flex: 1; border: 0; outline: 0; background: transparent;
+  font-family: var(--ui); font-weight: 600; font-size: 16px; color: var(--ink);
+}
+.album-search input::placeholder { color: var(--ink-soft); opacity: .6; }
+
+/* ── spread (doble página) ───────────────────────────────────── */
+.album-shell { width: 100%; max-width: 1280px; }
+.album-spread {
+  position: relative;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  background: linear-gradient(180deg, #fbf7ee, #f1e8d4);
+  border: 2.5px solid var(--ink); border-radius: 20px;
+  box-shadow: var(--clay-lg); overflow: hidden;
+}
+.album-spread::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 34px;
+  transform: translateX(-50%); z-index: 3; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(74,54,34,.10) 30%, rgba(74,54,34,.20) 50%, rgba(74,54,34,.10) 70%, transparent);
+}
+.album-spine { display: none; } /* lo dibuja ::before */
+
+.album-page {
+  position: relative; padding: 30px 34px 34px;
+  background-image:
+    radial-gradient(60% 34% at 8% 2%, rgba(207,123,76,.05), transparent 60%),
+    radial-gradient(60% 40% at 98% 102%, rgba(120,90,50,.06), transparent 62%);
+}
+.album-page-left { border-right: 1.5px solid rgba(74,54,34,.12); }
+
+/* ── encabezado del libro ────────────────────────────────────── */
+.album-bookhead { margin-bottom: 20px; }
+.album-bookhead .kick {
+  font-weight: 700; font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--oro); margin: 0 0 4px;
+}
+.album-book-title {
+  font-family: var(--serif); font-weight: 700; font-size: 34px; line-height: 1.02;
+  margin: 0; letter-spacing: -.01em; color: var(--ink);
+}
+.album-book-author { font-size: 15px; font-weight: 600; color: var(--ink-soft); margin: 5px 0 0; }
+
+/* ── bloque superior: placa + música + accesos ───────────────── */
+.album-topblock { display: flex; gap: 20px; margin-bottom: 26px; }
+.album-topside { flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+/* ── PLACA (marquesina de la obra) ───────────────────────────── */
+.album-placa {
+  position: relative; flex: none; width: 42%; min-width: 178px;
+  background: linear-gradient(160deg, #faf3df, #ecdfbe);
+  border: 2.5px solid var(--ink); border-radius: 14px; padding: 9px;
+  box-shadow: var(--clay);
+}
+.album-placa-frame { position: relative; border: 2px solid var(--foil); border-radius: 9px; overflow: hidden; }
+.album-placa-frame::after {
+  content: ""; position: absolute; inset: 4px; border: 1px solid rgba(189,154,78,.55);
+  border-radius: 5px; pointer-events: none; z-index: 4;
+}
+.album-placa-art { position: relative; aspect-ratio: 2/3; background: var(--tinta); overflow: hidden; }
+.album-placa-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.album-placa-art .vig { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 52%, rgba(36,22,10,.5)); }
+.album-placa-ph {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 14px; text-align: center; font-family: var(--serif); font-weight: 700;
+  font-size: 18px; color: rgba(255,250,242,.92); line-height: 1.2;
+}
+.album-placa-ribbon {
+  position: absolute; top: 12px; left: -4px; z-index: 5;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--crema); background: var(--rojo); border: 2px solid var(--ink);
+  padding: 3px 12px 3px 10px; border-radius: 0 8px 8px 0; box-shadow: 1.5px 2px 0 rgba(74,54,34,.3);
+}
+.album-placa-plate {
+  position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 5; text-align: center;
+  background: rgba(255,253,248,.92); border: 2px solid var(--ink); border-radius: 8px;
+  padding: 6px 8px; box-shadow: 1.2px 1.6px 0 rgba(74,54,34,.25);
+}
+.album-placa-plate .pn { font-family: var(--serif); font-weight: 700; font-style: italic; font-size: 16px; line-height: 1.05; }
+.album-placa-plate .ps { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--terra-d); margin-top: 2px; }
+.album-placa-corner { position: absolute; color: var(--foil); font-size: 12px; z-index: 6; }
+.album-placa-corner.a { top: 14px; left: 14px; }  .album-placa-corner.b { top: 14px; right: 14px; }
+.album-placa-corner.c { bottom: 14px; left: 14px; } .album-placa-corner.d { bottom: 14px; right: 14px; }
+
+/* placa sin portada (solo progreso + stats) */
+.album-placa--stats { align-self: flex-start; }
+.album-placa--stats .album-placa-frame { border-radius: 9px; }
+.album-placa-body { padding: 12px; }
+.album-placa--stats .album-placa-body { padding-top: 40px; }
+.album-placa-edition { margin: 0 0 10px; text-align: center; font-size: 9.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+.album-placa--stats .album-placa-prog { margin: 2px 0 4px; }
+.album-placa--stats .album-plaque { margin-top: 10px; }
+
+/* progreso dentro de la placa */
+.album-placa-prog { margin: 12px 3px 2px; }
+.album-placa-prog .lab { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.album-placa-prog .lab .k { font-size: 9.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+.album-placa-prog .lab .v { font-family: var(--serif); font-weight: 700; font-size: 12px; color: var(--terra-d); }
+.album-placa-track { height: 6px; background: rgba(74,54,34,.14); border: 1.5px solid var(--ink); border-radius: 99px; overflow: hidden; }
+.album-placa-fill { height: 100%; background: linear-gradient(90deg, var(--terra), var(--terra-d)); border-radius: 99px; transition: width .4s ease; }
+
+/* ── stats (info real de la placa) ───────────────────────────── */
+.album-plaque { margin-top: 12px; padding: 0 3px 2px; }
+.album-plaque-title {
+  font-size: 9.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-soft); text-align: center; margin: 0 0 10px;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+}
+.album-plaque-title::before, .album-plaque-title::after { content: ""; width: 26px; height: 1.5px; background: var(--foil); }
+.album-plaque-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 16px; }
+.album-plaque-grid > div { border-bottom: 1.5px dotted rgba(74,54,34,.3); padding-bottom: 8px; }
+.album-plaque-stat-label { font-size: 9.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--ink-soft); margin: 4px 0 0; order: 2; }
+.album-plaque-stat-value { font-family: var(--serif); font-weight: 700; font-size: 20px; line-height: 1; color: var(--ink); margin: 0; }
+.album-plaque-grid > div { display: flex; flex-direction: column; }
+
+/* ── música (banda sonora) ───────────────────────────────────── */
+.album-music {
+  display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink);
+  background: var(--crema); border: 2.5px solid var(--ink); border-radius: 14px; padding: 11px 14px;
+  box-shadow: var(--clay); transition: transform .14s ease, box-shadow .14s ease; cursor: pointer;
+}
+.album-music:hover { transform: translateY(-2px); box-shadow: 3px 5px 0 rgba(74,54,34,.24); }
+.album-music.disabled { opacity: .55; cursor: default; }
+.album-music.disabled:hover { transform: none; box-shadow: var(--clay); }
+.album-music-btn {
+  width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 50%;
+  background: var(--verde); color: var(--crema); border: 2px solid var(--ink);
+  box-shadow: 1.4px 1.8px 0 rgba(74,54,34,.3);
+}
+.album-music-txt { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.album-music-lab { font-size: 10.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+.album-music-name { font-family: var(--serif); font-weight: 700; font-size: 16px; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.album-wave { display: flex; align-items: center; gap: 2.5px; height: 22px; flex: none; }
+.album-wave i { width: 2.5px; border-radius: 2px; background: var(--verde); height: 12px; }
+.album-music.playing .album-wave i { animation: album-eq 1.1s ease-in-out infinite; }
+@keyframes album-eq { 0%, 100% { height: 5px; } 50% { height: 20px; } }
+
+/* ── accesos (Investigación · Foro · Leer) ───────────────────── */
+.album-access { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: auto; }
+.album-acc {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none;
+  background: var(--crema); border: 2.5px solid var(--ink); border-radius: 13px; padding: 12px 6px 9px;
+  box-shadow: var(--clay); cursor: pointer; font-family: var(--ui);
+  transition: transform .14s ease, box-shadow .14s ease;
+}
+.album-acc:hover { transform: translateY(-2px); box-shadow: 3px 5px 0 rgba(74,54,34,.24); }
+.album-acc .aic {
+  width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px;
+  border: 2px solid var(--ink); color: var(--crema); box-shadow: 1.2px 1.6px 0 rgba(74,54,34,.28);
+}
+.album-acc .alab { font-size: 11px; font-weight: 800; letter-spacing: .02em; color: var(--ink); }
+.album-acc[data-c=investigacion] .aic { background: var(--oro); }
+.album-acc[data-c=foro] .aic { background: var(--rosa); }
+.album-acc[data-c=leer] .aic { background: var(--azul); }
+
+/* ── sección de barajitas (página derecha) ───────────────────── */
+.album-sechead { display: flex; align-items: center; gap: 11px; margin: 0 2px 13px; }
+.album-sechead .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ink); background: var(--terra); flex: none; box-shadow: 1px 1.3px 0 rgba(74,54,34,.25); }
+.album-sechead h3 { font-family: var(--serif); font-weight: 700; font-size: 22px; margin: 0; }
+.album-sechead .count { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+.album-sechead .bar { flex: 1; height: 2px; background: var(--ink-faint); border-radius: 2px; }
+
+.album-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  grid-auto-rows: var(--row);
+  gap: 11px;
+}
+.album-gallery-extra { font-size: 12px; font-weight: 700; color: var(--ink-soft); text-align: right; margin: 12px 2px 0; }
+
+.album-gallery-empty {
+  display: grid; place-items: center; min-height: 220px; padding: 20px;
+  border: 2.5px dashed rgba(74,54,34,.4); border-radius: 12px;
+  background: repeating-linear-gradient(135deg, #efe7d4 0 10px, #e8dfca 10px 20px);
+}
+.album-gallery-empty p {
+  font-family: var(--serif); font-weight: 700; font-size: 16px; color: rgba(74,54,34,.5);
+  text-align: center; line-height: 1.4; margin: 0;
+}
+
+/* ── barajita (tarjeta coleccionable) ────────────────────────── */
+.album-barajita {
+  position: relative; border-radius: 11px; overflow: hidden;
+  border: 2.5px solid var(--ink); background: var(--tinta); box-shadow: var(--clay);
+  transition: transform .16s ease, box-shadow .16s ease; cursor: pointer;
+}
+.album-barajita.hero { grid-column: span 2; grid-row: span 2; }
+.album-barajita:hover { transform: translateY(-3px); box-shadow: 3px 6px 0 rgba(74,54,34,.22); }
+.album-barajita-img { position: absolute; inset: 0; }
+.album-barajita-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.album-barajita .vig {
+  position: absolute; inset: 0; z-index: 2;
+  background: radial-gradient(120% 80% at 30% 12%, rgba(255,255,255,.14), transparent 50%),
+    linear-gradient(180deg, transparent 55%, rgba(36,22,10,.42));
+}
+.album-barajita .foil { position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: 9px; box-shadow: inset 0 0 0 2px rgba(189,154,78,.35); }
+.album-barajita .cbadge {
+  position: absolute; top: 8px; left: 8px; z-index: 5; font-family: var(--serif); font-weight: 700;
+  font-size: 11px; color: var(--crema); background: var(--c, var(--terra)); border: 2px solid var(--ink);
+  border-radius: 7px; min-width: 24px; text-align: center; padding: 0 5px; box-shadow: 1px 1.3px 0 rgba(74,54,34,.3);
+}
+.album-barajita-caption {
+  position: absolute; left: 8px; right: 8px; bottom: 7px; z-index: 4; color: #fffaf2;
+  font-family: var(--serif); font-weight: 700; font-size: 13px; line-height: 1.06;
+  text-shadow: 0 1px 3px rgba(0,0,0,.6); margin: 0;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.album-barajita.hero .album-barajita-caption { font-size: 17px; -webkit-line-clamp: 3; }
+
+/* ── pager (tabs de libros) ──────────────────────────────────── */
+.album-pager { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 26px; flex-wrap: wrap; }
+.album-tab {
+  flex-shrink: 0; width: 46px; height: 64px; border-radius: 10px; overflow: hidden; cursor: pointer;
+  padding: 0; border: 2.5px solid var(--ink); background: var(--terra); opacity: .7;
+  box-shadow: var(--clay); transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+}
+.album-tab:hover { transform: translateY(-2px); box-shadow: 3px 5px 0 rgba(74,54,34,.24); opacity: .92; }
+.album-tab.active { opacity: 1; box-shadow: 0 0 0 3px var(--terra), var(--clay); }
+.album-tab img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.album-tab-placeholder { width: 100%; height: 100%; display: grid; place-items: center; padding: 4px; }
+.album-tab-placeholder span { font-family: var(--serif); font-weight: 700; font-size: 9px; color: rgba(255,255,255,.9); text-align: center; line-height: 1.15; }
+
+.album-hint { margin-top: 18px; text-align: center; font-size: 13px; font-weight: 600; color: var(--ink-soft); opacity: .8; }
+.album-hint b { color: var(--ink); }
+
+/* ── pantallas de estado ─────────────────────────────────────── */
+.album-loading, .album-empty {
+  min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  background: radial-gradient(circle at 22% 12%, #efe9db, #d9d0bd 90%);
+  font-family: var(--ui, 'Baloo 2', sans-serif); color: #4a3622;
+}
+.album-empty h2 { font-family: 'Crimson Text', serif; font-size: 26px; font-weight: 700; margin: 0; color: #4a3622; }
+.album-empty p { font-size: 15px; color: #6b4f34; text-align: center; max-width: 340px; line-height: 1.5; margin: 0; }
+.album-empty .btn-wood {
+  background: #cf7b4c; color: #fffdf8; border: 2.5px solid #4a3622; border-radius: 999px;
+  padding: 10px 22px; font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer;
+  box-shadow: 2px 2.8px 0 rgba(74,54,34,.28);
+}
+.album-loading p { font-family: 'Crimson Text', serif; font-size: 15px; color: #6b4f34; margin: 0; }
+.spinner { border-radius: 50%; border-style: solid; animation: album-spin .8s linear infinite; }
+@keyframes album-spin { to { transform: rotate(360deg); } }
+
+/* ── mobile (columna apilada) ────────────────────────────────── */
+@media (max-width: 860px) {
+  .album-root { padding: 20px 14px 40px; }
+  .album-spread { grid-template-columns: 1fr; }
+  .album-spread::before { display: none; }
+  .album-page-left { border-right: 0; border-bottom: 1.5px solid rgba(74,54,34,.14); }
+  .album-page { padding: 24px 20px 26px; }
+  .album-book-title { font-size: 28px; }
+  .album-topblock { gap: 14px; }
+  .album-placa { width: 44%; }
+}
+@media (max-width: 480px) {
+  .album-topblock { flex-direction: column; }
+  .album-placa { width: 100%; }
+  .album-book-title { font-size: 25px; }
+  .album-access { margin-top: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .album-music .album-wave i { animation: none !important; height: 12px; }
+  .spinner { animation: none; }
+}
+
+/* ── secciones agrupadas + casillas vacías / video ─────────────── */
+.album-section { margin-top: 22px; }
+.album-section:first-child { margin-top: 0; }
+.album-page-left .album-section { margin-top: 24px; }
+.album-gallery-grid.tight { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
+
+/* casilla vacía / bloqueada */
+.album-barajita.empty {
+  background: repeating-linear-gradient(135deg, #efe7d4 0 10px, #e8dfca 10px 20px);
+  border: 2.5px dashed rgba(74,54,34,.4); box-shadow: none; cursor: default;
+}
+.album-barajita.empty:hover { transform: none; box-shadow: none; }
+.album-barajita .eghost { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; color: rgba(74,54,34,.14); }
+.album-barajita .eslot { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 8px; color: rgba(74,54,34,.5); }
+.album-barajita .eslot svg { opacity: .55; }
+.album-barajita .eslot span { font-size: 9.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; line-height: 1.2; }
+
+/* desbloqueada sin media → placeholder de color con inicial */
+.album-placeholder-fill { position: absolute; inset: 0; display: grid; place-items: center; }
+.album-placeholder-fill span { font-family: var(--serif); font-weight: 700; font-size: 26px; color: rgba(255,250,242,.9); }
+.album-barajita.hero .album-placeholder-fill span { font-size: 40px; }
+
+/* etiqueta + botón de video (primera casilla) */
+.album-barajita .vtag { position: absolute; top: 8px; right: 8px; z-index: 5; display: flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fffaf2; background: rgba(40,26,12,.55); border: 1.5px solid rgba(255,250,242,.4); border-radius: 999px; padding: 2px 8px; }
+.album-barajita .vtag i { width: 6px; height: 6px; border-radius: 50%; background: #7be0a0; }
+.album-barajita .vplay { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; }
+.album-barajita .vplay span { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,253,248,.92); border: 2.5px solid var(--ink); color: var(--ink); box-shadow: 2px 2.6px 0 rgba(74,54,34,.35); transition: transform .16s ease; }
+.album-barajita.card:hover .vplay span { transform: scale(1.08); }
+.album-barajita.hero .vplay span { width: 58px; height: 58px; }

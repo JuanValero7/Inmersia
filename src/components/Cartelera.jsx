@@ -4,6 +4,7 @@
 //   <CartelaView onGoBack book user onGoForo />
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useBookBySlug } from '../hooks/useBookBySlug.js'
 
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
 import { useCartelera } from './cartelera/useCartelera.js'
@@ -18,8 +19,6 @@ import TableroHechos from './cartelera/TableroHechos.jsx'
 import TableroDatos from './cartelera/TableroDatos.jsx'
 import TableroNotas from './cartelera/TableroNotas.jsx'
 import '../styles/cartelera.css'
-import { runGuidedCartPersonajes, runGuidedCartNotas } from './tutorial.js'
-import { getTourPhase, setTourPhase } from './guidedTour.js'
 
 const TABLEROS_FICCION    = { personajes: TableroPersonajes, lugares: TableroLugares, hechos: TableroHechos, datos: TableroDatos }
 const TABLEROS_NOFICCION  = { glosario: TableroPersonajes, datos: TableroLugares, referencias: TableroHechos, resumen: TableroDatos }
@@ -65,19 +64,7 @@ function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection, onG
   const scale = useFitScale(stageRef)
   const Tablero = tableros[sectionKey]
 
-  useEffect(() => {
-    const phase = getTourPhase()
-    let t
-    if (sectionKey === 'personajes' && phase === 'cart_personajes') {
-      t = setTimeout(() => runGuidedCartPersonajes(), 700)
-    } else if (sectionKey === 'notas' && phase === 'cart_notas') {
-      t = setTimeout(() => runGuidedCartNotas(), 700)
-    }
-    return () => clearTimeout(t)
-  }, [sectionKey])
-
   const handlePortada = () => {
-    if (getTourPhase() === 'wait_portada_2') setTourPhase('cart_portada_2')
     onPortada()
   }
 
@@ -89,7 +76,7 @@ function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection, onG
         <div className="ttl"><h1>{meta.label}</h1><span className="sub">{meta.sub}</span></div>
         <div className="cart-sec-hint">Sigue leyendo para revelar una sorpresa</div>
         <div className="actions">
-          <button id="tutorial-lista-btn" className="cart-sec-btn" type="button" onClick={() => onOpenList(sectionKey)}>Lista</button>
+          <button className="cart-sec-btn" type="button" onClick={() => onOpenList(sectionKey)}>Lista</button>
           <ExplorarPopup onGoForo={onGoForo} onGoBack={onGoBack} onGoBiblioteca={onGoBiblioteca} />
         </div>
       </div>
@@ -122,7 +109,8 @@ function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection, onG
   )
 }
 
-export default function CartelaView({ onGoBack, book, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false }) {
+export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false }) {
+  const { book, loading: bookLoading } = useBookBySlug(bookProp)
   const esNoficcion = book?.es_ficcion === false
   const secciones  = getSecciones(esNoficcion)
   const tableros   = esNoficcion ? TABLEROS_NOFICCION : TABLEROS_FICCION
@@ -146,8 +134,13 @@ export default function CartelaView({ onGoBack, book, user, onGoForo, onGoBiblio
     onJumpConsumed?.()
   }, [jumpToItemId])
 
+  if (bookLoading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-warm)' }}>
+      <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3, borderColor: 'rgba(139,77,42,0.2)', borderTopColor: '#8b4d2a' }} />
+    </div>
+  )
+
   const handlePortadaOpen = (k) => {
-    if (k === 'personajes' && getTourPhase() === 'wait_personajes') setTourPhase('cart_personajes')
     setView({ kind: 'ficha', key: k })
   }
 

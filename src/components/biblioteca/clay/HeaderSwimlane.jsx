@@ -9,7 +9,7 @@ import { INK, inmTint, BookCover } from './helpers.jsx'
 // Exporta: window.InmHeader, Swimlane
 // =============================================================
 
-function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, onGoPerfil, onGoTienda, onSignOut }) {
+function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, onGoPerfil, onGoTienda, onGoAlbum, onSignOut }) {
   const ink = INK;
   const bar = {
     display: 'flex', alignItems: 'center', gap: 16, borderRadius: 22, padding: '13px 17px',
@@ -36,10 +36,16 @@ function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, on
             style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontWeight: 600, fontSize: 15, color: ink }} />
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 11, flexShrink: 0 }}>
-          <button id="tutorial-tienda-btn" onClick={onGoTienda} style={navBtn} title="Tienda">
+          <button onClick={onGoTienda} style={navBtn} title="Tienda">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4m1.6 8L5 5H3m4 8a2 2 0 100 4 2 2 0 000-4zm10 0a2 2 0 100 4 2 2 0 000-4z" strokeLinecap="round" strokeLinejoin="round"/></svg>
             Tienda
           </button>
+          {onGoAlbum && (
+            <button onClick={onGoAlbum} style={navBtn} title="Álbum">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Álbum
+            </button>
+          )}
           <button onClick={onGoPerfil} style={{ ...navBtn, padding: '7px 15px 7px 8px' }} title="Mi perfil">
             <span style={{ width: 27, height: 27, borderRadius: '50%', background: 'linear-gradient(135deg, #cf7b4c, #6f9457)', color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, border: `2px solid ${ink}` }}>{inicial}</span>
             <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
@@ -104,7 +110,7 @@ function HeroFeatured({ book, onOpen }) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginTop: 28 }}>
-          <button id="tutorial-empezar-leer-btn" onClick={(e) => onOpen(book, e.currentTarget.getBoundingClientRect())}
+          <button onClick={(e) => onOpen(book, e.currentTarget.getBoundingClientRect())}
             style={{ display: 'flex', alignItems: 'center', gap: 10, background: accent, color: '#fff', border: `2px solid ${ink}`, borderRadius: 999, padding: '16px 32px', fontWeight: 700, fontSize: 18, fontFamily: 'inherit', cursor: 'pointer', textShadow: '0 1px 1px rgba(0,0,0,0.2)', boxShadow: `2px 2.8px 0 ${ink}33` }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
             {hasProgress ? 'Continuar' : 'Empezar a leer'}
@@ -129,7 +135,7 @@ function Swimlane({ featured, onOpen }) {
     whiteSpace: 'nowrap', textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none', boxShadow: active ? `1.4px 1.8px 0 ${ink}33` : 'none', transition: 'all .15s',
   });
   return (
-    <div id="tutorial-swimlane" style={surface}>
+    <div style={surface}>
       {tab === 'seguir' && (
         <>
           <img src="/assets/wallpapers/hero-cat.webp" alt="" style={{ position: 'absolute', right: 0, bottom: 0, height: '100%', width: 'auto', maxWidth: '72%', objectFit: 'contain', objectPosition: 'right bottom', pointerEvents: 'none', zIndex: 0, opacity: 1 }} />

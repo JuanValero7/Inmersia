@@ -13,6 +13,7 @@
 // ─────────────────────────────────────────────────────────────
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useBookBySlug } from '../../hooks/useBookBySlug.js'
 
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
 import clsx from 'clsx'
@@ -24,11 +25,6 @@ import TableroHechos from '../cartelera/TableroHechos.jsx'
 import TableroDatos from '../cartelera/TableroDatos.jsx'
 import TableroNotas from '../cartelera/TableroNotas.jsx'
 import CarteleraMobileFicha, { CarteleraMobileLista } from './CarteleraMobileFicha.jsx'
-import { getTourPhase, setTourPhase } from '../guidedTour.js'
-import {
-  runGuidedCartPortada1Mobile, runGuidedCartPortada2Mobile,
-  runGuidedCartPersonajesMobile, runGuidedCartNotasMobile,
-} from '../tutorial.mobile.js'
 import '../../styles/cartelera.css'
 import '../../styles/cartelera.mobile.css'
 
@@ -94,9 +90,9 @@ function Filters() {
 function Header({ book, onBack, onExplore }) {
   return (
     <header className="cm-header">
-      {onBack && <button type="button" className="cm-iconbtn" onClick={onBack} aria-label="Volver a la cartelera"><Back /></button>}
+      {onBack && <button type="button" className="cm-iconbtn" onClick={onBack} aria-label="Volver a Investigación"><Back /></button>}
       <div className="cm-title">
-        <h1>{book?.title || 'Cartelera'}</h1>
+        <h1>{book?.title || 'Investigación'}</h1>
         <p>Investigación</p>
       </div>
       <button type="button" className="cm-iconbtn" onClick={onExplore} aria-label="Explorar"><Compass /></button>
@@ -110,7 +106,7 @@ function CatDock({ currentKey, onJump, secciones = SECCIONES }) {
   const others = secciones.filter(s => s.key !== currentKey).map(s => seccionMeta(s.key))
   return (
     <div className="cm-cat-dock">
-      <button type="button" id="tutorial-m-catdock" className="cm-cat-btn" onClick={() => setOpen(o => !o)} aria-label="Otras categorías">
+      <button type="button" className="cm-cat-btn" onClick={() => setOpen(o => !o)} aria-label="Otras categorías">
         <img className="cm-cat-img" src="/assets/cartelera/cat-sit.png" alt="Gato" />
       </button>
       {open && (
@@ -159,8 +155,8 @@ function ExploreSheet({ onClose, onGoLectura, onGoForo, onGoBiblioteca }) {
 function Portada({ book, onOpen, secciones = SECCIONES }) {
   return (
     <div className="pv-intro-stack" style={{ display: 'contents' }}>
-      <div className="pv-intro"><span className="k">Cartelera · {book?.title || ''}</span></div>
-      <div id="tutorial-m-paneles" className="pv-stack">
+      <div className="pv-intro"><span className="k">Investigación · {book?.title || ''}</span></div>
+      <div className="pv-stack">
         {secciones.map((sec, i) => {
           const light = shade(sec.color, 0.16), dark = shade(sec.color, -0.20)
           const blot1 = shade(sec.color, 0.10), blot2 = shade(sec.color, -0.12)
@@ -235,9 +231,9 @@ function SectionView({ sectionKey, data, onGoBack, backSource, onJump, onExplore
           <h2>{meta.label}</h2>
         </div>
         {isNotas
-          ? <span className="cm-sec-tag">Cartelera de investigación</span>
+          ? <span className="cm-sec-tag">Investigación</span>
           : (
-            <div id="tutorial-m-lista" className="cm-seg">
+            <div className="cm-seg">
               <button type="button" className={clsx(tab === 'mural' && 'active')} onClick={() => setTab('mural')}><MuralIcon /> Mural</button>
               <button type="button" className={clsx(tab !== 'mural' && 'active')} onClick={openLista}><ListIcon /> Lista</button>
             </div>
@@ -268,7 +264,8 @@ function SectionView({ sectionKey, data, onGoBack, backSource, onJump, onExplore
   )
 }
 
-export default function CarteleraMobile({ onGoBack, onGoLectura, book, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false, backSource = 'lectura' }) {
+export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false, backSource = 'lectura' }) {
+  const { book, loading: bookLoading } = useBookBySlug(bookProp)
   const esNoficcion = book?.es_ficcion === false
   const secciones  = getSecciones(esNoficcion)
   const tableros   = esNoficcion ? TABLEROS_NOFICCION : TABLEROS_FICCION
@@ -295,28 +292,17 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book, user, onG
     onJumpConsumed?.()
   }, [jumpToItemId])
 
-  // Tour mobile — avanza las mismas fases que el desktop según la acción.
   const openSection = (k) => {
-    if (k === 'personajes' && getTourPhase() === 'wait_personajes') setTourPhase('cart_personajes')
-    if (k === 'notas' && getTourPhase() === 'wait_notas') setTourPhase('cart_notas')
     setView({ kind: 'board', key: k })
   }
-  // Lanza el popover correcto al entrar a cada vista del tour.
-  useEffect(() => {
-    const phase = getTourPhase()
-    let t
-    if (view.kind === 'portada') {
-      if (phase === 'cart_portada_1') t = setTimeout(() => runGuidedCartPortada1Mobile(), 700)
-      else if (phase === 'cart_portada_2') t = setTimeout(() => runGuidedCartPortada2Mobile(), 700)
-    } else if (view.kind === 'board') {
-      if (view.key === 'personajes' && phase === 'cart_personajes') t = setTimeout(() => runGuidedCartPersonajesMobile(), 700)
-      else if (view.key === 'notas' && phase === 'cart_notas') t = setTimeout(() => runGuidedCartNotasMobile(), 700)
-    }
-    return () => clearTimeout(t)
-  }, [view])
 
-  const goForoTour = () => { if (getTourPhase() === 'wait_foro') setTourPhase('foro_1'); onGoForo() }
-  const exploreProps = { onClose: () => setExplore(false), onGoLectura, onGoForo: goForoTour, onGoBiblioteca }
+  if (bookLoading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-warm)' }}>
+      <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3, borderColor: 'rgba(139,77,42,0.2)', borderTopColor: '#8b4d2a' }} />
+    </div>
+  )
+
+  const exploreProps = { onClose: () => setExplore(false), onGoLectura, onGoForo, onGoBiblioteca }
   const dataWithBook = { ...data, book }
 
   return (

@@ -9,8 +9,6 @@
 import React from 'react'
 import { INK, ACCENT, inmTint, BookCover } from './bibmHelpers.jsx'
 import { useResena } from '../../../hooks/useResena.js'
-import { getTourPhase } from '../../guidedTour.js'
-import { runGuidedModalMobile } from '../../tutorial.mobile.js'
 
 function Estrellas({ valor, onChange }) {
   const [hover, setHover] = React.useState(0)
@@ -57,7 +55,6 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
           {book.categoryName && (
             <span style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 11, background: c, color: '#fff', fontWeight: 700, fontSize: 11.5, padding: '4px 12px', borderRadius: 999, border: `2px solid ${INK}`, boxShadow: `1.2px 1.6px 0 ${INK}33`, textShadow: '0 1px 1px rgba(0,0,0,0.22)' }}>{book.categoryName}</span>
           )}
-          <div style={{ fontSize: 12.5, color: 'rgba(74,54,34,0.55)', fontWeight: 600, marginTop: 10 }}>{book.pages.toLocaleString()} páginas</div>
         </div>
       </div>
 
@@ -65,18 +62,10 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
         <div>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 7 }}>
             <span style={{ fontWeight: 700, fontSize: 14, color: INK }}>{pct}% <span style={{ fontSize: 12, color: 'rgba(74,54,34,0.55)', fontWeight: 600 }}>leído</span></span>
-            <span style={{ fontSize: 12, color: 'rgba(74,54,34,0.55)', fontWeight: 600 }}>pág. {Math.round(book.pages * book.progress)} / {book.pages}</span>
           </div>
           <div style={{ height: 11, borderRadius: 8, background: 'rgba(74,54,34,0.15)', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${pct}%`, borderRadius: 8, background: `linear-gradient(90deg, ${ACCENT}, ${inmTint(ACCENT, 0.2)})` }} />
           </div>
-        </div>
-      )}
-
-      {book.summary && (
-        <div>
-          <div className="bibm-lbl">Resumen</div>
-          <p style={{ fontSize: 14.5, fontWeight: 500, lineHeight: 1.6, color: 'rgba(74,54,34,0.85)' }}>{book.summary}</p>
         </div>
       )}
 
@@ -104,7 +93,7 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
       )}
 
       <div className="bibm-actions">
-        <button id="tutorial-m-abrir-libro" className="bibm-btn" onClick={() => onOpenBook(book)}>
+        <button className="bibm-btn" onClick={() => onOpenBook(book)}>
           <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.4"><path d="M12 6.04A8.97 8.97 0 006 3.75c-1.05 0-2.06.18-3 .51v14.25A9 9 0 016 18c2.3 0 4.4.87 6 2.29m0-14.25A8.97 8.97 0 0118 3.75c1.05 0 2.06.18 3 .51v14.25A9 9 0 0018 18a8.97 8.97 0 00-6 2.29m0-14.25v14.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
           {hasProgress ? 'Continuar' : 'Abrir libro'}
         </button>
@@ -121,6 +110,13 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
           </button>
         )}
       </div>
+
+      {book.summary && (
+        <div>
+          <div className="bibm-lbl">Resumen</div>
+          <p style={{ fontSize: 14.5, fontWeight: 500, lineHeight: 1.6, color: 'rgba(74,54,34,0.85)' }}>{book.summary}</p>
+        </div>
+      )}
 
       {book.leido && !esManual && (
         <div style={{ borderTop: `2px solid ${INK}1f`, paddingTop: 16 }}>
@@ -154,13 +150,6 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
 export default function BibBookSheet({ book, user, categories, onClose, onOpenBook, onGoForo, onGoNotebook, onAssignCategory, transparentBackdrop = false }) {
   const [entering, setEntering] = React.useState(true)
   React.useEffect(() => { const t = setTimeout(() => setEntering(false), 20); return () => clearTimeout(t) }, [])
-  // Tour: resalta "Abrir libro" al abrir la ficha durante la fase wait_modal
-  React.useEffect(() => {
-    if (getTourPhase() === 'wait_modal') {
-      const t = setTimeout(() => runGuidedModalMobile(), 500)
-      return () => clearTimeout(t)
-    }
-  }, [])
   React.useEffect(() => {
     const h = (e) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', h)

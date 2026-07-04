@@ -26,6 +26,7 @@ import { supabase } from '../../lib/supabase.js'
 import useLocalStorage from '../../hooks/useLocalStorage.js'
 import { useLectorData } from '../../hooks/useLectorData.js'
 import { useXrayItems } from '../../hooks/useXrayItems.js'
+import { useSesionLectura } from '../../hooks/useSesionLectura.js'
 import { paginarParrafosMobileDOM } from '../../utils/lectorPaginationMobile.js'
 import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTILIZADO (igual al de PC)
 import { INK, ACCENT } from '../lector/clay.jsx'
@@ -33,8 +34,6 @@ import SuperuserSoundsPanel from '../lector/SuperuserSoundsPanel.jsx'
 import { useAmbientPlayer } from '../../hooks/useAmbientPlayer.js'
 import MobileBookPage from './lector/MobileBookPage.jsx'
 import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
-import { getTourPhase, setTourPhase } from '../guidedTour.js'
-import { runGuidedLector1Mobile, runGuidedLector2Mobile } from '../tutorial.mobile.js'
 import '../../styles/lector.mobile.css'
 
 import { FONT_WIDTH } from '../lector/readerConstants.js'
@@ -136,6 +135,8 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
   } = useLectorData(book, setChapterIndex, setPageIndex)
 
+  useSesionLectura(userId, book, guestMode)
+
   // ── Reseña (UI) ──
   const [resenaOpen, setResenaOpen] = useState(false)
 
@@ -162,17 +163,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   useEffect(() => {
     if (startWithNotebook) { setNotebookOpen(true); onNotebookStarted?.() }
   }, [startWithNotebook])
-
-  // Tutorial mobile — al cargar el libro, si venimos de la fase wait_lector.
-  // No se dispara para invitados: el localStorage de fases es global y marcaría
-  // el tutorial como visto antes de que el usuario se registre.
-  useEffect(() => {
-    if (guestMode || loading || !book?.libro_id) return
-    if (getTourPhase() === 'wait_lector') {
-      const t = setTimeout(() => runGuidedLector1Mobile(), 900)
-      return () => clearTimeout(t)
-    }
-  }, [guestMode, loading, book?.libro_id])
 
   // cargar capítulo actual cuando cambia
   useEffect(() => {
@@ -445,7 +435,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     // fin del capítulo → abrir cuaderno antes de avanzar (igual que el escritorio)
     if (chapterIndex < capitulos.length - 1) {
       if (guestMode) { setChapterIndex(chapterIndex + 1); setPageIndex(0); return }
-      if (getTourPhase() === 'wait_chapter') setTourPhase('notebook_1')
       setPendingChapter(chapterIndex + 1); setNotebookOpen(true)
       return
     }
@@ -460,9 +449,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
   async function handleCloseNotebook() {
     setNotebookOpen(false)
-    if (!guestMode && getTourPhase() === 'lector_2') {
-      setTimeout(() => runGuidedLector2Mobile(), 500)
-    }
     if (pendingChapter !== null) {
       await persistChapterAdvance(pendingChapter)
       setGoToLastPage(false)
@@ -539,7 +525,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
             Crear cuenta
           </button>
         ) : (
-          <button id="tutorial-m-explorar" className="lm-explore" onClick={() => setSheet('nav')} title="Explorar"><Compass /></button>
+          <button className="lm-explore" onClick={() => setSheet('nav')} title="Explorar"><Compass /></button>
         )}
         {isLeido && book?.libro_id && (
           <button className="lm-explore lm-resena-btn" onClick={() => { setSheetRaw(null); setCatOpen(false); setResenaOpen(true) }} title="Escribir reseña" aria-label="Escribir reseña"><IcStar /></button>
@@ -551,12 +537,12 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* Controles */}
       <div className="lm-controls">
-        <button id="tutorial-m-cap" className="lm-ctrl cap" onClick={() => setSheet('chapters')}>
+        <button className="lm-ctrl cap" onClick={() => setSheet('chapters')}>
           <span className="lm-ctrl-label">Cap. {currentChapter?.numero ?? chapterIndex + 1}{currentChapter?.titulo ? ` · ${currentChapter.titulo}` : ''}</span>
           <span className="chev">▼</span>
         </button>
         <button className="lm-ctrl xray" onClick={() => setSheet('xray')} title="X-ray">X-ray</button>
-        <button id="tutorial-m-typo" className="lm-ctrl typo" onClick={() => setSheet('typo')} title="Texto">
+        <button className="lm-ctrl typo" onClick={() => setSheet('typo')} title="Texto">
           <span className="a-sm">A</span><span className="a-lg">A</span>
         </button>
       </div>
@@ -584,7 +570,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         {/* Mascota (gato) + bandeja horizontal de herramientas */}
         {!loading && !error && book?.libro_id && (
           <div className="lm-cat-dock">
-            <button id="tutorial-m-dock" className="lm-cat-btn" onClick={() => setCatOpen(o => !o)} title="Herramientas" aria-label="Herramientas">
+            <button className="lm-cat-btn" onClick={() => setCatOpen(o => !o)} title="Herramientas" aria-label="Herramientas">
               {/* La mascota negra de Inmersia. Ruta servida desde /public. */}
               <img className="lm-cat-img" src="/assets/lector/cat-mascot.png" alt="Mascota de Inmersia" onLoad={measureGeom} />
             </button>
@@ -635,7 +621,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         ? <WhiteNoiseSheet onClose={() => setSheet(null)} />
         : <AudioSheet ambient={currentAmbient} playing={ambientPlaying} volume={ambientVol} onToggle={toggleAmbient} onVolume={setVol} onClose={() => setSheet(null)} />
       )}
-      {sheet==='nav' && <NavSheet onGoForo={onGoForo} onGoCartelera={() => { if (!guestMode && getTourPhase() === 'wait_cartelera') setTourPhase('cart_portada_1'); onGoCartelera() }} onGoBiblioteca={onGoBack} onClose={()=>setSheet(null)} />}
+      {sheet==='nav' && <NavSheet onGoForo={onGoForo} onGoCartelera={onGoCartelera} onGoBiblioteca={onGoBack} onClose={()=>setSheet(null)} />}
 
       {/* Overlay imagen */}
       {imageOpen && <ImageOverlay images={visibleImages} chapter={currentChapter} chapterIndex={chapterIndex} onClose={()=>setImageOpen(false)} autoImages={autoImages} onToggleAutoImages={() => setAutoImages(v => !v)} />}

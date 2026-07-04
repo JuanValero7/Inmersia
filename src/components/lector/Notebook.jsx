@@ -2,8 +2,6 @@
 import { useState, useEffect, memo } from 'react'
 import { supabase } from '../../lib/supabase.js'
 import { theme, ClayButton } from './clay.jsx'
-import { getTourPhase } from '../guidedTour.js'
-import { runGuidedNotebook1 } from '../tutorial.js'
 
 // Tipos (arriba, horizontal)
 const TYPES = [
@@ -32,10 +30,6 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
     if (!isOpen) return
     setSelCap(capituloNum)
     if (userId && libroId) loadIndex()
-    if (getTourPhase() === 'notebook_1') {
-      const t = setTimeout(() => runGuidedNotebook1(), 600)
-      return () => clearTimeout(t)
-    }
   }, [isOpen, libroId, capituloNum, userId])
 
   async function loadIndex() {

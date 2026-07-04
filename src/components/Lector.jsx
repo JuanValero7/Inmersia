@@ -7,11 +7,10 @@ import { supabase } from '../lib/supabase.js'
 import useLocalStorage from '../hooks/useLocalStorage.js'
 import { useLectorData } from '../hooks/useLectorData.js'
 import { useXrayItems } from '../hooks/useXrayItems.js'
+import { useSesionLectura } from '../hooks/useSesionLectura.js'
 import '../styles/lector.css'
 
 import { paginarParrafosDesktopDOM } from '../utils/lectorPagination.js'
-import { runGuidedLector1, runGuidedLector2 } from './tutorial.js'
-import { getTourPhase, setTourPhase } from './guidedTour.js'
 import { BookReader }      from './lector/BookReader.jsx'
 import { PolaroidStack }   from './lector/PolaroidStack.jsx'
 import { NotebookIcon } from './lector/RecorderPlayer.jsx'
@@ -83,6 +82,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
   } = useLectorData(book, setChapterIndex, setPageIndex)
 
+  useSesionLectura(userId, book, guestMode)
+
   useEffect(() => {
     if (startWithNotebook) {
       setNotebookOpen(true)
@@ -103,19 +104,6 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
   const [ledColor, setLedColor] = useLocalStorage('inm_lector_ledColor', 'none')
   const pal = getReaderPalette(readingTheme)
-
-  // Tutorial — se lanza la primera vez que el libro carga (después de loading).
-  // No se dispara para invitados: el localStorage de fases es global y marcaría
-  // el tutorial como visto antes de que el usuario se registre.
-  useEffect(() => {
-    if (guestMode || loading || !book?.libro_id) return
-    const phase = getTourPhase()
-    let t
-    if (phase === 'wait_lector') {
-      t = setTimeout(() => runGuidedLector1(), 900)
-    }
-    return () => clearTimeout(t)
-  }, [guestMode, loading, book?.libro_id])
 
   const [pendingSelection,  setPendingSelection]  = useState(null)
   const [adminPanelOpen,    setAdminPanelOpen]    = useState(false)
@@ -303,7 +291,6 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       return
     }
     if (guestMode) { setChapterIndex(next); setPageIndex(0); return }
-    if (getTourPhase() === 'wait_chapter') setTourPhase('notebook_1')
     setPendingChapter(next); setNotebookOpen(true)
   }, [chapterIndex, capitulos.length, guestMode])
 
@@ -374,9 +361,6 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
   async function handleCloseNotebook() {
     setNotebookOpen(false)
-    if (!guestMode && getTourPhase() === 'lector_2') {
-      setTimeout(() => runGuidedLector2(), 500)
-    }
     if (pendingChapter !== null) {
       await persistChapterAdvance(pendingChapter)
       setGoToLastPage(false)
@@ -428,7 +412,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
                     <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Foro</span>
                   </button>
-                  <button type="button" onClick={() => { if (getTourPhase() === 'wait_cartelera') setTourPhase('cart_portada_1'); setExplorarOpen(false); onGoCartelera() }}
+                  <button type="button" onClick={() => { setExplorarOpen(false); onGoCartelera() }}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                     <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Investigación</span>
@@ -440,7 +424,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   </button>
                 </div>
               )}
-              <button id="tutorial-explorar-header" type="button" onClick={() => setExplorarOpen(o => !o)}
+              <button type="button" onClick={() => setExplorarOpen(o => !o)}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 999, padding: '9px 16px', color: theme.ink, fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: `1.5px 2px 0 rgba(74,54,34,0.20)` }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><path d="M2 12h20"/>
@@ -516,7 +500,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       {/* BOTTOM BAR */}
       {!loading && !error && book?.libro_id && !guestMode && (
         <div style={{ position: 'relative', zIndex: 20, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: '8px 26px 18px' }}>
-          <button id="tutorial-cuaderno-btn" type="button" onClick={() => setNotebookOpen(true)}
+          <button type="button" onClick={() => setNotebookOpen(true)}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, background: 'transparent', border: 'none', cursor: 'pointer' }}>
             <NotebookIcon />
             <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11.5, color: theme.textColor }}>Cuaderno</span>

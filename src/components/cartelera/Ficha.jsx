@@ -7,7 +7,6 @@ import clsx from 'clsx'
 import { getTags, getCap, shade, DOT_AMT, initial, deltaDesc } from './carteleraHelpers.js'
 import Signpost from './Signpost.jsx'
 import ExplorarPopup from './ExplorarPopup.jsx'
-import { getTourPhase, setTourPhase } from '../guidedTour.js'
 
 const BOOK_W = 1180, BOOK_H = 760
 

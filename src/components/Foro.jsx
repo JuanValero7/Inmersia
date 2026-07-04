@@ -4,11 +4,11 @@ import clsx from 'clsx'
 import ForoComentarios from './foro/ForoComentarios.jsx'
 import ForoChat from './foro/ForoChat.jsx'
 import '../styles/foro.css'
-import { runGuidedForo1 } from './tutorial.js'
-import { getTourPhase, setTourPhase } from './guidedTour.js'
 import { useForoData } from '../hooks/useForoData.js'
+import { useBookBySlug } from '../hooks/useBookBySlug.js'
 
-export default function VistaForo({ book, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera }) {
+export default function VistaForo({ book: bookProp, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera }) {
+  const { book, loading: bookLoading } = useBookBySlug(bookProp)
   // Lógica de datos compartida con ForoMobile (ver src/hooks/useForoData.js)
   const {
     foro, miNombre, loading,
@@ -27,11 +27,11 @@ export default function VistaForo({ book, user, onGoBack, onGoLectura, onGoBibli
     return () => document.removeEventListener('mousedown', h)
   }, [navOpen])
 
-  useEffect(() => {
-    if (loading) return
-    const t = setTimeout(() => { if (getTourPhase() === 'foro_1') runGuidedForo1() }, 700)
-    return () => clearTimeout(t)
-  }, [loading])
+  if (bookLoading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-warm)' }}>
+      <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3, borderColor: 'rgba(139,77,42,0.2)', borderTopColor: '#8b4d2a' }} />
+    </div>
+  )
 
   return (
     <div className="foro-root">
@@ -59,7 +59,7 @@ export default function VistaForo({ book, user, onGoBack, onGoLectura, onGoBibli
                   </button>
                 )}
                 {onGoBiblioteca && (
-                  <button type="button" onClick={() => { if (getTourPhase() === 'wait_bib_2') setTourPhase('bib_2'); setNavOpen(false); onGoBiblioteca() }}
+                  <button type="button" onClick={() => { setNavOpen(false); onGoBiblioteca() }}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Biblioteca</span>
@@ -84,7 +84,7 @@ export default function VistaForo({ book, user, onGoBack, onGoLectura, onGoBibli
       </header>
 
       {/* ── Tabs ── */}
-      <div id="tutorial-foro-tabs" className="foro-tabs">
+      <div className="foro-tabs">
         <button
           type="button"
           className={clsx('foro-tab', activeTab === 'comentarios' && 'active')}

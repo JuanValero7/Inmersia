@@ -4,8 +4,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import clsx from 'clsx'
 import { SECCIONES, shade as tint } from './carteleraHelpers.js'
-import { getTourPhase } from '../guidedTour.js'
-import { runGuidedCartPortada1, runGuidedCartPortada2 } from '../tutorial.js'
 import ExplorarPopup from './ExplorarPopup.jsx'
 
 const BOLT = `polygon(
@@ -59,17 +57,6 @@ export default function Portada({ subtitle, onOpen, onGoBack, onGoForo, onGoBibl
   const SECTIONS = useMemo(() => secciones.map(s => ({ ...s, initial: s.label[0] })), [secciones])
   const [hover, setHover] = useState(null)
 
-  useEffect(() => {
-    const phase = getTourPhase()
-    let t
-    if (phase === 'cart_portada_1') {
-      t = setTimeout(() => runGuidedCartPortada1(), 700)
-    } else if (phase === 'cart_portada_2') {
-      t = setTimeout(() => runGuidedCartPortada2(), 700)
-    }
-    return () => clearTimeout(t)
-  }, [])
-
   return (
     <div className="cart-scene cart-portada">
       <div className="topbar" style={{ zIndex: 61 }}>
@@ -83,7 +70,7 @@ export default function Portada({ subtitle, onOpen, onGoBack, onGoForo, onGoBibl
         </div>
       </div>
       <div className="board-wrap">
-        <div id="tutorial-portada-paneles" className="cart-portada-board" onMouseLeave={() => setHover(null)}>
+        <div className="cart-portada-board" onMouseLeave={() => setHover(null)}>
           {SECTIONS.map((sec, i) => (
             <Panel key={sec.key} sec={sec} idx={i}
               last={i === SECTIONS.length - 1}

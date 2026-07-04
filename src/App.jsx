@@ -5,7 +5,6 @@ import useIsMobile from './hooks/useIsMobile.js'
 import { useSuperuser } from './hooks/useSuperuser.js'
 import Auth from './components/Auth.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
-import TourResume from './components/TourResume.jsx'
 import { LectorRoute } from './components/LectorRoute.jsx'
 
 const VistaBiblioteca       = lazy(() => import('./components/Biblioteca.jsx'))
@@ -22,6 +21,8 @@ const CarteleraMobile       = lazy(() => import('./components/mobile/CarteleraMo
 const VistaLecturaMobile    = lazy(() => import('./components/mobile/LectorMobile.jsx'))
 const Landing               = lazy(() => import('./components/Landing.jsx'))
 const LandingMobile         = lazy(() => import('./components/mobile/LandingMobile.jsx'))
+const VistaAlbum            = lazy(() => import('./components/Album.jsx'))
+const AlbumMobile           = lazy(() => import('./components/mobile/AlbumMobile.jsx'))
 
 const Fallback = (
   <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,background:'var(--bg-warm)'}}>
@@ -81,6 +82,7 @@ export default function App() {
   const Lectura     = lectorEsMobile ? VistaLecturaMobile : VistaLectura
   const LandingView = isMobile ? LandingMobile         : Landing
   const Tienda      = isMobile ? VistaTiendaMobile     : VistaTienda
+  const Album       = isMobile ? AlbumMobile           : VistaAlbum
 
   const loadLastBooks = useCallback(async (u) => {
     if (!u) return
@@ -88,7 +90,7 @@ export default function App() {
       .from('preferencias_usuario')
       .select('ultimos_libros')
       .eq('user_id', u.id)
-      .single()
+      .maybeSingle()
     if (data?.ultimos_libros?.length) {
       setLastOpenedBookIds(data.ultimos_libros)
     }
@@ -211,12 +213,21 @@ export default function App() {
                 onOpenBook={handleOpenBook}
                 onGoTienda={() => navigate('/tienda')}
                 onGoPerfil={() => navigate('/perfil')}
+                onGoAlbum={() => navigate('/album')}
                 onGoForo={(book) => {
                   setCurrentBook(book)
                   setForoSource('biblioteca')
                   navigate(`/foro/${book.slug || book.id}`)
                 }}
                 onGoNotebook={handleGoNotebook}
+              />
+            } />
+
+            <Route path="/album" element={
+              <Album
+                user={user}
+                onOpenBook={handleOpenBook}
+                onGoBack={() => navigate('/biblioteca')}
               />
             } />
 
@@ -228,54 +239,59 @@ export default function App() {
               />
             } />
 
-            {/* Cartelera y Foro dependen de currentBook en esta fase.
-                Si se accede directamente sin book en estado, redirige a biblioteca. */}
-            <Route path="/cartelera/:slug" element={
-              currentBook
-                ? <Cartelera
-                    onGoBack={() => {
-                      const dest = carteleraSource === 'foro'
-                        ? `/foro/${currentBook.slug || currentBook.id}`
-                        : `/libro/${currentBook.slug || currentBook.id}`
-                      navigate(dest)
-                    }}
-                    onGoLectura={() => navigate(`/libro/${currentBook.slug || currentBook.id}`)}
-                    backSource={carteleraSource}
-                    book={currentBook}
-                    user={user}
-                    onGoForo={() => {
-                      setForoSource('cartelera')
-                      navigate(`/foro/${currentBook.slug || currentBook.id}`)
-                    }}
-                    onGoBiblioteca={() => navigate('/biblioteca')}
-                    jumpToItemId={cartelaJumpId}
-                    onJumpConsumed={() => setCartelaJumpId(null)}
-                    isSuperuser={isSuperuser}
-                  />
-                : <Navigate to="/biblioteca" replace />
+            {/* Investigación y Foro cargan el libro por slug; currentBook es caché opcional. */}
+            <Route path="/investigacion/:slug" element={
+              <Cartelera
+                onGoBack={() => {
+                  if (!currentBook) { navigate('/biblioteca'); return }
+                  const dest = carteleraSource === 'foro'
+                    ? `/foro/${currentBook.slug || currentBook.id}`
+                    : `/libro/${currentBook.slug || currentBook.id}`
+                  navigate(dest)
+                }}
+                onGoLectura={() => {
+                  if (!currentBook) { navigate('/biblioteca'); return }
+                  navigate(`/libro/${currentBook.slug || currentBook.id}`)
+                }}
+                backSource={carteleraSource}
+                book={currentBook}
+                user={user}
+                onGoForo={() => {
+                  setForoSource('cartelera')
+                  const slug = currentBook?.slug || location.pathname.split('/').at(-1)
+                  navigate(`/foro/${slug}`)
+                }}
+                onGoBiblioteca={() => navigate('/biblioteca')}
+                jumpToItemId={cartelaJumpId}
+                onJumpConsumed={() => setCartelaJumpId(null)}
+                isSuperuser={isSuperuser}
+              />
             } />
 
             <Route path="/foro/:slug" element={
-              currentBook
-                ? <Foro
-                    book={currentBook}
-                    user={user}
-                    onGoBack={() => {
-                      const dest = foroSource === 'cartelera'
-                        ? `/cartelera/${currentBook.slug || currentBook.id}`
-                        : foroSource === 'lectura'
-                          ? `/libro/${currentBook.slug || currentBook.id}`
-                          : '/biblioteca'
-                      navigate(dest)
-                    }}
-                    onGoLectura={() => navigate(`/libro/${currentBook.slug || currentBook.id}`)}
-                    onGoBiblioteca={() => navigate('/biblioteca')}
-                    onGoCartelera={() => {
-                      setCarteleraSource('foro')
-                      navigate(`/cartelera/${currentBook.slug || currentBook.id}`)
-                    }}
-                  />
-                : <Navigate to="/biblioteca" replace />
+              <Foro
+                book={currentBook}
+                user={user}
+                onGoBack={() => {
+                  const slug = currentBook?.slug || location.pathname.split('/').at(-1)
+                  const dest = foroSource === 'cartelera'
+                    ? `/investigacion/${slug}`
+                    : foroSource === 'lectura'
+                      ? `/libro/${slug}`
+                      : '/biblioteca'
+                  navigate(dest)
+                }}
+                onGoLectura={() => {
+                  const slug = currentBook?.slug || location.pathname.split('/').at(-1)
+                  navigate(`/libro/${slug}`)
+                }}
+                onGoBiblioteca={() => navigate('/biblioteca')}
+                onGoCartelera={() => {
+                  setCarteleraSource('foro')
+                  const slug = currentBook?.slug || location.pathname.split('/').at(-1)
+                  navigate(`/investigacion/${slug}`)
+                }}
+              />
             } />
 
           </Route>
@@ -285,7 +301,6 @@ export default function App() {
 
         </Routes>
       </Suspense>
-      <TourResume />
     </>
   )
 }

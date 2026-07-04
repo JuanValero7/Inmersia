@@ -3,8 +3,6 @@ import { supabase } from '../lib/supabase.js'
 import CalleEscena from './tienda/CalleEscena.jsx'
 import CatalogoInterior from './tienda/CatalogoInterior.jsx'
 import '../styles/tienda.css'
-import { runGuidedTiendaCalle, runGuidedTiendaInterior } from './tutorial.js'
-import { getTourPhase, setTourPhase } from './guidedTour.js'
 
 // =============================================================
 // VistaTienda · Tienda Inmersia (estilo "Calle con imágenes")
@@ -32,7 +30,7 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
   const tieneLibro = id => userLibros.some(l => l.libro_id === id)
   const libroLeido = id => userLibros.some(l => l.libro_id === id && l.leido)
 
-  const COLS_BASE = 'id, slug, titulo, autor, paginas, descripcion, color, portada_url, anio, categorias, moods, es_ficcion'
+  const COLS_BASE = 'id, slug, titulo, autor, paginas, descripcion, color, portada_url, anio, categorias, moods, es_ficcion, visible'
 
   const reqIdRef = useRef(0)
   useEffect(() => () => { reqIdRef.current++ }, [])
@@ -45,10 +43,11 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
     let catRes = await supabase
       .from('libros')
       .select(`${COLS_BASE}, created_at`)
+      .eq('visible', true)
       .order('created_at', { ascending: false })
     if (catRes.error) {
       tieneFecha = false
-      catRes = await supabase.from('libros').select(COLS_BASE)
+      catRes = await supabase.from('libros').select(COLS_BASE).eq('visible', true)
     }
     if (myId !== reqIdRef.current) return
 
@@ -66,19 +65,6 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
   }, [user?.id])
 
   useEffect(() => { fetchTienda() }, [fetchTienda])
-
-  useEffect(() => {
-    const t = setTimeout(() => { if (getTourPhase() === 'tienda_calle') runGuidedTiendaCalle() }, 700)
-    return () => clearTimeout(t)
-  }, [])
-
-  useEffect(() => {
-    if (subView !== 'catalogo') return
-    if (getTourPhase() === 'tienda_interior') {
-      const t = setTimeout(() => runGuidedTiendaInterior(), 700)
-      return () => clearTimeout(t)
-    }
-  }, [subView])
 
   async function comprar(libro) {
     if (!user?.id) return
@@ -106,7 +92,6 @@ export default function VistaTienda({ onGoBack, user, onOpenBook, isSuperuser = 
 
   // ── Fachada (calle) ─────────────────────────────────────────────
   const handleEntrar = () => {
-    if (getTourPhase() === 'tienda_calle') setTourPhase('tienda_interior')
     setSubView('catalogo')
   }
 

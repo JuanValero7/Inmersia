@@ -58,11 +58,6 @@ input.inm-vol::-moz-range-thumb {
    En pantallas angostas los botones reducen padding y el header
    envuelve el título antes de que los botones salgan de pantalla. */
 @media (max-width: 860px) {
-  /* Botones de la barra de ajustes (capítulo, A/A, sonido, etc.) */
-  #tutorial-chapter-btn,
-  #tutorial-typography-btn {
-    padding: 4px 9px;
-  }
 }
 
 @media (max-width: 720px) {

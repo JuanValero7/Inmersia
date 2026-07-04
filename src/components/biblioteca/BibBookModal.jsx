@@ -1,7 +1,5 @@
 import React from 'react'
 import { inmTint } from './clay/helpers.jsx'
-import { getTourPhase } from '../guidedTour.js'
-import { runGuidedModal } from '../tutorial.js'
 import { useResena } from '../../hooks/useResena.js'
 
 // =============================================================
@@ -35,13 +33,6 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
 
   // Reseña (lógica compartida con BibBookSheet, ver src/hooks/useResena.js)
   const { miResena, form, setForm, modoForm, setModoForm, enviando, submitResena } = useResena(book, user, esManual);
-
-  React.useEffect(() => {
-    if (getTourPhase() === 'wait_modal') {
-      const t = setTimeout(() => runGuidedModal(), 600)
-      return () => clearTimeout(t)
-    }
-  }, [])
 
   React.useEffect(() => {
     const h = (e) => { if (e.key === 'Escape') onClose(); };
@@ -101,7 +92,7 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button id="tutorial-abrir-libro-btn" style={{ ...primary, justifyContent: 'center', padding: '14px 24px', fontSize: 16.5 }} onClick={() => onOpenBook(book)}>
+            <button style={{ ...primary, justifyContent: 'center', padding: '14px 24px', fontSize: 16.5 }} onClick={() => onOpenBook(book)}>
               <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
               Abrir libro
             </button>
