@@ -57,7 +57,7 @@ export default [
       // React rules
       ...react.configs.recommended.rules,
       "react/react-in-jsx-scope": "off",
-      "react/prop-types": "warn",
+      "react/prop-types": "off", // sin PropTypes en el proyecto; si se quiere tipado, mejor migrar a TypeScript
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
       "react/no-danger": "error",

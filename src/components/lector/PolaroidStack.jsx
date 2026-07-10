@@ -6,7 +6,7 @@ import { theme } from './clay.jsx'
 // Polaroids: SIEMPRE detrás del libro (el posicionamiento lo da el padre).
 // Brillan cuando hay fotos reveladas en la página actual; al clickear abren
 // el visor superpuesto con miniaturas. Recibe `images` (media reales).
-const PolaroidStack = memo(function PolaroidStack({ images }) {
+const PolaroidStack = memo(function PolaroidStack({ images, esNoficcion = false }) {
   const [open, setOpen] = useState(false)
   const [index, setIndex] = useState(0)
   const [hasOpened, setHasOpened] = useState(false)
@@ -43,34 +43,63 @@ const PolaroidStack = memo(function PolaroidStack({ images }) {
       ))}
 
       {open && createPortal((
-        <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 1400, background: 'rgba(20,12,4,0.62)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 20, padding: 22, width: 'min(460px,92vw)', boxShadow: `4px 6px 0 ${theme.ink}30, 0 30px 70px rgba(0,0,0,0.6)`, position: 'relative' }}>
-            <button onClick={() => setOpen(false)} style={{ position: 'absolute', top: 12, right: 14, background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: theme.navText, lineHeight: 1 }}>✕</button>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 18, color: theme.navText, marginBottom: 14 }}>Escenas del capítulo</div>
-            <div style={{ background: '#f7f4ec', padding: '14px 14px 18px', border: `2px solid ${theme.ink}`, borderRadius: 5, width: 'fit-content', margin: '0 auto', boxShadow: `3px 4px 0 ${theme.ink}26` }}>
-              <div style={{ width: 330, height: 244, border: `1.5px solid ${theme.ink}88`, overflow: 'hidden', background: '#e7dcc2' }}>
-                <img src={cur?.url} alt={cur?.titulo || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 1400, background: 'rgba(20,12,4,0.80)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {esNoficcion ? (
+            <div onClick={e => e.stopPropagation()} style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 16, padding: 18, width: 'min(900px,94vw)', boxShadow: `4px 6px 0 ${theme.ink}30, 0 30px 70px rgba(0,0,0,0.7)`, position: 'relative' }}>
+              <button onClick={() => setOpen(false)} style={{ position: 'absolute', top: 12, right: 14, background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: theme.navText, lineHeight: 1, zIndex: 2 }}>✕</button>
+              <div style={{ background: '#120d08', borderRadius: 8, overflow: 'hidden', border: `1.5px solid ${theme.ink}44` }}>
+                <img src={cur?.url} alt={cur?.titulo || ''} style={{ width: '100%', maxHeight: '72vh', objectFit: 'contain', display: 'block' }} />
               </div>
-              <div style={{ textAlign: 'center', marginTop: 10, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, color: theme.ink }}>{cur?.titulo || cur?.slug}</div>
+              {(cur?.titulo || cur?.slug) && (
+                <div style={{ textAlign: 'center', marginTop: 14, fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 17, color: theme.navText, lineHeight: 1.3 }}>{cur.titulo || cur.slug}</div>
+              )}
+              {images.length > 1 && (
+                <>
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 14, flexWrap: 'wrap' }}>
+                    {images.map((img, i) => (
+                      <button key={img.media_id ?? i} onClick={() => setIndex(i)} title={img.titulo || ''}
+                        style={{ width: 54, height: 42, border: `2px solid ${i === index ? theme.accent : `${theme.ink}55`}`, borderRadius: 5, overflow: 'hidden', cursor: 'pointer', opacity: i === index ? 1 : 0.6, padding: 0, background: '#120d08' }}>
+                        <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                    <ClayBtn onClick={() => setIndex(i => (i - 1 + images.length) % images.length)}>← Anterior</ClayBtn>
+                    <span style={{ fontFamily: "'Baloo 2',sans-serif", fontWeight: 700, fontSize: 12, color: theme.subText }}>{index + 1} / {images.length}</span>
+                    <ClayBtn onClick={() => setIndex(i => (i + 1) % images.length)}>Siguiente →</ClayBtn>
+                  </div>
+                </>
+              )}
             </div>
-            {images.length > 1 && (
-              <>
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16, flexWrap: 'wrap' }}>
-                  {images.map((img, i) => (
-                    <button key={img.media_id ?? i} onClick={() => setIndex(i)} title={img.titulo || ''}
-                      style={{ width: 54, height: 42, border: `2px solid ${i === index ? theme.accent : `${theme.ink}55`}`, borderRadius: 5, overflow: 'hidden', cursor: 'pointer', opacity: i === index ? 1 : 0.6, padding: 0, background: '#e7dcc2', boxShadow: i === index ? `1.2px 1.6px 0 ${theme.ink}33` : 'none' }}>
-                      <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                    </button>
-                  ))}
+          ) : (
+            <div onClick={e => e.stopPropagation()} style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 20, padding: 22, width: 'min(460px,92vw)', boxShadow: `4px 6px 0 ${theme.ink}30, 0 30px 70px rgba(0,0,0,0.6)`, position: 'relative' }}>
+              <button onClick={() => setOpen(false)} style={{ position: 'absolute', top: 12, right: 14, background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: theme.navText, lineHeight: 1 }}>✕</button>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 18, color: theme.navText, marginBottom: 14 }}>Escenas del capítulo</div>
+              <div style={{ background: '#f7f4ec', padding: '14px 14px 18px', border: `2px solid ${theme.ink}`, borderRadius: 5, width: 'fit-content', margin: '0 auto', boxShadow: `3px 4px 0 ${theme.ink}26` }}>
+                <div style={{ width: 330, height: 244, border: `1.5px solid ${theme.ink}88`, overflow: 'hidden', background: '#e7dcc2' }}>
+                  <img src={cur?.url} alt={cur?.titulo || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
-                  <ClayBtn onClick={() => setIndex(i => (i - 1 + images.length) % images.length)}>← Anterior</ClayBtn>
-                  <span style={{ fontFamily: "'Baloo 2',sans-serif", fontWeight: 700, fontSize: 12, color: theme.subText }}>{index + 1} / {images.length}</span>
-                  <ClayBtn onClick={() => setIndex(i => (i + 1) % images.length)}>Siguiente →</ClayBtn>
-                </div>
-              </>
-            )}
-          </div>
+                <div style={{ textAlign: 'center', marginTop: 10, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, color: theme.ink }}>{cur?.titulo || cur?.slug}</div>
+              </div>
+              {images.length > 1 && (
+                <>
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16, flexWrap: 'wrap' }}>
+                    {images.map((img, i) => (
+                      <button key={img.media_id ?? i} onClick={() => setIndex(i)} title={img.titulo || ''}
+                        style={{ width: 54, height: 42, border: `2px solid ${i === index ? theme.accent : `${theme.ink}55`}`, borderRadius: 5, overflow: 'hidden', cursor: 'pointer', opacity: i === index ? 1 : 0.6, padding: 0, background: '#e7dcc2', boxShadow: i === index ? `1.2px 1.6px 0 ${theme.ink}33` : 'none' }}>
+                        <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
+                    <ClayBtn onClick={() => setIndex(i => (i - 1 + images.length) % images.length)}>← Anterior</ClayBtn>
+                    <span style={{ fontFamily: "'Baloo 2',sans-serif", fontWeight: 700, fontSize: 12, color: theme.subText }}>{index + 1} / {images.length}</span>
+                    <ClayBtn onClick={() => setIndex(i => (i + 1) % images.length)}>Siguiente →</ClayBtn>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       ), document.body)}
     </div>

@@ -7,7 +7,7 @@ import '../styles/foro.css'
 import { useForoData } from '../hooks/useForoData.js'
 import { useBookBySlug } from '../hooks/useBookBySlug.js'
 
-export default function VistaForo({ book: bookProp, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera }) {
+export default function VistaForo({ book: bookProp, user, onGoLectura, onGoBiblioteca, onGoCartelera }) {
   const { book, loading: bookLoading } = useBookBySlug(bookProp)
   // Lógica de datos compartida con ForoMobile (ver src/hooks/useForoData.js)
   const {

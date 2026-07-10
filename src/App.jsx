@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, Outlet, useLocation } from 'react
 import { supabase } from './lib/supabase.js'
 import useIsMobile from './hooks/useIsMobile.js'
 import { useSuperuser } from './hooks/useSuperuser.js'
+import { useGatoColor } from './hooks/useGatoColor.js'
 import Auth from './components/Auth.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
 import { LectorRoute } from './components/LectorRoute.jsx'
@@ -65,6 +66,7 @@ export default function App() {
   const location    = useLocation()
   const isMobile    = useIsMobile()
   const isSuperuser = useSuperuser(user ?? null)
+  const { gatoColor, updateGatoColor } = useGatoColor(user)
 
   // Bloquear el tipo de lector mientras el usuario está leyendo: si isMobile
   // cambia en mitad de la sesión (p. ej. al rotar un teléfono grande que cruza
@@ -124,6 +126,7 @@ export default function App() {
   }
 
   function pushBookId(bookId, currentUser) {
+    if (bookId === 'manual') return // no es un libro real: no tiene UUID y rompería el array ultimos_libros
     setLastOpenedBookIds(prev => {
       const next = [bookId, ...prev.filter(id => id !== bookId)].slice(0, 3)
       if (currentUser) {
@@ -182,6 +185,7 @@ export default function App() {
             <Tienda
               onGoBack={() => navigate(user ? '/biblioteca' : '/')}
               user={user}
+              gatoColor={gatoColor}
               onOpenBook={handleOpenBook}
               isSuperuser={isSuperuser}
             />
@@ -208,7 +212,9 @@ export default function App() {
             <Route path="/biblioteca" element={
               <Biblioteca
                 user={user}
+                gatoColor={gatoColor}
                 lastOpenedBookIds={lastOpenedBookIds}
+                isSuperuser={isSuperuser}
                 onSignOut={handleSignOut}
                 onOpenBook={handleOpenBook}
                 onGoTienda={() => navigate('/tienda')}
@@ -234,6 +240,8 @@ export default function App() {
             <Route path="/perfil" element={
               <Perfil
                 user={user}
+                gatoColor={gatoColor}
+                onChangeGatoColor={updateGatoColor}
                 onGoBack={() => navigate('/biblioteca')}
                 onSignOut={handleSignOut}
               />
@@ -253,9 +261,9 @@ export default function App() {
                   if (!currentBook) { navigate('/biblioteca'); return }
                   navigate(`/libro/${currentBook.slug || currentBook.id}`)
                 }}
-                backSource={carteleraSource}
                 book={currentBook}
                 user={user}
+                gatoColor={gatoColor}
                 onGoForo={() => {
                   setForoSource('cartelera')
                   const slug = currentBook?.slug || location.pathname.split('/').at(-1)

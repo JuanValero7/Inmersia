@@ -492,7 +492,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
         {/* polaroids: siempre detrás del libro */}
         {!loading && !error && book?.libro_id && (
           <div style={{ position: 'absolute', top: '50%', left: `calc(50% + ${halfBook}px)`, transform: 'translateY(-50%) translateX(-110px)', zIndex: 1 }}>
-            <PolaroidStack images={visibleImages} />
+            <PolaroidStack images={visibleImages} esNoficcion={esNoficcion} />
           </div>
         )}
       </div>

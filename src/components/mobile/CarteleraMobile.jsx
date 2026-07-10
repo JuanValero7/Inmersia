@@ -101,13 +101,13 @@ function Header({ book, onBack, onExplore }) {
 }
 
 // ── Gato-dock: salta a las otras 4 secciones ──
-function CatDock({ currentKey, onJump, secciones = SECCIONES }) {
+function CatDock({ currentKey, onJump, secciones = SECCIONES, gatoColor = 'negro' }) {
   const [open, setOpen] = useState(false)
   const others = secciones.filter(s => s.key !== currentKey).map(s => seccionMeta(s.key))
   return (
     <div className="cm-cat-dock">
       <button type="button" className="cm-cat-btn" onClick={() => setOpen(o => !o)} aria-label="Otras categorías">
-        <img className="cm-cat-img" src="/assets/cartelera/cat-sit.png" alt="Gato" />
+        <img className="cm-cat-img" src={`/assets/cartelera/gato-${gatoColor}-2.webp`} alt="Gato" />
       </button>
       {open && (
         <div className="cm-cat-tray">
@@ -191,11 +191,10 @@ function Portada({ book, onOpen, secciones = SECCIONES }) {
 }
 
 // ── Vista de sección: tablero (Mural) / lista / ficha ──
-function SectionView({ sectionKey, data, onGoBack, backSource, onJump, onExplore, initialItemId, secciones = SECCIONES, tableros = TABLEROS_FICCION, esNoficcion = false }) {
+function SectionView({ sectionKey, data, onGoBack, onJump, onExplore, initialItemId, secciones = SECCIONES, tableros = TABLEROS_FICCION, esNoficcion = false, gatoColor = 'negro' }) {
   const meta = seccionMeta(sectionKey)
   const [tab, setTab] = useState(sectionKey === 'notas' ? 'mural' : 'lista')      // mural | lista | ficha
   const [selId, setSelId] = useState(null)
-  const [fichaFromXray, setFichaFromXray] = useState(false)
   const [boardRef, scale] = useFitScale()
   const isNotas = sectionKey === 'notas'
   const items = data.itemsBySeccion[sectionKey] || []
@@ -203,7 +202,7 @@ function SectionView({ sectionKey, data, onGoBack, backSource, onJump, onExplore
   const Tablero = tableros[sectionKey]
 
   // al cambiar de sección reseteamos a Lista (o Mural si es Notas)
-  useEffect(() => { setTab(isNotas ? 'mural' : 'lista'); setSelId(null); setFichaFromXray(false) }, [sectionKey])
+  useEffect(() => { setTab(isNotas ? 'mural' : 'lista'); setSelId(null) }, [sectionKey])
 
   // salto directo a un item desde X-ray: back desde ficha va al origen, no a la lista
   useEffect(() => {
@@ -211,12 +210,11 @@ function SectionView({ sectionKey, data, onGoBack, backSource, onJump, onExplore
     if (items.find(it => it.id === initialItemId || it.allIds?.includes(initialItemId))) {
       setSelId(initialItemId)
       setTab('ficha')
-      setFichaFromXray(true)
     }
   }, [initialItemId, items])
 
   const openLista = () => { if (!isNotas) setTab('lista') }
-  const pick = (id) => { setSelId(id); setTab('ficha'); setFichaFromXray(false) }
+  const pick = (id) => { setSelId(id); setTab('ficha') }
 
   const fichaBackLabel = 'Lista'
   const fichaOnBack   = () => setTab('lista')
@@ -259,12 +257,12 @@ function SectionView({ sectionKey, data, onGoBack, backSource, onJump, onExplore
         <CarteleraMobileFicha section={meta} item={current} onBack={fichaOnBack} backLabel={fichaBackLabel} />
       )}
 
-      <CatDock currentKey={sectionKey} onJump={onJump} secciones={secciones} />
+      <CatDock currentKey={sectionKey} onJump={onJump} secciones={secciones} gatoColor={gatoColor} />
     </div>
   )
 }
 
-export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false, backSource = 'lectura' }) {
+export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false, gatoColor = 'negro' }) {
   const { book, loading: bookLoading } = useBookBySlug(bookProp)
   const esNoficcion = book?.es_ficcion === false
   const secciones  = getSecciones(esNoficcion)
@@ -318,13 +316,13 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
           sectionKey={view.key}
           data={dataWithBook}
           onGoBack={onGoBack}
-          backSource={backSource}
           onJump={openSection}
           onExplore={() => setExplore(true)}
           initialItemId={fichaInitItemId}
           secciones={secciones}
           tableros={tableros}
           esNoficcion={esNoficcion}
+          gatoColor={gatoColor}
         />
       )}
       {explore && <ExploreSheet {...exploreProps} />}

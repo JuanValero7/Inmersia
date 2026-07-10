@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import clsx from 'clsx'
 import { supabase } from '../../lib/supabase.js'
-import { CAT_COLOR, itint, ilum } from './tiendaHelpers.jsx'
+import { CAT_COLOR, tituloSizeClass, autorSizeClass } from './tiendaHelpers.jsx'
 
 // =============================================================
 // PanelLibro · panel lateral de detalle (estilo storybook)
@@ -14,6 +14,8 @@ import { CAT_COLOR, itint, ilum } from './tiendaHelpers.jsx'
 //   user        · usuario auth
 //   yaAdquirido · ya está en su biblioteca
 //   yaLeido     · ya lo terminó (habilita reseñar)
+//   bloqueado   · true si superó el límite de lecturas pendientes:
+//                 deshabilita las CTA de compra/lectura (ver CalleEscena)
 //   onComprar() · añadir a la biblioteca
 //   onClose()   · cerrar el panel
 //   onPreview() · abrir LibroReel
@@ -40,27 +42,24 @@ function Estrellas({ valor, size = 15, onChange }) {
 }
 
 // Portada: usa portada_url si existe; si no, genera una con el color del libro.
-function Portada({ libro, cls }) {
+function Portada({ libro }) {
   const c = libro.color || '#cf8a6e'
-  if (libro.portada_url) {
-    return <img className={clsx(cls, 'bkp-cover-img')} src={libro.portada_url} alt={libro.titulo} />
-  }
-  const light = ilum(c) > 0.62
-  const fg   = light ? 'rgba(40,28,16,0.92)' : 'rgba(255,250,240,0.96)'
-  const mark = light ? 'rgba(40,28,16,0.4)'  : 'rgba(255,247,225,0.85)'
   return (
-    <div className={cls} style={{ background: `linear-gradient(150deg, ${itint(c, 0.18)}, ${itint(c, -0.16)})` }}>
-      {libro._nuevo && <span className="bkp-ribbon">Nuevo</span>}
-      <span className="bk-cover-band" />
-      <span className="bkp-cover-mark" style={{ background: mark }} />
-      <span className="bkp-cover-title" style={{ color: fg, textShadow: light ? 'none' : '0 1px 2px rgba(0,0,0,0.35)' }}>
-        {libro.titulo}
-      </span>
+    <div className="book book-lg" style={{ '--cov': c }}>
+      <div className="book-cover">
+        {libro.portada_url
+          ? <img className="book-art-img" src={libro.portada_url} alt={libro.titulo} />
+          : <div className="book-art-empty" />}
+        <span className={clsx('book-scribble', autorSizeClass(libro.autor))}>{libro.autor}</span>
+        <span className={clsx('book-title', tituloSizeClass(libro.titulo))}>{libro.titulo}</span>
+      </div>
+      <div className="book-base" />
+      <div className="book-pages" />
     </div>
   )
 }
 
-export default function PanelLibro({ libro, user, yaAdquirido, yaLeido, onComprar, onClose, onPreview, onEmpezarLeer }) {
+export default function PanelLibro({ libro, user, gatoColor = 'negro', yaAdquirido, yaLeido, bloqueado = false, onComprar, onClose, onPreview, onEmpezarLeer }) {
   const [visible,   setVisible]   = useState(false)
   const [resenas,   setResenas]   = useState([])
   const [topQuotes, setTopQuotes] = useState([])
@@ -143,12 +142,13 @@ export default function PanelLibro({ libro, user, yaAdquirido, yaLeido, onCompra
   }
 
   return (
-    <aside className={clsx('bkp', visible && 'show')} role="dialog" aria-label="Detalle del libro">
+    <aside className={clsx('bkp', visible && 'show')} role="dialog" aria-label="Detalle del libro"
+      style={{ '--bkp-gato-url': `url('/assets/tienda/gato-${gatoColor}-4.webp')` }}>
       <button className="bkp-close" onClick={onClose} aria-label="Cerrar">×</button>
 
       {/* Portada + meta */}
       <div className="bkp-header">
-        <Portada libro={libro} cls="bkp-cover" />
+        <Portada libro={libro} />
         <div className="bkp-meta">
           <h2 className="bkp-title">{libro.titulo}</h2>
           <p className="bkp-author">{libro.autor}</p>
@@ -169,17 +169,20 @@ export default function PanelLibro({ libro, user, yaAdquirido, yaLeido, onCompra
       <div className="bkp-cta">
         {user ? (
           <>
-            <button className="bkp-empezar-btn" onClick={onEmpezarLeer}>
+            <button className="bkp-empezar-btn" onClick={onEmpezarLeer} disabled={bloqueado && !yaAdquirido}>
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
               Empezar a leer
             </button>
             {yaAdquirido ? (
               <div className="bkp-adquirido">✓ Ya está en tu biblioteca</div>
             ) : (
-              <button className="bkp-cta-btn" onClick={onComprar}>
+              <button className="bkp-cta-btn" onClick={onComprar} disabled={bloqueado}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6.5A8.9 8.9 0 006 4.2c-1 0-2 .2-3 .5v14a8.9 8.9 0 013-.5 8.9 8.9 0 016 2.3 8.9 8.9 0 016-2.3 8.9 8.9 0 013 .5v-14c-1-.3-2-.5-3-.5a8.9 8.9 0 00-6 2.3v14"/></svg>
                 Añadir a mi Biblioteca
               </button>
+            )}
+            {bloqueado && !yaAdquirido && (
+              <p className="bkp-bloqueado-msg">Termina tus lecturas pendientes antes de adquirir nuevos mundos.</p>
             )}
           </>
         ) : (
@@ -194,6 +197,7 @@ export default function PanelLibro({ libro, user, yaAdquirido, yaLeido, onCompra
       {libro.descripcion && (
         <div className="bkp-sec">
           <h3 className="bkp-sec-title">Sinopsis</h3>
+          <img className="bkp-gato" src={`/assets/tienda/gato-${gatoColor}-4.webp`} alt="" />
           <p className="bkp-sinopsis">{libro.descripcion}</p>
         </div>
       )}

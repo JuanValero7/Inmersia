@@ -20,3 +20,48 @@
 .bib-body ::-webkit-scrollbar { width: 10px; height: 10px; }
 .bib-body ::-webkit-scrollbar-thumb { background: rgba(120,90,55,0.32); border-radius: 9px; }
 .bib-body ::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Portada ilustrada (BookCover, clay/helpers.jsx) ──
+   Misma estética que la portada de la Tienda (src/styles/tienda.css),
+   copiada aquí para no acoplar ambas páginas. El ancho lo fija el
+   componente por inline style (según el `h` de cada sitio: hero,
+   repisa...); el alto lo deriva el aspect-ratio. */
+.book{
+  --tone-dark:var(--cov, #a56a52);
+  --tone-deep:var(--cov, #a56a52);
+  position:relative; aspect-ratio:210/305;
+  border-radius:14px 6px 6px 10px;
+  background:var(--tone-dark);
+  box-shadow:4px 9px 14px -5px rgba(60,42,22,0.5), 1.4px 2px 0 rgba(74,54,34,0.15);
+  flex-shrink:0;
+}
+.book-cover{
+  position:absolute; top:0; right:0; bottom:12.5%; left:12%;
+  background:var(--cov,#a56a52); border-radius:0 6px 0 0; overflow:hidden;
+}
+.book-art-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.book-art-empty{ position:absolute; inset:0; background:var(--cov,#a56a52); }
+.book-art-empty::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background-image:radial-gradient(rgba(60,42,22,0.13) .5px, transparent .6px);
+  background-size:3px 3px; mix-blend-mode:multiply; opacity:.55;
+}
+.book-base{
+  position:absolute; left:4%; right:0; bottom:0; height:11%;
+  background:var(--tone-deep); border-radius:99px 0 6px 99px;
+}
+.book-pages{
+  position:absolute; left:7.5%; right:0; bottom:2.9%; height:5.4%;
+  background:#f4ecdc; border-radius:99px 0 0 99px;
+}
+.book-scribble{
+  position:absolute; top:4%; left:6%; right:6%; text-align:center; z-index:3;
+  font-family:'Caveat', cursive; letter-spacing:.03em;
+  color:rgba(30,20,12,0.55); pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.book-title{
+  position:absolute; left:8%; right:8%; top:14%; z-index:3; text-align:center; pointer-events:none;
+  font-weight:800; line-height:1.08; letter-spacing:.01em; text-transform:uppercase;
+  color:#f7efdd; text-shadow:0 2px 0 rgba(58,36,20,0.28);
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden;
+}

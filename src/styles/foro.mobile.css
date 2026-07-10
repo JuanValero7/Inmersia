@@ -26,9 +26,41 @@
 .foro-m .foro-m-tabs { display: flex; align-self: stretch; margin: 14px 12px 0; }
 .foro-m .foro-m-tabs .foro-tab { flex: 1; padding: 11px 24px; }
 
-/* ── Barra de tags y contenido: sin el max-width de escritorio ── */
-.foro-m .foro-tags-bar { padding: 14px 12px 4px; max-width: none; }
+/* ── Barra de filtro y contenido: sin el max-width de escritorio ── */
+.foro-m .foro-filtro-wrap { padding: 14px 12px 4px; max-width: none; }
 .foro-m .foro-main { padding: 16px 12px 120px; max-width: none; }
+
+/* ── Panel de filtro → popup bottom-sheet ── */
+.foro-m .foro-filtro-backdrop {
+  background: rgba(74,54,34,0.42);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: foro-m-fade .2s ease;
+}
+.foro-m .foro-filtro-panel {
+  position: static;
+  left: auto;
+  transform: none;
+  width: 100%;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -8px 30px rgba(74,54,34,0.25);
+  padding: 10px 18px max(20px, env(safe-area-inset-bottom));
+  animation: foro-m-sheet-up .26s cubic-bezier(.22,.61,.36,1);
+}
+.foro-m .foro-filtro-panel-grip {
+  display: block;
+  width: 42px; height: 5px; border-radius: 999px;
+  background: rgba(74,54,34,0.25); margin: 2px auto 12px;
+}
+.foro-m .foro-filtro-panel-header { padding-left: 2px; }
+.foro-m .foro-filtro-panel-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 
 /* ── FAB un poco más arriba (zona pulgar + safe-area) ── */
 .foro-m .foro-fab {

@@ -7,7 +7,7 @@
 // Consume el `book` ya mapeado por el orquestador.
 // =============================================================
 import React from 'react'
-import { INK, inmTint, hashOf, lum, STORYBOOK, spineColor } from '../../biblioteca/coverHelpers.shared.js'
+import { INK, inmTint, hashOf, lum, STORYBOOK, spineColor, tituloFontSize, autorFontSize } from '../../biblioteca/coverHelpers.shared.js'
 
 export { INK, inmTint, hashOf, lum, STORYBOOK, spineColor }
 
@@ -20,38 +20,24 @@ export const spineW = (b) => Math.max(26, Math.min(52, Math.round((b.pages / 800
 export const spineH = (b) => Math.round(112 + (hashOf(b.id + 'h') % 44)) // 112..156
 
 // ─── Portada face-out (generada o real) ─────────────────────
+// Misma estética ilustrada que la Tienda (.book/.book-cover/...):
+// portada + lomo/base + canto de páginas, con título y autor
+// superpuestos. El ancho se deriva de `h` para no romper los
+// tamaños ya afinados en cada sitio (hero, carrusel, ficha...).
 export function BookCover({ book, h = 150 }) {
-  const w = Math.round(h * 0.66)
-  const radius = '5px 7px 7px 5px'
-  const frame = {
-    width: w, height: h, borderRadius: radius, flexShrink: 0, position: 'relative',
-    overflow: 'hidden', border: `2px solid ${INK}`,
-    boxShadow: `1.6px 2px 0 ${INK}26, 4px 6px 13px rgba(60,42,22,0.16)`,
-  }
-  // portada real (si el libro la trae)
-  if (book.cover) {
-    return (
-      <div style={{ ...frame, background: '#cdbfa8' }}>
-        <img src={book.cover} alt={book.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-      </div>
-    )
-  }
+  const w = Math.round(h * 210 / 305)
   const c = book.color || '#8c6838'
-  const light = lum(c) > 0.62
-  const fg = light ? 'rgba(40,28,16,0.92)' : 'rgba(255,250,240,0.96)'
-  const sub = light ? 'rgba(40,28,16,0.62)' : 'rgba(255,250,240,0.7)'
   return (
-    <div style={{ ...frame, background: `linear-gradient(150deg, ${inmTint(c, 0.18)}, ${inmTint(c, -0.16)})`,
-      display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '11px 10px 12px' }}>
-      <div style={{ position: 'absolute', top: 0, left: 4, width: 3, height: '100%', background: 'rgba(255,255,255,0.18)' }} />
-      <div style={{ width: 22, height: 4, borderRadius: 3, background: light ? 'rgba(40,28,16,0.4)' : 'rgba(255,247,225,0.85)' }} />
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontWeight: 800, fontSize: h > 150 ? 13 : 11.5, lineHeight: 1.12, color: fg,
-          display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-          textShadow: light ? 'none' : '0 1px 2px rgba(0,0,0,0.35)' }}>{book.title}</div>
-        <div style={{ fontSize: 9.5, color: sub, marginTop: 4, fontWeight: 600,
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{book.author}</div>
+    <div className="book" style={{ '--cov': c, width: w }}>
+      <div className="book-cover">
+        {book.cover
+          ? <img className="book-art-img" src={book.cover} alt={book.title} />
+          : <div className="book-art-empty" />}
+        <span className="book-scribble" style={{ fontSize: autorFontSize(w, book.author) }}>{book.author}</span>
+        <span className="book-title" style={{ fontSize: tituloFontSize(w, book.title) }}>{book.title}</span>
       </div>
+      <div className="book-base" />
+      <div className="book-pages" />
     </div>
   )
 }

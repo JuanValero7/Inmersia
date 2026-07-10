@@ -24,7 +24,7 @@ function Estrellas({ valor, onChange }) {
   )
 }
 
-function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook, onAssignCategory }) {
+function SheetBody({ book, user, gatoColor = 'negro', categories, onOpenBook, onGoForo, onGoNotebook, onAssignCategory }) {
   const esManual = book.id === 'manual'
   const c = book.color || '#5a3d28'
   const hasProgress = typeof book.progress === 'number'
@@ -45,16 +45,14 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-        <div style={{ flexShrink: 0, filter: `drop-shadow(3px 6px 9px ${INK}38)` }}>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'stretch' }}>
+        <div style={{ flexShrink: 0, alignSelf: 'flex-start', filter: `drop-shadow(3px 6px 9px ${INK}38)` }}>
           <BookCover book={book} h={148} />
         </div>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <div style={{ fontWeight: 800, fontSize: 20, lineHeight: 1.12, letterSpacing: '-0.01em', color: INK, overflowWrap: 'break-word' }}>{book.title}</div>
           <div style={{ color: 'rgba(74,54,34,0.62)', fontSize: 13.5, marginTop: 5, fontWeight: 600 }}>{book.author}</div>
-          {book.categoryName && (
-            <span style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 11, background: c, color: '#fff', fontWeight: 700, fontSize: 11.5, padding: '4px 12px', borderRadius: 999, border: `2px solid ${INK}`, boxShadow: `1.2px 1.6px 0 ${INK}33`, textShadow: '0 1px 1px rgba(0,0,0,0.22)' }}>{book.categoryName}</span>
-          )}
+          <div style={{ flex: '1 1 auto', minHeight: 105, marginTop: 4, backgroundImage: `url('/assets/biblioteca/gato-${gatoColor}-1-thumb.webp')`, backgroundSize: 'contain', backgroundPosition: 'center bottom', backgroundRepeat: 'no-repeat', filter: `drop-shadow(1px 2px 2px ${INK}30)` }} />
         </div>
       </div>
 
@@ -147,7 +145,7 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
   )
 }
 
-export default function BibBookSheet({ book, user, categories, onClose, onOpenBook, onGoForo, onGoNotebook, onAssignCategory, transparentBackdrop = false }) {
+export default function BibBookSheet({ book, user, gatoColor, categories, onClose, onOpenBook, onGoForo, onGoNotebook, onAssignCategory, transparentBackdrop = false }) {
   const [entering, setEntering] = React.useState(true)
   React.useEffect(() => { const t = setTimeout(() => setEntering(false), 20); return () => clearTimeout(t) }, [])
   React.useEffect(() => {
@@ -167,7 +165,7 @@ export default function BibBookSheet({ book, user, categories, onClose, onOpenBo
           </button>
         </div>
         <div className="bibm-noscroll" style={{ overflowY: 'auto', padding: '4px 18px 26px', maxHeight: 'calc(100% - 64px)' }}>
-          <SheetBody book={book} user={user} categories={categories}
+          <SheetBody book={book} user={user} gatoColor={gatoColor} categories={categories}
             onOpenBook={onOpenBook} onGoForo={onGoForo} onGoNotebook={onGoNotebook} onAssignCategory={onAssignCategory} />
         </div>
       </div>

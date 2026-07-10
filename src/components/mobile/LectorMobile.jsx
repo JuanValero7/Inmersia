@@ -624,7 +624,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       {sheet==='nav' && <NavSheet onGoForo={onGoForo} onGoCartelera={onGoCartelera} onGoBiblioteca={onGoBack} onClose={()=>setSheet(null)} />}
 
       {/* Overlay imagen */}
-      {imageOpen && <ImageOverlay images={visibleImages} chapter={currentChapter} chapterIndex={chapterIndex} onClose={()=>setImageOpen(false)} autoImages={autoImages} onToggleAutoImages={() => setAutoImages(v => !v)} />}
+      {imageOpen && <ImageOverlay images={visibleImages} chapter={currentChapter} chapterIndex={chapterIndex} onClose={()=>setImageOpen(false)} autoImages={autoImages} onToggleAutoImages={() => setAutoImages(v => !v)} esNoficcion={esNoficcion} />}
 
       {/* Reseña (aparece al terminar el libro) */}
       {resenaOpen && <ResenaSheet form={resenaForm} setForm={setResenaForm} enviando={resenaEnviando} miResena={miResena} onSubmit={handleSubmitResena} onClose={()=>setResenaOpen(false)} />}

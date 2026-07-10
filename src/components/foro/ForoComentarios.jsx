@@ -20,6 +20,7 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
   const [hasMore,         setHasMore]         = useState(false)
   const [offset,          setOffset]          = useState(0)
   const [activeTag,       setActiveTag]       = useState(null)
+  const [showFiltro,      setShowFiltro]      = useState(false)
   const [expandedReplies, setExpandedReplies] = useState(new Set())
   const [replyOpenFor,    setReplyOpenFor]    = useState(null)
   const [replyText,       setReplyText]       = useState('')
@@ -174,25 +175,54 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
 
   return (
     <>
-      {/* ── Tag filter bar ── */}
-      <div className="foro-tags-bar">
+      {/* ── Botón de filtro ── */}
+      <div className="foro-filtro-wrap">
         <button
           type="button"
-          className={clsx('foro-tag-pill', !activeTag && 'active')}
-          onClick={() => setActiveTag(null)}
+          className={clsx('foro-filtro-btn', activeTag && 'active')}
+          onClick={() => setShowFiltro(true)}
         >
-          Todos
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.4">
+            <path d="M4 5h16M7 12h10M10 19h4" strokeLinecap="round"/>
+          </svg>
+          Filtrar
+          {activeTag && <span className="foro-filtro-badge">{activeTag}</span>}
         </button>
-        {FORO_TAGS.map(tag => (
-          <button
-            key={tag} type="button"
-            className={clsx('foro-tag-pill', activeTag === tag && 'active')}
-            onClick={() => setActiveTag(prev => prev === tag ? null : tag)}
-          >
-            {tag}
-          </button>
-        ))}
       </div>
+
+      {showFiltro && (
+        <div className="foro-filtro-backdrop" onClick={() => setShowFiltro(false)}>
+          <div className="foro-filtro-panel" onClick={e => e.stopPropagation()}>
+            <div className="foro-filtro-panel-grip" />
+            <div className="foro-filtro-panel-header">
+              <span className="foro-filtro-panel-titulo">Filtrar por categoría</span>
+              <button type="button" className="foro-modal-close" onClick={() => setShowFiltro(false)}>
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <div className="foro-filtro-panel-tags">
+              <button
+                type="button"
+                className={clsx('foro-tag-pill', !activeTag && 'active')}
+                onClick={() => { setActiveTag(null); setShowFiltro(false) }}
+              >
+                Todos
+              </button>
+              {FORO_TAGS.map(tag => (
+                <button
+                  key={tag} type="button"
+                  className={clsx('foro-tag-pill', activeTag === tag && 'active')}
+                  onClick={() => { setActiveTag(prev => prev === tag ? null : tag); setShowFiltro(false) }}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Lista ── */}
       <main className="foro-main">

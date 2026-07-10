@@ -58,20 +58,15 @@ function Filters() {
   )
 }
 
-function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection, onGoBack, onGoForo, onGoBiblioteca, secciones, tableros, esNoficcion }) {
+function BoardView({ sectionKey, data, onOpenList, onOpenSection, onGoBack, onGoForo, onGoBiblioteca, secciones, tableros, esNoficcion, gatoColor }) {
   const meta = seccionMeta(sectionKey)
   const stageRef = useRef(null)
   const scale = useFitScale(stageRef)
   const Tablero = tableros[sectionKey]
 
-  const handlePortada = () => {
-    onPortada()
-  }
-
   return (
     <div className="cart-scene" style={{ '--sec': meta.color }}>
-      <div className="bg-layer" />
-      <Signpost current={sectionKey} onOpenSection={onOpenSection} secciones={secciones} />
+      <Signpost current={sectionKey} onOpenSection={onOpenSection} secciones={secciones} gatoColor={gatoColor} />
       <div className="topbar">
         <div className="ttl"><h1>{meta.label}</h1><span className="sub">{meta.sub}</span></div>
         <div className="cart-sec-hint">Sigue leyendo para revelar una sorpresa</div>
@@ -109,7 +104,7 @@ function BoardView({ sectionKey, data, onPortada, onOpenList, onOpenSection, onG
   )
 }
 
-export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false }) {
+export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false, gatoColor = 'negro' }) {
   const { book, loading: bookLoading } = useBookBySlug(bookProp)
   const esNoficcion = book?.es_ficcion === false
   const secciones  = getSecciones(esNoficcion)
@@ -152,6 +147,7 @@ export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, 
     content = <Ficha key={view.key} section={seccionMeta(view.key)} items={data.itemsBySeccion[view.key] || []}
       initialItemId={fichaInitItemId}
       secciones={secciones}
+      gatoColor={gatoColor}
       onBackTablero={() => setView({ kind: 'board', key: view.key })}
       onBackPortada={() => setView({ kind: 'portada', key: null })}
       onGoBack={onGoBack}
@@ -159,8 +155,7 @@ export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, 
       onGoBiblioteca={onGoBiblioteca}
       onOpenList={(k) => setView({ kind: 'ficha', key: k })} />
   } else {
-    content = <BoardView sectionKey={view.key} data={data} secciones={secciones} tableros={tableros} esNoficcion={esNoficcion}
-      onPortada={() => setView({ kind: 'portada', key: null })}
+    content = <BoardView sectionKey={view.key} data={data} secciones={secciones} tableros={tableros} esNoficcion={esNoficcion} gatoColor={gatoColor}
       onOpenList={(k) => setView({ kind: 'ficha', key: k })}
       onOpenSection={(k) => setView({ kind: 'board', key: k })}
       onGoBack={onGoBack}

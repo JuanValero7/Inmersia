@@ -229,17 +229,26 @@ export function NavSheet({ onGoForo, onGoCartelera, onGoBiblioteca, onClose }) {
   )
 }
 
-export function ImageOverlay({ images, chapter, chapterIndex, onClose, autoImages, onToggleAutoImages }) {
+export function ImageOverlay({ images, chapter, chapterIndex, onClose, autoImages, onToggleAutoImages, esNoficcion = false }) {
   const [idx, setIdx] = useState(0)
   const cur = images[idx] || null
   return (
     <div className="lm-img-overlay" onClick={onClose}>
-      <div className="lm-polaroid" onClick={e=>e.stopPropagation()}>
-        <div className="pic">
-          {cur?.url ? <img src={cur.url} alt={cur.titulo || ''} /> : <span className="ph-label">sin imagen para este capítulo</span>}
+      {esNoficcion ? (
+        <div className="lm-poster" onClick={e=>e.stopPropagation()}>
+          <div className="lm-poster-pic">
+            {cur?.url ? <img src={cur.url} alt={cur.titulo || ''} /> : <span className="ph-label">sin imagen para este capítulo</span>}
+          </div>
+          {(cur?.titulo || cur?.slug) && <div className="lm-poster-cap">{cur.titulo || cur.slug}</div>}
         </div>
-        <div className="cap">{cur ? (cur.titulo || cur.slug || 'escena') : '—'}</div>
-      </div>
+      ) : (
+        <div className="lm-polaroid" onClick={e=>e.stopPropagation()}>
+          <div className="pic">
+            {cur?.url ? <img src={cur.url} alt={cur.titulo || ''} /> : <span className="ph-label">sin imagen para este capítulo</span>}
+          </div>
+          <div className="cap">{cur ? (cur.titulo || cur.slug || 'escena') : '—'}</div>
+        </div>
+      )}
       {images.length > 1 && (
         <div className="lm-img-thumbs" onClick={e=>e.stopPropagation()}>
           {images.map((img, i) => (

@@ -30,6 +30,26 @@ export function ilum(hex) {
   return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255
 }
 
+// Clase de tamaño para el título superpuesto en la portada (.book-title):
+// a más caracteres, fuente más pequeña, para que no desborde la portada.
+// Además .book-title recorta a 2 líneas (line-clamp) como tope absoluto,
+// así el texto nunca supera ~25% del alto del libro por muy largo que sea.
+export function tituloSizeClass(titulo) {
+  const len = (titulo || '').length
+  if (len > 52) return 'book-title-xxs'
+  if (len > 36) return 'book-title-xs'
+  if (len > 22) return 'book-title-sm'
+  return ''
+}
+
+// Igual que tituloSizeClass pero para el nombre del autor (.book-scribble).
+export function autorSizeClass(autor) {
+  const len = (autor || '').length
+  if (len > 28) return 'book-scribble-xs'
+  if (len > 18) return 'book-scribble-sm'
+  return ''
+}
+
 // ── Telones por hora del día ────────────────────────────────────
 // 3 fondos pintados con crossfade. Las imágenes viven en public/assets/tienda/.
 export const BG = {

@@ -4,8 +4,8 @@
    terracota (#cf7b4c), tipografía Baloo 2, bordes 2px + sombras
    duras desplazadas y esquinas redondeadas tipo plastilina.
    Mismos nombres de clase que antes → no rompe el JSX.
-   La ilustración de gatos (foro-cats.png, fondo ya recoloreado
-   al crema) decora el pie de ambas pantallas.
+   La ilustración del pie (foro-gatos.webp) decora ambas pantallas,
+   ver .foro-root::after más abajo.
    ════════════════════════════════════════════════════════════ */
 
 :root {
@@ -29,24 +29,28 @@
 .foro-root,
 .foro-root * { font-family: 'Baloo 2', system-ui, sans-serif; }
 
-/* gatos saliendo del tintero, fijos al pie y difuminados hacia
-   arriba para que el contenido siga legible */
+/* gatos anclados al pie, cubriendo toda la pantalla.
+   .foro-main va con z-index:5, así que el contenido siempre queda encima. */
 .foro-root::after {
   content: '';
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: min(48vh, 460px);
-  background-image: url(/assets/foro-cats.webp);
+  inset: 0;
+  background-image: url(/assets/foro-gatos.webp);
   background-repeat: no-repeat;
   background-position: center bottom;
-  background-size: 1120px auto;
+  /* min() para que en pantallas angostas no se corten por los lados
+     (los 3 deben verse completos) */
+  background-size: min(1120px, 100%) auto;
   opacity: 0.5;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 58%);
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 58%);
   pointer-events: none;
   z-index: 0;
+}
+
+/* en desktop (Foro.jsx, sin la clase foro-m) los gatos se ven más grandes */
+@media (min-width: 1024px) {
+  .foro-root:not(.foro-m)::after {
+    background-size: min(1600px, 90%) auto;
+  }
 }
 
 /* ─── Header (barra acuarela) ────────────────────────────── */
@@ -175,22 +179,99 @@
   flex-shrink: 0;
 }
 
-/* ─── Barra de filtros (tags) ────────────────────────────── */
-.foro-tags-bar {
+/* ─── Botón de filtro + panel desplegable ────────────────── */
+.foro-filtro-wrap {
   position: relative;
   z-index: 5;
   display: flex;
-  gap: 8px;
+  justify-content: center;
   padding: 16px 24px 4px;
-  overflow-x: auto;
   max-width: 808px;
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
   flex-shrink: 0;
+}
+
+.foro-filtro-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  border: 2px solid var(--foro-ink);
+  background: var(--foro-card);
+  color: var(--foro-ink);
+  box-shadow: 1.2px 1.6px 0 rgba(74,54,34,0.16);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.foro-filtro-btn:hover { transform: translateY(-1px); }
+.foro-filtro-btn.active {
+  background: var(--foro-accent);
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.18);
+}
+
+.foro-filtro-badge {
+  background: var(--foro-ink);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+.foro-filtro-btn.active .foro-filtro-badge { background: rgba(255,255,255,0.28); }
+
+/* click-outside invisible en escritorio; se vuelve overlay oscuro en mobile */
+.foro-filtro-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
   background: transparent;
 }
-.foro-tags-bar::-webkit-scrollbar { display: none; }
+
+.foro-filtro-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--foro-card);
+  border: 2px solid var(--foro-ink);
+  border-radius: 18px;
+  padding: 14px 16px 16px;
+  box-shadow: 4px 6px 0 rgba(74,54,34,0.18), 10px 16px 30px rgba(74,54,34,0.16);
+  width: max-content;
+}
+
+.foro-filtro-panel-grip { display: none; }
+
+.foro-filtro-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.foro-filtro-panel-titulo {
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(74,54,34,0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+/* dos filas fijas: 10 pills (Todos + 9 tags) → 5 columnas x 2 filas */
+.foro-filtro-panel-tags {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, auto));
+  gap: 8px 10px;
+}
+.foro-filtro-panel-tags .foro-tag-pill { justify-content: center; }
 
 /* ─── Tag pills ──────────────────────────────────────────── */
 .foro-tag-pill {

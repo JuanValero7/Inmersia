@@ -74,6 +74,38 @@ function EmptyLane({ msg }) {
   );
 }
 
+// Fila de libros de la Tienda (Novedades / Recomendaciones). Recibe filas
+// crudas de `libros` (titulo/autor/portada_url en español) y las adapta al
+// shape que espera BookCover (title/author/cover en inglés) solo para pintar.
+// grid-auto-flow:column reparte las portadas en UNA sola fila que ocupa
+// todo el ancho (se estiran si hay lugar de sobra); si no entran todas,
+// scrollea en vez de armar una segunda fila.
+function CatalogRow({ libros, onOpen, onPreview }) {
+  const ink = INK;
+  const COVER_H = 190;
+  const COVER_W = Math.round(COVER_H * 210 / 305); // mismo cálculo que BookCover, para que el botón calce con el ancho del libro
+  const previewBtn = {
+    marginTop: 10, width: COVER_W, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+    background: '#fffdf8', color: ink, border: `2px solid ${ink}`, borderRadius: 999, padding: '5px 8px',
+    fontFamily: 'inherit', fontWeight: 700, fontSize: 11, cursor: 'pointer', boxShadow: `1.2px 1.6px 0 ${ink}2e`,
+  };
+  return (
+    <div style={{ display: 'grid', gridAutoFlow: 'column', gridAutoColumns: 'minmax(150px, 1fr)', gap: 26, overflowX: 'auto', padding: '30px 4px 14px' }}>
+      {libros.map(l => (
+        <div key={l.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div className="inm-bk" onClick={(e) => onOpen(l, e.currentTarget.getBoundingClientRect())} style={{ cursor: 'pointer' }}>
+            <BookCover book={{ id: l.id, title: l.titulo, author: l.autor, cover: l.portada_url, color: l.color, pages: l.paginas }} h={COVER_H} ink={ink} />
+          </div>
+          <button style={previewBtn} onClick={() => onPreview(l)}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3"/></svg>
+            Preview
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function HeroFeatured({ book, onOpen }) {
   const ink = INK, accent = '#cf7b4c';
   const [hov, setHov] = React.useState(false);
@@ -121,7 +153,7 @@ function HeroFeatured({ book, onOpen }) {
   );
 }
 
-function Swimlane({ featured, onOpen }) {
+function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOpenLibro, onPreviewLibro }) {
   const ink = INK;
   const [tab, setTab] = React.useState('seguir');
   const surface = {
@@ -151,8 +183,8 @@ function Swimlane({ featured, onOpen }) {
         {tab === 'seguir'
           ? (featured ? <HeroFeatured book={featured} onOpen={onOpen} /> : <EmptyLane msg="Cuando empieces a leer un libro aparecerá acá para que retomes donde lo dejaste." />)
           : tab === 'novedades'
-            ? <EmptyLane msg="Pronto verás acá los libros recién llegados a la biblioteca." />
-            : <EmptyLane msg="Estamos preparando recomendaciones a tu medida. ¡Vuelve pronto!" />}
+            ? (novedades.length > 0 ? <CatalogRow libros={novedades} onOpen={onOpenLibro} onPreview={onPreviewLibro} /> : <EmptyLane msg="Pronto verás acá los libros recién llegados a la biblioteca." />)
+            : (recomendaciones.length > 0 ? <CatalogRow libros={recomendaciones} onOpen={onOpenLibro} onPreview={onPreviewLibro} /> : <EmptyLane msg="Estamos preparando recomendaciones a tu medida. ¡Vuelve pronto!" />)}
       </div>
     </div>
   );

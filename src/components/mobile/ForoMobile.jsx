@@ -9,9 +9,9 @@
 // por CSS (foro.mobile.css) — sin tocar su JS.
 //
 // Mismo contrato de props que Foro.jsx:
-//   { book, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera }
+//   { book, user, onGoLectura, onGoBiblioteca, onGoCartelera }
 // ─────────────────────────────────────────────────────────────
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import clsx from 'clsx'
 import ForoComentarios from '../foro/ForoComentarios.jsx'   // ← reutilizado
 import ForoChat from '../foro/ForoChat.jsx'                  // ← reutilizado
@@ -20,7 +20,7 @@ import { useBookBySlug } from '../../hooks/useBookBySlug.js'
 import '../../styles/foro.css'        // base (clases que usan las sub-vistas)
 import '../../styles/foro.mobile.css'  // overrides responsive del chrome
 
-export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera }) {
+export default function ForoMobile({ book: bookProp, user, onGoLectura, onGoBiblioteca, onGoCartelera }) {
   const { book, loading: bookLoading } = useBookBySlug(bookProp)
   // — MISMA lógica de datos que Foro.jsx (ver src/hooks/useForoData.js) —
   const {

@@ -26,7 +26,7 @@ function Estrellas({ valor, onChange }) {
   );
 }
 
-function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook, categories, onAssignCategory }) {
+function BibBookModal({ book, user, gatoColor = 'negro', onClose, onOpenBook, onGoForo, onGoNotebook, categories, onAssignCategory }) {
   const bg = book.color || COLOR_BOOK_FALLBACK;
   const [saving, setSaving] = React.useState(false);
   const esManual = book.id === 'manual';
@@ -73,13 +73,6 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
         </div>
 
         <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-          {book.summary && (
-            <div>
-              <div style={label}>Resumen</div>
-              <p style={{ fontSize: 14.5, color: '#4a2510', lineHeight: 1.65, fontWeight: 500 }}>{book.summary}</p>
-            </div>
-          )}
-
           {!esManual && (
             <div>
               <div style={label}>Categoría</div>
@@ -113,6 +106,18 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
               </div>
             )}
           </div>
+
+          {book.summary && (
+            <div>
+              <div style={label}>Resumen</div>
+              <div style={{ overflow: 'hidden' }}>
+                <img src={`/assets/biblioteca/gato-${gatoColor}-1.webp`} alt="" aria-hidden="true" style={{
+                  float: 'right', width: 280, height: 'auto', marginLeft: 16, marginBottom: 8,
+                }} />
+                <p style={{ fontSize: 14.5, color: '#4a2510', lineHeight: 1.65, fontWeight: 500, textAlign: 'justify' }}>{book.summary}</p>
+              </div>
+            </div>
+          )}
 
           {book.leido && !esManual && (
             <div style={{ borderTop: `2px solid ${ink}1f`, paddingTop: 16 }}>

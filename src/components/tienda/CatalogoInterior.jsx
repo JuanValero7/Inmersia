@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 
 const LOGO = '/assets/inmersia-logo.png'
-import { CAT_COLOR, itint, ilum } from './tiendaHelpers.jsx'
+import { CAT_COLOR, itint, tituloSizeClass, autorSizeClass } from './tiendaHelpers.jsx'
 import PanelLibro from './PanelLibro.jsx'
 import LibroReel from './LibroReel.jsx'
 
@@ -54,19 +54,17 @@ function Pagination({ page, total, onChange }) {
 
 function CoverCard({ libro }) {
   const c = libro.color || '#cf8a6e'
-  if (libro.portada_url) {
-    return <img className="bk-cover bk-cover-img" src={libro.portada_url} alt={libro.titulo} />
-  }
-  const light = ilum(c) > 0.62
-  const fg   = light ? 'rgba(40,28,16,0.92)' : 'rgba(255,250,240,0.96)'
-  const mark = light ? 'rgba(40,28,16,0.4)'  : 'rgba(255,247,225,0.85)'
   return (
-    <div className="bk-cover" style={{ background: `linear-gradient(150deg, ${itint(c, 0.18)}, ${itint(c, -0.16)})` }}>
-      <span className="bk-cover-band" />
-      <span className="bk-cover-mark" style={{ background: mark }} />
-      <span className="bk-cover-title" style={{ color: fg, textShadow: light ? 'none' : '0 1px 2px rgba(0,0,0,0.35)' }}>
-        {libro.titulo}
-      </span>
+    <div className="book" style={{ '--cov': c }}>
+      <div className="book-cover">
+        {libro.portada_url
+          ? <img className="book-art-img" src={libro.portada_url} alt={libro.titulo} />
+          : <div className="book-art-empty" />}
+        <span className={clsx('book-scribble', autorSizeClass(libro.autor))}>{libro.autor}</span>
+        <span className={clsx('book-title', tituloSizeClass(libro.titulo))}>{libro.titulo}</span>
+      </div>
+      <div className="book-base" />
+      <div className="book-pages" />
     </div>
   )
 }
@@ -104,7 +102,7 @@ function BookCard({ libro, adquirido, onOpen }) {
   )
 }
 
-export default function CatalogoInterior({ catalogo, loading, user, tieneLibro, libroLeido, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo }) {
+export default function CatalogoInterior({ catalogo, loading, user, gatoColor, tieneLibro, libroLeido, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo, bloqueado = false }) {
   const navigate = useNavigate()
   const [selCats,     setSelCats]     = useState(new Set())
   const [qInput,      setQInput]      = useState('')
@@ -261,8 +259,10 @@ export default function CatalogoInterior({ catalogo, loading, user, tieneLibro, 
           key={sel.id}
           libro={sel}
           user={user}
+          gatoColor={gatoColor}
           yaAdquirido={tieneLibro(sel.id)}
           yaLeido={libroLeido(sel.id)}
+          bloqueado={bloqueado}
           onComprar={() => { onComprar(sel); setSel(null) }}
           onClose={() => setSel(null)}
           onPreview={() => setReelLibro(sel)}

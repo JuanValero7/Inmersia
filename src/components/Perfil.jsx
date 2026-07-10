@@ -77,8 +77,14 @@ const HIST_DEMO = [
   { id: 4, title: 'Ficciones',            author: 'Jorge Luis Borges',   fecha: '20 oct 2024', pages: 256, color: '#86ad9e' },
 ]
 
+const GATOS = [
+  { id: 'negro',   label: 'Negro' },
+  { id: 'blanco',  label: 'Blanco' },
+  { id: 'naranja', label: 'Naranja' },
+]
+
 // ════════════════════ Sección: Datos ════════════════════════
-export function SecDatos({ nombre, apellido, email, miembroDesde, cargando, onSave }) {
+export function SecDatos({ nombre, apellido, email, miembroDesde, cargando, onSave, gatoColor, onChangeGatoColor }) {
   const [editing, setEditing] = useState(false)
   const [dN, setDN] = useState(nombre)
   const [dA, setDA] = useState(apellido)
@@ -148,6 +154,22 @@ export function SecDatos({ nombre, apellido, email, miembroDesde, cargando, onSa
         </div>
         <div className="pf-lock-note">El correo es tu identificador de acceso y no se puede modificar.</div>
       </div>
+      {onChangeGatoColor && (
+        <div className="pf-field-row">
+          <label className="pf-field-label">Gato de compañía</label>
+          <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+            {GATOS.map(g => (
+              <button key={g.id} type="button" onClick={() => onChangeGatoColor(g.id)} title={g.label}
+                style={{
+                  width: 60, height: 60, borderRadius: 14, cursor: 'pointer', padding: 0,
+                  border: gatoColor === g.id ? `3px solid ${'var(--accent)'}` : '2px solid rgba(74,54,34,0.2)',
+                  background: `var(--cream) url('/assets/biblioteca/gato-${g.id}-1-thumb.webp') center 62% / 145% no-repeat`,
+                  boxShadow: gatoColor === g.id ? '0 0 0 3px rgba(207,123,76,0.25)' : 'none',
+                }} />
+            ))}
+          </div>
+        </div>
+      )}
       {fb && <div className={fb.t === 'ok' ? 'pf-ok' : 'pf-err'} style={{ marginTop: 14 }}>{fb.m}</div>}
     </div>
   )
@@ -266,7 +288,7 @@ export function SecHistorial() {
 }
 
 // ════════════════════ Componente principal ══════════════════
-export default function Perfil({ user, onGoBack, onSignOut }) {
+export default function Perfil({ user, gatoColor, onChangeGatoColor, onGoBack, onSignOut }) {
   // Lógica de datos compartida con PerfilMobile (ver src/hooks/usePerfilData.js)
   const {
     sec, setSec,
@@ -336,7 +358,8 @@ export default function Perfil({ user, onGoBack, onSignOut }) {
             {sec === 'datos' && (
               <SecDatos
                 nombre={nombre} apellido={apellido} email={email}
-                miembroDesde={miembroDesde} cargando={cargando} onSave={guardarDatos}/>
+                miembroDesde={miembroDesde} cargando={cargando} onSave={guardarDatos}
+                gatoColor={gatoColor} onChangeGatoColor={onChangeGatoColor}/>
             )}
             {sec === 'seguridad' && <SecSeguridad/>}
             {sec === 'transac' && <SecTransac/>}

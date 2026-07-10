@@ -22,11 +22,36 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { MANUAL_USUARIO, COLOR_BOOK_FALLBACK2 } from '../components/biblioteca/constants.js'
 
+const CATALOGO_COLS = 'id, slug, titulo, autor, paginas, descripcion, color, portada_url, anio, categorias, moods, es_ficcion, created_at'
+const NOVEDADES_COUNT = 5
+const RECOMENDACIONES_COUNT = 5
+
+// PRNG determinístico (mulberry32) — misma seed siempre da el mismo orden,
+// así "Recomendaciones" no salta en cada render pero cambia día a día.
+function seededShuffle(arr, seedStr) {
+  let h = 0
+  for (let i = 0; i < seedStr.length; i++) h = (Math.imul(31, h) + seedStr.charCodeAt(i)) | 0
+  let a = h
+  const rand = () => {
+    a = (a + 0x6D2B79F5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+  const out = [...arr]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
 export function useBiblioteca(user, lastOpenedBookIds) {
   const [rawBooks, setRawBooks] = useState([MANUAL_USUARIO])
   const [loadingBooks, setLoadingBooks] = useState(true)
   const [perfil, setPerfil] = useState(null)
   const [categories, setCategories] = useState([])
+  const [catalogo, setCatalogo] = useState([])
 
   // Perfil (nombre)
   useEffect(() => {
@@ -82,6 +107,20 @@ export function useBiblioteca(user, lastOpenedBookIds) {
   }, [user.id])
   useEffect(() => { fetchUserBooks() }, [fetchUserBooks])
 
+  // Catálogo de la Tienda, para Novedades/Recomendaciones (ver memos abajo).
+  // Se pide una sola vez; ordenado por created_at desc para que Novedades
+  // no necesite un sort aparte.
+  useEffect(() => {
+    let activo = true
+    ;(async () => {
+      const { data } = await supabase.from('libros')
+        .select(CATALOGO_COLS).eq('visible', true)
+        .order('created_at', { ascending: false })
+      if (activo) setCatalogo(data || [])
+    })()
+    return () => { activo = false }
+  }, [])
+
   // ── CRUD categorías ──
   async function createCategoria(nombre, color) {
     const { error } = await supabase.from('categorias_usuario').insert({ user_id: user.id, nombre, color })
@@ -119,7 +158,9 @@ export function useBiblioteca(user, lastOpenedBookIds) {
 
   const books = useMemo(() => rawBooks.map(b => {
     const cat = b.categoria_id ? categoriasMap[b.categoria_id] : null
-    return { ...b, color: cat?.color || b._baseColor || COLOR_BOOK_FALLBACK2, categoryName: cat?.nombre || '' }
+    // El color de la categoría es solo para sus chips/etiquetas (ver cat.color
+    // en FlatShelves/BibShelvesMobile/filtros); el libro conserva su propio color.
+    return { ...b, color: b._baseColor || COLOR_BOOK_FALLBACK2, categoryName: cat?.nombre || '' }
   }), [rawBooks, categoriasMap])
 
   const featured = useMemo(() => {
@@ -134,9 +175,26 @@ export function useBiblioteca(user, lastOpenedBookIds) {
   const displayName = perfil?.nombre ? `${perfil.nombre} ${perfil.apellido || ''}`.trim() : (user?.email?.split('@')[0] || 'Lector')
   const inicial = displayName.charAt(0).toUpperCase()
 
+  // Novedades / Recomendaciones: libros de la Tienda que el usuario NO tiene
+  // todavía. "Novedades" ya viene ordenado por created_at desc (ver fetch del
+  // catálogo); "Recomendaciones" usa un shuffle con seed del día + user.id,
+  // así no cambia en cada render pero sí de un día a otro.
+  const elegiblesTienda = useMemo(() => {
+    const ownedIds = new Set(rawBooks.map(b => b.id))
+    return catalogo.filter(l => !ownedIds.has(l.id))
+  }, [catalogo, rawBooks])
+
+  const novedades = useMemo(() => elegiblesTienda.slice(0, NOVEDADES_COUNT), [elegiblesTienda])
+
+  const recomendaciones = useMemo(() => {
+    const hoy = new Date().toISOString().slice(0, 10)
+    return seededShuffle(elegiblesTienda, `${hoy}-${user.id}`).slice(0, RECOMENDACIONES_COUNT)
+  }, [elegiblesTienda, user.id])
+
   return {
     rawBooks, loadingBooks, perfil, categories,
     categoriasMap, books, featured,
+    novedades, recomendaciones,
     displayName, inicial,
     fetchCategories, fetchUserBooks,
     createCategoria, updateCategoria, deleteCategoria, assignCategoriaToBook,

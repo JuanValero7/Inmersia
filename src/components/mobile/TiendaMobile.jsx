@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../../lib/supabase.js'
+import { useCompraLibro, LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
 import CalleEscena from '../tienda/CalleEscena.jsx'
 import CatalogoInteriorMobile from './tienda/CatalogoInteriorMobile.jsx'
 import '../../styles/tienda.css'
 
-const LIMITE = 5
+const LIMITE = LIMITE_PENDIENTES
 const NUEVOS = 5
 
-export default function VistaTiendaMobile({ onGoBack, user, onOpenBook, isSuperuser = false }) {
+export default function VistaTiendaMobile({ onGoBack, user, gatoColor, onOpenBook, isSuperuser = false }) {
   const [subView,    setSubView]    = useState(!user ? 'catalogo' : 'calle')
   const [catalogo,   setCatalogo]   = useState([])
   const [userLibros, setUserLibros] = useState([])
@@ -54,28 +55,17 @@ export default function VistaTiendaMobile({ onGoBack, user, onOpenBook, isSuperu
 
   useEffect(() => { fetchTienda() }, [fetchTienda])
 
+  const { comprar: comprarLibro, comprarYLeer: comprarYLeerLibro } = useCompraLibro(user, isSuperuser, onOpenBook)
+
   async function comprar(libro) {
-    if (!user?.id) return
-    const { error } = await supabase.from('bibliotecas_usuarios').insert({ user_id: user.id, libro_id: libro.id, leido: false })
-    if (error) { console.error('No se pudo adquirir el libro:', error.message); return }
-    setUserLibros(prev => [...prev, { libro_id: libro.id, leido: false }])
+    const { error } = await comprarLibro(libro, { pendientes })
+    if (!error) setUserLibros(prev => [...prev, { libro_id: libro.id, leido: false }])
   }
 
   async function comprarYLeer(libro) {
-    if (!tieneLibro(libro.id)) await comprar(libro)
-    onOpenBook?.({
-      id: libro.id,
-      libro_id: libro.id,
-      slug: libro.slug,
-      title: libro.titulo,
-      author: libro.autor || 'Desconocido',
-      pages: libro.paginas || 200,
-      _baseColor: libro.color || '#cf8a6e',
-      summary: libro.descripcion || '',
-      cover: libro.portada_url || null,
-      es_ficcion: libro.es_ficcion ?? true,
-      progress: null,
-    })
+    const yaLoTenia = tieneLibro(libro.id)
+    const { error } = await comprarYLeerLibro(libro, { pendientes, tieneLibro })
+    if (!error && !yaLoTenia) setUserLibros(prev => [...prev, { libro_id: libro.id, leido: false }])
   }
 
   const handleEntrar = () => {
@@ -100,6 +90,7 @@ export default function VistaTiendaMobile({ onGoBack, user, onOpenBook, isSuperu
         catalogo={catalogo}
         loading={loading}
         user={user}
+        gatoColor={gatoColor}
         tieneLibro={tieneLibro}
         libroLeido={libroLeido}
         onComprar={comprar}
@@ -107,6 +98,7 @@ export default function VistaTiendaMobile({ onGoBack, user, onOpenBook, isSuperu
         onVolver={onGoBack}
         filtroTipo={filtroTipo}
         onFiltroTipo={setFiltroTipo}
+        bloqueado={accesoBloqueado}
       />
     </>
   )

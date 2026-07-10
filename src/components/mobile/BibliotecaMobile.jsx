@@ -9,11 +9,14 @@
 // =============================================================
 import React from 'react'
 import { useBiblioteca } from '../../hooks/useBiblioteca.js'
+import { useCompraLibro, LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
 import { SIN_CATEGORIA_ID, COLOR_DEFAULT } from '../biblioteca/constants.js'
 import { INK, BookCover } from './biblioteca/bibmHelpers.jsx'
 import { MobileShelves, CoverCarousel } from './biblioteca/BibShelvesMobile.jsx'
 import BibBookSheet from './biblioteca/BibBookSheet.jsx'
 import { FilterScreen, ManageScreen } from './biblioteca/BibScreensMobile.jsx'
+import PanelLibro from '../tienda/PanelLibro.jsx'
+import LibroReel from '../tienda/LibroReel.jsx'
 import '../../styles/biblioteca.mobile.css'
 
 const HERO_TABS = [
@@ -22,17 +25,60 @@ const HERO_TABS = [
   { id: 'recom', label: 'Para ti' },
 ]
 
-export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoNotebook }) {
+// Un libro a la vez de la Tienda (Novedades / Para ti), con swipe horizontal
+// para pasar al siguiente/anterior de esa misma lista (mismo umbral de 50px
+// que usa LibroReel para su swipe vertical). Recibe filas crudas de `libros`
+// (titulo/autor/portada_url) y las adapta al shape de BookCover solo para pintar.
+function CatalogRowMobile({ libros, onOpen, onPreview }) {
+  const [idx, setIdx] = React.useState(0)
+  const touchStartX = React.useRef(null)
+
+  function handleTouchStart(e) { touchStartX.current = e.touches[0].clientX }
+  function handleTouchEnd(e) {
+    if (touchStartX.current === null) return
+    const delta = touchStartX.current - e.changedTouches[0].clientX
+    if (Math.abs(delta) > 50) {
+      setIdx(i => Math.max(0, Math.min(libros.length - 1, i + (delta > 0 ? 1 : -1))))
+    }
+    touchStartX.current = null
+  }
+
+  const l = libros[idx]
+  return (
+    <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
+      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 2px 6px' }}>
+      <div key={l.id} onClick={() => onOpen(l)} style={{ cursor: 'pointer' }}>
+        <BookCover book={{ id: l.id, title: l.titulo, author: l.autor, cover: l.portada_url, color: l.color, pages: l.paginas }} h={150} />
+      </div>
+      <button className="bibm-act" style={{ marginTop: 12, padding: '5px 14px' }} onClick={() => onPreview(l)}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3"/></svg>
+        Preview
+      </button>
+      {libros.length > 1 && (
+        <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+          {libros.map((b, i) => (
+            <span key={b.id} style={{ width: 6, height: 6, borderRadius: '50%', background: i === idx ? INK : 'rgba(74,54,34,0.25)', transition: 'background .15s' }} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, isSuperuser, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoNotebook }) {
   // Lógica de datos compartida con Biblioteca desktop (ver src/hooks/useBiblioteca.js)
   const {
-    loadingBooks, categories, categoriasMap, books, featured, displayName, inicial,
+    loadingBooks, categories, categoriasMap, books, featured, novedades, recomendaciones, displayName, inicial,
     createCategoria, updateCategoria,
     deleteCategoria: deleteCategoriaBase,
     assignCategoriaToBook: assignCategoriaToBookBase,
+    fetchUserBooks,
   } = useBiblioteca(user, lastOpenedBookIds)
 
   // Estado de UI/chrome (no compartido)
   const [selectedBook, setSelectedBook] = React.useState(null)
+  const [selectedLibro, setSelectedLibro] = React.useState(null) // libro de Novedades/Para ti (aún no adquirido)
+  const [reelLibro, setReelLibro] = React.useState(null)
   const [search, setSearch] = React.useState('')
   // El input usa `search` (tecleo instantáneo); el filtrado usa el valor diferido
   // para no recalcular estantes/grupos en cada pulsación.
@@ -51,6 +97,19 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
     if (catalogoLibroId === 'manual') return
     await assignCategoriaToBookBase(catalogoLibroId, categoria_id)
     setSelectedBook(prev => prev && prev.id === catalogoLibroId ? { ...prev, categoria_id } : prev)
+  }
+
+  // Compra desde el panel in-place (Novedades/Para ti) — mismas primitivas y
+  // mismo límite de pendientes que la Tienda (ver useCompraLibro).
+  const pendientes = React.useMemo(() => books.filter(b => b.id !== 'manual' && !b.leido).length, [books])
+  const { comprar: comprarLibro, comprarYLeer: comprarYLeerLibro } = useCompraLibro(user, isSuperuser, onOpenBook)
+  const handleComprarLibro = async (libro) => {
+    const { error } = await comprarLibro(libro, { pendientes })
+    if (!error) { await fetchUserBooks(); setSelectedLibro(null) }
+  }
+  const handleEmpezarLeerLibro = async (libro) => {
+    const { error } = await comprarYLeerLibro(libro, { pendientes, tieneLibro: () => false })
+    if (!error) { await fetchUserBooks(); setSelectedLibro(null) }
   }
 
   // ── Filtrado + agrupado (derivados de UI) ──
@@ -175,8 +234,12 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
                     </div>
                   ) : <div className="bibm-hero-empty">Cuando empieces a leer un libro aparecerá acá para que retomes donde lo dejaste.</div>
                 ) : heroTab === 'novedades'
-                  ? <div className="bibm-hero-empty">Pronto verás acá los libros recién llegados a la biblioteca. <span className="bibm-soon">Próximamente</span></div>
-                  : <div className="bibm-hero-empty">Estamos preparando recomendaciones a tu medida. <span className="bibm-soon">Próximamente</span></div>}
+                  ? (novedades.length > 0
+                      ? <CatalogRowMobile key="novedades" libros={novedades} onOpen={setSelectedLibro} onPreview={setReelLibro} />
+                      : <div className="bibm-hero-empty">Pronto verás acá los libros recién llegados a la biblioteca. <span className="bibm-soon">Próximamente</span></div>)
+                  : (recomendaciones.length > 0
+                      ? <CatalogRowMobile key="recomendaciones" libros={recomendaciones} onOpen={setSelectedLibro} onPreview={setReelLibro} />
+                      : <div className="bibm-hero-empty">Estamos preparando recomendaciones a tu medida. <span className="bibm-soon">Próximamente</span></div>)}
               </div>
             </div>
 
@@ -224,6 +287,7 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
         <BibBookSheet
           book={books.find(b => b.id === selectedBook.id) || selectedBook}
           user={user}
+          gatoColor={gatoColor}
           categories={categories}
           onClose={closeSheet}
           onOpenBook={(book) => { closeSheet(); onOpenBook(book) }}
@@ -232,6 +296,23 @@ export default function BibliotecaMobile({ user, lastOpenedBookIds, onSignOut, o
           onAssignCategory={assignCategoriaToBook}
         />
       )}
+
+      {selectedLibro && (
+        <PanelLibro
+          key={selectedLibro.id}
+          libro={selectedLibro}
+          user={user}
+          gatoColor={gatoColor}
+          yaAdquirido={false}
+          yaLeido={false}
+          bloqueado={!isSuperuser && pendientes >= LIMITE_PENDIENTES}
+          onComprar={() => handleComprarLibro(selectedLibro)}
+          onClose={() => setSelectedLibro(null)}
+          onPreview={() => setReelLibro(selectedLibro)}
+          onEmpezarLeer={() => handleEmpezarLeerLibro(selectedLibro)}
+        />
+      )}
+      {reelLibro && <LibroReel libro={reelLibro} onClose={() => setReelLibro(null)} />}
 
       {/* Pantallas */}
       {screen === 'filter' && (

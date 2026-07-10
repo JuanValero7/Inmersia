@@ -25,7 +25,7 @@ import { usePerfilData } from '../../hooks/usePerfilData.js'  // ← lógica de 
 import '../../styles/perfil.css'        // base .pf-* (lo usan las sub-vistas)
 import '../../styles/perfil.mobile.css'           // overrides + chrome mobile .pm-*
 
-export default function PerfilMobile({ user, onGoBack, onSignOut }) {
+export default function PerfilMobile({ user, gatoColor, onChangeGatoColor, onGoBack, onSignOut }) {
   // — MISMA lógica de datos que Perfil.jsx (ver src/hooks/usePerfilData.js) —
   const {
     sec, setSec,
@@ -95,7 +95,8 @@ export default function PerfilMobile({ user, onGoBack, onSignOut }) {
           {sec === 'datos' && (
             <SecDatos
               nombre={nombre} apellido={apellido} email={email}
-              miembroDesde={miembroDesde} cargando={cargando} onSave={guardarDatos} />
+              miembroDesde={miembroDesde} cargando={cargando} onSave={guardarDatos}
+              gatoColor={gatoColor} onChangeGatoColor={onChangeGatoColor} />
           )}
           {sec === 'seguridad' && <SecSeguridad />}
           {sec === 'transac'   && <SecTransac />}

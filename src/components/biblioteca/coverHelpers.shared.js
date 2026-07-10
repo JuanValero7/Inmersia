@@ -25,4 +25,27 @@ export function lum(hex) { const n = parseInt(hex.slice(1), 16); const r = (n >>
 // Paleta "libro de cuento": variada y suave (clave del look acuarela)
 export const STORYBOOK = ['#e7dcc2', '#a7c4d2', '#86ad9e', '#d98b5f', '#d56a52', '#e0b256', '#7d8db5', '#cf8ea4', '#b9cf94', '#cf9a86', '#e9cf9b', '#9cb0c8', '#c98b6b', '#8fb6ad']
 
-export const spineColor = (b) => STORYBOOK[hashOf(b.id) % STORYBOOK.length]
+export const spineColor = (b) => b.color || STORYBOOK[hashOf(b.id) % STORYBOOK.length]
+
+// Tamaño de letra del título superpuesto en la portada ilustrada (BookCover):
+// proporcional al ancho de la portada (w), y más pequeño cuanto más largo es
+// el texto — misma lógica que tituloSizeClass/autorSizeClass de la Tienda,
+// pero en px directos porque aquí el ancho de portada varía por contexto
+// (hero, repisa, carrusel, ficha) en vez de ser un tamaño fijo por CSS.
+export function tituloFontSize(w, titulo) {
+  const base = w * 0.115
+  const len = (titulo || '').length
+  if (len > 52) return +(base * 0.65).toFixed(1)
+  if (len > 36) return +(base * 0.74).toFixed(1)
+  if (len > 22) return +(base * 0.85).toFixed(1)
+  return +base.toFixed(1)
+}
+
+// Igual que tituloFontSize pero para el nombre del autor (book-scribble).
+export function autorFontSize(w, autor) {
+  const base = w * 0.10
+  const len = (autor || '').length
+  if (len > 28) return +(base * 0.75).toFixed(1)
+  if (len > 18) return +(base * 0.875).toFixed(1)
+  return +base.toFixed(1)
+}

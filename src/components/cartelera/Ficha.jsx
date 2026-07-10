@@ -20,7 +20,7 @@ function Wave({ color }) {
     <path d="M2 8 Q22 1 42 8 T82 8 T122 8 T162 8 T202 8 T242 8 T282 8 T318 8" /></svg>)
 }
 
-export default function Ficha({ section, items = [], onBackTablero, onBackPortada, initialItemId, onGoBack, onGoForo, onGoBiblioteca, onOpenList, secciones }) {
+export default function Ficha({ section, items = [], onBackTablero, onBackPortada, initialItemId, onGoBack, onGoForo, onGoBiblioteca, onOpenList, secciones, gatoColor }) {
   const total = items.length
   const [sel, setSel] = useState(initialItemId || items[0]?.id || null)
   const [query, setQuery] = useState('')
@@ -60,8 +60,7 @@ export default function Ficha({ section, items = [], onBackTablero, onBackPortad
 
   return (
     <div className="cart-scene" style={rootStyle}>
-      <div className="bg-layer" />
-      {onOpenList && <Signpost current={section.key} onOpenSection={onOpenList} secciones={secciones} />}
+      {onOpenList && <Signpost current={section.key} onOpenSection={onOpenList} secciones={secciones} gatoColor={gatoColor} />}
       <div className="topbar">
         <div className="ttl">
           <h1>{section.label}</h1>

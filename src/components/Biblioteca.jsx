@@ -1,9 +1,12 @@
 import React from 'react'
 import { useBiblioteca } from '../hooks/useBiblioteca.js'
+import { useCompraLibro, LIMITE_PENDIENTES } from '../hooks/useCompraLibro.js'
 import { SIN_CATEGORIA_ID, COLOR_DEFAULT } from './biblioteca/constants.js'
 import '../styles/biblioteca.css'
 import BibBookModal from './biblioteca/BibBookModal.jsx'
 import ManageCategoriasModal from './biblioteca/ManageCategoriasModal.jsx'
+import PanelLibro from './tienda/PanelLibro.jsx'
+import LibroReel from './tienda/LibroReel.jsx'
 import { InmHeader, Swimlane } from './biblioteca/clay/HeaderSwimlane.jsx'
 import { FlatShelves, CoverShelf } from './biblioteca/clay/Shelves.jsx'
 import { INK } from './biblioteca/clay/helpers.jsx'
@@ -17,22 +20,38 @@ import { INK } from './biblioteca/clay/helpers.jsx'
 // (búsqueda, groups, portadas).
 // =============================================================
 
-function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoNotebook }) {
+function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSignOut, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoNotebook }) {
   // Lógica de datos compartida con BibliotecaMobile (ver src/hooks/useBiblioteca.js)
   const {
-    loadingBooks, categories, books, featured, displayName, inicial,
+    loadingBooks, categories, books, featured, novedades, recomendaciones, displayName, inicial,
     createCategoria, updateCategoria,
     deleteCategoria: deleteCategoriaBase,
     assignCategoriaToBook: assignCategoriaToBookBase,
+    fetchUserBooks,
   } = useBiblioteca(user, lastOpenedBookIds)
 
   // Estado de UI/chrome (no compartido)
   const [selectedBook, setSelectedBook] = React.useState(null);
+  const [selectedLibro, setSelectedLibro] = React.useState(null); // libro de Novedades/Recomendaciones (aún no adquirido)
+  const [reelLibro, setReelLibro] = React.useState(null); // preview (LibroReel) del panel de arriba
   const [showManageCats, setShowManage] = React.useState(false);
   const [showFilters, setShowFilters] = React.useState(false);
   const [searchInput, setSearchInput] = React.useState('');
   const [search, setSearch] = React.useState('');
   const [activeCategory, setCategory] = React.useState(null); // null | 'none' | uuid
+
+  // Compra desde el panel in-place (Novedades/Recomendaciones) — mismas
+  // primitivas y mismo límite de pendientes que la Tienda (ver useCompraLibro).
+  const pendientes = React.useMemo(() => books.filter(b => b.id !== 'manual' && !b.leido).length, [books]);
+  const { comprar: comprarLibro, comprarYLeer: comprarYLeerLibro } = useCompraLibro(user, isSuperuser, onOpenBook);
+  const handleComprarLibro = async (libro) => {
+    const { error } = await comprarLibro(libro, { pendientes });
+    if (!error) { await fetchUserBooks(); setSelectedLibro(null); }
+  };
+  const handleEmpezarLeerLibro = async (libro) => {
+    const { error } = await comprarYLeerLibro(libro, { pendientes, tieneLibro: () => false });
+    if (!error) { await fetchUserBooks(); setSelectedLibro(null); }
+  };
 
   // ── Wrappers que sincronizan estado de UI tras las primitivas del hook ──
   async function deleteCategoria(id) {
@@ -74,8 +93,6 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
     return out.filter(g => g.books.length);
   }, [categories, searchedBooks]);
 
-  const shelvesCount = Math.max(1, Math.ceil(groups.length / 3));
-
   // Repisa "Últimos abiertos" (máx 3)
   const portadas = React.useMemo(() => {
     const nonManual = books.filter(b => b.id !== 'manual')
@@ -112,7 +129,7 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(74,54,34,0.5)', fontSize: 17, fontWeight: 600 }}>Cargando tu biblioteca…</div>
         ) : (
           <>
-            <Swimlane featured={featured} onOpen={openBook} />
+            <Swimlane featured={featured} onOpen={openBook} novedades={novedades} recomendaciones={recomendaciones} onOpenLibro={setSelectedLibro} onPreviewLibro={setReelLibro} />
 
             {portadas.length > 0 && (
               <div style={{ marginTop: 36 }}>
@@ -168,6 +185,7 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
         <BibBookModal
           book={books.find(b => b.id === selectedBook.id) || selectedBook}
           user={user}
+          gatoColor={gatoColor}
           onClose={() => setSelectedBook(null)}
           onOpenBook={(book) => { setSelectedBook(null); onOpenBook(book); }}
           onGoForo={(book) => { setSelectedBook(null); onGoForo(book); }}
@@ -180,6 +198,22 @@ function VistaBiblioteca({ user, lastOpenedBookIds, onSignOut, onOpenBook, onGoT
         <ManageCategoriasModal categories={categories} onClose={() => setShowManage(false)}
           onCreate={createCategoria} onUpdate={updateCategoria} onDelete={deleteCategoria} />
       )}
+      {selectedLibro && (
+        <PanelLibro
+          key={selectedLibro.id}
+          libro={selectedLibro}
+          user={user}
+          gatoColor={gatoColor}
+          yaAdquirido={false}
+          yaLeido={false}
+          bloqueado={!isSuperuser && pendientes >= LIMITE_PENDIENTES}
+          onComprar={() => handleComprarLibro(selectedLibro)}
+          onClose={() => setSelectedLibro(null)}
+          onPreview={() => setReelLibro(selectedLibro)}
+          onEmpezarLeer={() => handleEmpezarLeerLibro(selectedLibro)}
+        />
+      )}
+      {reelLibro && <LibroReel libro={reelLibro} onClose={() => setReelLibro(null)} />}
     </div>
   );
 }
