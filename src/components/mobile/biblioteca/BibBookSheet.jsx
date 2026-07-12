@@ -24,7 +24,7 @@ function Estrellas({ valor, onChange }) {
   )
 }
 
-function SheetBody({ book, user, gatoColor = 'negro', categories, onOpenBook, onGoForo, onGoNotebook, onAssignCategory }) {
+function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook, onAssignCategory }) {
   const esManual = book.id === 'manual'
   const c = book.color || '#5a3d28'
   const hasProgress = typeof book.progress === 'number'
@@ -52,7 +52,6 @@ function SheetBody({ book, user, gatoColor = 'negro', categories, onOpenBook, on
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <div style={{ fontWeight: 800, fontSize: 20, lineHeight: 1.12, letterSpacing: '-0.01em', color: INK, overflowWrap: 'break-word' }}>{book.title}</div>
           <div style={{ color: 'rgba(74,54,34,0.62)', fontSize: 13.5, marginTop: 5, fontWeight: 600 }}>{book.author}</div>
-          <div style={{ flex: '1 1 auto', minHeight: 105, marginTop: 4, backgroundImage: `url('/assets/biblioteca/gato-${gatoColor}-1-thumb.webp')`, backgroundSize: 'contain', backgroundPosition: 'center bottom', backgroundRepeat: 'no-repeat', filter: `drop-shadow(1px 2px 2px ${INK}30)` }} />
         </div>
       </div>
 
@@ -145,7 +144,7 @@ function SheetBody({ book, user, gatoColor = 'negro', categories, onOpenBook, on
   )
 }
 
-export default function BibBookSheet({ book, user, gatoColor, categories, onClose, onOpenBook, onGoForo, onGoNotebook, onAssignCategory, transparentBackdrop = false }) {
+export default function BibBookSheet({ book, user, categories, onClose, onOpenBook, onGoForo, onGoNotebook, onAssignCategory, transparentBackdrop = false }) {
   const [entering, setEntering] = React.useState(true)
   React.useEffect(() => { const t = setTimeout(() => setEntering(false), 20); return () => clearTimeout(t) }, [])
   React.useEffect(() => {
@@ -165,7 +164,7 @@ export default function BibBookSheet({ book, user, gatoColor, categories, onClos
           </button>
         </div>
         <div className="bibm-noscroll" style={{ overflowY: 'auto', padding: '4px 18px 26px', maxHeight: 'calc(100% - 64px)' }}>
-          <SheetBody book={book} user={user} gatoColor={gatoColor} categories={categories}
+          <SheetBody book={book} user={user} categories={categories}
             onOpenBook={onOpenBook} onGoForo={onGoForo} onGoNotebook={onGoNotebook} onAssignCategory={onAssignCategory} />
         </div>
       </div>

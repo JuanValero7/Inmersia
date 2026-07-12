@@ -1,18 +1,16 @@
 // =============================================================
-// INMERSIA · Biblioteca mobile — estantes + carrusel de portadas.
+// INMERSIA · Biblioteca mobile — estantes.
 // Estante por categoría: lomos en scroll-H, cap 15 por fila; si
 // la categoría supera el cap, se crea otra fila de la misma
 // categoría. Nicho de pared + tabla de madera + planta + etiqueta.
 // =============================================================
 import React from 'react'
-import { INK, WALL, inmTint, hashOf, spineColor, spineW, spineH, BookCover } from './bibmHelpers.jsx'
+import { INK, WALL, inmTint, hashOf, spineColor, spineW, spineH } from './bibmHelpers.jsx'
 
+// Mismo fondo plano que la "pared" de estantería en desktop (ver ACUA.wall
+// en src/components/biblioteca/clay/Shelves.jsx) — sin textura/gradiente propios.
 const WALL_STYLE = {
   backgroundColor: WALL,
-  backgroundImage:
-    'linear-gradient(180deg, rgba(255,255,255,0.10), rgba(40,30,18,0.07)),' +
-    'repeating-linear-gradient(92deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 7px),' +
-    'radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,0.14), transparent 60%)',
 }
 const WOOD = { body: 'linear-gradient(180deg,#d8a86a,#c98f4f)', under: '#9c6a36', grain: 'rgba(120,80,40,0.22)' }
 const BOOK_AREA = 168
@@ -124,28 +122,6 @@ export function MobileShelves({ groups, onOpen }) {
       {groups.map((g, i) => (
         <ShelfCategory key={g.cat.id} group={g} plantIdx={(i % 4) + 1} onOpen={onOpen} />
       ))}
-    </div>
-  )
-}
-
-// ─── Carrusel de portadas (Últimos abiertos, máx 3) ─────────
-export function CoverCarousel({ books, onOpen }) {
-  const H = 158
-  return (
-    <div style={{ position: 'relative' }}>
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 11, height: H + 18, borderRadius: '10px 10px 4px 4px',
-        ...WALL_STYLE, border: `2px solid ${INK}`, borderBottom: 'none',
-        boxShadow: 'inset 0 10px 18px -10px rgba(40,30,18,0.4), inset 0 0 0 5px rgba(255,255,255,0.04)' }} />
-      <div className="bibm-noscroll" style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 14,
-        padding: '0 16px', overflowX: 'auto', scrollSnapType: 'x proximity', WebkitOverflowScrolling: 'touch' }}>
-        {books.map(b => (
-          <div key={b.id} className="bibm-bk" style={{ scrollSnapAlign: 'start' }}
-            onClick={onOpen ? (e) => onOpen(b, e.currentTarget.getBoundingClientRect()) : undefined}>
-            <BookCover book={b} h={H} />
-          </div>
-        ))}
-      </div>
-      <Plank />
     </div>
   )
 }

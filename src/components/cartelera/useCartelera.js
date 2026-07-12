@@ -42,8 +42,8 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
 
       const pct = Math.max(0, Math.min(100, prog?.porcentaje ?? 0))
 
-      // 2) En paralelo: items + imágenes + total capítulos
-      const [carteleraRes, principalRes, chapsRes] = await Promise.all([
+      // 2) En paralelo: items + imágenes + total capítulos + predicciones del usuario
+      const [carteleraRes, principalRes, chapsRes, prediccionesRes] = await Promise.all([
         supabase.from('cartelera_items')
           .select('id, seccion, nombre, descripcion, capitulo_numero, metadata, imagen:biblioteca_media!imagen_media_id(url, slug, titulo)')
           .eq('libro_id', libroId)
@@ -54,6 +54,10 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
         supabase.from('capitulos')
           .select('id', { count: 'exact', head: true })
           .eq('libro_id', libroId),
+        supabase.from('predicciones_usuario')
+          .select('capitulo_num, contenido')
+          .eq('user_id', userId).eq('libro_id', libroId)
+          .order('capitulo_num', { ascending: true }),
       ])
 
       // capActual derivado de pct: inversa de round(pendingIdx / total * 100)
@@ -88,6 +92,23 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
           })
         }
       }
+
+      // predicciones del usuario → sección "notas" (una por capítulo, sin agrupar)
+      const notas = []
+      for (const p of (prediccionesRes.data || [])) {
+        if (!p.contenido) continue
+        if (!isSuperuser && !(capActual > 0 && p.capitulo_num < capActual)) continue
+        notas.push({
+          id: p.capitulo_num,
+          allIds: [p.capitulo_num],
+          nombre: `Capítulo ${p.capitulo_num}`,
+          capitulo_numero: p.capitulo_num,
+          descripcion: p.contenido,
+          metadata: {},
+          entradas: [{ capitulo_numero: p.capitulo_num, descripcion: p.contenido }],
+        })
+      }
+      if (notas.length) agrupado.notas = notas
 
       const imgs = {}
       for (const row of (principalRes.data || [])) {

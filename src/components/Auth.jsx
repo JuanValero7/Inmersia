@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 import { supabase } from '../lib/supabase.js'
-import { MANUAL_LIBRO_ID } from '../lib/constants.js'
+import LegalModal from './legal/LegalModal.jsx'
 import '../styles/auth.css'
 
 // Logo y fondo se sirven desde public/assets (referencia con ruta absoluta)
@@ -18,6 +18,7 @@ export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
   const [loginForm,   setLoginForm]   = useState({ email: '', password: '' })
   const [regForm,     setRegForm]     = useState({ nombre: '', apellido: '', fechaNacimiento: '', email: '', password: '', confirmPassword: '' })
   const [forgotEmail, setForgotEmail] = useState('')
+  const [legalDoc,    setLegalDoc]    = useState(null) // null | 'terminos' | 'privacidad'
 
   const setL = (k, v) => setLoginForm(f => ({ ...f, [k]: v }))
   const setR = (k, v) => setRegForm(f => ({ ...f, [k]: v }))
@@ -51,23 +52,17 @@ export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
     setLoading(true)
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: regForm.email.trim(), password: regForm.password,
-      options: { data: { nombre: regForm.nombre.trim(), apellido: regForm.apellido.trim() } },
-    })
-    if (signUpError) { setLoading(false); setError(signUpError.message); return }
-    if (data.user) {
-      await supabase.from('perfiles').insert({
-        id: data.user.id,
+      options: { data: {
         nombre: regForm.nombre.trim(),
         apellido: regForm.apellido.trim(),
         fecha_nacimiento: regForm.fechaNacimiento || null,
-      })
-      // Todo usuario nuevo recibe el Manual del Explorador automáticamente
-      await supabase.from('bibliotecas_usuarios').insert({
-        user_id: data.user.id,
-        libro_id: MANUAL_LIBRO_ID,
-        leido: false,
-      })
-    }
+      } },
+    })
+    // El perfil y el Manual del Explorador se crean en App.jsx (ensureProfile) al
+    // recibir el evento SIGNED_IN — cubre tanto la sesión inmediata (confirmación de
+    // email desactivada) como el primer login tras confirmar (cuando signUp no
+    // devuelve sesión y no hay auth.uid() disponible todavía para el insert).
+    if (signUpError) { setLoading(false); setError(signUpError.message); return }
     setLoading(false)
     if (data.session) { onAuthSuccess(data.user) }
     else { setSuccess('¡Registro exitoso! Revisa tu correo para confirmar tu cuenta.'); setTab('login') }
@@ -176,8 +171,17 @@ export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
               </button>
             </form>
           )}
+
+          <p className="auth-foot" style={{ marginTop: 18, fontSize: 12 }}>
+            Al continuar, aceptás los{' '}
+            <button type="button" onClick={() => setLegalDoc('terminos')}>Términos y Condiciones</button>
+            {' '}y la{' '}
+            <button type="button" onClick={() => setLegalDoc('privacidad')}>Política de Privacidad</button>.
+          </p>
         </div>
       </div>
+
+      {legalDoc && <LegalModal initialDoc={legalDoc} onClose={() => setLegalDoc(null)} />}
     </div>
   )
 }

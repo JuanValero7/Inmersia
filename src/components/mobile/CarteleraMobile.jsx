@@ -18,7 +18,7 @@ import { useBookBySlug } from '../../hooks/useBookBySlug.js'
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
 import clsx from 'clsx'
 import { useCartelera } from '../cartelera/useCartelera.js'
-import { SECCIONES, seccionMeta, shade, getSecciones } from '../cartelera/carteleraHelpers.js'
+import { SECCIONES, shade, getSecciones } from '../cartelera/carteleraHelpers.js'
 import TableroPersonajes from '../cartelera/TableroPersonajes.jsx'
 import TableroLugares from '../cartelera/TableroLugares.jsx'
 import TableroHechos from '../cartelera/TableroHechos.jsx'
@@ -103,9 +103,22 @@ function Header({ book, onBack, onExplore }) {
 // ── Gato-dock: salta a las otras 4 secciones ──
 function CatDock({ currentKey, onJump, secciones = SECCIONES, gatoColor = 'negro' }) {
   const [open, setOpen] = useState(false)
-  const others = secciones.filter(s => s.key !== currentKey).map(s => seccionMeta(s.key))
+  const ref = useRef(null)
+  const others = secciones.filter(s => s.key !== currentKey)
+
+  useEffect(() => {
+    if (!open) return
+    const handleOutside = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handleOutside)
+    document.addEventListener('touchstart', handleOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleOutside)
+      document.removeEventListener('touchstart', handleOutside)
+    }
+  }, [open])
+
   return (
-    <div className="cm-cat-dock">
+    <div className="cm-cat-dock" ref={ref}>
       <button type="button" className="cm-cat-btn" onClick={() => setOpen(o => !o)} aria-label="Otras categorías">
         <img className="cm-cat-img" src={`/assets/cartelera/gato-${gatoColor}-2.webp`} alt="Gato" />
       </button>
@@ -192,7 +205,7 @@ function Portada({ book, onOpen, secciones = SECCIONES }) {
 
 // ── Vista de sección: tablero (Mural) / lista / ficha ──
 function SectionView({ sectionKey, data, onGoBack, onJump, onExplore, initialItemId, secciones = SECCIONES, tableros = TABLEROS_FICCION, esNoficcion = false, gatoColor = 'negro' }) {
-  const meta = seccionMeta(sectionKey)
+  const meta = secciones.find(s => s.key === sectionKey)
   const [tab, setTab] = useState(sectionKey === 'notas' ? 'mural' : 'lista')      // mural | lista | ficha
   const [selId, setSelId] = useState(null)
   const [boardRef, scale] = useFitScale()
@@ -200,9 +213,10 @@ function SectionView({ sectionKey, data, onGoBack, onJump, onExplore, initialIte
   const items = data.itemsBySeccion[sectionKey] || []
   const current = items.find(it => it.id === selId || it.allIds?.includes(selId)) || null
   const Tablero = tableros[sectionKey]
+  const listScrollRef = useRef(0)
 
   // al cambiar de sección reseteamos a Lista (o Mural si es Notas)
-  useEffect(() => { setTab(isNotas ? 'mural' : 'lista'); setSelId(null) }, [sectionKey])
+  useEffect(() => { setTab(isNotas ? 'mural' : 'lista'); setSelId(null); listScrollRef.current = 0 }, [sectionKey])
 
   // salto directo a un item desde X-ray: back desde ficha va al origen, no a la lista
   useEffect(() => {
@@ -213,7 +227,7 @@ function SectionView({ sectionKey, data, onGoBack, onJump, onExplore, initialIte
     }
   }, [initialItemId, items])
 
-  const openLista = () => { if (!isNotas) setTab('lista') }
+  const openLista = () => setTab('lista')
   const pick = (id) => { setSelId(id); setTab('ficha') }
 
   const fichaBackLabel = 'Lista'
@@ -228,32 +242,30 @@ function SectionView({ sectionKey, data, onGoBack, onJump, onExplore, initialIte
           <span className="cm-sec-swatch" style={{ background: meta.color }}>{meta.label[0]}</span>
           <h2>{meta.label}</h2>
         </div>
-        {isNotas
-          ? <span className="cm-sec-tag">Investigación</span>
-          : (
-            <div className="cm-seg">
-              <button type="button" className={clsx(tab === 'mural' && 'active')} onClick={() => setTab('mural')}><MuralIcon /> Mural</button>
-              <button type="button" className={clsx(tab !== 'mural' && 'active')} onClick={openLista}><ListIcon /> Lista</button>
-            </div>
-          )}
+        <div className="cm-seg">
+          <button type="button" className={clsx(tab === 'mural' && 'active')} onClick={() => setTab('mural')}><MuralIcon /> Mural</button>
+          <button type="button" className={clsx(tab !== 'mural' && 'active')} onClick={openLista}><ListIcon /> Lista</button>
+        </div>
       </div>
 
       {tab === 'mural' && (
         <div className="cm-board-area" ref={boardRef} onClick={isNotas ? undefined : openLista}>
           <div className="cart-canvas-box" style={{ width: BOARD_W * scale, height: BOARD_H * scale }}>
             {isNotas
-              ? <TableroNotas pct={data.porcentaje} scale={scale} principal={data.principal} onOpenSection={onJump} esNoficcion={esNoficcion} />
+              ? <TableroNotas pct={data.porcentaje} scale={scale} principal={data.principal} onOpenSection={onJump} esNoficcion={esNoficcion}
+                  notasItems={items} onOpenNotas={openLista} />
               : <Tablero pct={data.porcentaje} scale={scale} imageUrl={data.principal[sectionKey]?.url}
                   videoUrl={data.principal[sectionKey]?.videoUrl} />}
           </div>
         </div>
       )}
 
-      {tab === 'lista' && !isNotas && (
-        <CarteleraMobileLista section={meta} items={items} onPick={pick} />
+      {tab === 'lista' && (
+        <CarteleraMobileLista section={meta} items={items} onPick={pick}
+          initialScroll={listScrollRef.current} onScroll={(y) => { listScrollRef.current = y }} />
       )}
 
-      {tab === 'ficha' && !isNotas && (
+      {tab === 'ficha' && (
         <CarteleraMobileFicha section={meta} item={current} onBack={fichaOnBack} backLabel={fichaBackLabel} />
       )}
 
@@ -284,11 +296,11 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
   const [fichaInitItemId, setFichaInitItemId] = useState(() => jumpToItemId || null)
 
   useEffect(() => {
-    if (!jumpToItemId) return
+    if (!jumpToItemId || bookLoading) return
     setFichaInitItemId(jumpToItemId)
     setView({ kind: 'board', key: secciones[0].key })
     onJumpConsumed?.()
-  }, [jumpToItemId])
+  }, [jumpToItemId, bookLoading])
 
   const openSection = (k) => {
     setView({ kind: 'board', key: k })

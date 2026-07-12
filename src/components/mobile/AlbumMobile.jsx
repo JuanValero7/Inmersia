@@ -1,30 +1,39 @@
 // src/components/mobile/AlbumMobile.jsx
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAlbum, formatSeg } from '../../hooks/useAlbum.js'
 import '../../styles/album.css'
 import '../../styles/album.mobile.css'
 
 const SEC_META = {
-  personajes: { label: 'Personajes', color: 'var(--rojo)' },
-  lugares:    { label: 'Lugares',    color: 'var(--verde)' },
-  capitulos:  { label: 'Capítulos',  color: 'var(--azul)' },
+  personajes:  { label: 'Personajes',  color: 'var(--rojo)' },
+  lugares:     { label: 'Lugares',     color: 'var(--verde)' },
+  capitulos:   { label: 'Capítulos',   color: 'var(--azul)' },
+  infografias: { label: 'Infografías', color: 'var(--oro)' },
 }
-const ORDER = ['personajes', 'lugares', 'capitulos']
+const ORDER_FICCION    = ['personajes', 'lugares', 'capitulos']
+const ORDER_NOFICCION  = ['infografias']
+
+// Solo las primeras 3 posiciones (las que se ven en pantalla) exigen el
+// gesto de "pegar"; más allá de eso, se consideran ya pegadas — ahí no hay
+// casillero propio donde clickear.
+const visiblePegada = (it, i) => it.unlocked && it.url && (i >= 3 || it.pegada)
 
 const ISearch = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>)
 const IBack   = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>)
 const IPlay   = ({ s = 14 }) => (<svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>)
 const IPause  = ({ s = 14 }) => (<svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>)
 const ISlot   = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 15l4-4 3 3 4-5 7 7" /><circle cx="8.5" cy="9" r="1.4" /></svg>)
+const IStick  = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3v4M15 3v4M4 8h16M6 8v11a2 2 0 002 2h8a2 2 0 002-2V8" /><path d="M9.5 13.5l2 2 3-3.5" /></svg>)
 const IInvest = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>)
 const IForo   = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>)
 const ILeer   = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6.25C10.83 5.48 9.25 5 7.5 5S4.17 5.48 3 6.25v13C4.17 18.48 5.75 18 7.5 18s3.33.48 4.5 1.25m0-13C13.17 5.48 14.75 5 16.5 5S19.83 5.48 21 6.25v13C19.83 18.48 18.25 18 16.5 18s-3.33.48-4.5 1.25m0-13v13" /></svg>)
 const IRotate = () => (<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2.5" /><path d="M9 18h6" /></svg>)
 
-function Cell({ item, color, idx, hero, onOpen }) {
+function Cell({ item, color, idx, hero, onOpen, pegarMode, onPegar }) {
+  const [pegando, setPegando] = useState(false)
   const num = String(idx + 1).padStart(2, '0')
   const cls = `cellL${hero ? ' hero' : ''}`
+
   if (!item || !item.unlocked) {
     return (
       <div className={`${cls} empty`}>
@@ -32,9 +41,24 @@ function Cell({ item, color, idx, hero, onOpen }) {
       </div>
     )
   }
+
+  if (!item.pegada) {
+    const handleClick = () => {
+      if (!pegarMode || pegando) return
+      setPegando(true)
+      onPegar?.(item.key)
+      setTimeout(() => setPegando(false), 500)
+    }
+    return (
+      <div className={`${cls} pending${pegarMode ? ' armed' : ''}${pegando ? ' pegando' : ''}`} onClick={handleClick}>
+        <div className="eslot pend"><IStick /><span>Para pegar</span></div>
+      </div>
+    )
+  }
+
   const video = idx === 0
   return (
-    <div className={cls} style={{ '--c': color }} title={item.name || ''} onClick={onOpen}>
+    <div className={`${cls}${pegando ? ' pegando' : ''}`} style={{ '--c': color }} title={item.name || ''} onClick={onOpen}>
       {item.url
         ? <img src={item.url} alt={item.name || ''} loading="lazy" />
         : <div className="fill">{(item.name || '?').charAt(0)}</div>}
@@ -47,11 +71,11 @@ function Cell({ item, color, idx, hero, onOpen }) {
   )
 }
 
-function Catrow({ kind, data, onMore, onOpen }) {
+function Catrow({ kind, data, onMore, onOpen, pegarMode, onPegar }) {
   const meta = SEC_META[kind]
   const { total = 0, unlocked = 0, items = [] } = data || {}
   const slots = items.length ? items.slice(0, 3) : [{ unlocked: false }]
-  const filteredItems = items.filter(it => it.unlocked && it.url)
+  const filteredItems = items.filter(visiblePegada)
   return (
     <div className="catrow">
       <div className="clabelL">
@@ -62,10 +86,11 @@ function Catrow({ kind, data, onMore, onOpen }) {
       </div>
       <div className="stripL">
         {slots.map((it, i) => {
-          const fi = (it && it.unlocked && it.url) ? filteredItems.indexOf(it) : -1
+          const fi = visiblePegada(it, i) ? filteredItems.indexOf(it) : -1
           return (
             <Cell key={i} item={it} color={meta.color} idx={i} hero={i === 0}
-              onOpen={fi >= 0 ? () => onOpen(kind, fi) : undefined} />
+              onOpen={fi >= 0 ? () => onOpen(kind, fi) : undefined}
+              pegarMode={pegarMode} onPegar={(itemKey) => onPegar(kind, itemKey)} />
           )
         })}
         {total > 3 && (
@@ -142,7 +167,7 @@ function Carousel({ open, kind, startIdx, entry, onClose }) {
 
   const meta = open && kind ? SEC_META[kind] : null
   const data = (open && kind) ? (entry?.secciones?.[kind] || {}) : {}
-  const cells = (data.items || []).filter(it => it.unlocked && it.url)
+  const cells = (data.items || []).filter(visiblePegada)
   lenRef.current = cells.length
 
   useEffect(() => {
@@ -190,11 +215,12 @@ function Carousel({ open, kind, startIdx, entry, onClose }) {
 
 const KEY = 'inmersia-album-m-page'
 
-export default function AlbumMobile({ user, onOpenBook, onGoBack }) {
-  const { items, loading } = useAlbum(user)
-  const navigate = useNavigate()
+export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onGoBack, onGoForo, onGoInvestigacion }) {
+  const { items, loading, pegar } = useAlbum(user)
   const [idx, setIdx] = useState(0)
   const [sheet, setSheet] = useState(null) // { kind, idx } | null
+  const [gatoMenuOpen, setGatoMenuOpen] = useState(false)
+  const [pegarMode, setPegarMode] = useState(false)
 
   useEffect(() => {
     if (!items.length) return
@@ -204,7 +230,7 @@ export default function AlbumMobile({ user, onOpenBook, onGoBack }) {
 
   const go = (i) => {
     if (i < 0 || i >= items.length) return
-    setIdx(i); setSheet(null)
+    setIdx(i); setSheet(null); setPegarMode(false); setGatoMenuOpen(false)
     try { localStorage.setItem(KEY, String(i)) } catch { /* ignore */ }
   }
 
@@ -239,6 +265,7 @@ export default function AlbumMobile({ user, onOpenBook, onGoBack }) {
   const safe = Math.min(idx, items.length - 1)
   const entry = items[safe]
   const { libro, pct, stats, secciones, previewAudio } = entry
+  const order = libro.es_ficcion === false ? ORDER_NOFICCION : ORDER_FICCION
   const rows = [
     { k: 'Tiempo total',     v: formatSeg(stats.totalSeg) || '—' },
     { k: 'Veces abierto',    v: stats.vecesAbierto ? `${stats.vecesAbierto} ×` : '—' },
@@ -246,8 +273,41 @@ export default function AlbumMobile({ user, onOpenBook, onGoBack }) {
     { k: 'Notas tomadas',    v: stats.notas ? `${stats.notas}` : '—' },
   ]
 
+  // Pendientes de pegar, solo entre las primeras 3 posiciones visibles por sección.
+  const pendientesVisibles = order.reduce((n, kind) => {
+    const secItems = secciones[kind]?.items || []
+    return n + secItems.slice(0, 3).filter(it => it.unlocked && !it.pegada).length
+  }, 0)
+
+  const onPegar = (kind, itemKey) => pegar(libro.libro_id, kind, itemKey)
+
   return (
     <div className="album-m-root">
+      <button type="button" className="album-m-gato-wrap" aria-label="Pegar barajitas"
+        onClick={() => setGatoMenuOpen(o => !o)}>
+        <img className="album-m-gato" src={`/assets/biblioteca/gato-${gatoColor}-1-thumb.webp`} alt="" />
+        {pendientesVisibles > 0 && <span className="album-m-gato-badge" />}
+      </button>
+
+      {gatoMenuOpen && (
+        <>
+          <div className="album-m-gatomenu-backdrop" onClick={() => setGatoMenuOpen(false)} />
+          <div className="album-m-gatomenu">
+            <p className="album-m-gatomenu-title">Álbum</p>
+            <button type="button" className="album-m-gatomenu-item" disabled={!pendientesVisibles}
+              onClick={() => { setPegarMode(true); setGatoMenuOpen(false) }}>
+              Pegar barajitas{pendientesVisibles > 0 ? ` (${pendientesVisibles})` : ''}
+            </button>
+          </div>
+        </>
+      )}
+
+      {pegarMode && (
+        <div className="album-m-pegarhint" onClick={() => setPegarMode(false)}>
+          Tocá una casilla para pegarla · <b>listo</b>
+        </div>
+      )}
+
       <div className="album-m-rotate">
         <IRotate />
         <h3>Girá el teléfono</h3>
@@ -301,10 +361,10 @@ export default function AlbumMobile({ user, onOpenBook, onGoBack }) {
           <Music url={previewAudio} />
 
           <div className="accessL">
-            <a className="accL" data-c="investigacion" onClick={() => navigate(`/investigacion/${libro.slug || libro.id}`)}>
+            <a className="accL" data-c="investigacion" onClick={() => onGoInvestigacion(libro)}>
               <span className="aic"><IInvest /></span><span className="alab">Investig.</span>
             </a>
-            <a className="accL" data-c="foro" onClick={() => navigate(`/foro/${libro.slug || libro.id}`)}>
+            <a className="accL" data-c="foro" onClick={() => onGoForo(libro)}>
               <span className="aic"><IForo /></span><span className="alab">Foro</span>
             </a>
             <a className="accL" data-c="leer" onClick={() => onOpenBook(libro)}>
@@ -314,10 +374,11 @@ export default function AlbumMobile({ user, onOpenBook, onGoBack }) {
         </section>
 
         <section className="pageL right">
-          {ORDER.map(kind => (
+          {order.map(kind => (
             <Catrow key={kind} kind={kind} data={secciones[kind]}
               onMore={(k) => setSheet({ kind: k, idx: 0 })}
-              onOpen={(k, i) => setSheet({ kind: k, idx: i })} />
+              onOpen={(k, i) => setSheet({ kind: k, idx: i })}
+              pegarMode={pegarMode} onPegar={onPegar} />
           ))}
         </section>
       </div>

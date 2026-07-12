@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useNavigate, Outlet, useLocation } from 'react-router-dom'
 import { supabase } from './lib/supabase.js'
+import { ensureProfile } from './lib/ensureProfile.js'
 import useIsMobile from './hooks/useIsMobile.js'
 import { useSuperuser } from './hooks/useSuperuser.js'
 import { useGatoColor } from './hooks/useGatoColor.js'
@@ -57,6 +58,8 @@ export default function App() {
   const [authReady,           setAuthReady]           = useState(false)
   const [currentBook,         setCurrentBook]         = useState(null)
   const [lastOpenedBookIds,   setLastOpenedBookIds]   = useState([])
+  const lastOpenedBookIdsRef = useRef(lastOpenedBookIds)
+  lastOpenedBookIdsRef.current = lastOpenedBookIds
   const [foroSource,          setForoSource]          = useState('biblioteca')
   const [carteleraSource,     setCarteleraSource]     = useState('lectura')
   const [lectorStartNotebook, setLectorStartNotebook] = useState(false)
@@ -109,6 +112,7 @@ export default function App() {
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
+      if (event === 'SIGNED_IN' && session?.user) ensureProfile(session.user)
       if (event === 'PASSWORD_RECOVERY') { navigate('/reset-password'); return }
       if (event === 'SIGNED_OUT') {
         setLastOpenedBookIds([])
@@ -127,15 +131,15 @@ export default function App() {
 
   function pushBookId(bookId, currentUser) {
     if (bookId === 'manual') return // no es un libro real: no tiene UUID y rompería el array ultimos_libros
-    setLastOpenedBookIds(prev => {
-      const next = [bookId, ...prev.filter(id => id !== bookId)].slice(0, 3)
-      if (currentUser) {
-        supabase
-          .from('preferencias_usuario')
-          .upsert({ user_id: currentUser.id, ultimos_libros: next, updated_at: new Date().toISOString() })
-      }
-      return next
-    })
+    const next = [bookId, ...lastOpenedBookIdsRef.current.filter(id => id !== bookId)].slice(0, 3)
+    lastOpenedBookIdsRef.current = next
+    setLastOpenedBookIds(next)
+    if (currentUser) {
+      supabase
+        .from('preferencias_usuario')
+        .upsert({ user_id: currentUser.id, ultimos_libros: next, updated_at: new Date().toISOString() })
+        .then(({ error }) => { if (error) console.error('No se pudieron guardar los últimos libros:', error) })
+    }
   }
 
   const handleOpenBook = useCallback((book) => {
@@ -198,6 +202,7 @@ export default function App() {
               user={user}
               currentBook={currentBook}
               isSuperuser={isSuperuser}
+              gatoColor={gatoColor}
               lectorStartNotebook={lectorStartNotebook}
               setLectorStartNotebook={setLectorStartNotebook}
               setCartelaJumpId={setCartelaJumpId}
@@ -232,8 +237,19 @@ export default function App() {
             <Route path="/album" element={
               <Album
                 user={user}
+                gatoColor={gatoColor}
                 onOpenBook={handleOpenBook}
                 onGoBack={() => navigate('/biblioteca')}
+                onGoForo={(book) => {
+                  setCurrentBook(book)
+                  setForoSource('album')
+                  navigate(`/foro/${book.slug || book.id}`)
+                }}
+                onGoInvestigacion={(book) => {
+                  setCurrentBook(book)
+                  setCarteleraSource('album')
+                  navigate(`/investigacion/${book.slug || book.id}`)
+                }}
               />
             } />
 
@@ -254,7 +270,9 @@ export default function App() {
                   if (!currentBook) { navigate('/biblioteca'); return }
                   const dest = carteleraSource === 'foro'
                     ? `/foro/${currentBook.slug || currentBook.id}`
-                    : `/libro/${currentBook.slug || currentBook.id}`
+                    : carteleraSource === 'album'
+                      ? '/album'
+                      : `/libro/${currentBook.slug || currentBook.id}`
                   navigate(dest)
                 }}
                 onGoLectura={() => {
@@ -286,7 +304,9 @@ export default function App() {
                     ? `/investigacion/${slug}`
                     : foroSource === 'lectura'
                       ? `/libro/${slug}`
-                      : '/biblioteca'
+                      : foroSource === 'album'
+                        ? '/album'
+                        : '/biblioteca'
                   navigate(dest)
                 }}
                 onGoLectura={() => {

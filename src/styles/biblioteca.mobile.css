@@ -39,8 +39,9 @@
 .bibm-header { display: flex; align-items: center; gap: 10px; }
 .bibm-logo { background: var(--cream); border: 2px solid var(--ink); border-radius: 13px; padding: 7px 13px; display: flex; align-items: center; box-shadow: 1.6px 2px 0 rgba(74,54,34,0.18); }
 .bibm-logo img { height: 24px; width: auto; display: block; }
-.bibm-tienda { display: inline-flex; align-items: center; gap: 7px; background: var(--cream); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 8px 15px; font-family: inherit; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.18); transition: transform 0.12s, box-shadow 0.12s; flex-shrink: 0; }
-.bibm-tienda:active { transform: translateY(1.5px); box-shadow: 0.5px 1px 0 rgba(74,54,34,0.18); }
+.bibm-icon-btn { flex: 1; height: 42px; padding: 0 14px; display: flex; align-items: center; justify-content: center; background: var(--cream); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; cursor: pointer; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.18); transition: transform 0.12s, box-shadow 0.12s; }
+.bibm-icon-btn svg { width: 19px; height: 19px; flex-shrink: 0; }
+.bibm-icon-btn:active { transform: translateY(1.5px); box-shadow: 0.5px 1px 0 rgba(74,54,34,0.18); }
 .bibm-avatar { width: 40px; height: 40px; flex-shrink: 0; border-radius: 999px; background: linear-gradient(135deg, #cf7b4c, #6f9457); color: #fff; font-weight: 800; font-size: 16px; border: 2px solid var(--ink); cursor: pointer; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.2); display: flex; align-items: center; justify-content: center; transition: transform 0.12s; }
 .bibm-avatar:active { transform: translateY(1.5px); }
 .bibm-search { margin-top: 11px; display: flex; align-items: center; gap: 11px; background: rgba(255,253,247,0.94); border: 2px solid var(--ink); border-radius: 999px; padding: 10px 16px; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.12); }
@@ -48,8 +49,16 @@
 .bibm-search input::placeholder { color: rgba(74,54,34,0.42); }
 .bibm-search-x { background: none; border: none; color: rgba(74,54,34,0.5); cursor: pointer; display: flex; padding: 2px; }
 
-/* ── Scroll area ── */
+/* ── Scroll area ──
+   .bibm-scroll es el scroll general de la pantalla (una sola tira):
+   saludo, hero, últimos abiertos y encabezado de colección viven en su
+   flujo normal. Los estantes (.bibm-shelves-pane) son un bloque de
+   alto fijo dentro de ese mismo flujo — recién se ven cuando el scroll
+   general baja hasta ahí — pero con SU PROPIO overflow-y:auto interno,
+   así que una vez ahí, seguir bajando el dedo scrollea las categorías
+   sin mover el resto de la vista. */
 .bibm-scroll { position: relative; z-index: 3; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 14px calc(30px + env(safe-area-inset-bottom)); }
+.bibm-shelves-pane { margin-top: 22px; height: 68vh; max-height: 680px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .bibm-greeting { font-weight: 800; font-size: 25px; letter-spacing: -0.01em; color: #3a2b1c; margin-bottom: 14px; }
 .bibm-sec-ttl { font-weight: 800; font-size: 18px; color: #3a2b1c; line-height: 1.15; margin-bottom: 12px; }
 .bibm-sec-sub { margin-left: 8px; font-size: 12.5px; font-weight: 600; color: rgba(74,54,34,0.55); white-space: nowrap; }

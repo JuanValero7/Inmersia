@@ -1,6 +1,6 @@
 import React from 'react'
 import { INK, inmTint, BookCover } from './helpers.jsx'
-
+import { NovedadesSpotlight } from './NovedadesSpotlight.jsx'
 // =============================================================
 // ACUARELA · Header (logo + buscador + nav) y Swimlane (hero).
 // Header cableado: search, Tienda, Perfil, Salir.
@@ -13,9 +13,7 @@ function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, on
   const ink = INK;
   const bar = {
     display: 'flex', alignItems: 'center', gap: 16, borderRadius: 22, padding: '13px 17px',
-    backgroundColor: '#b3bdc8',
-    backgroundImage: 'url(/assets/wallpapers/acuarela-pattern.webp)',
-    backgroundRepeat: 'repeat',
+    backgroundColor: '#B5613A',
     border: `2px solid ${ink}`,
     boxShadow: `5px 7px 0 ${ink}12, inset 0 1px 0 rgba(255,255,255,0.5)`,
   };
@@ -74,37 +72,76 @@ function EmptyLane({ msg }) {
   );
 }
 
-// Fila de libros de la Tienda (Novedades / Recomendaciones). Recibe filas
-// crudas de `libros` (titulo/autor/portada_url en español) y las adapta al
-// shape que espera BookCover (title/author/cover en inglés) solo para pintar.
-// grid-auto-flow:column reparte las portadas en UNA sola fila que ocupa
-// todo el ancho (se estiran si hay lugar de sobra); si no entran todas,
-// scrollea en vez de armar una segunda fila.
-function CatalogRow({ libros, onOpen, onPreview }) {
-  const ink = INK;
-  const COVER_H = 190;
-  const COVER_W = Math.round(COVER_H * 210 / 305); // mismo cálculo que BookCover, para que el botón calce con el ancho del libro
-  const previewBtn = {
-    marginTop: 10, width: COVER_W, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-    background: '#fffdf8', color: ink, border: `2px solid ${ink}`, borderRadius: 999, padding: '5px 8px',
-    fontFamily: 'inherit', fontWeight: 700, fontSize: 11, cursor: 'pointer', boxShadow: `1.2px 1.6px 0 ${ink}2e`,
-  };
+function RecomendacionSpotlight({ recomendaciones, onOpen, onPreview }) {
+  const ink = INK
+  const [idx, setIdx] = React.useState(0)
+  React.useEffect(() => { if (idx >= recomendaciones.length) setIdx(0) }, [recomendaciones.length, idx])
+  if (!recomendaciones.length) return null
+
+  const libro = recomendaciones[idx]
+  const bookShape = (l) => ({ id: l.id, title: l.titulo, author: l.autor, cover: l.portada_url, color: l.color, pages: l.paginas })
+
   return (
-    <div style={{ display: 'grid', gridAutoFlow: 'column', gridAutoColumns: 'minmax(150px, 1fr)', gap: 26, overflowX: 'auto', padding: '30px 4px 14px' }}>
-      {libros.map(l => (
-        <div key={l.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div className="inm-bk" onClick={(e) => onOpen(l, e.currentTarget.getBoundingClientRect())} style={{ cursor: 'pointer' }}>
-            <BookCover book={{ id: l.id, title: l.titulo, author: l.autor, cover: l.portada_url, color: l.color, pages: l.paginas }} h={COVER_H} ink={ink} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 40, padding: '16px 14px 26px' }}>
+      <div onClick={(e) => onOpen(libro, e.currentTarget.getBoundingClientRect())}
+        style={{ cursor: 'pointer', flexShrink: 0, transform: 'rotate(-5deg)', filter: `drop-shadow(4px 10px 12px ${ink}48)` }}>
+        <BookCover book={bookShape(libro)} h={300} />
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0, height: 300, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <span style={{ alignSelf: 'flex-start', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6, background: '#cf9b3f', color: '#fff',
+          border: `2px solid ${ink}`, borderRadius: 999, padding: '4px 13px', fontWeight: 700, fontSize: 12.5,
+          textShadow: '0 1px 1px rgba(0,0,0,0.2)' }}>★ Para ti</span>
+        <div style={{ flexShrink: 0, fontWeight: 800, fontSize: 22, lineHeight: 1.15, color: ink,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{libro.titulo}</div>
+        <div style={{ flexShrink: 0, fontSize: 14, fontWeight: 600, color: 'rgba(74,54,34,0.6)' }}>{libro.autor}</div>
+
+        {libro.descripcion && (
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', background: '#fdf6e3', border: `2px solid ${ink}`, borderRadius: '4px 16px 16px 4px',
+            padding: '12px 15px', fontSize: 14, lineHeight: 1.5, color: ink }}>
+            {libro.descripcion}
           </div>
-          <button style={previewBtn} onClick={() => onPreview(l)}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3"/></svg>
+        )}
+
+        <div style={{ flexShrink: 0, display: 'flex', gap: 11 }}>
+          <button onClick={(e) => onOpen(libro, e.currentTarget.getBoundingClientRect())}
+            style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#cf7b4c', color: '#fff', border: `2px solid ${ink}`,
+              borderRadius: 999, padding: '13px 26px', fontWeight: 700, fontSize: 15, fontFamily: 'inherit', cursor: 'pointer',
+              textShadow: '0 1px 1px rgba(0,0,0,0.2)', boxShadow: `2px 2.8px 0 ${ink}33` }}>
+            Ver detalle
+          </button>
+          <button onClick={() => onPreview(libro)}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fffdf8', color: ink, border: `2px solid ${ink}`,
+              borderRadius: 999, padding: '13px 20px', fontWeight: 700, fontSize: 14, fontFamily: 'inherit', cursor: 'pointer',
+              boxShadow: `1.6px 2px 0 ${ink}33` }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" strokeLinecap="round" strokeLinejoin="round" /><circle cx="12" cy="12" r="3" /></svg>
             Preview
           </button>
         </div>
-      ))}
+      </div>
+
+      {recomendaciones.length > 1 && (
+        <div style={{ flexShrink: 0, width: 300, height: 300, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: 'rgba(74,54,34,0.55)' }}>
+            Otras recomendaciones
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, justifyItems: 'center', alignContent: 'start' }}>
+            {recomendaciones.map((l, i) => i === idx ? null : (
+              <div key={l.id} onClick={() => setIdx(i)} style={{ cursor: 'pointer' }}>
+                <BookCover book={bookShape(l)} h={110} />
+              </div>
+            ))}
+          </div>
+          <div style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: 'rgba(74,54,34,0.5)', lineHeight: 1.4 }}>
+            Click en una portada → pasa al spot principal con su propia reseña.
+          </div>
+        </div>
+      )}
     </div>
-  );
+  )
 }
+
+
 
 function HeroFeatured({ book, onOpen }) {
   const ink = INK, accent = '#cf7b4c';
@@ -116,8 +153,8 @@ function HeroFeatured({ book, onOpen }) {
     <div style={{ display: 'flex', gap: 48, alignItems: 'center', padding: '16px 14px 26px' }}>
       <div onClick={(e) => onOpen(book, e.currentTarget.getBoundingClientRect())}
         onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-        style={{ cursor: 'pointer', flexShrink: 0, transform: hov ? 'rotate(0deg) translateY(-5px)' : 'rotate(-6deg)', transformOrigin: 'center bottom', transition: 'transform .35s cubic-bezier(.2,.75,.3,1)', filter: `drop-shadow(5px 12px 16px ${ink}3a)` }}>
-        <BookCover book={book} h={300} ink={ink} />
+        style={{ cursor: 'pointer', flexShrink: 0, marginLeft: 24, transform: hov ? 'rotate(0deg) translateY(-5px)' : 'rotate(-6deg)', transformOrigin: 'center bottom', transition: 'transform .35s cubic-bezier(.2,.75,.3,1)', filter: `drop-shadow(5px 12px 16px ${ink}3a)` }}>
+        <BookCover book={book} h={300} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 800, fontSize: 42, lineHeight: 1.04, letterSpacing: '-0.015em', color: ink,
@@ -153,12 +190,17 @@ function HeroFeatured({ book, onOpen }) {
   );
 }
 
-function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOpenLibro, onPreviewLibro }) {
+function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOpenLibro, onPreviewLibro, gatoColor = 'negro' }) {
   const ink = INK;
   const [tab, setTab] = React.useState('seguir');
+  const CARD_H = 500;
+  const BORDER_W = 2; // grosor del borde de la tarjeta — overflow:hidden recorta 2px adentro del borde, no en el borde mismo
+  const GATO_BLEED = 124; // cuánto asoma el gato por debajo de la tarjeta
+  const GATO_H = 375; // 75% de CARD_H, en px fijo para que las dos copias del gato calcen pixel a pixel
   const surface = {
-    position: 'relative', overflow: 'hidden', borderRadius: 30, padding: '20px 22px 10px', marginTop: 20, minHeight: 440,
-    backgroundColor: '#f1e8d4', border: `2px solid ${ink}`,
+    position: 'relative', overflow: 'hidden', borderRadius: 30, padding: '20px 22px 22px', height: CARD_H,
+    display: 'flex', flexDirection: 'column',
+    backgroundColor: '#f1e8d4', border: `${BORDER_W}px solid ${ink}`,
     boxShadow: `inset 0 1px 0 rgba(255,255,255,0.4), 5px 8px 0 ${ink}17, 10px 16px 30px ${ink}26`,
   };
   const tabBtn = (active) => ({
@@ -166,26 +208,52 @@ function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOp
     padding: '8px 18px', borderRadius: 999, background: active ? '#cf7b4c' : 'transparent', color: active ? '#fff' : 'rgba(74,54,34,0.6)',
     whiteSpace: 'nowrap', textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none', boxShadow: active ? `1.4px 1.8px 0 ${ink}33` : 'none', transition: 'all .15s',
   });
+  // Mismo <img> en ambas copias (mismo src/height/right/maxWidth), solo cambia
+  // `bottom` para que las dos ventanas de recorte queden alineadas pixel a pixel.
+  const gatoImgStyle = (bottom) => ({
+    position: 'absolute', right: 0, bottom, height: GATO_H, width: 'auto', maxWidth: '69%',
+    objectFit: 'contain', objectPosition: 'right bottom', pointerEvents: 'none', zIndex: 0, opacity: 1,
+  });
   return (
-    <div style={surface}>
-      {tab === 'seguir' && (
-        <>
-          <img src="/assets/wallpapers/hero-cat.webp" alt="" style={{ position: 'absolute', right: 0, bottom: 0, height: '100%', width: 'auto', maxWidth: '72%', objectFit: 'contain', objectPosition: 'right bottom', pointerEvents: 'none', zIndex: 0, opacity: 1 }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, #f1e8d4 28%, rgba(241,232,212,0.55) 46%, rgba(241,232,212,0) 66%)', zIndex: 0, pointerEvents: 'none' }} />
-        </>
-      )}
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'inline-flex', gap: 4, padding: 5, borderRadius: 999, background: 'rgba(255,253,247,0.7)', boxShadow: `inset 0 0 0 2px ${ink}38`, marginBottom: 6 }}>
-          {SWIM_TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={tabBtn(tab === t.id)}>{t.label}</button>
-          ))}
+    <div style={{ position: 'relative', marginTop: 20 }}>
+      <div style={surface}>
+        {tab === 'seguir' && (
+          <>
+            {/* Copia A: recortada por el propio overflow:hidden de la tarjeta,
+                así el navegador la recorta siguiendo la curva del borde sin artefactos. */}
+            <img src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" style={gatoImgStyle(-GATO_BLEED)} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, #f1e8d4 28%, rgba(241,232,212,0.55) 46%, rgba(241,232,212,0) 66%)', zIndex: 0, pointerEvents: 'none' }} />
+          </>
+        )}
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+          <div style={{ display: 'inline-flex', alignSelf: 'flex-start', gap: 4, padding: 5, borderRadius: 999, background: 'rgba(255,253,247,0.7)', boxShadow: `inset 0 0 0 2px ${ink}38`, marginBottom: 6, flexShrink: 0 }}>
+            {SWIM_TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)} style={tabBtn(tab === t.id)}>{t.label}</button>
+            ))}
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            {tab === 'seguir'
+              ? (featured ? <HeroFeatured book={featured} onOpen={onOpen} /> : <EmptyLane msg="Cuando empieces a leer un libro aparecerá acá para que retomes donde lo dejaste." />)
+              : tab === 'novedades'
+                ? (novedades.length > 0
+                    ? <NovedadesSpotlight novedades={novedades} onOpen={onOpenLibro} onPreview={onPreviewLibro} />
+                    : <EmptyLane msg="Pronto verás acá los libros recién llegados a la biblioteca." />)
+                : (recomendaciones.length > 0 ? <RecomendacionSpotlight recomendaciones={recomendaciones} onOpen={onOpenLibro} onPreview={onPreviewLibro} /> : <EmptyLane msg="Estamos preparando recomendaciones a tu medida. ¡Vuelve pronto!" />)}
+          </div>
         </div>
-        {tab === 'seguir'
-          ? (featured ? <HeroFeatured book={featured} onOpen={onOpen} /> : <EmptyLane msg="Cuando empieces a leer un libro aparecerá acá para que retomes donde lo dejaste." />)
-          : tab === 'novedades'
-            ? (novedades.length > 0 ? <CatalogRow libros={novedades} onOpen={onOpenLibro} onPreview={onPreviewLibro} /> : <EmptyLane msg="Pronto verás acá los libros recién llegados a la biblioteca." />)
-            : (recomendaciones.length > 0 ? <CatalogRow libros={recomendaciones} onOpen={onOpenLibro} onPreview={onPreviewLibro} /> : <EmptyLane msg="Estamos preparando recomendaciones a tu medida. ¡Vuelve pronto!" />)}
       </div>
+
+      {tab === 'seguir' && (
+        // Copia B: ventana rectangular pegada justo debajo de la tarjeta (ahí
+        // ya no hay curva de borde que respetar), muestra solo la continuación
+        // del gato — el pedazo que antes se veía colgando de la esquina.
+        // top/left/right van inset en BORDER_W para calzar exacto con el punto
+        // donde overflow:hidden recortó la Copia A (el borde de la tarjeta
+        // vive fuera de esa zona recortada, no en su límite).
+        <div style={{ position: 'absolute', top: CARD_H - BORDER_W, left: BORDER_W, right: BORDER_W, height: GATO_BLEED, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+          <img src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" style={gatoImgStyle(0)} />
+        </div>
+      )}
     </div>
   );
 }

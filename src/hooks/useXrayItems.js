@@ -14,7 +14,7 @@ export function useXrayItems(isOpen, bookId, chapterNum, seccion = 'personajes')
       .from('cartelera_items')
       .select('id, nombre')
       .eq('libro_id', bookId)
-      .eq('capitulo_numero', chapterNum)
+      .lte('capitulo_numero', chapterNum)
       .eq('seccion', seccion)
       .order('capitulo_numero', { ascending: true })
       .then(({ data }) => {

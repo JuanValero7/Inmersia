@@ -102,7 +102,35 @@ function Miniatura({ e, pct, imageUrl, onClick, tableros }) {
   )
 }
 
-export default function TableroNotas({ pct = 0, scale = 1, principal = {}, onOpenSection, esNoficcion = false }) {
+const FLATSHEET_MAX = 3
+
+// contenido real del papel central: vacío / entra directo / mockup+contador si no entra
+function FlatsheetContent({ items }) {
+  if (items.length === 0) {
+    return <div className="cart-flatsheet-empty">Tus predicciones aparecerán acá.<br />Escribilas desde el Cuaderno mientras leés.</div>
+  }
+  if (items.length <= FLATSHEET_MAX) {
+    return (
+      <div className="cart-flatsheet-notes">
+        {items.map(it => (
+          <div key={it.id} className="cart-flatsheet-note">
+            <span className="cart-flatsheet-cap">Cap. {it.capitulo_numero}</span>
+            <p className="cart-flatsheet-txt">{it.descripcion}</p>
+          </div>
+        ))}
+      </div>
+    )
+  }
+  return (
+    <div className="cart-flatsheet-stack">
+      <span className="fs-leaf fs-leaf-1" />
+      <span className="fs-leaf fs-leaf-2" />
+      <span className="fs-leaf-top"><strong>+{items.length}</strong><small>predicciones</small></span>
+    </div>
+  )
+}
+
+export default function TableroNotas({ pct = 0, scale = 1, principal = {}, onOpenSection, esNoficcion = false, notasItems = [], onOpenNotas }) {
   const embeds   = esNoficcion ? EMBEDS_NOFICCION : EMBEDS_FICCION
   const tableros = esNoficcion ? TABLEROS_NOFICCION : TABLEROS_FICCION
   const visibleCount = Math.round(Math.max(0, Math.min(100, pct)) / 100 * TOTAL_NOTES)
@@ -122,8 +150,12 @@ export default function TableroNotas({ pct = 0, scale = 1, principal = {}, onOpe
 
   return (
     <div className="cart-canvas cart-cork" style={{ width: BOARD_W, height: BOARD_H, transform: `scale(${scale})` }}>
-      {/* hoja rayada plana al centro */}
-      <div className="cart-flatsheet" style={{ left: CENTER.cx, top: CENTER.cy, width: CENTER.w, height: CENTER.h, transform: `translate(-50%,-50%) rotate(${CENTER.rot}deg)` }} />
+      {/* hoja rayada plana al centro: predicciones reales del usuario */}
+      <button type="button" className="cart-flatsheet" onClick={() => onOpenNotas?.()}
+        style={{ left: CENTER.cx, top: CENTER.cy, width: CENTER.w, height: CENTER.h, transform: `translate(-50%,-50%) rotate(${CENTER.rot}deg)` }}
+        aria-label="Ver tus predicciones">
+        <FlatsheetContent items={notasItems} />
+      </button>
 
       {/* notas decorativas (sin datos, reveladas por pct) */}
       {visibleNotas.map((n, i) => (

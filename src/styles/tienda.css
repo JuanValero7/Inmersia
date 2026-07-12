@@ -69,8 +69,9 @@
 .interior{position:fixed;inset:0;z-index:300;opacity:0;pointer-events:none;transition:opacity .5s;overflow-y:auto;
   background:#f4efe1;--ink:#4a3622;--cream:#fffdf8;--accent:#cf7b4c;font-family:'Baloo 2',cursive;}
 .interior.show{opacity:1;pointer-events:auto;}
-.interior-bg{position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:#f4efe1 url('/assets/tienda/cat-books-bg.webp') center 14% / min(1480px,168%) auto no-repeat;}
+.interior-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background-color:#f4efe1;
+  background-image:var(--intbg-gato-url);
+  background-position:center 4%;background-size:min(1100px,90%) auto;background-repeat:no-repeat;}
 .interior-bg::after{content:"";position:absolute;inset:0;background:rgba(246,241,229,0.55);}
 .interior-inner{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:80px 30px 80px;}
 .int-back-row{position:fixed;top:18px;left:18px;z-index:5;display:flex;gap:10px;}
@@ -417,13 +418,9 @@
 .reel-slide-titulo{font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:700;color:#fde68a;line-height:1.3;
   margin-bottom:8px;text-shadow:0 2px 14px rgba(0,0,0,0.65);}
 .reel-slide-subtexto{font-size:0.82rem;color:rgba(253,230,138,0.72);line-height:1.7;text-shadow:0 1px 8px rgba(0,0,0,0.5);}
-.reel-nav{position:absolute;right:12px;top:50%;transform:translateY(-50%);z-index:10;display:flex;flex-direction:column;
-  align-items:center;gap:8px;}
-.reel-nav-btn{width:36px;height:36px;background:rgba(0,0,0,0.5);border:1px solid rgba(253,230,138,0.18);border-radius:50%;
-  color:rgba(253,230,138,0.72);font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
-.reel-nav-btn:hover:not(:disabled){background:rgba(0,0,0,0.8);border-color:rgba(253,230,138,0.45);color:#fde68a;}
-.reel-nav-btn:disabled{opacity:0.2;cursor:default;}
-.reel-nav-counter{font-size:0.62rem;color:rgba(253,230,138,0.35);letter-spacing:0.06em;}
+.reel-tap-zone{position:absolute;top:0;bottom:0;width:50%;z-index:5;cursor:pointer;}
+.reel-tap-zone-izq{left:0;}
+.reel-tap-zone-der{right:0;}
 .reel-status-txt{color:rgba(253,230,138,0.45);font-family:'Playfair Display',serif;font-size:0.95rem;}
 
 /* ── Portada ilustrada (reemplaza el rectángulo plano de CoverCard) ──

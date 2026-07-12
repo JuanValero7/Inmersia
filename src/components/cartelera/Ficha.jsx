@@ -67,9 +67,9 @@ export default function Ficha({ section, items = [], onBackTablero, onBackPortad
           <span className="sub">{section.sub}</span>
         </div>
         <div className="cart-sec-hint">Sigue leyendo para revelar una sorpresa</div>
-        <div className="actions">
-          <button className="cart-sec-btn" type="button" onClick={onBackTablero}>Mural</button>
+        <div className="actions actions-col">
           <ExplorarPopup onGoForo={onGoForo} onGoBack={onGoBack} onGoBiblioteca={onGoBiblioteca} />
+          <button className="cart-sec-btn cart-sec-btn-lg" type="button" onClick={onBackTablero}>Mural</button>
         </div>
       </div>
 

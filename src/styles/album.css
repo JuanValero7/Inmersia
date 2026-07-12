@@ -17,6 +17,7 @@
   --clay-lg: 0 22px 48px rgba(74,54,34,.22), 3px 5px 0 rgba(74,54,34,.16);
   --row: 118px;
 
+  position: relative;
   min-height: 100vh;
   color: var(--ink);
   font-family: var(--ui);
@@ -30,6 +31,11 @@
   background-attachment: fixed;
 }
 .album-root * { box-sizing: border-box; }
+
+.album-gato {
+  position: absolute; right: 14px; bottom: 10px; width: 180px; z-index: 2;
+  pointer-events: none; filter: drop-shadow(2px 6px 5px rgba(60,40,18,0.34));
+}
 
 /* ── barra superior: back + buscador ─────────────────────────── */
 .album-topbar {
@@ -62,6 +68,9 @@
   font-family: var(--ui); font-weight: 600; font-size: 16px; color: var(--ink);
 }
 .album-search input::placeholder { color: var(--ink-soft); opacity: .6; }
+
+/* ── layout: spread + bandeja lateral (desktop ancho) ────────── */
+.album-layout { width: 100%; display: flex; justify-content: center; align-items: flex-start; gap: 24px; }
 
 /* ── spread (doble página) ───────────────────────────────────── */
 .album-shell { width: 100%; max-width: 1280px; }
@@ -319,6 +328,7 @@
 @media (prefers-reduced-motion: reduce) {
   .album-music .album-wave i { animation: none !important; height: 12px; }
   .spinner { animation: none; }
+  .album-barajita.pegando { animation: none; }
 }
 
 /* ── secciones agrupadas + casillas vacías / video ─────────────── */
@@ -350,3 +360,52 @@
 .album-barajita .vplay span { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,253,248,.92); border: 2.5px solid var(--ink); color: var(--ink); box-shadow: 2px 2.6px 0 rgba(74,54,34,.35); transition: transform .16s ease; }
 .album-barajita.card:hover .vplay span { transform: scale(1.08); }
 .album-barajita.hero .vplay span { width: 58px; height: 58px; }
+
+/* ── casilla desbloqueada sin pegar todavía ("lista para pegar") ── */
+.album-barajita.pending {
+  background: repeating-linear-gradient(135deg, #fdf3e2 0 10px, #f8ecd2 10px 20px);
+  border: 2.5px solid var(--terra); box-shadow: var(--clay); cursor: pointer;
+}
+.album-barajita.pending:hover { transform: translateY(-3px); box-shadow: 3px 6px 0 rgba(74,54,34,.22); }
+.album-barajita.pending .eslot.pend { color: var(--terra-d); }
+.album-barajita.pending .eslot.pend svg { opacity: .85; }
+
+/* ── animación de "pegado" ───────────────────────────────────── */
+@keyframes album-pegar {
+  0%   { transform: scale(.55) rotate(-10deg) translateY(-8px); opacity: .2; filter: saturate(1.4) brightness(1.3); }
+  55%  { transform: scale(1.06) rotate(3deg); opacity: 1; filter: none; }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.album-barajita.pegando { animation: album-pegar .5s cubic-bezier(.34,1.56,.64,1) both; }
+
+/* ── bandeja lateral: barajitas pendientes de pegar (desktop ancho) ── */
+.album-bandeja {
+  display: none; flex-direction: column; gap: 12px;
+  flex: none; width: 236px; max-height: calc(100vh - 140px); position: sticky; top: 34px;
+  background: linear-gradient(180deg, #fbf7ee, #f1e8d4);
+  border: 2.5px solid var(--ink); border-radius: 18px; box-shadow: var(--clay-lg);
+  padding: 18px 16px;
+}
+.album-bandeja-title {
+  margin: 0; font-family: var(--serif); font-weight: 700; font-size: 16px; color: var(--ink);
+}
+.album-bandeja-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding-right: 2px; }
+.album-bandeja-item { display: flex; align-items: center; gap: 10px; }
+.album-bandeja-thumb {
+  flex: none; width: 42px; height: 42px; border-radius: 9px; overflow: hidden;
+  border: 2px solid var(--ink); background: var(--c, var(--terra));
+  display: grid; place-items: center; box-shadow: 1px 1.3px 0 rgba(74,54,34,.28);
+}
+.album-bandeja-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.album-bandeja-thumb .ph { font-family: var(--serif); font-weight: 700; font-size: 17px; color: var(--crema); }
+.album-bandeja-meta { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.album-bandeja-meta .sec { font-size: 9.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.album-bandeja-meta .name {
+  font-family: var(--serif); font-weight: 700; font-size: 13px; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.album-bandeja-hint { margin: 0; font-size: 11px; font-weight: 600; color: var(--ink-soft); line-height: 1.4; }
+
+@media (min-width: 1440px) {
+  .album-bandeja { display: flex; }
+}

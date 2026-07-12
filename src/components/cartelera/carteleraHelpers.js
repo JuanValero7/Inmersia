@@ -21,9 +21,6 @@ export const SECCIONES_NOFICCION = [
 
 export const getSecciones = (esNoficcion) => esNoficcion ? SECCIONES_NOFICCION : SECCIONES
 
-export const seccionMeta = (key) =>
-  SECCIONES.find(s => s.key === key) || SECCIONES_NOFICCION.find(s => s.key === key)
-
 // tags viven en metadata.tags (jsonb)
 export const getTags = (item) => {
   const tags = item?.metadata?.tags

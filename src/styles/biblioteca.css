@@ -65,3 +65,6 @@
   color:#f7efdd; text-shadow:0 2px 0 rgba(58,36,20,0.28);
   display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden;
 }
+
+.inm-bar { height: 10px; border-radius: 8px; background: rgba(74,54,34,0.15); overflow: hidden; }
+.inm-bar > div { height: 100%; border-radius: 8px; background: linear-gradient(90deg, #cf7b4c, #e0a079); }

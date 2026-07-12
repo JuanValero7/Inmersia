@@ -1,64 +1,13 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 
 const LOGO = '/assets/inmersia-logo.png'
-import { CAT_COLOR, itint, tituloSizeClass, autorSizeClass } from '../../tienda/tiendaHelpers.jsx'
+import { CAT_COLOR } from '../../tienda/tiendaHelpers.jsx'
+import { Pagination, BookCard, TIPOS } from '../../tienda/catalogoShared.jsx'
+import { useCatalogoFiltro } from '../../../hooks/useCatalogoFiltro.js'
 import PanelLibro from '../../tienda/PanelLibro.jsx'
 import LibroReel from '../../tienda/LibroReel.jsx'
-
-const PG_SIZE = 15
-
-function Pagination({ page, total, onChange }) {
-  const totalPages = Math.ceil(total / PG_SIZE)
-  if (totalPages <= 1) return null
-
-  const nums = []
-  if (totalPages <= 7) {
-    for (let i = 1; i <= totalPages; i++) nums.push(i)
-  } else if (page <= 4) {
-    nums.push(1, 2, 3, 4, 5, '…', totalPages)
-  } else if (page >= totalPages - 3) {
-    nums.push(1, '…', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages)
-  } else {
-    nums.push(1, '…', page - 1, page, page + 1, '…', totalPages)
-  }
-
-  return (
-    <div className="pg-bar">
-      <button className="pg-btn" onClick={() => onChange(page - 1)} disabled={page === 1} aria-label="Anterior">←</button>
-      {nums.map((p, i) =>
-        p === '…'
-          ? <span key={`el-${i}`} className="pg-ellipsis">…</span>
-          : <button key={p} className={clsx('pg-btn', p === page && 'on')} onClick={() => onChange(p)}>{p}</button>
-      )}
-      <button className="pg-btn" onClick={() => onChange(page + 1)} disabled={page === totalPages} aria-label="Siguiente">→</button>
-    </div>
-  )
-}
-
-function CoverCard({ libro }) {
-  const c = libro.color || '#cf8a6e'
-  return (
-    <div className="book" style={{ '--cov': c }}>
-      <div className="book-cover">
-        {libro.portada_url
-          ? <img className="book-art-img" src={libro.portada_url} alt={libro.titulo} />
-          : <div className="book-art-empty" />}
-        <span className={clsx('book-scribble', autorSizeClass(libro.autor))}>{libro.autor}</span>
-        <span className={clsx('book-title', tituloSizeClass(libro.titulo))}>{libro.titulo}</span>
-      </div>
-      <div className="book-base" />
-      <div className="book-pages" />
-    </div>
-  )
-}
-
-const TIPOS = [
-  { key: 'todos',     label: 'Todos' },
-  { key: 'ficcion',   label: 'Ficción' },
-  { key: 'noficcion', label: 'No ficción' },
-]
 
 function FilterOverlay({ availableCats, selCats, onToggle, onClear, onClose, filtroTipo, onFiltroTipo }) {
   const [entering, setEntering] = useState(true)
@@ -121,45 +70,16 @@ function FilterOverlay({ availableCats, selCats, onToggle, onClear, onClose, fil
   )
 }
 
-function BookCard({ libro, adquirido, onOpen }) {
-  const c = libro.color || '#cf8a6e'
-  const catCol = CAT_COLOR[libro.categorias?.[0]] || '#cf8a6e'
-  return (
-    <button className={clsx('bk-card', adquirido && 'bk-card-owned')} type="button"
-      title={`${libro.titulo} — ${libro.autor}`} onClick={() => onOpen(libro)}>
-      {libro._nuevo && <span className="bk-ribbon">Nuevo</span>}
-      <div className="bk-inner">
-        <span className="bk-badge" style={{ background: catCol }} title={libro.categorias?.[0]}>✦</span>
-        <div className="bk-stage" style={{ background: `linear-gradient(180deg, ${itint(c, 0.82)}, ${itint(c, 0.66)})` }}>
-          <span className="bk-glow" style={{ background: `radial-gradient(circle, ${itint(c, 0.28)}, transparent 66%)` }} />
-          <span className="bk-podium" />
-          <CoverCard libro={libro} />
-          <span className="bk-shelf" />
-        </div>
-        <div className="bk-foot">
-          <div className="bk-meta">
-            <span className="bk-title">{libro.titulo}</span>
-            <span className="bk-author">{libro.autor}</span>
-          </div>
-          <span className={clsx('bk-fab', adquirido && 'owned')} aria-hidden="true">{adquirido ? '✓' : '›'}</span>
-        </div>
-      </div>
-    </button>
-  )
-}
-
-export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoColor, tieneLibro, libroLeido, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo, bloqueado = false }) {
+export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoColor = 'negro', tieneLibro, libroLeido, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo, bloqueado = false }) {
   const navigate = useNavigate()
-  const [selCats,     setSelCats]     = useState(new Set())
-  const [qInput,      setQInput]      = useState('')
-  const [q,           setQ]           = useState('')
   const [sel,         setSel]         = useState(null)
   const [reelLibro,   setReelLibro]   = useState(null)
   const [showFilters, setShowFilters] = useState(false)
-  const [page,        setPage]        = useState(1)
-  const gridRef = useRef(null)
-  const availableCats = useMemo(() => [...new Set(catalogo.flatMap(b => b.categorias || []))].sort(), [catalogo])
-  const query = q.trim().toLowerCase()
+
+  const {
+    selCats, toggleCat, clearCats, qInput, q, handleQChange, handleQKeyDown,
+    availableCats, list, paginatedList, page, goToPage, gridRef, resetFiltro,
+  } = useCatalogoFiltro(catalogo, filtroTipo, tieneLibro)
 
   // Intercepta el botón "Atrás" de Android cuando el panel está abierto.
   // pushState agrega una entrada fake; al presionar back el browser la consume,
@@ -180,44 +100,7 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
     window.history.go(-1)
   }, [])
 
-  const toggleCat = (c) => setSelCats(prev => {
-    const next = new Set(prev)
-    if (next.has(c)) next.delete(c); else next.add(c)
-    return next
-  })
-
-  const handleQChange = (value) => {
-    setQInput(value)
-    if (!value) setQ('')
-  }
-  const handleQKeyDown = (e) => {
-    if (e.key === 'Enter') setQ(qInput)
-    if (e.key === 'Escape') { setQInput(''); setQ('') }
-  }
-
-  const list = useMemo(() => {
-    const filtered = catalogo.filter(b => {
-      const okCat  = selCats.size === 0 || (b.categorias || []).some(c => selCats.has(c))
-      const okQ    = !query ||
-        (b.titulo || '').toLowerCase().includes(query) ||
-        (b.autor  || '').toLowerCase().includes(query)
-      const okTipo = filtroTipo === 'todos' ||
-        (filtroTipo === 'ficcion' ? b.es_ficcion !== false : b.es_ficcion === false)
-      return okCat && okQ && okTipo
-    })
-    return filtered.sort((a, b) => (tieneLibro(a.id) ? 1 : 0) - (tieneLibro(b.id) ? 1 : 0))
-  }, [catalogo, selCats, query, filtroTipo, tieneLibro])
-
-  useEffect(() => { setPage(1) }, [q, filtroTipo, selCats])
-
-  const paginatedList = list.slice((page - 1) * PG_SIZE, page * PG_SIZE)
-
-  function goToPage(p) {
-    setPage(p)
-    gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
-  const reset = () => { setSelCats(new Set()); setQ(''); setQInput(''); setShowFilters(false); onFiltroTipo?.('todos') }
+  const reset = () => { resetFiltro(onFiltroTipo); setShowFilters(false) }
 
   function handleReelClose() {
     if (!sel) setSel(reelLibro)
@@ -228,7 +111,7 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
 
   return (
     <div className="interior show">
-      <div className="interior-bg" />
+      <div className="interior-bg" style={{ '--intbg-gato-url': `url('/assets/tienda/gato-${gatoColor}-5.webp')` }} />
       {user ? (
         <div className="int-back-row">
           <button className="int-back" onClick={onVolver}>Biblioteca</button>
@@ -257,7 +140,7 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
           <input type="text" placeholder="Buscar por título o autor… (Enter)" value={qInput}
             onChange={e => handleQChange(e.target.value)}
             onKeyDown={handleQKeyDown} />
-          {qInput && <button className="int-search-clear" onClick={() => { setQInput(''); setQ('') }} aria-label="Limpiar">×</button>}
+          {qInput && <button className="int-search-clear" onClick={() => handleQChange('')} aria-label="Limpiar">×</button>}
         </div>
 
         {availableCats.length > 0 && (
@@ -288,7 +171,7 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
           <div className="int-empty">
             <div className="int-empty-mark">✦</div>
             <div className="int-empty-text">
-              {query ? <>No encontramos nada para «{q}»</> : 'No hay libros con esas categorías.'}
+              {q ? <>No encontramos nada para «{q}»</> : 'No hay libros con esas categorías.'}
             </div>
             <button className="int-empty-reset" onClick={reset}>Ver todo el catálogo</button>
           </div>
@@ -300,7 +183,7 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
           availableCats={availableCats}
           selCats={selCats}
           onToggle={toggleCat}
-          onClear={() => { setSelCats(new Set()); onFiltroTipo?.('todos'); setShowFilters(false) }}
+          onClear={() => { clearCats(); onFiltroTipo?.('todos'); setShowFilters(false) }}
           onClose={() => setShowFilters(false)}
           filtroTipo={filtroTipo}
           onFiltroTipo={onFiltroTipo}

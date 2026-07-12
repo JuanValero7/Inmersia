@@ -20,7 +20,7 @@ import { useBookBySlug } from '../../hooks/useBookBySlug.js'
 import '../../styles/foro.css'        // base (clases que usan las sub-vistas)
 import '../../styles/foro.mobile.css'  // overrides responsive del chrome
 
-export default function ForoMobile({ book: bookProp, user, onGoLectura, onGoBiblioteca, onGoCartelera }) {
+export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera }) {
   const { book, loading: bookLoading } = useBookBySlug(bookProp)
   // — MISMA lógica de datos que Foro.jsx (ver src/hooks/useForoData.js) —
   const {
@@ -46,6 +46,13 @@ export default function ForoMobile({ book: bookProp, user, onGoLectura, onGoBibl
 
       {/* ── Header compacto ── */}
       <header className="foro-header foro-m-header">
+        {onGoBack && (
+          <button type="button" className="foro-arrow-btn" onClick={onGoBack} title="Volver" aria-label="Volver">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+        )}
         <div className="foro-header-center foro-m-title">
           <h1 className="foro-titulo">{book?.title || 'Foro'}</h1>
           <p className="foro-subtitulo">Foro del libro</p>

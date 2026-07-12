@@ -1,5 +1,5 @@
 import React from 'react'
-import { inmTint, hashOf, spineColor, spineW, spineH, BookCover } from './helpers.jsx'
+import { inmTint, hashOf, spineColor, spineW, spineH } from './helpers.jsx'
 
 // =============================================================
 // ACUARELA · estantería ilustrada plana (reemplaza los cajones).
@@ -7,8 +7,7 @@ import { inmTint, hashOf, spineColor, spineW, spineH, BookCover } from './helper
 // contorno de tinta, adornos (plantas) en los huecos y un muro
 // de fondo que crea el nicho. 3 categorías por fila.
 //   <FlatShelves groups activeCat onOpen />   groups: [{cat, books}]
-//   <CoverShelf books />                       portadas face-out
-// Exporta: window.FlatShelves, ShSpine, CartoonPlank, CoverShelf
+// Exporta: FlatShelves, ShSpine, CartoonPlank
 // =============================================================
 
 if (typeof document !== 'undefined' && !document.getElementById('inm-shelf-css')) {
@@ -24,8 +23,7 @@ if (typeof document !== 'undefined' && !document.getElementById('inm-shelf-css')
 
 const ACUA = {
   ink: '#4a3622',
-  wall: { backgroundColor: '#b0bdca',
-    backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.10), rgba(40,30,18,0.07)), repeating-linear-gradient(92deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 7px), radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,0.14), transparent 60%)' },
+  wall: { backgroundColor: '#f1e8d4' },
   wood: { body: 'linear-gradient(180deg,#d8a86a,#c98f4f)', under: '#9c6a36', grain: 'rgba(120,80,40,0.22)' },
 };
 const INNER_GAP = 0;
@@ -200,30 +198,9 @@ function FlatShelves({ groups, activeCat, onOpen }) {
   );
 }
 
-// ── Repisa de portadas face-out ─────────────────────────────
-function CoverShelf({ books, onOpen }) {
-  const ink = ACUA.ink, H = 174;
-  return (
-    <div style={{ position: 'relative' }}>
-      <div style={{ position: 'absolute', left: -10, right: -10, bottom: 12, height: H + 22, borderRadius: '10px 10px 4px 4px',
-        ...ACUA.wall, border: `2px solid ${ink}`, borderBottom: 'none',
-        boxShadow: 'inset 0 10px 18px -10px rgba(40,30,18,0.4), inset 0 0 0 6px rgba(255,255,255,0.04)' }} />
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '0 22px' }}>
-        {books.map((b) => (
-          <div key={b.id} className="inm-bk" onClick={onOpen ? (e) => onOpen(b, e.currentTarget.getBoundingClientRect()) : undefined}>
-            <BookCover book={b} h={H} ink={ink} />
-          </div>
-        ))}
-      </div>
-      <CartoonPlank />
-    </div>
-  );
-}
-
-// Memoizados: el orquestador re-renderiza al teclear en el buscador / abrir
-// filtros, pero estos solo dependen de groups/books (memos estables) y onOpen
-// (useCallback), así que se saltan esos re-renders.
+// Memoizado: el orquestador re-renderiza al teclear en el buscador / abrir
+// filtros, pero este solo depende de groups (memo estable) y onOpen
+// (useCallback), así que se salta esos re-renders.
 const FlatShelvesMemo = React.memo(FlatShelves)
-const CoverShelfMemo = React.memo(CoverShelf)
 
-export { FlatShelvesMemo as FlatShelves, ShSpine, CartoonPlank, CoverShelfMemo as CoverShelf };
+export { FlatShelvesMemo as FlatShelves, ShSpine, CartoonPlank };

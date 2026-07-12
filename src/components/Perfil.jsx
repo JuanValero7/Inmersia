@@ -19,10 +19,11 @@ import React, { useState, useMemo } from 'react'
 import clsx from 'clsx'
 import { supabase } from '../lib/supabase.js'
 import { usePerfilData } from '../hooks/usePerfilData.js'
+import LegalModal from './legal/LegalModal.jsx'
 import '../styles/perfil.css'
 
 // ── Color de barra por sección (acuarela derivada de la paleta) ──
-export const SEC_COLOR = { datos: '#86ad9e', seguridad: '#7d8db5', transac: '#d9a05a', historial: '#cf8ea4' }
+export const SEC_COLOR = { datos: '#86ad9e', seguridad: '#7d8db5', transac: '#d9a05a', historial: '#cf8ea4', legal: '#a89076' }
 
 function tint(hex, amt) {
   const n = parseInt(hex.slice(1), 16)
@@ -52,6 +53,7 @@ export const I = {
   edit:      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 00-3-3L5 17v3z" strokeLinejoin="round"/><path d="M13.5 6.5l3 3" strokeLinecap="round"/></svg>,
   logout:    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" strokeLinecap="round"/><polyline points="16 17 21 12 16 7" strokeLinecap="round" strokeLinejoin="round"/><line x1="21" y1="12" x2="9" y2="12" strokeLinecap="round"/></svg>,
   receipt:   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 3v18l2-1.4 2 1.4 2-1.4 2 1.4 2-1.4 2 1.4V3l-2 1.4L15 3l-2 1.4L11 3 9 4.4 7 3 5 4.4z" strokeLinejoin="round"/><path d="M9 9h6M9 13h6" strokeLinecap="round"/></svg>,
+  legal:     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1"><path d="M12 3v18M7 6h10M4.5 6L2 11c0 1.7 1.3 3 3 3s3-1.3 3-3L5.5 6M18.5 6L16 11c0 1.7 1.3 3 3 3s3-1.3 3-3L19.5 6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
 }
 
 export const NAV = [
@@ -59,8 +61,9 @@ export const NAV = [
   { id: 'seguridad', label: 'Seguridad',     icon: I.seguridad },
   { id: 'transac',   label: 'Transacciones', icon: I.transac },
   { id: 'historial', label: 'Historial',     icon: I.historial },
+  { id: 'legal',     label: 'Legal',         icon: I.legal },
 ]
-export const TITLES = { datos: 'Datos de perfil', seguridad: 'Seguridad', transac: 'Transacciones', historial: 'Historial de lectura' }
+export const TITLES = { datos: 'Datos de perfil', seguridad: 'Seguridad', transac: 'Transacciones', historial: 'Historial de lectura', legal: 'Legal' }
 
 // Datos de ejemplo — SOLO para previsualizar el layout. Reemplazar
 // por queries reales cuando definas las tablas de transacciones/historial.
@@ -287,6 +290,21 @@ export function SecHistorial() {
   )
 }
 
+// ════════════════════ Sección: Legal ═════════════════════════
+export function SecLegal() {
+  const [open, setOpen] = useState(null) // null | 'terminos' | 'privacidad'
+  return (
+    <div style={{ maxWidth: 480 }}>
+      <div className="pf-lead" style={{ marginBottom: 20 }}>Revisá los documentos legales de Inmersia.</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <button type="button" className="pf-btn pf-btn-ghost" style={{ justifyContent: 'flex-start' }} onClick={() => setOpen('terminos')}>Términos y Condiciones</button>
+        <button type="button" className="pf-btn pf-btn-ghost" style={{ justifyContent: 'flex-start' }} onClick={() => setOpen('privacidad')}>Política de Privacidad</button>
+      </div>
+      {open && <LegalModal initialDoc={open} onClose={() => setOpen(null)} />}
+    </div>
+  )
+}
+
 // ════════════════════ Componente principal ══════════════════
 export default function Perfil({ user, gatoColor, onChangeGatoColor, onGoBack, onSignOut }) {
   // Lógica de datos compartida con PerfilMobile (ver src/hooks/usePerfilData.js)
@@ -364,6 +382,7 @@ export default function Perfil({ user, gatoColor, onChangeGatoColor, onGoBack, o
             {sec === 'seguridad' && <SecSeguridad/>}
             {sec === 'transac' && <SecTransac/>}
             {sec === 'historial' && <SecHistorial/>}
+            {sec === 'legal' && <SecLegal/>}
           </div>
         </section>
       </div>

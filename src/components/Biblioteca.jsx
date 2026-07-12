@@ -2,13 +2,15 @@ import React from 'react'
 import { useBiblioteca } from '../hooks/useBiblioteca.js'
 import { useCompraLibro, LIMITE_PENDIENTES } from '../hooks/useCompraLibro.js'
 import { SIN_CATEGORIA_ID, COLOR_DEFAULT } from './biblioteca/constants.js'
+import '../styles/tienda.css'
 import '../styles/biblioteca.css'
 import BibBookModal from './biblioteca/BibBookModal.jsx'
 import ManageCategoriasModal from './biblioteca/ManageCategoriasModal.jsx'
 import PanelLibro from './tienda/PanelLibro.jsx'
 import LibroReel from './tienda/LibroReel.jsx'
 import { InmHeader, Swimlane } from './biblioteca/clay/HeaderSwimlane.jsx'
-import { FlatShelves, CoverShelf } from './biblioteca/clay/Shelves.jsx'
+import { FlatShelves } from './biblioteca/clay/Shelves.jsx'
+import { UltimosAbiertos } from './biblioteca/clay/UltimosAbiertos.jsx'
 import { INK } from './biblioteca/clay/helpers.jsx'
 
 // =============================================================
@@ -38,7 +40,7 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
   const [showFilters, setShowFilters] = React.useState(false);
   const [searchInput, setSearchInput] = React.useState('');
   const [search, setSearch] = React.useState('');
-  const [activeCategory, setCategory] = React.useState(null); // null | 'none' | uuid
+  const [activeCategory, setCategory] = React.useState(null); // null | uuid | SIN_CATEGORIA_ID
 
   // Compra desde el panel in-place (Novedades/Recomendaciones) — mismas
   // primitivas y mismo límite de pendientes que la Tienda (ver useCompraLibro).
@@ -93,15 +95,17 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
     return out.filter(g => g.books.length);
   }, [categories, searchedBooks]);
 
-  // Repisa "Últimos abiertos" (máx 3)
+  const hasSinCategoria = React.useMemo(() => books.some(b => !b.categoria_id), [books]);
+
+  // Repisa "Últimos abiertos" (máx 3) — excluye el libro ya mostrado en "Seguir leyendo"
   const portadas = React.useMemo(() => {
-    const nonManual = books.filter(b => b.id !== 'manual')
+    const nonManual = books.filter(b => b.id !== 'manual' && b.id !== featured?.id)
     if (lastOpenedBookIds?.length) {
-      const ordered = lastOpenedBookIds.map(id => nonManual.find(b => b.id === id)).filter(Boolean)
+      const ordered = lastOpenedBookIds.filter(id => id !== featured?.id).map(id => nonManual.find(b => b.id === id)).filter(Boolean)
       return ordered.slice(0, 3)
     }
     return nonManual.slice(0, 3)
-  }, [books, lastOpenedBookIds]);
+  }, [books, lastOpenedBookIds, featured]);
 
   const openBook = React.useCallback((book) => { setSelectedBook(book); }, []);
 
@@ -129,19 +133,19 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(74,54,34,0.5)', fontSize: 17, fontWeight: 600 }}>Cargando tu biblioteca…</div>
         ) : (
           <>
-            <Swimlane featured={featured} onOpen={openBook} novedades={novedades} recomendaciones={recomendaciones} onOpenLibro={setSelectedLibro} onPreviewLibro={setReelLibro} />
+            <Swimlane featured={featured} onOpen={openBook} novedades={novedades} recomendaciones={recomendaciones} onOpenLibro={setSelectedLibro} onPreviewLibro={setReelLibro} gatoColor={gatoColor} />
 
             {portadas.length > 0 && (
-              <div style={{ marginTop: 36 }}>
+              <div style={{ marginTop: 36, position: 'relative', zIndex: 2 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, marginBottom: 10, flexWrap: 'wrap' }}>
                   <span style={{ fontWeight: 800, fontSize: 19, color: headerInk, whiteSpace: 'nowrap' }}>Últimos abiertos</span>
                 </div>
-                <CoverShelf books={portadas} onOpen={openBook} />
+                <UltimosAbiertos books={portadas} onOpen={openBook} />
               </div>
             )}
 
             {/* Encabezado colección + acciones */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginTop: 44 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginTop: 44, position: 'relative', zIndex: 2 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', flexShrink: 0 }}>
                 <span style={{ fontWeight: 800, fontSize: 24, color: headerInk, whiteSpace: 'nowrap' }}>Tu colección</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(74,54,34,0.55)', whiteSpace: 'nowrap' }}>{books.filter(b => b.id !== 'manual').length} {books.filter(b => b.id !== 'manual').length === 1 ? 'libro' : 'libros'}</span>
@@ -163,6 +167,12 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
             {showFilters && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginTop: 16, flexWrap: 'wrap' }}>
                 <button onClick={() => setCategory(null)} style={chip(activeCategory === null, '#cf7b4c')}>Todos</button>
+                {hasSinCategoria && (
+                  <button onClick={() => setCategory(activeCategory === SIN_CATEGORIA_ID ? null : SIN_CATEGORIA_ID)} style={chip(activeCategory === SIN_CATEGORIA_ID, COLOR_DEFAULT)}>
+                    <span style={{ width: 9, height: 9, borderRadius: '50%', background: COLOR_DEFAULT, display: 'inline-block', marginRight: 8, border: `1px solid ${INK}66` }} />
+                    Sin categoría
+                  </button>
+                )}
                 {categories.map(c => (
                   <button key={c.id} onClick={() => setCategory(activeCategory === c.id ? null : c.id)} style={chip(activeCategory === c.id, c.color)}>
                     <span style={{ width: 9, height: 9, borderRadius: '50%', background: c.color, display: 'inline-block', marginRight: 8, border: `1px solid ${INK}66` }} />
@@ -175,7 +185,7 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
             <div style={{ marginTop: 28, overflowX: 'auto' }}>
               {groups.length === 0
                 ? <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(74,54,34,0.5)', fontWeight: 600, fontSize: 16 }}>No hay libros que mostrar.</div>
-                : <FlatShelves groups={groups} activeCat={activeCategory === 'none' ? SIN_CATEGORIA_ID : activeCategory} onOpen={openBook} />}
+                : <FlatShelves groups={groups} activeCat={activeCategory} onOpen={openBook} />}
             </div>
           </>
         )}
@@ -185,7 +195,6 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
         <BibBookModal
           book={books.find(b => b.id === selectedBook.id) || selectedBook}
           user={user}
-          gatoColor={gatoColor}
           onClose={() => setSelectedBook(null)}
           onOpenBook={(book) => { setSelectedBook(null); onOpenBook(book); }}
           onGoForo={(book) => { setSelectedBook(null); onGoForo(book); }}

@@ -1,7 +1,10 @@
 // Generador de ruido ambiental para libros de no ficción.
 // Capa 1: ruido generativo (Web Audio API — sin archivos).
 // Capa 2: ambiente en loop (archivos en /public/sounds/).
-// Preferencias persisten en localStorage bajo 'inm_noise_pref'.
+// Solo el volumen persiste en localStorage ('inm_noise_pref'): el tipo/ambiente
+// siempre arrancan en 'off'/'ninguno' en cada sesión de lectura para que el sonido
+// nunca empiece solo — hay que elegirlo desde el panel cada vez que se abre un libro.
+// Una vez elegido, sigue sonando aunque se cierre el panel (el player queda montado).
 import { useState, useEffect, useRef } from 'react'
 
 const PREF_KEY = 'inm_noise_pref'
@@ -16,8 +19,8 @@ export const TIPOS_RUIDO = [
 export const AMBIENCIAS = [
   { key: 'ninguno', label: 'Ninguno', src: null },
   { key: 'lluvia',  label: 'Lluvia',  src: '/sounds/lluvia.mp3'  },
-  { key: 'cafe',    label: 'Café',    src: '/sounds/cafe.mp3'    },
-  { key: 'bosque',  label: 'Bosque',  src: '/sounds/bosque.mp3'  },
+  { key: 'rio',     label: 'Río',     src: '/sounds/rio.mp3'     },
+  { key: 'olas',    label: 'Olas',    src: '/sounds/olas.mp3'    },
   { key: 'fuego',   label: 'Fuego',   src: '/sounds/fuego.mp3'   },
 ]
 
@@ -64,9 +67,9 @@ function buildNoiseBuffer(ctx, tipo) {
 
 export function useWhiteNoise() {
   const pref = loadPref()
-  const [tipo,       setTipo]       = useState(pref.tipo       || 'off')
+  const [tipo,       setTipo]       = useState('off')
   const [volNoise,   setVolNoise]   = useState(pref.volNoise   ?? 0.35)
-  const [ambiente,   setAmbiente]   = useState(pref.ambiente   || 'ninguno')
+  const [ambiente,   setAmbiente]   = useState('ninguno')
   const [volAmb,     setVolAmb]     = useState(pref.volAmb     ?? 0.25)
 
   const ctxRef  = useRef(null)
@@ -75,9 +78,11 @@ export function useWhiteNoise() {
   const audioRef = useRef(null)
 
   // ── Persistir preferencias ─────────────────────────────────────
+  // Solo el volumen persiste entre sesiones: tipo/ambiente siempre arrancan
+  // apagados (ver comentario arriba) para que el sonido no arranque solo.
   useEffect(() => {
-    localStorage.setItem(PREF_KEY, JSON.stringify({ tipo, volNoise, ambiente, volAmb }))
-  }, [tipo, volNoise, ambiente, volAmb])
+    localStorage.setItem(PREF_KEY, JSON.stringify({ volNoise, volAmb }))
+  }, [volNoise, volAmb])
 
   // ── Capa 1: ruido generativo ───────────────────────────────────
   useEffect(() => {

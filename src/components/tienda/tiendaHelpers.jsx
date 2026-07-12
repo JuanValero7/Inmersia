@@ -23,13 +23,6 @@ export function itint(hex, amt) {
   return `rgb(${mix(r)},${mix(g)},${mix(b)})`
 }
 
-// Luminosidad percibida 0..1 (para decidir texto claro/oscuro sobre la portada).
-export function ilum(hex) {
-  const h = (hex || '#cf8a6e').replace('#', '')
-  const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16)
-  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255
-}
-
 // Clase de tamaño para el título superpuesto en la portada (.book-title):
 // a más caracteres, fuente más pequeña, para que no desborde la portada.
 // Además .book-title recorta a 2 líneas (line-clamp) como tope absoluto,

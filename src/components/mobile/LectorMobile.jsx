@@ -36,8 +36,6 @@ import MobileBookPage from './lector/MobileBookPage.jsx'
 import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
 import '../../styles/lector.mobile.css'
 
-import { FONT_WIDTH } from '../lector/readerConstants.js'
-
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
 const LINE = 1.72  // alto de línea (coincide con .lm-para en el CSS)
 
@@ -111,7 +109,7 @@ function HighlighterIcon({ active }) {
 // ═══════════════════════════════════════════════════════════════
 //  COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════════
-export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, onRequestAuth }) {
+export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, onRequestAuth, gatoColor = 'negro' }) {
   // ── Estado de navegación de lectura (UI) ──
   const [chapterIndex, setChapterIndex] = useState(0)
   const [pageIndex,    setPageIndex]    = useState(0)
@@ -120,6 +118,13 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const [imageOpen,    setImageOpen]    = useState(false)
   const [notebookOpen, setNotebookOpen] = useState(false)
   const [catOpen,        setCatOpen]        = useState(false)
+
+  useEffect(() => {
+    if (!catOpen) return
+    const handleOutside = (e) => { if (!e.target.closest('.lm-cat-dock')) setCatOpen(false) }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [catOpen])
   const [pendingChapter, setPendingChapter] = useState(null)
   const [adminPanelOpen, setAdminPanelOpen] = useState(false)
   const [showPaywall,    setShowPaywall]    = useState(false)
@@ -201,15 +206,13 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const [paginadoChap, setPaginadoChap] = useState(null)
 
   // ── Geometría de página (medida del DOM) ──
-  const [geom, setGeom] = useState({ charsPerLine: 38, lineHeight: Math.round(19*LINE), maxH: 480, titleH: 90 })
+  const [geom, setGeom] = useState({ lineHeight: Math.round(19*LINE), maxH: 480, titleH: 90 })
   const measureGeom = useCallback(() => {
     const box = screenRef.current?.querySelector('[data-lm-pagebox]')
     if (!box) return
     const cs = window.getComputedStyle(box)
-    const padX    = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
     const padBottom = parseFloat(cs.paddingBottom)
     const padY    = parseFloat(cs.paddingTop) + padBottom
-    const contentW = Math.max(120, box.clientWidth - padX)
     let   contentH = box.clientHeight - padY
 
     // El botón del gato flota sobre la página (z-index alto, position:absolute
@@ -224,15 +227,13 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     }
 
     contentH = Math.max(160, contentH)
-    const wf = FONT_WIDTH[readingFont] || 0.46
-    const charsPerLine = Math.max(20, Math.floor(contentW / (fontSize * wf)))
     const lineHeight = Math.round(fontSize * LINE)
     const titleH = Math.round(fontSize * 0.6) + Math.round(fontSize * 1.55 * 1.25) + 38
     setGeom(g => {
-      if (g.charsPerLine === charsPerLine && g.lineHeight === lineHeight && Math.abs(g.maxH - contentH) < 2 && g.titleH === titleH) return g
-      return { charsPerLine, lineHeight, maxH: contentH, titleH }
+      if (g.lineHeight === lineHeight && Math.abs(g.maxH - contentH) < 2 && g.titleH === titleH) return g
+      return { lineHeight, maxH: contentH, titleH }
     })
-  }, [fontSize, readingFont])
+  }, [fontSize])
 
   // Medir solo cuando puede cambiar la geometría (fuente/viewport vía measureGeom,
   // fin de carga, cambio de capítulo) en vez de en CADA render. measureGeom ya
@@ -470,7 +471,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         const parrafoId = sel.anchorNode?.parentElement?.closest('[data-parrafo-id]')?.dataset?.parrafoId || null
         window.getSelection()?.removeAllRanges()
         setPendingConfirm({ text, parrafoId })
-      }, 2500) // 2.5s: tiempo para arrastrar los handles de Chrome; al capturar, limpia la selección para restaurar la navegación
+      }, 1500) // 1.5s: tiempo para arrastrar los handles de Chrome; al capturar, limpia la selección para restaurar la navegación
     }
     document.addEventListener('selectionchange', onSelChange)
     return () => { document.removeEventListener('selectionchange', onSelChange); clearTimeout(selTimerRef.current) }
@@ -571,8 +572,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         {!loading && !error && book?.libro_id && (
           <div className="lm-cat-dock">
             <button className="lm-cat-btn" onClick={() => setCatOpen(o => !o)} title="Herramientas" aria-label="Herramientas">
-              {/* La mascota negra de Inmersia. Ruta servida desde /public. */}
-              <img className="lm-cat-img" src="/assets/lector/cat-mascot.png" alt="Mascota de Inmersia" onLoad={measureGeom} />
+              <img className="lm-cat-img" src={`/assets/lector/gato-${gatoColor}-6.webp`} alt="Mascota de Inmersia" onLoad={measureGeom} />
             </button>
             {catOpen && (
               <div className="lm-cat-tray">

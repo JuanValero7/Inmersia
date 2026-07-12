@@ -1,19 +1,19 @@
 // =============================================================
 // INMERSIA · Biblioteca mobile — helpers visuales + portada.
 // Espeja la capa "acuarela" del desktop con proporciones afinadas
-// para mobile. Las funciones puras (inmTint, hashOf, lum, STORYBOOK,
-// spineColor, INK) se re-exportan desde ../../biblioteca/coverHelpers.shared.js;
+// para mobile. Las funciones puras (inmTint, hashOf, spineColor, INK)
+// se re-exportan desde ../../biblioteca/coverHelpers.shared.js;
 // aquí viven solo los tamaños de lomo y el BookCover propios de mobile.
 // Consume el `book` ya mapeado por el orquestador.
 // =============================================================
 import React from 'react'
-import { INK, inmTint, hashOf, lum, STORYBOOK, spineColor, tituloFontSize, autorFontSize } from '../../biblioteca/coverHelpers.shared.js'
+import { INK, inmTint, hashOf, spineColor, tituloFontSize, autorFontSize } from '../../biblioteca/coverHelpers.shared.js'
 
-export { INK, inmTint, hashOf, lum, STORYBOOK, spineColor }
+export { INK, inmTint, hashOf, spineColor }
 
 export const ACCENT = '#cf7b4c'
 export const GREEN = '#6f9457'
-export const WALL = '#b0bdca'
+export const WALL = '#f1e8d4' // mismo fondo de estante que la versión desktop
 
 // tamaños de lomo (variación según páginas + hash → look ilustrado)
 export const spineW = (b) => Math.max(26, Math.min(52, Math.round((b.pages / 800) * 22 + 28) + (hashOf(b.id) % 7) - 3))

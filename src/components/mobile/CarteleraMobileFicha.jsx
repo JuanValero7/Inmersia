@@ -9,7 +9,7 @@
 //   <CarteleraMobileLista section items onPick />
 //   <CarteleraMobileFicha section item onBack />
 // ─────────────────────────────────────────────────────────────
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useLayoutEffect } from 'react'
 import clsx from 'clsx'
 import { getTags, getCap, shade, DOT_AMT, initial, deltaDesc } from '../cartelera/carteleraHelpers.js'
 
@@ -24,9 +24,15 @@ function Wave({ color }) {
     <path d="M2 7 Q22 1 42 7 T82 7 T122 7 T162 7 T202 7 T242 7 T282 7 T318 7" /></svg>)
 }
 
-export function CarteleraMobileLista({ section, items = [], onPick }) {
+export function CarteleraMobileLista({ section, items = [], onPick, initialScroll = 0, onScroll }) {
   const [query, setQuery] = useState('')
   const sec = section.color
+  const wrapRef = useRef(null)
+
+  useLayoutEffect(() => {
+    if (wrapRef.current) wrapRef.current.scrollTop = initialScroll
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -37,7 +43,7 @@ export function CarteleraMobileLista({ section, items = [], onPick }) {
   }, [query, items])
 
   return (
-    <div className="cm-list-wrap">
+    <div className="cm-list-wrap" ref={wrapRef} onScroll={e => onScroll?.(e.currentTarget.scrollTop)}>
       <div className="cm-search">
         <SearchIcon />
         <input value={query} onChange={e => setQuery(e.target.value)}

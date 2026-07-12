@@ -1,33 +1,15 @@
-import { useRef } from 'react'
 import { findPrefixAtEnd, findSuffixAtStart } from '../../../utils/readerHelpers.js'
 
 const LINE = 1.72  // alto de línea (coincide con .lm-para en el CSS)
 
 export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaByParrafo, isFirst, pageNum, fontSize, font,
-                    atStart, nextIsChapter, onPrev, onNext, onPlaySfx, onSelectText }) {
+                    atStart, nextIsChapter, onPrev, onNext, onPlaySfx }) {
   const lineH = Math.round(fontSize * LINE)
-  const innerRef = useRef(null)
-
-  function handleSel() {
-    // Delay de 50ms: deja que el navegador finalice la selección antes de leerla,
-    // especialmente necesario en touch donde la selección no está 100% lista al touchend.
-    setTimeout(() => {
-      if (!onSelectText) return
-      const sel = window.getSelection()
-      if (!sel || sel.isCollapsed || !sel.toString().trim()) return
-      if (!innerRef.current?.contains(sel.anchorNode)) return
-      const text = sel.toString().trim()
-      const anchorEl = sel.anchorNode?.parentElement?.closest('[data-parrafo-id]')
-      const parrafoId = anchorEl?.dataset?.parrafoId || null
-      const rect = sel.getRangeAt(0).getBoundingClientRect()
-      onSelectText({ text, parrafoId, rect })
-    }, 50)
-  }
 
   return (
     <div className="lm-page" data-screen-label={`Lector cap ${chapter?.numero ?? chapterIndex + 1}`}>
       <div className="lm-page-lines" style={{ backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent ${lineH-1}px, rgba(150,110,60,0.05) ${lineH-1}px, rgba(150,110,60,0.05) ${lineH}px)` }} />
-      <div className="lm-page-inner" data-lm-pagebox ref={innerRef} translate="no" style={{ fontSize, lineHeight: LINE }} onMouseUp={handleSel} onTouchEnd={handleSel} onContextMenu={(e) => e.preventDefault()}>
+      <div className="lm-page-inner" data-lm-pagebox translate="no" style={{ fontSize, lineHeight: LINE }} onContextMenu={(e) => e.preventDefault()}>
         {isFirst && (
           <div className="lm-chap-head">
             <div className="lm-chap-kicker" style={{ fontSize: fontSize*0.6 }}>Capítulo {chapter?.numero ?? chapterIndex + 1}</div>

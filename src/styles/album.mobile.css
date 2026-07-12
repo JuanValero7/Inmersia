@@ -21,6 +21,42 @@
 }
 .album-m-root *{ box-sizing:border-box; }
 
+.album-m-gato-wrap{
+  position:absolute; right:8px; bottom:6px; width:74px; z-index:15;
+  background:none; border:0; padding:0; cursor:pointer;
+  filter:drop-shadow(2px 6px 5px rgba(60,40,18,0.34));
+}
+.album-m-gato-wrap:active{ transform:scale(.96); }
+.album-m-gato{ width:100%; height:auto; display:block; pointer-events:none; }
+.album-m-gato-badge{
+  position:absolute; top:-1px; right:-1px; width:13px; height:13px; border-radius:50%;
+  background:var(--rojo); border:2px solid var(--crema); box-shadow:0 0 0 1.5px var(--ink);
+}
+
+/* ─── menú del gato ─── */
+.album-m-gatomenu-backdrop{ position:absolute; inset:0; z-index:16; }
+.album-m-gatomenu{
+  position:absolute; right:8px; bottom:86px; z-index:17; min-width:172px;
+  background:var(--crema); border:2px solid var(--ink); border-radius:12px;
+  box-shadow:0 14px 30px rgba(74,54,34,.25); padding:8px;
+}
+.album-m-gatomenu-title{ margin:0 0 5px; padding:0 3px; font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft); }
+.album-m-gatomenu-item{
+  display:block; width:100%; text-align:left; background:var(--papel-warm); border:2px solid var(--ink);
+  border-radius:9px; padding:8px 10px; font-family:var(--ui); font-weight:700; font-size:12.5px; color:var(--ink);
+  cursor:pointer; box-shadow:1.2px 1.6px 0 rgba(74,54,34,.25);
+}
+.album-m-gatomenu-item:disabled{ opacity:.45; cursor:default; }
+.album-m-gatomenu-item:not(:disabled):active{ transform:translateY(1px); }
+
+/* ─── aviso de "modo pegar" activo ─── */
+.album-m-pegarhint{
+  position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:14;
+  background:rgba(40,26,12,.85); color:#fffaf2; font-family:var(--ui); font-weight:700; font-size:11px;
+  padding:6px 14px; border-radius:999px; box-shadow:0 8px 18px rgba(0,0,0,.25); cursor:pointer;
+}
+.album-m-pegarhint b{ text-decoration:underline; }
+
 /* ─── barra superior ─── */
 .album-m-top{ flex:none; display:flex; align-items:center; gap:8px; padding:7px 14px 6px; }
 .album-m-back{ flex:none; display:inline-flex; align-items:center; gap:5px;
@@ -157,6 +193,16 @@
   justify-content:center; gap:4px; text-align:center; padding:5px; color:rgba(74,54,34,.5); }
 .cellL.empty .eslot span{ font-size:7px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; line-height:1.15; }
 
+/* casilla desbloqueada, todavía sin pegar */
+.cellL.pending{ background:repeating-linear-gradient(135deg,#fdf3e2 0 8px,#f8ecd2 8px 16px);
+  border:2px solid var(--terra); box-shadow:var(--clay); cursor:default; }
+.cellL.pending.armed{ cursor:pointer; }
+.cellL.pending .eslot.pend{ color:var(--terra-d); }
+.cellL.pending .eslot.pend svg{ opacity:.85; }
+
+/* animación de "pegado" (keyframe album-pegar definido en album.css) */
+.cellL.pegando{ animation: album-pegar .5s cubic-bezier(.34,1.56,.64,1) both; }
+
 /* botón "ver todas" */
 .moreL{ flex:none; width:48px; height:82%; border-radius:8px; border:2px dashed rgba(74,54,34,.42);
   background:var(--papel-warm); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
@@ -208,4 +254,5 @@
 @media (prefers-reduced-motion:reduce){
   .musicL.playing .waveL i{ animation:none; height:8px; }
   .album-m-rotate svg{ animation:none; }
+  .cellL.pegando{ animation:none; }
 }

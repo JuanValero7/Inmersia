@@ -8,7 +8,6 @@ export default function LibroReel({ libro, onClose }) {
   const [loading, setLoading] = useState(true)
   const audioRef    = useRef(null)
   const audioUrlRef = useRef(null)
-  const touchStartY = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -52,17 +51,6 @@ export default function LibroReel({ libro, onClose }) {
     setCurrent(Math.max(0, Math.min(reels.length - 1, idx)))
   }
 
-  function handleTouchStart(e) {
-    touchStartY.current = e.touches[0].clientY
-  }
-
-  function handleTouchEnd(e) {
-    if (touchStartY.current === null) return
-    const delta = touchStartY.current - e.changedTouches[0].clientY
-    if (Math.abs(delta) > 50) goTo(current + (delta > 0 ? 1 : -1))
-    touchStartY.current = null
-  }
-
   function handleBackdropClick(e) {
     if (e.target === e.currentTarget) onClose()
   }
@@ -87,12 +75,7 @@ export default function LibroReel({ libro, onClose }) {
   const slide = reels[current]
 
   return (
-    <div
-      className="reel-overlay"
-      onClick={handleBackdropClick}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div className="reel-overlay" onClick={handleBackdropClick}>
       <div className="reel-card">
         {/* Cerrar */}
         <button className="reel-close" onClick={onClose}>×</button>
@@ -124,12 +107,9 @@ export default function LibroReel({ libro, onClose }) {
           </div>
         </div>
 
-        {/* Navegación vertical */}
-        <div className="reel-nav">
-          <button className="reel-nav-btn" onClick={() => goTo(current - 1)} disabled={current === 0}>↑</button>
-          <span className="reel-nav-counter">{current + 1} / {reels.length}</span>
-          <button className="reel-nav-btn" onClick={() => goTo(current + 1)} disabled={current === reels.length - 1}>↓</button>
-        </div>
+        {/* Zonas de toque tipo stories: izquierda = atrás, derecha = adelante */}
+        <div className="reel-tap-zone reel-tap-zone-izq" onClick={() => goTo(current - 1)} />
+        <div className="reel-tap-zone reel-tap-zone-der" onClick={() => goTo(current + 1)} />
       </div>
     </div>
   )

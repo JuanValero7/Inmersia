@@ -21,12 +21,34 @@ export function formatSeg(seg) {
 // Cuántos slots como máximo mostramos por sección (el resto = "+N más").
 const MAX_SLOTS = 20
 
+// Supabase/PostgREST corta cada query a 1000 filas por defecto. Con muchos
+// libros curados, una query `.in('libro_id', libroIds)` sobre toda la
+// biblioteca puede superar eso y truncarse en silencio (algunos libros
+// quedan afuera del batch sin ningún error). `fetchAllRows` pagina con
+// `.range()` hasta agotar los resultados reales.
+const PAGE_SIZE = 1000
+
+async function fetchAllRows(buildQuery) {
+  let all = []
+  let from = 0
+  for (;;) {
+    const { data, error } = await buildQuery().range(from, from + PAGE_SIZE - 1)
+    if (error) return { data: all, error }
+    all = all.concat(data || [])
+    if (!data || data.length < PAGE_SIZE) break
+    from += PAGE_SIZE
+  }
+  return { data: all, error: null }
+}
+
 // Arma una sección: dedup + orden por capítulo + marca desbloqueadas.
-// `total`/`unlocked` son los números reales (para el "X de Y" y los vacíos);
-// `items` son los slots que efectivamente se pintan (capados a MAX_SLOTS).
-// `filterByImage`: si true, excluye items sin imagen (para personajes/lugares).
-// `heroItem`: imagen de cartelera_principal que ocupa la posición 0 (hero/video).
-function buildSeccion(rows, capActual, { filterByImage = false, heroItem = null } = {}) {
+// `total`/`unlocked` son los números reales (para el "X de Y" y los vacíos).
+// Las filas ya vienen filtradas por imagen desde la query (solo se cuentan
+// items con imagen real vinculada — ver el filtro imagen_media_id.not.is.null).
+// `heroItem`: imagen de cartelera_principal que ocupa la posición 0 (hero/video)
+// — queda siempre pegada, fuera del mecanismo de "pegar barajitas".
+// `pegadaSet`: claves `${libroId}::${seccion}::${itemKey}` ya pegadas por el usuario.
+function buildSeccion(rows, capActual, { heroItem = null, libroId, seccion, pegadaSet } = {}) {
   const seen = new Set()
   const uniq = []
   for (const r of rows) {
@@ -37,11 +59,17 @@ function buildSeccion(rows, capActual, { filterByImage = false, heroItem = null 
   }
   uniq.sort((a, b) => (a.capitulo_numero ?? 0) - (b.capitulo_numero ?? 0))
 
-  const all = (filterByImage ? uniq.filter(r => r.url) : uniq).map(r => ({
-    url: r.url || null,
-    name: r.titulo || r.nombre || '',
-    unlocked: (r.capitulo_numero ?? 0) < capActual,
-  }))
+  const all = uniq.map(r => {
+    const key = r.slug || r.url || r.titulo || r.nombre || ''
+    const unlocked = (r.capitulo_numero ?? 0) < capActual
+    return {
+      key,
+      url: r.url || null,
+      name: r.titulo || r.nombre || '',
+      unlocked,
+      pegada: unlocked && pegadaSet.has(`${libroId}::${seccion}::${key}`),
+    }
+  })
 
   const total    = all.length
   const unlocked = all.filter(i => i.unlocked).length
@@ -50,7 +78,7 @@ function buildSeccion(rows, capActual, { filterByImage = false, heroItem = null 
   const displayItems  = all.slice(0, slotsForItems)
   const extra         = all.length > slotsForItems ? all.length - slotsForItems : 0
   const items         = heroItem
-    ? [{ url: heroItem.url, name: heroItem.name, unlocked: true }, ...displayItems]
+    ? [{ key: null, url: heroItem.url, name: heroItem.name, unlocked: true, pegada: true }, ...displayItems]
     : displayItems
 
   return { total, unlocked, items, extra }
@@ -103,48 +131,56 @@ export function useAlbum(user) {
         parrafoImgRes,
         reelsRes,
         principalRes,
+        pegadasRes,
       ] = await Promise.all([
-        supabase.from('progreso_lectura')
+        fetchAllRows(() => supabase.from('progreso_lectura')
           .select('libro_id, porcentaje')
           .eq('user_id', user.id)
-          .in('libro_id', libroIds),
+          .in('libro_id', libroIds)),
 
-        supabase.from('capitulos')
+        fetchAllRows(() => supabase.from('capitulos')
           .select('libro_id')
-          .in('libro_id', libroIds),
+          .in('libro_id', libroIds)),
 
-        supabase.from('sesiones_lectura')
+        fetchAllRows(() => supabase.from('sesiones_lectura')
           .select('libro_id, started_at, ended_at')
           .eq('user_id', user.id)
-          .in('libro_id', libroIds),
+          .in('libro_id', libroIds)),
 
-        supabase.from('anotaciones_usuario')
+        fetchAllRows(() => supabase.from('anotaciones_usuario')
           .select('libro_id')
           .eq('user_id', user.id)
-          .in('libro_id', libroIds),
+          .in('libro_id', libroIds)),
 
-        // Items de cartelera (personajes · lugares · hechos · datos).
-        // Traemos TODOS (con o sin imagen) para poder contar los slots vacíos.
-        supabase.from('cartelera_items')
+        // Items de cartelera (personajes · lugares · hechos · datos) que YA
+        // tienen imagen vinculada — filtro server-side (ver índice parcial
+        // idx_cartelera_items_libro_con_imagen en la migración 028).
+        fetchAllRows(() => supabase.from('cartelera_items')
           .select('libro_id, seccion, capitulo_numero, nombre, imagen:biblioteca_media!imagen_media_id(url, titulo, slug)')
-          .in('libro_id', libroIds),
+          .in('libro_id', libroIds)
+          .not('imagen_media_id', 'is', null)),
 
         // Imágenes de escena por párrafo (vista album_imagenes) → sección Capítulos
-        supabase.from('album_imagenes')
+        fetchAllRows(() => supabase.from('album_imagenes')
           .select('libro_id, capitulo_numero, url, titulo, slug')
-          .in('libro_id', libroIds),
+          .in('libro_id', libroIds)),
 
         // Preview de audio: primero por orden en libro_reels
-        supabase.from('libro_reels')
+        fetchAllRows(() => supabase.from('libro_reels')
           .select('libro_id, audio_url, orden')
           .in('libro_id', libroIds)
           .not('audio_url', 'is', null)
-          .order('orden', { ascending: true }),
+          .order('orden', { ascending: true })),
 
         // Imagen principal por sección (hero/video de cada tablero).
-        supabase.from('cartelera_principal')
+        fetchAllRows(() => supabase.from('cartelera_principal')
           .select('libro_id, seccion, imagen:biblioteca_media!imagen_media_id(url, titulo)')
-          .in('libro_id', libroIds),
+          .in('libro_id', libroIds)),
+
+        // Barajitas que el usuario ya pegó a mano (persistente, ver Barajita.jsx).
+        fetchAllRows(() => supabase.from('album_barajitas_pegadas')
+          .select('libro_id, seccion, item_key')
+          .eq('user_id', user.id)),
       ])
 
       if (cancelled) return
@@ -182,6 +218,11 @@ export function useAlbum(user) {
         principalMap[row.libro_id][row.seccion] = { url: row.imagen.url, name: row.imagen.titulo || '' }
       }
 
+      // Barajitas ya pegadas por el usuario
+      const pegadaSet = new Set(
+        (pegadasRes.data || []).map(p => `${p.libro_id}::${p.seccion}::${p.item_key}`)
+      )
+
       // Construir un item por libro
       const result = libros.map(libro => {
         const pct       = Math.max(0, Math.min(100, progresoMap[libro.libro_id] ?? 0))
@@ -201,14 +242,32 @@ export function useAlbum(user) {
         const parrRows = (parrafoImgRes.data || []).filter(r => r.libro_id === libro.libro_id)
 
         const principal = principalMap[libro.libro_id] || {}
-        const secciones = {
-          personajes: buildSeccion(cartRows.filter(r => r.seccion === 'personajes'), capActual, { filterByImage: true, heroItem: principal.personajes || null }),
-          lugares:    buildSeccion(cartRows.filter(r => r.seccion === 'lugares'),    capActual, { filterByImage: true, heroItem: principal.lugares    || null }),
-          capitulos:  buildSeccion(parrRows, capActual),
-        }
+        const cartPersonajes = cartRows.filter(r => r.seccion === 'personajes')
+        const cartLugares    = cartRows.filter(r => r.seccion === 'lugares')
 
-        const totalBarajitas = secciones.personajes.total + secciones.lugares.total + secciones.capitulos.total
-        const unlockedBarajitas = secciones.personajes.unlocked + secciones.lugares.unlocked + secciones.capitulos.unlocked
+        // No ficción: no hay personajes/lugares reales — una única sección
+        // "Infografías" agrupa todo lo curado (mismas filas, sin la etiqueta ficticia).
+        const secciones = libro.es_ficcion === false
+          ? {
+              infografias: buildSeccion([...cartPersonajes, ...cartLugares, ...parrRows], capActual, {
+                heroItem: principal.personajes || principal.lugares || null,
+                libroId: libro.libro_id, seccion: 'infografias', pegadaSet,
+              }),
+            }
+          : {
+              personajes: buildSeccion(cartPersonajes, capActual, {
+                heroItem: principal.personajes || null, libroId: libro.libro_id, seccion: 'personajes', pegadaSet,
+              }),
+              lugares:    buildSeccion(cartLugares,    capActual, {
+                heroItem: principal.lugares    || null, libroId: libro.libro_id, seccion: 'lugares', pegadaSet,
+              }),
+              capitulos:  buildSeccion(parrRows, capActual, {
+                libroId: libro.libro_id, seccion: 'capitulos', pegadaSet,
+              }),
+            }
+
+        const totalBarajitas    = Object.values(secciones).reduce((s, sec) => s + sec.total, 0)
+        const unlockedBarajitas = Object.values(secciones).reduce((s, sec) => s + sec.unlocked, 0)
 
         // Stats de sesiones
         const sesiones = sesionesMap[libro.libro_id] || []
@@ -245,5 +304,30 @@ export function useAlbum(user) {
     return () => { cancelled = true }
   }, [user?.id])
 
-  return { items, loading }
+  // Marca una barajita desbloqueada como pegada — optimista + persistido.
+  async function pegar(libroId, seccion, itemKey) {
+    if (!itemKey) return
+
+    const setPegada = (value) => setItems(prev => prev.map(entry => {
+      if (entry.libro.libro_id !== libroId) return entry
+      const sec = entry.secciones[seccion]
+      if (!sec) return entry
+      return {
+        ...entry,
+        secciones: {
+          ...entry.secciones,
+          [seccion]: { ...sec, items: sec.items.map(it => it.key === itemKey ? { ...it, pegada: value } : it) },
+        },
+      }
+    }))
+
+    setPegada(true)
+
+    const { error } = await supabase.from('album_barajitas_pegadas')
+      .insert({ user_id: user.id, libro_id: libroId, seccion, item_key: itemKey })
+
+    if (error && error.code !== '23505') setPegada(false)
+  }
+
+  return { items, loading, pegar }
 }

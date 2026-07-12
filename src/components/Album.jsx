@@ -5,6 +5,7 @@ import { useAlbum } from '../hooks/useAlbum.js'
 import LeftPage  from './album/LeftPage.jsx'
 import RightPage from './album/RightPage.jsx'
 import BookTabs  from './album/BookTabs.jsx'
+import Bandeja   from './album/Bandeja.jsx'
 import '../styles/album.css'
 
 function LoadingScreen() {
@@ -72,8 +73,8 @@ function SearchBar({ items, onPick }) {
   )
 }
 
-export default function Album({ user, onOpenBook, onGoBack }) {
-  const { items, loading } = useAlbum(user)
+export default function Album({ user, gatoColor = 'negro', onOpenBook, onGoBack, onGoForo, onGoInvestigacion }) {
+  const { items, loading, pegar } = useAlbum(user)
   const [currentIdx, setCurrentIdx] = useState(0)
 
   const safeIdx = useMemo(() => Math.min(currentIdx, Math.max(0, items.length - 1)), [currentIdx, items.length])
@@ -82,9 +83,12 @@ export default function Album({ user, onOpenBook, onGoBack }) {
   if (!items.length) return <EmptyScreen onGoBack={onGoBack} />
 
   const entry = items[safeIdx]
+  const onPegar = (seccion, itemKey) => pegar(entry.libro.libro_id, seccion, itemKey)
 
   return (
     <div className="album-root">
+      <img className="album-gato" src={`/assets/biblioteca/gato-${gatoColor}-1.webp`} alt="" />
+
       <div className="album-topbar">
         <button onClick={onGoBack} className="album-back" title="Volver a la biblioteca">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
@@ -93,19 +97,23 @@ export default function Album({ user, onOpenBook, onGoBack }) {
         <SearchBar items={items} onPick={setCurrentIdx} />
       </div>
 
-      <div className="album-shell">
-        <div className="album-spread">
-          <LeftPage entry={entry} onOpenBook={onOpenBook} />
-          <RightPage entry={entry} />
+      <div className="album-layout">
+        <div className="album-shell">
+          <div className="album-spread">
+            <LeftPage entry={entry} onOpenBook={onOpenBook} onGoForo={onGoForo} onGoInvestigacion={onGoInvestigacion} onPegar={onPegar} />
+            <RightPage entry={entry} onPegar={onPegar} />
+          </div>
+
+          {items.length > 1 && (
+            <BookTabs items={items} current={safeIdx} onSelect={setCurrentIdx} />
+          )}
+
+          <p className="album-hint">
+            Cada libro de tu biblioteca abre su propia doble página · seguí leyendo para desbloquear más <b>barajitas</b>
+          </p>
         </div>
 
-        {items.length > 1 && (
-          <BookTabs items={items} current={safeIdx} onSelect={setCurrentIdx} />
-        )}
-
-        <p className="album-hint">
-          Cada libro de tu biblioteca abre su propia doble página · seguí leyendo para desbloquear más <b>barajitas</b>
-        </p>
+        <Bandeja entry={entry} />
       </div>
     </div>
   )

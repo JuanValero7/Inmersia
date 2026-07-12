@@ -23,7 +23,7 @@ function mapLibro(data) {
   }
 }
 
-export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, lectorStartNotebook, setLectorStartNotebook, setCartelaJumpId, setForoSource, setCarteleraSource }) {
+export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, gatoColor, lectorStartNotebook, setLectorStartNotebook, setCartelaJumpId, setForoSource, setCarteleraSource }) {
   const { slug } = useParams()
   const navigate = useNavigate()
   const [guestBook, setGuestBook] = useState(null)
@@ -63,6 +63,7 @@ export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, lectorS
       startWithNotebook={lectorStartNotebook}
       onNotebookStarted={() => setLectorStartNotebook(false)}
       isSuperuser={isSuperuser}
+      gatoColor={gatoColor}
     />
   )
 }

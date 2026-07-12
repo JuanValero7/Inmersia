@@ -1,9 +1,9 @@
 import React from 'react'
-import { INK, inmTint, hashOf, lum, STORYBOOK, spineColor, tituloFontSize, autorFontSize } from '../coverHelpers.shared.js'
+import { INK, inmTint, hashOf, spineColor, tituloFontSize, autorFontSize } from '../coverHelpers.shared.js'
 
 // =============================================================
 // ACUARELA · helpers + portada generada (face-out).
-// Las funciones puras (inmTint, hashOf, lum, STORYBOOK, spineColor,
+// Las funciones puras (inmTint, hashOf, spineColor,
 // INK) viven en ../coverHelpers.shared.js y se re-exportan aquí.
 // Este archivo conserva los tamaños de lomo y el BookCover propios
 // del desktop. Consume el `book` ya mapeado por el orquestador.
@@ -36,4 +36,4 @@ function BookCover({ book, h = 174 }) {
   );
 }
 
-export { inmTint, hashOf, lum, STORYBOOK, spineColor, spineW, spineH, BookCover, INK };
+export { inmTint, hashOf, spineColor, spineW, spineH, BookCover, INK };

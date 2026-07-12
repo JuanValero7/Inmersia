@@ -7,7 +7,7 @@ import '../styles/foro.css'
 import { useForoData } from '../hooks/useForoData.js'
 import { useBookBySlug } from '../hooks/useBookBySlug.js'
 
-export default function VistaForo({ book: bookProp, user, onGoLectura, onGoBiblioteca, onGoCartelera }) {
+export default function VistaForo({ book: bookProp, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera }) {
   const { book, loading: bookLoading } = useBookBySlug(bookProp)
   // Lógica de datos compartida con ForoMobile (ver src/hooks/useForoData.js)
   const {
@@ -38,6 +38,15 @@ export default function VistaForo({ book: bookProp, user, onGoLectura, onGoBibli
 
       {/* ── Header ── */}
       <header className="foro-header">
+        <div style={{ width: 80, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+          {onGoBack && (
+            <button type="button" className="foro-arrow-btn" onClick={onGoBack} title="Volver" aria-label="Volver">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+          )}
+        </div>
         <div className="foro-header-center">
           <h1 className="foro-titulo">{book?.title || 'Foro'}</h1>
           <p className="foro-subtitulo">Foro del libro</p>

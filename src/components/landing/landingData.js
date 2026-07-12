@@ -4,13 +4,6 @@
 // Las capturas viven en public/assets/landing/.
 // ─────────────────────────────────────────────────────────────
 
-export const HERO = {
-  // El <em> marca la palabra en cursiva/terracota
-  titleParts: ['Las mejores historias ', { em: 'nunca' }, ' estuvieron en el feed.'],
-  lede:
-    'Inmersia convierte cada libro en un mundo para habitar, no en una pantalla más para mirar. Con imágenes, sonido, pistas para investigar la trama y gente que lee contigo, adéntrate en una nueva aventura.',
-}
-
 // Mundos que rotan dentro del portal
 export const WORLDS_IMG = [
   { src: '/assets/landing/mundo-mar.webp', cls: '' },

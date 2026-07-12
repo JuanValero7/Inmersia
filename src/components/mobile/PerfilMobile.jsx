@@ -18,7 +18,7 @@
 // ─────────────────────────────────────────────────────────────
 import React, { useMemo } from 'react'
 import {
-  SecDatos, SecSeguridad, SecTransac, SecHistorial,
+  SecDatos, SecSeguridad, SecTransac, SecHistorial, SecLegal,
   NAV, TITLES, SEC_COLOR, washBg, I,
 } from '../Perfil.jsx'                 // ← sub-vistas + helpers REUTILIZADOS (¡mayúscula!)
 import { usePerfilData } from '../../hooks/usePerfilData.js'  // ← lógica de datos compartida
@@ -101,6 +101,7 @@ export default function PerfilMobile({ user, gatoColor, onChangeGatoColor, onGoB
           {sec === 'seguridad' && <SecSeguridad />}
           {sec === 'transac'   && <SecTransac />}
           {sec === 'historial' && <SecHistorial />}
+          {sec === 'legal'     && <SecLegal />}
 
           <button type="button" className="pm-logout" onClick={onSignOut}>{I.logout} Cerrar sesión</button>
         </div>

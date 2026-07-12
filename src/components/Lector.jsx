@@ -17,25 +17,18 @@ import { NotebookIcon } from './lector/RecorderPlayer.jsx'
 import { Notebook }        from './lector/Notebook.jsx'
 import { theme, ClayButton, getReaderPalette } from './lector/clay.jsx'
 import SuperuserSoundsPanel from './lector/SuperuserSoundsPanel.jsx'
-import { FONT_WIDTH } from './lector/readerConstants.js'
 
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
 
 // Geometría de página: el libro llena la pantalla.
-// El tamaño y la fuente afectan la paginación (caracteres/línea + alto de línea).
-function computeGeom(doubleView, fontSize, readingFont) {
+function computeGeom(doubleView) {
   const pageH = Math.min(760, Math.max(360, window.innerHeight - 230))
-  const availW = Math.max(960, window.innerWidth) - 64
+  const availW = window.innerWidth - 64
   let pageW = doubleView
     ? Math.min(Math.round(pageH * 0.92), Math.floor((availW - 34) / 2))
     : Math.min(Math.round(pageH * 1.6), availW)
   pageW = Math.max(300, pageW)
-  const contentW = pageW - Math.round(pageW * 0.22)
-  const wf = FONT_WIDTH[readingFont] || 0.46
-  const charsPerLine = Math.max(26, Math.floor(contentW / (fontSize * wf)))
-  const lineHeight = Math.round(fontSize * 1.85)
-  const maxH = Math.round(pageH * 0.79)
-  return { pageW, pageH, charsPerLine, lineHeight, maxH }
+  return { pageW, pageH }
 }
 
 function NavButton({ onClick, title, icon, label, id }) {
@@ -60,7 +53,7 @@ function EstrellaLector({ valor, onChange }) {
   )
 }
 
-export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, onRequestAuth }) {
+export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, onRequestAuth, gatoColor = 'negro' }) {
   const [chapterIndex,   setChapterIndex]   = useState(0)
   const [pageIndex,      setPageIndex]      = useState(0)
   const [goToLastPage,   setGoToLastPage]   = useState(false)
@@ -99,7 +92,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   }, [explorarOpen])
 
   // Preferencias de lectura (persistidas)
-  const [fontSize,    setFontSize]    = useLocalStorage('inm_lector_fontSize', 19)
+  const [fontSize,    setFontSize]    = useLocalStorage('inm_lector_fontSize', 16)
   const [readingFont, setReadingFont] = useLocalStorage('inm_lector_font', READING_FONT_DEFAULT)
   const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
   const [ledColor, setLedColor] = useLocalStorage('inm_lector_ledColor', 'none')
@@ -108,14 +101,14 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const [pendingSelection,  setPendingSelection]  = useState(null)
   const [adminPanelOpen,    setAdminPanelOpen]    = useState(false)
 
-  const [geom, setGeom] = useState(() => computeGeom(true, fontSize, readingFont))
+  const [geom, setGeom] = useState(() => computeGeom(true))
   useEffect(() => {
     let raf = 0
-    const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setGeom(computeGeom(doubleView, fontSize, readingFont))) }
-    setGeom(computeGeom(doubleView, fontSize, readingFont))
+    const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setGeom(computeGeom(doubleView))) }
+    setGeom(computeGeom(doubleView))
     window.addEventListener('resize', onResize)
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize) }
-  }, [doubleView, fontSize, readingFont])
+  }, [doubleView])
   // ── Reseña (UI) ──
   const [resenaOpen, setResenaOpen] = useState(false)
 
@@ -372,13 +365,15 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const halfBook = (doubleView ? (2 * geom.pageW + 20 + 14) : (geom.pageW + 7)) / 2
 
   return (
-    <div className="desk" style={{ position: 'relative', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: pal.deskBg, fontFamily: "'Baloo 2', sans-serif" }}>
+    <div className="desk" style={{ position: 'relative', minHeight: '100vh', display: 'flex', flexDirection: 'column', background: pal.deskBg, fontFamily: "'Baloo 2', sans-serif" }}>
       <div style={{ position: 'absolute', inset: 0, background: pal.vignette, pointerEvents: 'none', zIndex: 1 }} />
+      <img src={`/assets/lector/gato-${gatoColor}-6.webp`} alt=""
+        style={{ position: 'absolute', left: 14, bottom: 10, width: 180, zIndex: 2, pointerEvents: 'none', filter: 'drop-shadow(2px 6px 5px rgba(60,40,18,0.34))' }} />
 
       {/* TOP BAR */}
       <header style={{ position: 'relative', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '14px 24px 0' }}>
-        <div style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 14, padding: '9px 15px', display: 'flex', alignItems: 'center', boxShadow: `1.5px 2px 0 ${theme.ink}22`, flex: '1 1 auto', minWidth: 0, maxWidth: 320 }}>
-          <span style={{ fontSize: 18, fontWeight: 700, color: '#8a7355', fontFamily: "'Baloo 2', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{book?.title}</span>
+        <div style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 14, padding: '9px 15px', display: 'flex', alignItems: 'center', overflow: 'hidden', boxShadow: `1.5px 2px 0 ${theme.ink}22`, flex: '1 1 auto', minWidth: 0, maxWidth: 320 }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: '#8a7355', fontFamily: "'Baloo 2', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{book?.title}</span>
         </div>
         <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexShrink: 0 }}>
           {isSuperuser && !loading && !error && book?.libro_id && (
@@ -437,7 +432,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       </header>
 
       {/* CONTENIDO */}
-      <div style={{ position: 'relative', zIndex: 10, flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px' }}>
+      <div style={{ position: 'relative', zIndex: 10, flex: '1 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
         <div style={{ position: 'relative', zIndex: 2 }}>
           {loading && <div style={msgStyle}>Cargando libro…</div>}
           {!loading && !book?.libro_id && (

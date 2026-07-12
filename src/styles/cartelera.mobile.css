@@ -56,7 +56,6 @@
   font-size:13px; font-weight:800; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,0.25);
 }
 .cm-root .cm-sec-name h2{ margin:0; font-size:1.3rem; font-weight:800; letter-spacing:-0.01em; color:var(--ink); }
-.cm-root .cm-sec-tag{ margin-left:auto; font-size:12px; font-weight:700; color:rgba(74,54,34,0.55); }
 .cm-root .cm-seg{
   display:flex; border:2px solid var(--ink); border-radius:999px; overflow:hidden;
   background:var(--cream); box-shadow:1.4px 1.8px 0 rgba(74,54,34,0.16); flex-shrink:0;
@@ -208,8 +207,8 @@
 }
 .cm-root .cm-nav-grid button:active{ transform:translateY(1px); }
 .cm-root .cm-nav-ic{
-  width:38px; height:38px; flex-shrink:0; border-radius:11px; border:2px solid var(--ink);
-  display:flex; align-items:center; justify-content:center; color:var(--ink); background:rgba(207,123,76,0.14);
+  width:38px; height:38px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; color:var(--ink);
 }
 @keyframes cmUp{ from{ transform:translateY(100%); } to{ transform:translateY(0); } }
 @keyframes cmFade{ from{ opacity:0; } to{ opacity:1; } }

@@ -8,7 +8,7 @@ import { useBookBySlug } from '../hooks/useBookBySlug.js'
 
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
 import { useCartelera } from './cartelera/useCartelera.js'
-import { seccionMeta, getSecciones } from './cartelera/carteleraHelpers.js'
+import { getSecciones } from './cartelera/carteleraHelpers.js'
 import Portada from './cartelera/Portada.jsx'
 import Signpost from './cartelera/Signpost.jsx'
 import Ficha from './cartelera/Ficha.jsx'
@@ -59,7 +59,7 @@ function Filters() {
 }
 
 function BoardView({ sectionKey, data, onOpenList, onOpenSection, onGoBack, onGoForo, onGoBiblioteca, secciones, tableros, esNoficcion, gatoColor }) {
-  const meta = seccionMeta(sectionKey)
+  const meta = secciones.find(s => s.key === sectionKey)
   const stageRef = useRef(null)
   const scale = useFitScale(stageRef)
   const Tablero = tableros[sectionKey]
@@ -70,16 +70,17 @@ function BoardView({ sectionKey, data, onOpenList, onOpenSection, onGoBack, onGo
       <div className="topbar">
         <div className="ttl"><h1>{meta.label}</h1><span className="sub">{meta.sub}</span></div>
         <div className="cart-sec-hint">Sigue leyendo para revelar una sorpresa</div>
-        <div className="actions">
-          <button className="cart-sec-btn" type="button" onClick={() => onOpenList(sectionKey)}>Lista</button>
+        <div className="actions actions-col">
           <ExplorarPopup onGoForo={onGoForo} onGoBack={onGoBack} onGoBiblioteca={onGoBiblioteca} />
+          <button className="cart-sec-btn cart-sec-btn-lg" type="button" onClick={() => onOpenList(sectionKey)}>Lista</button>
         </div>
       </div>
       <div className="stage" ref={stageRef}>
         <div className="cart-canvas-box" style={{ width: BOARD_W * scale, height: BOARD_H * scale }}>
           {sectionKey === 'notas'
             ? <TableroNotas pct={data.porcentaje} scale={scale} principal={data.principal}
-                onOpenSection={onOpenSection} esNoficcion={esNoficcion} />
+                onOpenSection={onOpenSection} esNoficcion={esNoficcion}
+                notasItems={data.itemsBySeccion.notas || []} onOpenNotas={() => onOpenList('notas')} />
             : <Tablero pct={data.porcentaje} scale={scale} imageUrl={data.principal[sectionKey]?.url}
                 videoUrl={data.principal[sectionKey]?.videoUrl}
                 onOpenList={() => onOpenList(sectionKey)} />}
@@ -123,11 +124,11 @@ export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, 
   }, [view.key, setSearchParams])
 
   useEffect(() => {
-    if (!jumpToItemId) return
+    if (!jumpToItemId || bookLoading) return
     setFichaInitItemId(jumpToItemId)
     setView({ kind: 'ficha', key: esNoficcion ? 'glosario' : 'personajes' })
     onJumpConsumed?.()
-  }, [jumpToItemId])
+  }, [jumpToItemId, bookLoading])
 
   if (bookLoading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-warm)' }}>
@@ -144,7 +145,7 @@ export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, 
     content = <Portada subtitle={book?.title} onOpen={handlePortadaOpen} secciones={secciones}
       onGoBack={onGoBack} onGoForo={onGoForo} onGoBiblioteca={onGoBiblioteca} />
   } else if (view.kind === 'ficha') {
-    content = <Ficha key={view.key} section={seccionMeta(view.key)} items={data.itemsBySeccion[view.key] || []}
+    content = <Ficha key={view.key} section={secciones.find(s => s.key === view.key)} items={data.itemsBySeccion[view.key] || []}
       initialItemId={fichaInitItemId}
       secciones={secciones}
       gatoColor={gatoColor}

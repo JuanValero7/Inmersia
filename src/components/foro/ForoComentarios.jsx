@@ -27,7 +27,10 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
   const [showModal,       setShowModal]       = useState(false)
   const [nuevoContenido,  setNuevoContenido]  = useState('')
   const [nuevoTags,       setNuevoTags]       = useState([])
+  const [nuevoEsSpoiler,  setNuevoEsSpoiler]  = useState(false)
+  const [replyEsSpoiler,  setReplyEsSpoiler]  = useState(false)
   const [submitting,      setSubmitting]      = useState(false)
+  const [revealedSpoilers, setRevealedSpoilers] = useState(new Set())
 
   const fetchPage = useCallback(async (pageOffset, tag, reset) => {
     if (reset) setLoading(true)
@@ -36,7 +39,7 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
     // Root comments: paginados + filtro de tag en servidor
     let rootQuery = supabase
       .from('foros_comentarios')
-      .select('id, autor_id, contenido, tags, parent_id, created_at')
+      .select('id, autor_id, contenido, tags, parent_id, created_at, es_spoiler')
       .eq('foro_id', foro.id)
       .is('parent_id', null)
       .order('created_at', { ascending: false })
@@ -52,7 +55,7 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
       const rootIds = rootList.map(c => c.id)
       const { data: replies } = await supabase
         .from('foros_comentarios')
-        .select('id, autor_id, contenido, tags, parent_id, created_at')
+        .select('id, autor_id, contenido, tags, parent_id, created_at, es_spoiler')
         .eq('foro_id', foro.id)
         .in('parent_id', rootIds)
         .order('created_at', { ascending: true })
@@ -120,6 +123,15 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
     })
   }
 
+  function toggleReveal(id) {
+    setRevealedSpoilers(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   function toggleNuevoTag(tag) {
     setNuevoTags(prev =>
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
@@ -133,8 +145,9 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
     await supabase.from('foros_comentarios').insert({
       foro_id: foro.id, autor_id: user.id,
       contenido: nuevoContenido.trim(), tags: nuevoTags,
+      es_spoiler: nuevoEsSpoiler,
     })
-    setNuevoContenido(''); setNuevoTags([]); setShowModal(false)
+    setNuevoContenido(''); setNuevoTags([]); setNuevoEsSpoiler(false); setShowModal(false)
     setSubmitting(false)
     setOffset(0)
     fetchPage(0, activeTag, true)
@@ -148,8 +161,9 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
     await supabase.from('foros_comentarios').insert({
       foro_id: foro.id, autor_id: user.id,
       contenido: replyText.trim(), tags: [], parent_id: parentId,
+      es_spoiler: replyEsSpoiler,
     })
-    setReplyText(''); setReplyOpenFor(null); setSubmitting(false)
+    setReplyText(''); setReplyEsSpoiler(false); setReplyOpenFor(null); setSubmitting(false)
     setOffset(0)
     fetchPage(0, activeTag, true)
     setExpandedReplies(prev => new Set([...prev, parentId]))
@@ -252,7 +266,17 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
                         <span className="foro-fecha">{timeAgo(c.created_at)}</span>
                       </div>
                     </div>
-                    <p className="foro-contenido">{c.contenido}</p>
+                    {c.es_spoiler && !revealedSpoilers.has(c.id) ? (
+                      <button type="button" className="foro-spoiler-cover" onClick={() => toggleReveal(c.id)}>
+                        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                          <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" strokeLinecap="round" strokeLinejoin="round"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        Contiene spoiler · click para revelar
+                      </button>
+                    ) : (
+                      <p className="foro-contenido">{c.contenido}</p>
+                    )}
                     {c.tags?.length > 0 && (
                       <div className="foro-tags-list">
                         {c.tags.map(t => (
@@ -263,7 +287,7 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
                     <div className="foro-acciones">
                       <button
                         type="button" className="foro-accion-btn"
-                        onClick={() => { setReplyOpenFor(isReplyOpen ? null : c.id); setReplyText('') }}
+                        onClick={() => { setReplyOpenFor(isReplyOpen ? null : c.id); setReplyText(''); setReplyEsSpoiler(false) }}
                       >
                         Responder
                       </button>
@@ -291,11 +315,19 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
                           onChange={e => setReplyText(e.target.value)}
                           rows={2}
                         />
+                        <label className="foro-spoiler-toggle">
+                          <input
+                            type="checkbox"
+                            checked={replyEsSpoiler}
+                            onChange={e => setReplyEsSpoiler(e.target.checked)}
+                          />
+                          Marcar como spoiler
+                        </label>
                         <div className="foro-reply-actions">
                           <button type="button" className="foro-btn-submit small" onClick={() => submitReply(c.id)} disabled={submitting || !replyText.trim()}>
                             {submitting ? 'Enviando…' : 'Responder'}
                           </button>
-                          <button type="button" className="foro-btn-cancel" onClick={() => { setReplyOpenFor(null); setReplyText('') }}>
+                          <button type="button" className="foro-btn-cancel" onClick={() => { setReplyOpenFor(null); setReplyText(''); setReplyEsSpoiler(false) }}>
                             Cancelar
                           </button>
                         </div>
@@ -314,7 +346,17 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
                                   <span className="foro-fecha">{timeAgo(r.created_at)}</span>
                                 </div>
                               </div>
-                              <p className="foro-contenido">{r.contenido}</p>
+                              {r.es_spoiler && !revealedSpoilers.has(r.id) ? (
+                                <button type="button" className="foro-spoiler-cover" onClick={() => toggleReveal(r.id)}>
+                                  <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                  </svg>
+                                  Contiene spoiler · click para revelar
+                                </button>
+                              ) : (
+                                <p className="foro-contenido">{r.contenido}</p>
+                              )}
                               {r.autor_id === user.id && (
                                 <div className="foro-acciones">
                                   <button type="button" className="foro-accion-btn eliminar" onClick={() => eliminarComentario(r.id)}>
@@ -378,6 +420,14 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
                 rows={5}
                 autoFocus
               />
+              <label className="foro-spoiler-toggle">
+                <input
+                  type="checkbox"
+                  checked={nuevoEsSpoiler}
+                  onChange={e => setNuevoEsSpoiler(e.target.checked)}
+                />
+                Marcar como spoiler
+              </label>
               <div className="foro-modal-tags-label">Tags (opcional)</div>
               <div className="foro-modal-tags">
                 {FORO_TAGS.map(tag => (
@@ -395,7 +445,7 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
               <button type="button" className="foro-btn-submit" onClick={submitComentario} disabled={submitting || !nuevoContenido.trim()}>
                 {submitting ? 'Publicando…' : 'Publicar'}
               </button>
-              <button type="button" className="foro-btn-cancel" onClick={() => { setShowModal(false); setNuevoContenido(''); setNuevoTags([]) }}>
+              <button type="button" className="foro-btn-cancel" onClick={() => { setShowModal(false); setNuevoContenido(''); setNuevoTags([]); setNuevoEsSpoiler(false) }}>
                 Cancelar
               </button>
             </div>

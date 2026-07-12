@@ -12,11 +12,13 @@ import { useBiblioteca } from '../../hooks/useBiblioteca.js'
 import { useCompraLibro, LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
 import { SIN_CATEGORIA_ID, COLOR_DEFAULT } from '../biblioteca/constants.js'
 import { INK, BookCover } from './biblioteca/bibmHelpers.jsx'
-import { MobileShelves, CoverCarousel } from './biblioteca/BibShelvesMobile.jsx'
+import { MobileShelves } from './biblioteca/BibShelvesMobile.jsx'
+import { UltimosAbiertosMobile } from './biblioteca/UltimosAbiertosMobile.jsx'
 import BibBookSheet from './biblioteca/BibBookSheet.jsx'
 import { FilterScreen, ManageScreen } from './biblioteca/BibScreensMobile.jsx'
 import PanelLibro from '../tienda/PanelLibro.jsx'
 import LibroReel from '../tienda/LibroReel.jsx'
+import '../../styles/tienda.css' // estilos de PanelLibro/LibroReel (.bkp-*, .reel-*) — sin esto renderizan sin overlay/estilos
 import '../../styles/biblioteca.mobile.css'
 
 const HERO_TABS = [
@@ -25,42 +27,28 @@ const HERO_TABS = [
   { id: 'recom', label: 'Para ti' },
 ]
 
-// Un libro a la vez de la Tienda (Novedades / Para ti), con swipe horizontal
-// para pasar al siguiente/anterior de esa misma lista (mismo umbral de 50px
-// que usa LibroReel para su swipe vertical). Recibe filas crudas de `libros`
-// (titulo/autor/portada_url) y las adapta al shape de BookCover solo para pintar.
-function CatalogRowMobile({ libros, onOpen, onPreview }) {
-  const [idx, setIdx] = React.useState(0)
-  const touchStartX = React.useRef(null)
-
-  function handleTouchStart(e) { touchStartX.current = e.touches[0].clientX }
-  function handleTouchEnd(e) {
-    if (touchStartX.current === null) return
-    const delta = touchStartX.current - e.changedTouches[0].clientX
-    if (Math.abs(delta) > 50) {
-      setIdx(i => Math.max(0, Math.min(libros.length - 1, i + (delta > 0 ? 1 : -1))))
-    }
-    touchStartX.current = null
-  }
-
-  const l = libros[idx]
+// Lista compacta (solo título + autor, máx 3, sin tarjeta) para Novedades / Para ti:
+// cada fila es texto plano separado de la siguiente por una línea divisoria.
+// Al tocar un ítem se abre primero el Preview (LibroReel) y, al cerrarlo, el
+// PanelLibro — el mismo recorrido que tiene un libro al tocarlo en la Tienda
+// (ver CatalogoInteriorMobile.jsx: click abre reel, handleReelClose abre panel).
+function LibroListaSimple({ libros, onOpen }) {
+  const visibles = libros.slice(0, 3)
   return (
-    <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
-      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 2px 6px' }}>
-      <div key={l.id} onClick={() => onOpen(l)} style={{ cursor: 'pointer' }}>
-        <BookCover book={{ id: l.id, title: l.titulo, author: l.autor, cover: l.portada_url, color: l.color, pages: l.paginas }} h={150} />
-      </div>
-      <button className="bibm-act" style={{ marginTop: 12, padding: '5px 14px' }} onClick={() => onPreview(l)}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3"/></svg>
-        Preview
-      </button>
-      {libros.length > 1 && (
-        <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-          {libros.map((b, i) => (
-            <span key={b.id} style={{ width: 6, height: 6, borderRadius: '50%', background: i === idx ? INK : 'rgba(74,54,34,0.25)', transition: 'background .15s' }} />
-          ))}
-        </div>
-      )}
+    <div>
+      {visibles.map((l, i) => (
+        <button key={l.id} onClick={() => onOpen(l)} style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, width: '100%',
+          background: 'none', border: 'none', borderBottom: i < visibles.length - 1 ? '1.5px solid rgba(74,54,34,0.16)' : 'none',
+          padding: '12px 2px', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+        }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: 14, color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.titulo}</div>
+            <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: 'rgba(74,54,34,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.autor}</div>
+          </div>
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" style={{ flexShrink: 0, opacity: 0.4 }}><path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+      ))}
     </div>
   )
 }
@@ -112,6 +100,15 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
     if (!error) { await fetchUserBooks(); setSelectedLibro(null) }
   }
 
+  // Al cerrar el Preview: si se abrió desde la lista (todavía sin panel), abre
+  // el PanelLibro — mismo recorrido que CatalogoInteriorMobile.handleReelClose.
+  // Si ya había un panel abierto (Preview lanzado desde su botón interno), no
+  // vuelve a abrirlo.
+  function handleReelClose() {
+    if (!selectedLibro) setSelectedLibro(reelLibro)
+    setReelLibro(null)
+  }
+
   // ── Filtrado + agrupado (derivados de UI) ──
   const searchedBooks = React.useMemo(() => books.filter(b => {
     const q = deferredSearch.toLowerCase()
@@ -137,14 +134,14 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
   }, [books, categories])
   const hasSinCategoria = (counts[SIN_CATEGORIA_ID] || 0) > 0
 
-  // Últimos abiertos (máx 3) — featured viene del hook
+  // Últimos abiertos (máx 3) — featured viene del hook; se excluye para no duplicar "Seguir leyendo"
   const ultimos = React.useMemo(() => {
-    const nonManual = books.filter(b => b.id !== 'manual')
+    const nonManual = books.filter(b => b.id !== 'manual' && b.id !== featured?.id)
     if (lastOpenedBookIds?.length) {
-      return lastOpenedBookIds.map(id => nonManual.find(b => b.id === id)).filter(Boolean).slice(0, 3)
+      return lastOpenedBookIds.filter(id => id !== featured?.id).map(id => nonManual.find(b => b.id === id)).filter(Boolean).slice(0, 3)
     }
     return nonManual.slice(0, 3)
-  }, [books, lastOpenedBookIds])
+  }, [books, lastOpenedBookIds, featured])
   const ultimosVisible = React.useMemo(() => {
     if (!deferredSearch) return ultimos
     const ids = new Set(searchedBooks.map(b => b.id))
@@ -165,18 +162,15 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
       <div className="bibm-header-wrap">
         <div className="bibm-header">
           <div className="bibm-logo"><img src="/assets/inmersia-logo.png" alt="Inmersia" /></div>
-          <div style={{ flex: 1 }} />
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 10 }}>
+            <button className="bibm-icon-btn" onClick={onGoTienda} title="Ir a la Tienda" aria-label="Ir a la Tienda">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4m1.6 8L5 5H3m4 8a2 2 0 100 4 2 2 0 000-4zm10 0a2 2 0 100 4 2 2 0 000-4z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <button className="bibm-icon-btn" onClick={onGoAlbum} title="Mi álbum" aria-label="Mi álbum">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="3" width="7" height="9" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="14" y="3" width="7" height="5" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="14" y="12" width="7" height="9" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="3" y="16" width="7" height="5" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+          </div>
           <button className="bibm-avatar" onClick={onGoPerfil} title="Mi perfil">{inicial}</button>
-        </div>
-        <div style={{ display:'flex', gap:8, marginTop:8, width:'100%' }}>
-          <button className="bibm-tienda" style={{ flex:1, justifyContent:'center' }} onClick={onGoTienda} title="Ir a la Tienda">
-            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4m1.6 8L5 5H3m4 8a2 2 0 100 4 2 2 0 000-4zm10 0a2 2 0 100 4 2 2 0 000-4z" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Tienda
-          </button>
-          <button className="bibm-tienda" style={{ flex:1, justifyContent:'center' }} onClick={onGoAlbum} title="Mi álbum">
-            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="3" width="7" height="9" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="14" y="3" width="7" height="5" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="14" y="12" width="7" height="9" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="3" y="16" width="7" height="5" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Álbum
-          </button>
         </div>
         <div className="bibm-search">
           <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={INK} strokeWidth="2.4"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35" strokeLinecap="round"/></svg>
@@ -187,19 +181,21 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
         </div>
       </div>
 
-      {/* Contenido */}
+      {/* Contenido — una sola tira de scroll general */}
       <div className="bibm-noscroll bibm-scroll">
         <div className="bibm-greeting">¡Bienvenido, {displayName.split(' ')[0]}!</div>
 
-        {loadingBooks ? (
+        {loadingBooks && (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(74,54,34,0.5)', fontSize: 15, fontWeight: 600 }}>Cargando tu biblioteca…</div>
-        ) : (
+        )}
+
+        {!loadingBooks && (
           <>
             {/* Hero "Seguir leyendo" con el gato */}
             <div className="bibm-hero">
               {heroTab === 'seguir' && (
                 <>
-                  <img className="bibm-hero-cat" src="/assets/wallpapers/hero-cat.webp" alt="" />
+                  <img className="bibm-hero-cat" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" />
                   <div className="bibm-hero-fade" />
                 </>
               )}
@@ -235,10 +231,10 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
                   ) : <div className="bibm-hero-empty">Cuando empieces a leer un libro aparecerá acá para que retomes donde lo dejaste.</div>
                 ) : heroTab === 'novedades'
                   ? (novedades.length > 0
-                      ? <CatalogRowMobile key="novedades" libros={novedades} onOpen={setSelectedLibro} onPreview={setReelLibro} />
+                      ? <LibroListaSimple key="novedades" libros={novedades} onOpen={setReelLibro} />
                       : <div className="bibm-hero-empty">Pronto verás acá los libros recién llegados a la biblioteca. <span className="bibm-soon">Próximamente</span></div>)
                   : (recomendaciones.length > 0
-                      ? <CatalogRowMobile key="recomendaciones" libros={recomendaciones} onOpen={setSelectedLibro} onPreview={setReelLibro} />
+                      ? <LibroListaSimple key="recomendaciones" libros={recomendaciones} onOpen={setReelLibro} />
                       : <div className="bibm-hero-empty">Estamos preparando recomendaciones a tu medida. <span className="bibm-soon">Próximamente</span></div>)}
               </div>
             </div>
@@ -247,11 +243,11 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
             {ultimosVisible.length > 0 && (
               <div style={{ marginTop: 30 }}>
                 <div className="bibm-sec-ttl">Últimos abiertos</div>
-                <CoverCarousel books={ultimosVisible} onOpen={openBook} />
+                <UltimosAbiertosMobile books={ultimosVisible} onOpen={openBook} />
               </div>
             )}
 
-            {/* Tu colección */}
+            {/* Tu colección — encabezado */}
             <div style={{ marginTop: 36 }}>
               <div className="bibm-col-head">
                 <div className="bibm-sec-ttl">Tu colección <span className="bibm-sec-sub">{collectionCount} {collectionCount === 1 ? 'libro' : 'libros'}</span></div>
@@ -273,12 +269,15 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
                   <button onClick={() => setActiveCategory(null)}>Quitar ✕</button>
                 </div>
               )}
-
-              <div style={{ marginTop: 22 }}>
-                <MobileShelves groups={groups} onOpen={openBook} />
-              </div>
             </div>
 
+            {/* Estantes — bloque de alto fijo con SU PROPIO scroll interno.
+                Vive en el flujo normal: solo se ve cuando el scroll general
+                baja hasta acá, y a partir de ahí seguir bajando scrollea
+                dentro de los estantes en vez de mover el resto de la vista. */}
+            <div className="bibm-noscroll bibm-shelves-pane">
+              <MobileShelves groups={groups} onOpen={openBook} />
+            </div>
           </>
         )}
       </div>
@@ -287,7 +286,6 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
         <BibBookSheet
           book={books.find(b => b.id === selectedBook.id) || selectedBook}
           user={user}
-          gatoColor={gatoColor}
           categories={categories}
           onClose={closeSheet}
           onOpenBook={(book) => { closeSheet(); onOpenBook(book) }}
@@ -312,7 +310,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
           onEmpezarLeer={() => handleEmpezarLeerLibro(selectedLibro)}
         />
       )}
-      {reelLibro && <LibroReel libro={reelLibro} onClose={() => setReelLibro(null)} />}
+      {reelLibro && <LibroReel libro={reelLibro} onClose={handleReelClose} />}
 
       {/* Pantallas */}
       {screen === 'filter' && (

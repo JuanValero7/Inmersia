@@ -23,6 +23,7 @@ export default function ForoChat({ foro, book, user, miNombre, onSesionChange })
     // una sesión, maybeSingle lanzaba error y la sesión quedaba invisible.
     supabase.from('chat_sesiones')
       .select('id, usuario_a, usuario_b')
+      .eq('libro_id', book.libro_id)
       .or(`usuario_a.eq.${user.id},usuario_b.eq.${user.id}`)
       .limit(1)
       .then(async ({ data, error }) => {
@@ -37,7 +38,7 @@ export default function ForoChat({ foro, book, user, miNombre, onSesionChange })
         subscribeToChat(sesion.id)
       })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.id])
+  }, [user.id, book.libro_id])
 
   // ─── Historial al montar ────────────────────────────────
   useEffect(() => {
@@ -55,6 +56,7 @@ export default function ForoChat({ foro, book, user, miNombre, onSesionChange })
         filter: `usuario_b=eq.${user.id}`,
       }, async (payload) => {
         const sesion = payload.new
+        if (sesion.libro_id !== book.libro_id) return // invitación de otro foro/libro
         const nombre = await fetchNombre(sesion.usuario_a)
         await salirSalaInternal()
         setSesionActiva(sesion)
@@ -68,7 +70,7 @@ export default function ForoChat({ foro, book, user, miNombre, onSesionChange })
 
     return () => { supabase.removeChannel(channel) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.id])
+  }, [user.id, book.libro_id])
 
   // ─── Auto-scroll al fondo del chat ──────────────────────
   useEffect(() => {
