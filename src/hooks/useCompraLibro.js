@@ -13,17 +13,21 @@
 // ─────────────────────────────────────────────────────────────
 import { useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
 
 export const LIMITE_PENDIENTES = 5
 
 export function useCompraLibro(user, isSuperuser, onOpenBook) {
+  const invalidateBiblioteca = useInvalidateBibliotecaUsuario(user?.id)
+
   const comprar = useCallback(async (libro, { pendientes = 0 } = {}) => {
     if (!user?.id) return { error: 'no-auth' }
     if (!isSuperuser && pendientes >= LIMITE_PENDIENTES) return { error: 'bloqueado' }
     const { error } = await supabase.from('bibliotecas_usuarios').insert({ user_id: user.id, libro_id: libro.id, leido: false })
     if (error) { console.error('No se pudo adquirir el libro:', error.message); return { error: error.message } }
+    invalidateBiblioteca()
     return { error: null }
-  }, [user, isSuperuser])
+  }, [user, isSuperuser, invalidateBiblioteca])
 
   const comprarYLeer = useCallback(async (libro, { pendientes = 0, tieneLibro } = {}) => {
     if (!tieneLibro?.(libro.id)) {

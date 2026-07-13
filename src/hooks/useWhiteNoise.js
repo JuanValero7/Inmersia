@@ -94,7 +94,7 @@ export function useWhiteNoise() {
 
     if (tipo === 'off') return
 
-    const ctx = new AudioContext()
+    const ctx = new window.AudioContext()
     const gain = ctx.createGain()
     gain.gain.value = volNoise
     gain.connect(ctx.destination)

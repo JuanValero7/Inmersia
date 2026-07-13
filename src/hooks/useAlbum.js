@@ -1,8 +1,9 @@
 // Carga todos los datos del Álbum para el usuario:
 // por cada libro en su biblioteca arma las barajitas agrupadas por sección
 // (Personajes · Lugares · Capítulos), estadísticas de sesiones, notas y audio.
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { useBibliotecaUsuarioQuery } from '../lib/queries.js'
 
 // Misma fórmula que useCartelera: inversa de round(pendingIdx / total * 100)
 function derivarCapActual(pct, totalCaps) {
@@ -88,40 +89,34 @@ export function useAlbum(user) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // Libros del usuario: query compartida con Biblioteca/Tienda (ver
+  // src/lib/queries.js) en vez de un fetch propio de bibliotecas_usuarios.
+  const bibliotecaQuery = useBibliotecaUsuarioQuery(user?.id)
+  const libros = useMemo(() => (bibliotecaQuery.data || []).filter(r => r.libros).map(r => ({
+    id:          r.libros.id,
+    libro_id:    r.libros.id,
+    slug:        r.libros.slug,
+    title:       r.libros.titulo,
+    author:      r.libros.autor || 'Desconocido',
+    pages:       r.libros.paginas || 200,
+    _baseColor:  r.libros.color || '#cf8a6e',
+    cover:       r.libros.portada_url || null,
+    es_ficcion:  r.libros.es_ficcion ?? true,
+    leido:       r.leido,
+  })), [bibliotecaQuery.data])
+
   useEffect(() => {
     if (!user?.id) { setItems([]); setLoading(false); return }
+    if (bibliotecaQuery.isLoading) { setLoading(true); return }
+    if (!libros.length) { setItems([]); setLoading(false); return }
     let cancelled = false
 
     async function cargar() {
       setLoading(true)
 
-      // 1. Libros del usuario con datos de perfil del libro
-      const { data: bibData } = await supabase
-        .from('bibliotecas_usuarios')
-        .select('libro_id, leido, libros(id, slug, titulo, autor, portada_url, color, paginas, es_ficcion)')
-        .eq('user_id', user.id)
-
-      const libros = (bibData || []).filter(r => r.libros).map(r => ({
-        id:          r.libros.id,
-        libro_id:    r.libros.id,
-        slug:        r.libros.slug,
-        title:       r.libros.titulo,
-        author:      r.libros.autor || 'Desconocido',
-        pages:       r.libros.paginas || 200,
-        _baseColor:  r.libros.color || '#cf8a6e',
-        cover:       r.libros.portada_url || null,
-        es_ficcion:  r.libros.es_ficcion ?? true,
-        leido:       r.leido,
-      }))
-
-      if (!libros.length) {
-        if (!cancelled) { setItems([]); setLoading(false) }
-        return
-      }
-
       const libroIds = libros.map(l => l.libro_id)
 
-      // 2. Todas las queries en paralelo
+      // Todas las queries en paralelo
       const [
         progresosRes,
         capsRes,
@@ -302,7 +297,7 @@ export function useAlbum(user) {
 
     cargar()
     return () => { cancelled = true }
-  }, [user?.id])
+  }, [user?.id, libros, bibliotecaQuery.isLoading])
 
   // Marca una barajita desbloqueada como pegada — optimista + persistido.
   async function pegar(libroId, seccion, itemKey) {

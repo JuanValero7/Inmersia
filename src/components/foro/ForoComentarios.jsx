@@ -59,6 +59,7 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
         .eq('foro_id', foro.id)
         .in('parent_id', rootIds)
         .order('created_at', { ascending: true })
+        .limit(200)
       ;(replies || []).forEach(r => {
         if (!newRepliesByParent[r.parent_id]) newRepliesByParent[r.parent_id] = []
         newRepliesByParent[r.parent_id].push(r)

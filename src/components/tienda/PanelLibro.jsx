@@ -86,12 +86,14 @@ export default function PanelLibro({ libro, user, gatoColor = 'negro', yaAdquiri
         .from('resenas_libros')
         .select('id, user_id, rating, texto, created_at')
         .eq('libro_id', libro.id)
-        .order('created_at', { ascending: false }),
+        .order('created_at', { ascending: false })
+        .limit(50),
       supabase
         .from('subrayados_usuario')
         .select('parrafo_id, texto_original')
         .eq('libro_id', libro.id)
-        .not('parrafo_id', 'is', null),
+        .not('parrafo_id', 'is', null)
+        .limit(500),
     ])
 
     // Nombres por separado — no hay FK directo resenas→perfiles en PostgREST
@@ -132,13 +134,14 @@ export default function PanelLibro({ libro, user, gatoColor = 'negro', yaAdquiri
     if (!form.rating) return
     if ((form.texto?.length ?? 0) > 1000) return
     setEnviando(true)
-    await supabase.from('resenas_libros').upsert(
+    const { error } = await supabase.from('resenas_libros').upsert(
       { user_id: user.id, libro_id: libro.id, rating: form.rating, texto: form.texto || null, updated_at: new Date().toISOString() },
       { onConflict: 'user_id,libro_id' }
     )
+    setEnviando(false)
+    if (error) { console.error('submitResena:', error.message); return }
     await fetchDatos()
     setModoForm(false)
-    setEnviando(false)
   }
 
   return (
@@ -197,7 +200,7 @@ export default function PanelLibro({ libro, user, gatoColor = 'negro', yaAdquiri
       {libro.descripcion && (
         <div className="bkp-sec">
           <h3 className="bkp-sec-title">Sinopsis</h3>
-          <img className="bkp-gato" src={`/assets/tienda/gato-${gatoColor}-4.webp`} alt="" />
+          <img className="bkp-gato" src={`/assets/tienda/gato-${gatoColor}-4.webp`} alt="" loading="lazy" />
           <p className="bkp-sinopsis">{libro.descripcion}</p>
         </div>
       )}

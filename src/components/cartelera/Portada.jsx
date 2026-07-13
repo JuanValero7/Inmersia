@@ -1,7 +1,7 @@
 // Formato: Plain JavaScript (.jsx)
 // Portada de la Cartelera: 5 paneles acuarela que se abren al pasar el cursor;
 // clic → abre esa sección.
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import clsx from 'clsx'
 import { SECCIONES, shade as tint } from './carteleraHelpers.js'
 import ExplorarPopup from './ExplorarPopup.jsx'

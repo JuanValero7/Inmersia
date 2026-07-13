@@ -34,7 +34,9 @@ export function useSesionLectura(userId, book, guestMode) {
         sessionIdRef.current = stored.sessionId
         resumed = true
       }
-    } catch {}
+    } catch {
+      // sessionStorage corrupto o inaccesible: se cae al flujo de sesión nueva de abajo
+    }
 
     if (!resumed) {
       supabase

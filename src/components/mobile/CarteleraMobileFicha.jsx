@@ -10,7 +10,6 @@
 //   <CarteleraMobileFicha section item onBack />
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo, useRef, useLayoutEffect } from 'react'
-import clsx from 'clsx'
 import { getTags, getCap, shade, DOT_AMT, initial, deltaDesc } from '../cartelera/carteleraHelpers.js'
 
 function SearchIcon() {
@@ -53,7 +52,7 @@ export function CarteleraMobileLista({ section, items = [], onPick, initialScrol
       {items.length === 0 ? (
         <div className="cm-list-empty">Sin datos disponibles todavía. Avanzá en la lectura para revelar nuevas pistas.</div>
       ) : filtered.length === 0 ? (
-        <div className="cm-list-empty">Sin resultados para "{query}".</div>
+        <div className="cm-list-empty">Sin resultados para &ldquo;{query}&rdquo;.</div>
       ) : (
         <div className="cm-rows">
           {filtered.map(it => {

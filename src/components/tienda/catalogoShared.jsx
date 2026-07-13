@@ -46,7 +46,7 @@ export function CoverCard({ libro }) {
     <div className="book" style={{ '--cov': c }}>
       <div className="book-cover">
         {libro.portada_url
-          ? <img className="book-art-img" src={libro.portada_url} alt={libro.titulo} />
+          ? <img className="book-art-img" src={libro.portada_url} alt={libro.titulo} loading="lazy" />
           : <div className="book-art-empty" />}
         <span className={clsx('book-scribble', autorSizeClass(libro.autor))}>{libro.autor}</span>
         <span className={clsx('book-title', tituloSizeClass(libro.titulo))}>{libro.titulo}</span>

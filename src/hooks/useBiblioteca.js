@@ -20,9 +20,9 @@
 // ─────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { usePerfilQuery, useCatalogoLibrosQuery, useBibliotecaUsuarioQuery, useInvalidateBibliotecaUsuario } from '../lib/queries.js'
 import { MANUAL_USUARIO, COLOR_BOOK_FALLBACK2 } from '../components/biblioteca/constants.js'
 
-const CATALOGO_COLS = 'id, slug, titulo, autor, paginas, descripcion, color, portada_url, anio, categorias, moods, es_ficcion, created_at'
 const NOVEDADES_COUNT = 5
 const RECOMENDACIONES_COUNT = 5
 
@@ -47,23 +47,22 @@ function seededShuffle(arr, seedStr) {
 }
 
 export function useBiblioteca(user, lastOpenedBookIds) {
-  const [rawBooks, setRawBooks] = useState([MANUAL_USUARIO])
-  const [loadingBooks, setLoadingBooks] = useState(true)
-  const [perfil, setPerfil] = useState(null)
   const [categories, setCategories] = useState([])
-  const [catalogo, setCatalogo] = useState([])
+  const [progresos, setProgresos] = useState([])
 
-  // Perfil (nombre)
-  useEffect(() => {
-    let activo = true
-    ;(async () => {
-      const { data } = await supabase.from('perfiles').select('nombre, apellido').eq('id', user.id).maybeSingle()
-      if (activo && data) setPerfil(data)
-    })()
-    return () => { activo = false }
-  }, [user.id])
+  // Perfil, catálogo (Novedades/Recomendaciones) y libros del usuario:
+  // queries compartidas via React Query con Tienda/Álbum/Perfil, ver
+  // src/lib/queries.js — un solo fetch cacheado en vez de uno por hook.
+  const perfilQuery = usePerfilQuery(user.id)
+  const catalogoQuery = useCatalogoLibrosQuery()
+  const bibliotecaQuery = useBibliotecaUsuarioQuery(user.id)
+  const invalidateBiblioteca = useInvalidateBibliotecaUsuario(user.id)
 
-  // Categorías
+  const perfil = perfilQuery.data ?? null
+  const catalogo = useMemo(() => catalogoQuery.data ?? [], [catalogoQuery.data])
+  const loadingBooks = bibliotecaQuery.isLoading
+
+  // Categorías (propias de este hook, sin redundancia con otros)
   const fetchCategories = useCallback(async () => {
     const { data } = await supabase.from('categorias_usuario')
       .select('id, nombre, color, orden').eq('user_id', user.id)
@@ -72,22 +71,30 @@ export function useBiblioteca(user, lastOpenedBookIds) {
   }, [user.id])
   useEffect(() => { fetchCategories() }, [fetchCategories])
 
-  // Libros + progreso de lectura en paralelo
-  const fetchUserBooks = useCallback(async () => {
-    setLoadingBooks(true)
-    const [{ data }, { data: progresos }] = await Promise.all([
-      supabase.from('bibliotecas_usuarios')
-        .select('leido, categoria_id, libros(id, slug, titulo, autor, paginas, descripcion, color, portada_url, metadata, es_ficcion)')
-        .eq('user_id', user.id),
-      supabase.from('progreso_lectura')
-        .select('libro_id, porcentaje')
-        .eq('user_id', user.id),
-    ])
+  // Progreso de lectura: se pide una sola vez por mount (no cambia con
+  // compras/categorías, solo con la lectura real — ver useLectorData).
+  useEffect(() => {
+    let activo = true
+    ;(async () => {
+      const { data } = await supabase.from('progreso_lectura')
+        .select('libro_id, porcentaje').eq('user_id', user.id)
+      if (activo) setProgresos(data || [])
+    })()
+    return () => { activo = false }
+  }, [user.id])
+
+  // fetchUserBooks: se mantiene el nombre por compatibilidad con los
+  // callers (Biblioteca.jsx/BibliotecaMobile.jsx tras comprar/borrar
+  // categoría) — ahora invalida la query compartida en vez de refetchear
+  // localmente, así Tienda/Álbum ven el cambio también.
+  const fetchUserBooks = useCallback(() => invalidateBiblioteca(), [invalidateBiblioteca])
+
+  const rawBooks = useMemo(() => {
     const progMap = {}
-    ;(progresos || []).forEach(p => { progMap[p.libro_id] = p.porcentaje })
+    progresos.forEach(p => { progMap[p.libro_id] = p.porcentaje })
     // Filtra filas cuyo libro fue borrado o no es accesible por RLS
     // (Supabase devuelve libros: null y reventaría el .map).
-    const mapped = (data || []).filter(r => r.libros).map(r => ({
+    const mapped = (bibliotecaQuery.data || []).filter(r => r.libros).map(r => ({
       id: r.libros.id,
       libro_id: r.libros.id,
       slug: r.libros.slug,
@@ -102,24 +109,8 @@ export function useBiblioteca(user, lastOpenedBookIds) {
       es_ficcion: r.libros.es_ficcion ?? true,
       progress: typeof progMap[r.libros.id] === 'number' ? progMap[r.libros.id] / 100 : null,
     }))
-    setRawBooks([MANUAL_USUARIO, ...mapped])
-    setLoadingBooks(false)
-  }, [user.id])
-  useEffect(() => { fetchUserBooks() }, [fetchUserBooks])
-
-  // Catálogo de la Tienda, para Novedades/Recomendaciones (ver memos abajo).
-  // Se pide una sola vez; ordenado por created_at desc para que Novedades
-  // no necesite un sort aparte.
-  useEffect(() => {
-    let activo = true
-    ;(async () => {
-      const { data } = await supabase.from('libros')
-        .select(CATALOGO_COLS).eq('visible', true)
-        .order('created_at', { ascending: false })
-      if (activo) setCatalogo(data || [])
-    })()
-    return () => { activo = false }
-  }, [])
+    return [MANUAL_USUARIO, ...mapped]
+  }, [bibliotecaQuery.data, progresos])
 
   // ── CRUD categorías ──
   async function createCategoria(nombre, color) {
@@ -146,8 +137,9 @@ export function useBiblioteca(user, lastOpenedBookIds) {
   // seleccionado (eso es UI; cada componente lo hace en su wrapper).
   async function assignCategoriaToBook(catalogoLibroId, categoria_id) {
     if (catalogoLibroId === 'manual') return
-    await supabase.from('bibliotecas_usuarios').update({ categoria_id })
+    const { error } = await supabase.from('bibliotecas_usuarios').update({ categoria_id })
       .eq('user_id', user.id).eq('libro_id', catalogoLibroId)
+    if (error) { console.error('assignCategoriaToBook:', error.message); return }
     await fetchUserBooks()
   }
 

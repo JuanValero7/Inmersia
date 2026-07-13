@@ -1,6 +1,6 @@
 # Términos y Condiciones de Inmersia
 
-**Última actualización:** 30 de junio de 2026
+**Última actualización:** 13 de julio de 2026
 
 ---
 
@@ -29,6 +29,10 @@ Inmersia es una plataforma de lectura inmersiva que ofrece:
 - **Nuevas funcionalidades** — todas las funciones adicionales que se publiquen en el futuro
 
 Los precios, condiciones y método de pago de la suscripción Premium serán informados en la Plataforma antes de que el usuario la active.
+
+### Funcionalidades basadas en inteligencia artificial (futuras)
+
+Inmersia podrá incorporar en el futuro funcionalidades que utilicen inteligencia artificial (por ejemplo, recomendaciones más avanzadas u otras herramientas de asistencia). El contenido o las sugerencias generadas por IA pueden contener errores o imprecisiones; estas funcionalidades se ofrecen "tal cual", no sustituyen el criterio propio del usuario, y no garantizamos la exactitud de sus resultados. Consulta la [Política de Privacidad](./politica-de-privacidad.md) para más información sobre cómo se tratarán tus datos si se activan estas funcionalidades.
 
 ---
 
@@ -104,6 +108,36 @@ Queda prohibido publicar contenido que:
 - Revele información personal de terceros sin su consentimiento.
 
 Inmersia se reserva el derecho de eliminar contenido que infrinja estas normas y de suspender o cancelar la cuenta del infractor.
+
+### 5.4 Responsabilidad sobre el contenido de terceros
+
+Inmersia actúa como intermediario que aloja el contenido generado por los usuarios (comentarios del foro y, en su caso, cualquier otro contenido que se permita publicar en el futuro). No revisamos ni supervisamos ese contenido antes de su publicación.
+
+En consecuencia:
+
+- Inmersia no garantiza la exactitud, legalidad, calidad o idoneidad del contenido publicado por los usuarios, ni lo respalda ni lo hace suyo.
+- Cada usuario es el único responsable del contenido que publica y de contar con los derechos y autorizaciones necesarios para hacerlo.
+- Inmersia no será responsable frente a ningún usuario ni tercero por el contenido publicado por otros usuarios.
+
+Si tienes conocimiento de contenido que consideres ilegal, infractor de derechos de terceros o contrario a estos Términos, puedes reportarlo a **javzvalero@gmail.com**.
+
+### 5.5 Notificación de infracción de derechos de autor
+
+Si eres titular de derechos de autor u otros derechos de propiedad intelectual (o representas a su titular) y consideras que un contenido publicado por un usuario en Inmersia infringe tus derechos, notifícanoslo por correo a **javzvalero@gmail.com** con el asunto *"Notificación de infracción de derechos de autor"*, incluyendo:
+
+1. Identificación de la obra protegida cuyos derechos consideras infringidos.
+2. La ubicación exacta del contenido denunciado dentro de la Plataforma (enlace, sección o cualquier dato que permita localizarlo).
+3. Tus datos de contacto (nombre, correo electrónico y, si procede, tu relación con el titular de los derechos).
+4. Una declaración de que el uso denunciado no está autorizado por el titular de los derechos, su representante o la ley.
+5. Una declaración, realizada de buena fe y bajo tu responsabilidad, de que la información proporcionada es exacta y de que eres el titular de los derechos o estás autorizado a actuar en su nombre.
+
+Al recibir una notificación que cumpla estos requisitos, Inmersia retirará o bloqueará el acceso al contenido denunciado con la mayor celeridad razonablemente posible, sin necesidad de resolución judicial previa, y sin perjuicio de las acciones legales que puedan corresponder al titular de los derechos o al usuario que publicó el contenido.
+
+Inmersia se reserva el derecho de suspender o cancelar la cuenta de los usuarios que sean objeto de notificaciones reiteradas de infracción.
+
+### 5.6 Indemnización
+
+Aceptas indemnizar y mantener indemne a Inmersia frente a cualquier reclamación, daño, pérdida o gasto (incluyendo honorarios legales razonables) que derive de: (i) el contenido que publiques en la Plataforma, (ii) el incumplimiento de estos Términos, o (iii) la infracción de derechos de terceros por tu causa.
 
 ---
 
@@ -188,6 +222,14 @@ Estos Términos se rigen por la legislación de la **República de Estonia** y, 
 Para cualquier disputa, las partes intentarán primero resolverla de forma amistosa. Si no fuera posible, la disputa se someterá a los tribunales competentes de Estonia, sin perjuicio de los derechos que como consumidor puedas tener en tu país de residencia conforme a la normativa de la UE.
 
 Los usuarios de la UE también pueden acceder a la plataforma de resolución de litigios en línea de la Comisión Europea: [ec.europa.eu/consumers/odr](https://ec.europa.eu/consumers/odr).
+
+### 12.1 Resolución individual de disputas
+
+En la máxima medida permitida por la legislación aplicable, cualquier disputa entre tú e Inmersia se resolverá de forma individual. No podrás presentar ni participar, ni nosotros aceptaremos, una demanda colectiva, acción de clase, procedimiento consolidado o representación de terceros contra Inmersia, salvo que la normativa de protección de consumidores de tu país de residencia disponga expresamente lo contrario, en cuyo caso esa normativa prevalecerá.
+
+Antes de iniciar cualquier procedimiento judicial, ambas partes se comprometen a notificar por escrito a la otra parte la disputa concreta y a intentar resolverla de buena fe mediante negociación directa durante un plazo mínimo de **30 días**.
+
+Nada en esta cláusula pretende privarte de los derechos irrenunciables que te reconozca la legislación de protección de consumidores aplicable en tu país de residencia dentro de la Unión Europea, incluido tu derecho a acudir a los tribunales competentes de dicho país.
 
 ---
 

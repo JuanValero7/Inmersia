@@ -1,6 +1,6 @@
 # Política de Privacidad de Inmersia
 
-**Última actualización:** 30 de junio de 2026
+**Última actualización:** 13 de julio de 2026
 
 ---
 
@@ -44,6 +44,18 @@ Actualmente en proceso de constitución como entidad legal. En tanto no exista u
 
 Recopilamos datos agregados de interacción (libros que lees, géneros que exploras, tiempo de lectura) para alimentar nuestro sistema de recomendaciones. Estos datos se analizan de forma interna y no se venden a terceros.
 
+### 2.5 Datos analíticos (analytics)
+
+Actualmente no utilizamos herramientas de analítica de terceros. Si en el futuro incorporamos herramientas de analítica web o de producto (por ejemplo, Google Analytics, Plausible, PostHog u otras similares) para entender cómo se usa la Plataforma y mejorarla, estas podrán recopilar datos como páginas o pantallas visitadas, tiempo de uso, tipo de dispositivo/navegador y ubicación aproximada derivada de la IP.
+
+Antes de activar cualquier herramienta de analítica, actualizaremos esta Política de Privacidad para identificar al proveedor concreto y, cuando la normativa de cookies (RGPD/ePrivacy) lo requiera, solicitaremos tu consentimiento previo.
+
+### 2.6 Uso de inteligencia artificial (previsto)
+
+Actualmente Inmersia no utiliza inteligencia artificial para procesar tus datos. Si en el futuro incorporamos funcionalidades basadas en IA (por ejemplo, recomendaciones más avanzadas, generación o resumen de contenido, o un asistente de lectura), podremos utilizar proveedores externos de IA (como OpenAI, Anthropic u otros similares) para procesar los datos necesarios para ofrecer esa funcionalidad.
+
+Antes de activar cualquier funcionalidad de este tipo, actualizaremos esta Política de Privacidad para detallar qué datos se procesan, con qué proveedor y bajo qué base legal, y solicitaremos tu consentimiento cuando la normativa lo exija.
+
 ---
 
 ## 3. Base legal del tratamiento (RGPD)
@@ -56,6 +68,8 @@ Recopilamos datos agregados de interacción (libros que lees, géneros que explo
 | Mensajes de chat (retención temporal) | Interés legítimo en la seguridad y moderación (art. 6.1.f) |
 | Datos de comportamiento para recomendaciones | Interés legítimo en mejorar el servicio (art. 6.1.f) |
 | Género (dato opcional) | Consentimiento explícito (art. 6.1.a) |
+| Datos analíticos (cuando se implementen) | Consentimiento (si requieren cookies) o interés legítimo, según el caso (art. 6.1.a / 6.1.f) |
+| Funcionalidades de IA (cuando se implementen) | Consentimiento o interés legítimo, según el caso (art. 6.1.a / 6.1.f) |
 | Cumplimiento de obligaciones legales | Obligación legal (art. 6.1.c) |
 
 ---
@@ -85,7 +99,11 @@ Las transferencias de datos hacia Supabase se realizan mediante las garantías a
 
 Cuando implementemos pagos, utilizaremos un procesador de pagos externo de confianza (como Stripe o similar). Te informaremos de cualquier nuevo subencargado antes de que empiece a tratar tus datos.
 
-### 5.3 No vendemos datos
+### 5.3 Proveedores de inteligencia artificial (futuro)
+
+Si en el futuro utilizamos servicios de inteligencia artificial de terceros para ofrecer nuevas funcionalidades (ver sección 2.6), dichos proveedores actuarán como encargados del tratamiento. Te informaremos de su identidad antes de que empiecen a procesar tus datos, junto con las garantías aplicables a transferencias internacionales si correspondiera.
+
+### 5.4 No vendemos datos
 
 Inmersia **no vende, alquila ni comparte** tus datos personales con terceros para fines publicitarios.
 
@@ -134,6 +152,8 @@ No obstante, ningún sistema es infalible. En caso de brecha de seguridad que af
 ## 10. Cookies y almacenamiento local
 
 Inmersia puede utilizar `localStorage` del navegador para guardar preferencias de sesión o configuración local. Actualmente no utilizamos cookies de rastreo de terceros ni publicidad comportamental.
+
+Si en el futuro incorporamos cookies o tecnologías similares para analítica (ver sección 2.5), implementaremos un aviso de cookies y solicitaremos tu consentimiento cuando la normativa lo exija antes de activarlas.
 
 ---
 

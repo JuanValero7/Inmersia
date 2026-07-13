@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
 import useLocalStorage from '../hooks/useLocalStorage.js'
 import { useLectorData } from '../hooks/useLectorData.js'
 import { useXrayItems } from '../hooks/useXrayItems.js'
@@ -76,6 +77,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   } = useLectorData(book, setChapterIndex, setPageIndex)
 
   useSesionLectura(userId, book, guestMode)
+  const invalidateBiblioteca = useInvalidateBibliotecaUsuario(userId)
 
   useEffect(() => {
     if (startWithNotebook) {
@@ -196,7 +198,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       supabase.from('progreso_lectura').upsert({
         user_id: userId, libro_id: book.libro_id,
         ultimo_parrafo_id: firstParr.id, updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,libro_id' }).then(() => {})
+      }, { onConflict: 'user_id,libro_id' }).then(({ error }) => { if (error) console.error('No se pudo guardar el progreso de lectura:', error) })
     }, 600)
     return () => clearTimeout(t)
   }, [chapterIndex, pageIndex, currentPaginas, userId, book?.libro_id, capitulos])
@@ -210,13 +212,16 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     const isLastPage = pageIndex >= currentPaginas.length - step
     if (!isLastPage) return
     const t = setTimeout(async () => {
-      await supabase.from('progreso_lectura')
-        .update({ porcentaje: 100, updated_at: new Date().toISOString() })
-        .eq('user_id', userId).eq('libro_id', book.libro_id)
-      await supabase.from('bibliotecas_usuarios')
-        .update({ leido: true })
-        .eq('user_id', userId).eq('libro_id', book.libro_id)
+      await Promise.all([
+        supabase.from('progreso_lectura')
+          .update({ porcentaje: 100, updated_at: new Date().toISOString() })
+          .eq('user_id', userId).eq('libro_id', book.libro_id),
+        supabase.from('bibliotecas_usuarios')
+          .update({ leido: true })
+          .eq('user_id', userId).eq('libro_id', book.libro_id),
+      ])
       setIsLeido(true)
+      invalidateBiblioteca()
     }, 600)
     return () => clearTimeout(t)
   }, [chapterIndex, pageIndex, currentPaginas.length, capitulos.length, doubleView, userId, book?.libro_id])

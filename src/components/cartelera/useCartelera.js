@@ -7,7 +7,7 @@
 //   - porcentaje (0..100): fuente única de verdad para el avance.
 //   - capituloActual se deriva de pct + total capítulos (inversa de la fórmula
 //     de Lector.jsx: pct = round(pendingIdx / total * 100)).
-//   - cartelera_items / predicciones: se filtran client-side con capitulo < capActual.
+//   - cartelera_items / predicciones: se filtran en servidor con capitulo < capActual.
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase.js'
 
@@ -32,33 +32,20 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
         return
       }
 
-      // 1) progreso → porcentaje (fuente única de verdad)
-      const { data: prog } = await supabase
-        .from('progreso_lectura')
-        .select('porcentaje')
-        .eq('user_id', userId)
-        .eq('libro_id', libroId)
-        .maybeSingle()
-
-      const pct = Math.max(0, Math.min(100, prog?.porcentaje ?? 0))
-
-      // 2) En paralelo: items + imágenes + total capítulos + predicciones del usuario
-      const [carteleraRes, principalRes, chapsRes, prediccionesRes] = await Promise.all([
-        supabase.from('cartelera_items')
-          .select('id, seccion, nombre, descripcion, capitulo_numero, metadata, imagen:biblioteca_media!imagen_media_id(url, slug, titulo)')
+      // 1) progreso + total capítulos en paralelo (necesarios para derivar capActual
+      //    antes de filtrar items en servidor)
+      const [{ data: prog }, chapsRes] = await Promise.all([
+        supabase.from('progreso_lectura')
+          .select('porcentaje')
+          .eq('user_id', userId)
           .eq('libro_id', libroId)
-          .order('capitulo_numero', { ascending: true }),
-        supabase.from('cartelera_principal')
-          .select('seccion, imagen:biblioteca_media!imagen_media_id(url, titulo), video:biblioteca_media!video_media_id(url)')
-          .eq('libro_id', libroId),
+          .maybeSingle(),
         supabase.from('capitulos')
           .select('id', { count: 'exact', head: true })
           .eq('libro_id', libroId),
-        supabase.from('predicciones_usuario')
-          .select('capitulo_num, contenido')
-          .eq('user_id', userId).eq('libro_id', libroId)
-          .order('capitulo_num', { ascending: true }),
       ])
+
+      const pct = Math.max(0, Math.min(100, prog?.porcentaje ?? 0))
 
       // capActual derivado de pct: inversa de round(pendingIdx / total * 100)
       // donde pendingIdx (0-based) = número de capítulo (1-based) ya completado.
@@ -67,12 +54,32 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
         ? Math.round(pct / 100 * totalChaps) + 1
         : 0
 
-      // Filtrar y agrupar por nombre canónico para evitar duplicados
-      // Items llegan ordenados por capitulo_numero ASC desde Supabase
+      // 2) En paralelo: items + imágenes + predicciones, filtrados en servidor
+      let itemsQuery = supabase.from('cartelera_items')
+        .select('id, seccion, nombre, descripcion, capitulo_numero, metadata, imagen:biblioteca_media!imagen_media_id(url, slug, titulo)')
+        .eq('libro_id', libroId)
+        .order('capitulo_numero', { ascending: true })
+      if (!isSuperuser) itemsQuery = itemsQuery.lt('capitulo_numero', capActual)
+
+      let predQuery = supabase.from('predicciones_usuario')
+        .select('capitulo_num, contenido')
+        .eq('user_id', userId).eq('libro_id', libroId)
+        .order('capitulo_num', { ascending: true })
+      if (!isSuperuser) predQuery = predQuery.lt('capitulo_num', capActual)
+
+      const [carteleraRes, principalRes, prediccionesRes] = await Promise.all([
+        itemsQuery,
+        supabase.from('cartelera_principal')
+          .select('seccion, imagen:biblioteca_media!imagen_media_id(url, titulo), video:biblioteca_media!video_media_id(url)')
+          .eq('libro_id', libroId),
+        predQuery,
+      ])
+
+      // Agrupar por nombre canónico para evitar duplicados.
+      // Items llegan ya filtrados desde Supabase (no hay filtro client-side).
       const agrupado = {}
       const keys = {}  // `${seccion}:::${canonico}` → index en agrupado[seccion]
       for (const it of (carteleraRes.data || [])) {
-        if (!isSuperuser && !(capActual > 0 && it.capitulo_numero < capActual)) continue
         if (!agrupado[it.seccion]) agrupado[it.seccion] = []
         const canonico = it.nombre
         const key = `${it.seccion}:::${canonico}`
@@ -97,7 +104,6 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
       const notas = []
       for (const p of (prediccionesRes.data || [])) {
         if (!p.contenido) continue
-        if (!isSuperuser && !(capActual > 0 && p.capitulo_num < capActual)) continue
         notas.push({
           id: p.capitulo_num,
           allIds: [p.capitulo_num],

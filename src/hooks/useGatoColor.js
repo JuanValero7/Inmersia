@@ -26,11 +26,13 @@ export function useGatoColor(user) {
   }, [user?.id])
 
   const updateGatoColor = useCallback(async (color) => {
-    setGatoColor(color)
+    let previous
+    setGatoColor(curr => { previous = curr; return color })
     if (!user) return
-    await supabase
+    const { error } = await supabase
       .from('preferencias_usuario')
       .upsert({ user_id: user.id, gato_color: color, updated_at: new Date().toISOString() })
+    if (error) { console.error('updateGatoColor:', error.message); setGatoColor(previous) }
   }, [user])
 
   return { gatoColor, updateGatoColor }

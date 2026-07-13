@@ -165,7 +165,7 @@ function FlatShelves({ groups, activeCat, onOpen }) {
                 const boxW = Math.min(d.h, d.w - 8);
                 return (
                   <div key={'dec' + di} style={{ position: 'absolute', left: d.cx - boxW / 2, bottom: -4, width: boxW, height: d.h, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', opacity: dim ? 0.3 : 1, transition: 'opacity .2s', pointerEvents: 'none' }}>
-                    <img src={`/assets/decor/m${d.idx}.webp`} alt="" style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain', filter: 'drop-shadow(2px 4px 4px rgba(60,42,22,0.18))' }} />
+                    <img src={`/assets/decor/m${d.idx}.webp`} alt="" loading="lazy" style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain', filter: 'drop-shadow(2px 4px 4px rgba(60,42,22,0.18))' }} />
                   </div>
                 );
               })}

@@ -29,11 +29,13 @@ export function useResena(book, user, esManual) {
   async function submitResena() {
     if (!form.rating || (form.texto?.length ?? 0) > 1000) return
     setEnviando(true)
-    await supabase.from('resenas_libros').upsert(
+    const { error } = await supabase.from('resenas_libros').upsert(
       { user_id: user.id, libro_id: book.id, rating: form.rating, texto: form.texto || null, updated_at: new Date().toISOString() },
       { onConflict: 'user_id,libro_id' })
+    setEnviando(false)
+    if (error) { console.error('submitResena:', error.message); return }
     setMiResena({ rating: form.rating, texto: form.texto })
-    setModoForm(false); setEnviando(false)
+    setModoForm(false)
   }
 
   return { miResena, form, setForm, modoForm, setModoForm, enviando, submitResena }

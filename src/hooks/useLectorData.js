@@ -22,6 +22,7 @@
 // ─────────────────────────────────────────────────────────────
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
 
 // `setChapterIndex` y `setPageIndex` son los setters de UI de cada componente:
 // la carga de la lista de capítulos los usa para reposicionar al restaurar
@@ -37,6 +38,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
   const [isLeido, setIsLeido] = useState(book?.leido ?? false)
   const [pendingRestore, setPendingRestore] = useState(null)
   const restoredRef = useRef(false)
+  const invalidateBiblioteca = useInvalidateBibliotecaUsuario(userId)
 
   // ── Reseña ──
   const [resenaForm, setResenaForm] = useState({ rating: 0, texto: '' })
@@ -68,12 +70,13 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
     if (!resenaForm.rating) return false
     if ((resenaForm.texto?.length ?? 0) > 1000) return false
     setResenaEnviando(true)
-    await supabase.from('resenas_libros').upsert(
+    const { error } = await supabase.from('resenas_libros').upsert(
       { user_id: userId, libro_id: book.libro_id, rating: resenaForm.rating, texto: resenaForm.texto || null, updated_at: new Date().toISOString() },
       { onConflict: 'user_id,libro_id' }
     )
-    setMiResena({ rating: resenaForm.rating, texto: resenaForm.texto })
     setResenaEnviando(false)
+    if (error) { console.error('submitResena:', error.message); return false }
+    setMiResena({ rating: resenaForm.rating, texto: resenaForm.texto })
     return true
   }
 
@@ -88,23 +91,26 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
       setLoading(true); setError(null); setChapterCache({})
       restoredRef.current = false; setPendingRestore(null)
       try {
-        const { data: caps, error: e } = await supabase
-          .from('capitulos').select('id, numero, titulo')
-          .eq('libro_id', book.libro_id).order('numero')
+        // capitulos y progreso_lectura son independientes (progreso solo
+        // depende de userId/libro_id, ya conocidos) → se piden en paralelo.
+        const [{ data: caps, error: e }, { data: prog }] = await Promise.all([
+          supabase.from('capitulos').select('id, numero, titulo')
+            .eq('libro_id', book.libro_id).order('numero'),
+          userId
+            ? supabase.from('progreso_lectura')
+                .select('ultimo_parrafo_id').eq('user_id', userId).eq('libro_id', book.libro_id).maybeSingle()
+            : Promise.resolve({ data: null }),
+        ])
         if (e) throw e
         if (!caps || caps.length === 0) throw new Error('Este libro no tiene capítulos cargados.')
 
         let startChapter = 0, pendingParrafo = null
-        if (userId) {
-          const { data: prog } = await supabase.from('progreso_lectura')
-            .select('ultimo_parrafo_id').eq('user_id', userId).eq('libro_id', book.libro_id).maybeSingle()
-          if (prog?.ultimo_parrafo_id) {
-            const { data: parr } = await supabase.from('parrafos')
-              .select('capitulo_id').eq('id', prog.ultimo_parrafo_id).maybeSingle()
-            if (parr?.capitulo_id) {
-              const idx = caps.findIndex(c => c.id === parr.capitulo_id)
-              if (idx >= 0) { startChapter = idx; pendingParrafo = prog.ultimo_parrafo_id }
-            }
+        if (prog?.ultimo_parrafo_id) {
+          const { data: parr } = await supabase.from('parrafos')
+            .select('capitulo_id').eq('id', prog.ultimo_parrafo_id).maybeSingle()
+          if (parr?.capitulo_id) {
+            const idx = caps.findIndex(c => c.id === parr.capitulo_id)
+            if (idx >= 0) { startChapter = idx; pendingParrafo = prog.ultimo_parrafo_id }
           }
         }
         if (cancelled) return
@@ -159,14 +165,19 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
   async function persistChapterAdvance(pendingChapter) {
     if (!userId || !book?.libro_id) return
     const newPct = Math.round((pendingChapter / capitulos.length) * 100)
-    await supabase.from('progreso_lectura')
-      .update({ porcentaje: newPct, updated_at: new Date().toISOString() })
-      .eq('user_id', userId).eq('libro_id', book.libro_id).lt('porcentaje', newPct)
+    const updates = [
+      supabase.from('progreso_lectura')
+        .update({ porcentaje: newPct, updated_at: new Date().toISOString() })
+        .eq('user_id', userId).eq('libro_id', book.libro_id).lt('porcentaje', newPct),
+    ]
     if (newPct >= 90) {
-      await supabase.from('bibliotecas_usuarios').update({ leido: true })
-        .eq('user_id', userId).eq('libro_id', book.libro_id)
-      setIsLeido(true)
+      updates.push(
+        supabase.from('bibliotecas_usuarios').update({ leido: true })
+          .eq('user_id', userId).eq('libro_id', book.libro_id)
+      )
     }
+    await Promise.all(updates)
+    if (newPct >= 90) { setIsLeido(true); invalidateBiblioteca() }
   }
 
   // Insertar un subrayado (el guard de selección/usuario lo hace cada componente)

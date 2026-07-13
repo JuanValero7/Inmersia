@@ -23,6 +23,7 @@
 // ─────────────────────────────────────────────────────────────
 import React, { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } from 'react'
 import { supabase } from '../../lib/supabase.js'
+import { useInvalidateBibliotecaUsuario } from '../../lib/queries.js'
 import useLocalStorage from '../../hooks/useLocalStorage.js'
 import { useLectorData } from '../../hooks/useLectorData.js'
 import { useXrayItems } from '../../hooks/useXrayItems.js'
@@ -141,6 +142,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   } = useLectorData(book, setChapterIndex, setPageIndex)
 
   useSesionLectura(userId, book, guestMode)
+  const invalidateBiblioteca = useInvalidateBibliotecaUsuario(userId)
 
   // ── Reseña (UI) ──
   const [resenaOpen, setResenaOpen] = useState(false)
@@ -344,7 +346,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       supabase.from('progreso_lectura').upsert({
         user_id: userId, libro_id: book.libro_id,
         ultimo_parrafo_id: firstParr.id, updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,libro_id' }).then(() => {})
+      }, { onConflict: 'user_id,libro_id' }).then(({ error }) => { if (error) console.error('No se pudo guardar el progreso de lectura:', error) })
     }, 600)
     return () => clearTimeout(t)
   }, [chapterIndex, pageIndex, paginas, userId, book?.libro_id, currentChapData])
@@ -355,11 +357,14 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     if (!capitulos.length || chapterIndex !== capitulos.length - 1) return
     if (!paginas.length || pageIndex < paginas.length - 1) return
     const t = setTimeout(async () => {
-      await supabase.from('progreso_lectura').update({ porcentaje: 100, updated_at: new Date().toISOString() })
-        .eq('user_id', userId).eq('libro_id', book.libro_id)
-      await supabase.from('bibliotecas_usuarios').update({ leido: true })
-        .eq('user_id', userId).eq('libro_id', book.libro_id)
+      await Promise.all([
+        supabase.from('progreso_lectura').update({ porcentaje: 100, updated_at: new Date().toISOString() })
+          .eq('user_id', userId).eq('libro_id', book.libro_id),
+        supabase.from('bibliotecas_usuarios').update({ leido: true })
+          .eq('user_id', userId).eq('libro_id', book.libro_id),
+      ])
       setIsLeido(true)
+      invalidateBiblioteca()
     }, 600)
     return () => clearTimeout(t)
   }, [chapterIndex, pageIndex, paginas.length, capitulos.length, userId, book?.libro_id])
