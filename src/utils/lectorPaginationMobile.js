@@ -43,7 +43,7 @@ function crearHeadEl(chapterHead, fontSize) {
   const head = document.createElement('div')
   head.style.cssText = 'margin:0 0 18px'
   const k = document.createElement('div')
-  k.style.cssText = `font-family:'Special Elite',monospace;font-size:${fontSize * 0.6}px;letter-spacing:0.18em;text-transform:uppercase`
+  k.style.cssText = `font-family:'Playfair Display',serif;font-size:${fontSize * 0.6}px;letter-spacing:0.18em;text-transform:uppercase`
   k.textContent = chapterHead.kicker || ''
   const t = document.createElement('div')
   t.style.cssText = `font-family:'Playfair Display',serif;font-size:${fontSize * 1.55}px;font-weight:700;line-height:1.08;margin-top:5px`

@@ -34,7 +34,7 @@ const RecorderPlayer = memo(function RecorderPlayer({ ambient, onClose }) {
         ))}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "'Special Elite', monospace", fontSize: 10.5, color: theme.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 16 }}>{ambient ? (ambient.titulo || ambient.slug || 'ambiente') : 'sin ambiente'}</div>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 10.5, color: theme.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 16 }}>{ambient ? (ambient.titulo || ambient.slug || 'ambiente') : 'sin ambiente'}</div>
         <div style={{ display: 'flex', gap: 2, marginTop: 7, height: 9, alignItems: 'flex-end' }}>
           {Array.from({ length: 14 }).map((_, i) => {
             const on = playing && i < Math.round(volume * 14)

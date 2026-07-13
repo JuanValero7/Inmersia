@@ -13,7 +13,7 @@ const TYPES = [
 // Cuaderno de lectura — clay. Tipos arriba en horizontal; los capítulos con
 // notas (o el que estás leyendo) son las pestañas laterales.
 // Mantiene las queries Supabase: predicciones / anotaciones / subrayados.
-const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capituloNum, capitulos = [] }) {
+const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capituloNum, capitulos = [], gatoColor = 'negro' }) {
   const [type, setType] = useState('pred')
   const [selCap, setSelCap] = useState(capituloNum)
   const [tabCaps, setTabCaps] = useState([])
@@ -103,7 +103,8 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(20,12,4,0.7)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 'min(860px,93vw)', height: 'min(600px,86vh)', display: 'flex', flexDirection: 'column', background: 'linear-gradient(160deg,#f7f1e4,#efe6d2)', borderRadius: 14, overflow: 'hidden', borderLeft: '14px solid #b3402e', border: `2px solid ${theme.ink}`, boxShadow: `5px 7px 0 ${theme.ink}30, 0 24px 60px rgba(0,0,0,0.55)` }}>
+      <div style={{ position: 'relative', width: 'min(860px,93vw)', height: 'min(600px,86vh)' }}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: 'linear-gradient(160deg,#f7f1e4,#efe6d2)', borderRadius: 14, overflow: 'hidden', borderLeft: '14px solid #b3402e', border: `2px solid ${theme.ink}`, boxShadow: `5px 7px 0 ${theme.ink}30, 0 24px 60px rgba(0,0,0,0.55)` }}>
         {/* header */}
         <div style={{ background: 'linear-gradient(90deg,#b3402e,#8e2f20)', padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <span style={{ color: '#fbe9df', fontFamily: "'Baloo 2', sans-serif", fontWeight: 800, fontSize: 15, whiteSpace: 'nowrap' }}>Cuaderno de lectura</span>
@@ -176,6 +177,9 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
           <span style={{ fontFamily: "'Baloo 2',sans-serif", fontSize: 11.5, color: 'rgba(74,54,34,0.55)' }}>Cap. {selCap}{selCap === capituloNum ? ' (estás leyendo)' : ''}</span>
           <ClayButton variant="primary" onClick={handleClose} style={{ fontSize: 13 }}>Guardar y continuar →</ClayButton>
         </div>
+      </div>
+      <img src={`/assets/lector/gato-${gatoColor}-3.webp`} alt=""
+        style={{ position: 'absolute', left: -20, bottom: -22, width: 'min(160px,28vw)', height: 'auto', pointerEvents: 'none', zIndex: 2, filter: 'drop-shadow(2px 5px 6px rgba(0,0,0,0.35))' }} />
       </div>
     </div>
   )

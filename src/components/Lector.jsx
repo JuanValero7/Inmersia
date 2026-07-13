@@ -366,7 +366,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     }
   }
 
-  const msgStyle = { color: theme.subText, fontFamily: "'Special Elite',monospace", fontSize: 14, textAlign: 'center', padding: 60 }
+  const msgStyle = { color: theme.subText, fontFamily: "'Playfair Display',serif", fontSize: 14, textAlign: 'center', padding: 60 }
   const halfBook = (doubleView ? (2 * geom.pageW + 20 + 14) : (geom.pageW + 7)) / 2
 
   return (
@@ -515,6 +515,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
         libroId={book?.libro_id}
         capituloNum={capitulos[chapterIndex]?.numero ?? chapterIndex + 1}
         capitulos={capitulos}
+        gatoColor={gatoColor}
       />
 
       {/* Reseña */}
@@ -526,7 +527,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
             </h3>
             <EstrellaLector valor={resenaForm.rating} onChange={r => setResenaForm(f => ({...f, rating: r}))} />
             <textarea
-              style={{ width: '100%', marginTop: 14, boxSizing: 'border-box', background: '#fffdf8', border: `1.5px solid ${theme.ink}55`, borderRadius: 10, padding: '10px 12px', fontSize: 14, color: theme.ink, resize: 'vertical', fontFamily: "'Crimson Text',serif", lineHeight: 1.5, outline: 'none' }}
+              style={{ width: '100%', marginTop: 14, boxSizing: 'border-box', background: '#fffdf8', border: `1.5px solid ${theme.ink}55`, borderRadius: 10, padding: '10px 12px', fontSize: 14, color: theme.ink, resize: 'vertical', fontFamily: "'Playfair Display',serif", lineHeight: 1.5, outline: 'none' }}
               placeholder="Escribe tu reseña (opcional)…"
               maxLength={1000}
               value={resenaForm.texto}
@@ -546,7 +547,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       {/* Popup subrayar */}
       {pendingSelection && (
         <div className="subrayado-popup" style={{ position: 'fixed', top: pendingSelection.rect.bottom + 8, left: Math.max(12, pendingSelection.rect.left), zIndex: 1300, background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 12, padding: '7px 10px', display: 'flex', gap: 9, alignItems: 'center', boxShadow: `2px 3px 0 ${theme.ink}30, 0 10px 24px rgba(0,0,0,0.3)` }}>
-          <span style={{ fontFamily: "'Crimson Text', serif", fontStyle: 'italic', fontSize: 13, color: theme.navText, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: 13, color: theme.navText, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {'"'}{pendingSelection.text.length > 45 ? pendingSelection.text.slice(0, 45) + '...' : pendingSelection.text}{'"'}
           </span>
           <ClayButton variant="primary" onClick={handleSubrayar} style={{ padding: '5px 13px', fontSize: 12 }}>Subrayar</ClayButton>

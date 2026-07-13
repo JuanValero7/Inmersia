@@ -32,7 +32,7 @@ const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, onPlay
     <div onMouseUp={handleMouseUp} onContextMenu={(e) => e.preventDefault()} translate="no" style={{ fontFamily: readingFont || "'Crimson Text', Georgia, serif", fontSize, lineHeight: 1.85, color: pal.pageInk }}>
       {isFirst && (
         <div style={{ marginBottom: 22 }}>
-          <div style={{ fontFamily: "'Special Elite', monospace", fontSize: fontSize * 0.6, letterSpacing: '0.18em', textTransform: 'uppercase', color: pal.pageMeta }}>Capítulo {chapterNum}</div>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: fontSize * 0.6, letterSpacing: '0.18em', textTransform: 'uppercase', color: pal.pageMeta }}>Capítulo {chapterNum}</div>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: fontSize * 1.7, fontWeight: 700, lineHeight: 1.1, color: pal.pageInk, marginTop: 6 }}>{chapterTitle}</div>
           <div style={{ width: 60, height: 3, borderRadius: 2, background: theme.accent, marginTop: 14 }} />
         </div>
@@ -172,14 +172,14 @@ function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, r
 
   const stepBtn = {
     width: 30, height: 30, borderRadius: 9, border: `1.5px solid ${theme.ink}`, background: theme.navBg,
-    color: theme.navText, cursor: 'pointer', fontFamily: "'Crimson Text', serif", fontWeight: 600,
+    color: theme.navText, cursor: 'pointer', fontFamily: "'Playfair Display', serif", fontWeight: 600,
     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, lineHeight: 1,
   }
 
   return (
     <>
       <button ref={btnRef} type="button" onClick={handleClick} title="Tamaño y fuente del texto"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Crimson Text', Georgia, serif", fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: open ? theme.accent : theme.navBg, color: open ? '#fff' : theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: open ? theme.accent : theme.navBg, color: open ? '#fff' : theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
         <span style={{ fontSize: 12, lineHeight: 1 }}>A</span>
         <span style={{ fontSize: 17, lineHeight: 1 }}>A</span>
       </button>
@@ -218,7 +218,7 @@ function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, r
                   return (
                     <button key={t.id} type="button" onClick={() => onReadingTheme(t.id)}
                       style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', cursor: 'pointer', border: `1.5px solid ${active ? theme.accent : theme.ink}`, borderRadius: 11, background: active ? 'rgba(207,123,76,0.12)' : 'transparent' }}>
-                      <span style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, background: t.bg, border: `1.5px solid ${theme.ink}`, color: t.fg, fontFamily: "'Crimson Text', serif", fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>A</span>
+                      <span style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, background: t.bg, border: `1.5px solid ${theme.ink}`, color: t.fg, fontFamily: "'Playfair Display', serif", fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>A</span>
                       <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, color: active ? theme.accent : theme.navText }}>{t.label}</span>
                     </button>
                   )
@@ -275,10 +275,10 @@ const Leaf = memo(function Leaf({ parrafos, side, pageNum, fontSize, readingFont
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5, backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent ${fontSize*1.85-1}px, ${pal.lineRGBA} ${fontSize*1.85-1}px, ${pal.lineRGBA} ${fontSize*1.85}px)` }} />
       <div style={{ position: 'absolute', inset: 0, padding: `${Math.round(pageH*0.075)}px ${pad}px ${Math.round(pageH*0.085)}px`, overflow: 'hidden' }}>
         {empty
-          ? <div style={{ color: pal.pageMeta, fontFamily: "'Special Elite', monospace", fontSize: 14, textAlign: 'center', marginTop: pageH/2 - 80 }}>— fin del capítulo —</div>
+          ? <div style={{ color: pal.pageMeta, fontFamily: "'Playfair Display', serif", fontSize: 14, textAlign: 'center', marginTop: pageH/2 - 80 }}>— fin del capítulo —</div>
           : <PageContent parrafos={parrafos} mediaByParrafo={mediaByParrafo} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} fontSize={fontSize} readingFont={readingFont} isFirst={isFirst} chapterTitle={chapterTitle} chapterNum={chapterNum} pal={pal} />}
       </div>
-      {pageNum && <div style={{ position: 'absolute', bottom: 20, [side === 'right' ? 'right' : 'left']: pad, fontSize: 11, color: pal.pageMeta, fontFamily: "'Special Elite', monospace" }}>{pageNum}</div>}
+      {pageNum && <div style={{ position: 'absolute', bottom: 20, [side === 'right' ? 'right' : 'left']: pad, fontSize: 11, color: pal.pageMeta, fontFamily: "'Playfair Display', serif" }}>{pageNum}</div>}
       {(side === 'left' || side === 'single') && onPrev && <SideTurn side="left" onClick={onPrev} kind="prev" pal={pal} />}
       {(side === 'right' || side === 'single') && onNext && <SideTurn side="right" onClick={onNext} kind={nextKind} pal={pal} />}
     </div>

@@ -56,11 +56,11 @@ export const I = {
   legal:     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1"><path d="M12 3v18M7 6h10M4.5 6L2 11c0 1.7 1.3 3 3 3s3-1.3 3-3L5.5 6M18.5 6L16 11c0 1.7 1.3 3 3 3s3-1.3 3-3L19.5 6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
 }
 
+// "transac" e "historial" ocultas a pedido del usuario hasta que tengan datos reales
+// (siguen definidas más abajo, listas para reactivar agregándolas de nuevo acá).
 export const NAV = [
   { id: 'datos',     label: 'Datos',         icon: I.datos },
   { id: 'seguridad', label: 'Seguridad',     icon: I.seguridad },
-  { id: 'transac',   label: 'Transacciones', icon: I.transac },
-  { id: 'historial', label: 'Historial',     icon: I.historial },
   { id: 'legal',     label: 'Legal',         icon: I.legal },
 ]
 export const TITLES = { datos: 'Datos de perfil', seguridad: 'Seguridad', transac: 'Transacciones', historial: 'Historial de lectura', legal: 'Legal' }
@@ -164,9 +164,10 @@ export function SecDatos({ nombre, apellido, email, miembroDesde, cargando, onSa
             {GATOS.map(g => (
               <button key={g.id} type="button" onClick={() => onChangeGatoColor(g.id)} title={g.label}
                 style={{
-                  width: 60, height: 60, borderRadius: 14, cursor: 'pointer', padding: 0,
+                  width: 92, height: 78, borderRadius: 14, cursor: 'pointer', padding: 4,
                   border: gatoColor === g.id ? `3px solid ${'var(--accent)'}` : '2px solid rgba(74,54,34,0.2)',
-                  background: `var(--cream) url('/assets/biblioteca/gato-${g.id}-1-thumb.webp') center 62% / 145% no-repeat`,
+                  background: `var(--cream) url('/assets/biblioteca/gato-${g.id}-1-thumb.webp') center / contain no-repeat`,
+                  backgroundOrigin: 'content-box',
                   boxShadow: gatoColor === g.id ? '0 0 0 3px rgba(207,123,76,0.25)' : 'none',
                 }} />
             ))}

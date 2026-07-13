@@ -642,6 +642,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         libroId={book?.libro_id}
         capituloNum={capitulos[chapterIndex]?.numero ?? chapterIndex + 1}
         capitulos={capitulos}
+        gatoColor={gatoColor}
       />
 
       {/* Paywall de invitado */}

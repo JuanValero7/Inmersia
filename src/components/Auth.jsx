@@ -4,9 +4,11 @@ import { supabase } from '../lib/supabase.js'
 import LegalModal from './legal/LegalModal.jsx'
 import '../styles/auth.css'
 
-// Logo y fondo se sirven desde public/assets (referencia con ruta absoluta)
-const LOGO  = '/assets/inmersia-logo.png'
-const FONDO = '/assets/fondo-acuarela.webp'
+// Logo y collage de gatos se sirven desde public/assets (referencia con ruta absoluta)
+const LOGO          = '/assets/inmersia-logo.png'
+const GATO_NARANJA  = '/assets/tienda/gato-naranja-4.webp'
+const GATO_BLANCO   = '/assets/tienda/gato-blanco-5.webp'
+const GATO_NEGRO    = '/assets/cartelera/gato-negro-2.webp'
 
 // ⬅︎ LANDING: `initialTab` permite abrir en 'login' o 'registro' desde la landing.
 //             `onBack` (opcional) muestra un enlace para volver a la landing.
@@ -70,7 +72,9 @@ export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
 
   return (
     <div className="login-scene">
-      <img className="scene-bg" src={FONDO} alt="" aria-hidden="true" />
+      <img className="scene-cat scene-cat--naranja" src={GATO_NARANJA} alt="" aria-hidden="true" />
+      <img className="scene-cat scene-cat--blanco"  src={GATO_BLANCO}  alt="" aria-hidden="true" />
+      <img className="scene-cat scene-cat--negro"   src={GATO_NEGRO}   alt="" aria-hidden="true" />
 
       <div className="login-card">
         <div className="login-header">
@@ -153,8 +157,8 @@ export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
                 <div><label className="field-label">Apellido *</label><input type="text" required className="auth-input" placeholder="García" value={regForm.apellido} onChange={e => setR('apellido', e.target.value)} /></div>
               </div>
               <div className="form-field">
-                <label className="field-label">Fecha de nacimiento</label>
-                <input type="date" className="auth-input" value={regForm.fechaNacimiento} onChange={e => setR('fechaNacimiento', e.target.value)} style={{ colorScheme: 'light' }} />
+                <label className="field-label">Fecha de nacimiento *</label>
+                <input type="date" required className="auth-input" value={regForm.fechaNacimiento} onChange={e => setR('fechaNacimiento', e.target.value)} style={{ colorScheme: 'light' }} />
               </div>
               <div className="form-field">
                 <label className="field-label">Correo electrónico *</label>

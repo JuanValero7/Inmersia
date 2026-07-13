@@ -39,7 +39,7 @@ body { background-color: var(--bg-warm); min-height: 100vh; overflow-x: hidden; 
 .back-btn {
   background: rgba(10,5,2,0.75); border: 1px solid rgba(160,110,40,0.35);
   border-radius: 7px; padding: 7px 12px; color: rgba(200,160,80,0.7);
-  font-family: 'Special Elite', monospace; font-size: 12px; cursor: pointer;
+  font-family: 'Playfair Display', serif; font-size: 12px; cursor: pointer;
   transition: all 0.15s; display: flex; align-items: center; gap: 6px;
   backdrop-filter: blur(8px); text-decoration: none;
 }

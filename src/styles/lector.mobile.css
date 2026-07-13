@@ -80,7 +80,7 @@
   width: 100%; box-sizing: border-box; min-height: 96px; resize: vertical;
   background: var(--cream); border: 1.6px solid rgba(74,54,34,0.4); border-radius: 12px;
   padding: 11px 13px; font-size: 14.5px; color: var(--page-ink); line-height: 1.5; outline: none;
-  font-family: 'Crimson Text', Georgia, serif;
+  font-family: 'Playfair Display', Georgia, serif;
 }
 .lm-resena-ta:focus { border-color: var(--accent); }
 .lm-resena-actions { display: flex; gap: 10px; justify-content: flex-end; }
@@ -142,7 +142,7 @@
 .lm-page-inner { position: absolute; inset: 0; padding: 30px 30px 40px; overflow: hidden; }
 .lm-chap-head { margin-bottom: 18px; }
 .lm-chap-kicker {
-  font-family: 'Special Elite', monospace; letter-spacing: 0.18em;
+  font-family: 'Playfair Display', serif; letter-spacing: 0.18em;
   text-transform: uppercase; color: var(--page-meta);
 }
 .lm-chap-title {
@@ -162,10 +162,10 @@
 .lm-sep { text-align: center; color: var(--page-meta); line-height: 1.4; margin: 14px 0; letter-spacing: 0.4em; }
 .lm-pagenum {
   position: absolute; bottom: 16px; right: 30px;
-  font-family: 'Special Elite', monospace; font-size: 11px; color: var(--page-meta);
+  font-family: 'Playfair Display', serif; font-size: 11px; color: var(--page-meta);
 }
 .lm-page-msg {
-  color: var(--page-meta); font-family: 'Special Elite', monospace; font-size: 14px;
+  color: var(--page-meta); font-family: 'Playfair Display', serif; font-size: 14px;
   text-align: center; position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%);
   padding: 0 30px;
 }
@@ -252,7 +252,7 @@
   text-transform: uppercase; color: rgba(74,54,34,0.45); margin-bottom: 5px;
 }
 .lm-csub-text {
-  font-family: 'Crimson Text', Georgia, serif; font-size: 15.5px; line-height: 1.65;
+  font-family: 'Playfair Display', Georgia, serif; font-size: 15.5px; line-height: 1.65;
   color: var(--ink); margin: 0; font-style: italic;
 }
 .lm-csub-text--prev {
@@ -313,7 +313,7 @@
 .lm-chap-num {
   width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Special Elite', monospace; font-size: 14px; font-weight: 400;
+  font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 400;
   background: rgba(74,54,34,0.08); border: 1.5px solid rgba(74,54,34,0.3); color: var(--ink);
 }
 .lm-chap-row.active .lm-chap-num { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.5); color: #fff; }
@@ -331,7 +331,7 @@
 .lm-size-btn {
   width: 40px; height: 40px; border-radius: 12px; border: 2px solid var(--ink);
   background: var(--cream); color: var(--ink); cursor: pointer; flex-shrink: 0;
-  font-family: 'Crimson Text', serif; font-weight: 600;
+  font-family: 'Playfair Display', serif; font-weight: 600;
   display: flex; align-items: center; justify-content: center;
   box-shadow: 1.4px 1.8px 0 rgba(74,54,34,0.16);
 }
@@ -359,7 +359,7 @@
   box-shadow: 1.4px 1.8px 0 rgba(74,54,34,0.13);
 }
 .lm-theme-card.active { border-color: var(--accent); background: rgba(207,123,76,0.12); box-shadow: 1.4px 1.8px 0 rgba(207,123,76,0.3); }
-.lm-theme-card .sw { width: 24px; height: 24px; border-radius: 7px; border: 1.5px solid var(--ink); display: flex; align-items: center; justify-content: center; font-family: 'Crimson Text', serif; font-size: 14px; flex-shrink: 0; }
+.lm-theme-card .sw { width: 24px; height: 24px; border-radius: 7px; border: 1.5px solid var(--ink); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 14px; flex-shrink: 0; }
 .lm-theme-card.light .sw { background: #f7efde; color: #3a2a18; }
 .lm-theme-card.dark .sw  { background: #1d1813; color: #e9ddc7; }
 .lm-theme-card .nm { font-size: 12px; font-weight: 700; color: var(--muted); }
@@ -382,7 +382,7 @@
 
 /* ── Audio sheet ── */
 .lm-audio-body { padding: 8px 22px 18px; }
-.lm-audio-track { font-family: 'Special Elite', monospace; font-size: 13px; color: var(--ink); text-align: center; margin-bottom: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lm-audio-track { font-family: 'Playfair Display', serif; font-size: 13px; color: var(--ink); text-align: center; margin-bottom: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lm-reels { display: flex; justify-content: center; gap: 24px; margin-bottom: 18px; }
 .lm-reel { width: 54px; height: 54px; border-radius: 50%; border: 3px solid var(--ink); background: #efe7d4; position: relative; }
 .lm-reel.spin { animation: lm-spin 3s linear infinite; }
@@ -437,8 +437,8 @@ input.lm-range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%
   display: flex; align-items: center; justify-content: center;
 }
 .lm-polaroid .pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.lm-polaroid .ph-label { font-family: 'Special Elite', monospace; font-size: 12px; color: rgba(74,54,34,0.6); text-align: center; padding: 0 16px; }
-.lm-polaroid .cap { min-height: 46px; display: flex; align-items: center; justify-content: center; font-family: 'Special Elite', monospace; font-size: 13.5px; color: var(--ink); text-align: center; padding: 6px 8px; }
+.lm-polaroid .ph-label { font-family: 'Playfair Display', serif; font-size: 12px; color: rgba(74,54,34,0.6); text-align: center; padding: 0 16px; }
+.lm-polaroid .cap { min-height: 46px; display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 13.5px; color: var(--ink); text-align: center; padding: 6px 8px; }
 .lm-poster { width: 100%; max-width: 480px; }
 .lm-poster-pic {
   width: 100%; background: #120d08; border-radius: 8px; overflow: hidden;

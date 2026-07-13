@@ -1,7 +1,6 @@
 /* ══ AUTH (login + registro) · Inmersia — estilo "clay" ════════════════
    Reemplaza src/styles/auth.css
-   Requiere la fuente Baloo 2 (ya cargada en index.html) y la imagen
-   public/assets/fondo-acuarela.png
+   Requiere la fuente Baloo 2 (ya cargada en index.html).
    Botones/inputs/tabs replican el estilo de la Biblioteca:
    relleno terracota + borde marrón 2px + sombra dura desplazada.        */
 
@@ -9,15 +8,32 @@
   min-height: 100vh; display: flex; align-items: center; justify-content: center;
   padding: 24px; position: relative; overflow: hidden;
   font-family: 'Baloo 2', cursive;
-  background: #fbefd5; /* = crema propio de la obra: funde los lados sin costura */
+  background: #fbefd5;
 }
-/* Fondo acuarela a pantalla completa (obra vertical anclada arriba) */
-.scene-bg {
-  position: absolute; inset: 0; z-index: 0;
-  width: 100%; height: 100%;
-  object-fit: cover; object-position: center center;
+/* Collage de gatos alrededor del carnet.
+   Desktop: naranja/blanco anclados a las esquinas inferiores del escenario,
+   negro centrado detrás de la tarjeta (z-index 0, la tarjeta lo tapa a medias).
+   Mobile: los tres pasan a ser "stickers" sobre las esquinas de la propia tarjeta (z-index 3). */
+.scene-cat {
+  position: absolute; z-index: 0;
+  height: auto;
+  filter: drop-shadow(3px 6px 10px rgba(74,54,34,0.22));
   user-select: none; pointer-events: none;
 }
+.scene-cat--naranja { bottom: 4%; left: 3%;  width: 400px; }
+.scene-cat--blanco  { bottom: 9%; right: 3%; width: 430px; }
+.scene-cat--negro   {
+  top: 50%; left: 50%; width: 380px; z-index: 0;
+  transform: translate(-50%, -110%);
+}
+
+@media (max-width: 620px) {
+  .scene-cat { z-index: 3; }
+  .scene-cat--naranja { top: auto; bottom: 6%; left: 4%;  right: auto; width: 105px; transform: rotate(-8deg); }
+  .scene-cat--blanco  { bottom: 6%; top: auto; left: 50%; right: auto; width: 130px; transform: translateX(-50%); }
+  .scene-cat--negro   { top: auto; bottom: 6%; right: 4%; left: auto;  width: 100px; transform: none; }
+}
+
 .login-scene::after {
   content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
   background: radial-gradient(ellipse 540px 640px at 50% 50%, rgba(251,239,213,0.45) 0%, rgba(251,239,213,0) 70%);

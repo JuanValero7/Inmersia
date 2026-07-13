@@ -62,7 +62,7 @@ function SearchBar({ items, onPick }) {
                 {e.libro.cover && <img src={e.libro.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
               </span>
               <span>
-                <span style={{ display: 'block', fontFamily: "'Crimson Text', serif", fontWeight: 700, fontSize: 17, lineHeight: 1.05, color: '#4a3622' }}>{e.libro.title}</span>
+                <span style={{ display: 'block', fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 17, lineHeight: 1.05, color: '#4a3622' }}>{e.libro.title}</span>
                 <span style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: '#6b4f34' }}>{e.libro.author}</span>
               </span>
             </button>

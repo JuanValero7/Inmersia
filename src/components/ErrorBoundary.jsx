@@ -26,7 +26,7 @@ export default class ErrorBoundary extends React.Component {
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.6rem', color: '#5a3a1a', margin: 0 }}>
             Algo salió mal
           </h1>
-          <p style={{ fontFamily: "'Crimson Text', serif", color: '#8a6a4a', fontSize: '1.05rem', maxWidth: 380, margin: 0, lineHeight: 1.6 }}>
+          <p style={{ fontFamily: "'Playfair Display', serif", color: '#8a6a4a', fontSize: '1.05rem', maxWidth: 380, margin: 0, lineHeight: 1.6 }}>
             Un error inesperado interrumpió la biblioteca.<br />Recargar la página suele resolverlo.
           </p>
           <button

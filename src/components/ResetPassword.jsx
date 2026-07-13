@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase.js'
 import '../styles/auth.css'
 
-const LOGO  = '/assets/inmersia-logo.png'
-const FONDO = '/assets/fondo-acuarela.webp'
+const LOGO          = '/assets/inmersia-logo.png'
+const GATO_NARANJA  = '/assets/tienda/gato-naranja-4.webp'
+const GATO_BLANCO   = '/assets/tienda/gato-blanco-5.webp'
+const GATO_NEGRO    = '/assets/cartelera/gato-negro-2.webp'
 
 export default function ResetPassword({ onDone }) {
   const [p1,      setP1]      = useState('')
@@ -28,7 +30,9 @@ export default function ResetPassword({ onDone }) {
 
   return (
     <div className="login-scene">
-      <img className="scene-bg" src={FONDO} alt="" aria-hidden="true" />
+      <img className="scene-cat scene-cat--naranja" src={GATO_NARANJA} alt="" aria-hidden="true" />
+      <img className="scene-cat scene-cat--blanco"  src={GATO_BLANCO}  alt="" aria-hidden="true" />
+      <img className="scene-cat scene-cat--negro"   src={GATO_NEGRO}   alt="" aria-hidden="true" />
       <div className="login-card">
         <div className="login-header">
           <img className="login-logo-mark" src={LOGO} alt="Inmersia" />
