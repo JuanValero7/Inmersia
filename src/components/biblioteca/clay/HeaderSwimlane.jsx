@@ -1,6 +1,7 @@
 import React from 'react'
 import { INK, inmTint, BookCover } from './helpers.jsx'
 import { NovedadesSpotlight } from './NovedadesSpotlight.jsx'
+import { HojasOtono } from './HojasOtono.jsx'
 // =============================================================
 // ACUARELA · Header (logo + buscador + nav) y Swimlane (hero).
 // Header cableado: search, Tienda, Perfil, Salir.
@@ -219,6 +220,9 @@ function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOp
       <div style={surface}>
         {tab === 'seguir' && (
           <>
+            {/* Hojas de otoño: detrás del gato y del degradado a propósito
+                (capa ambiental, no debe competir visualmente con nada). */}
+            <HojasOtono />
             {/* Copia A: recortada por el propio overflow:hidden de la tarjeta,
                 así el navegador la recorta siguiendo la curva del borde sin artefactos. */}
             <img src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" style={gatoImgStyle(-GATO_BLEED)} />
