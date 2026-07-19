@@ -45,10 +45,11 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
   const [resenaEnviando, setResenaEnviando] = useState(false)
   const [miResena, setMiResena] = useState(null)
 
-  // usuario
+  // usuario — getSession() lee el token local (0 ms); getUser() haría un
+  // viaje de red al servidor de Auth que bloqueaba toda la carga del libro.
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUserId(data?.user?.id || null)
+    supabase.auth.getSession().then(({ data }) => {
+      setUserId(data?.session?.user?.id || null)
       setUserReady(true)
     })
   }, [])
@@ -93,25 +94,25 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
       try {
         // capitulos y progreso_lectura son independientes (progreso solo
         // depende de userId/libro_id, ya conocidos) → se piden en paralelo.
+        // El embed parrafos!ultimo_parrafo_id trae el capitulo_id del párrafo
+        // de progreso en la misma respuesta (FK ultimo_parrafo_id → parrafos.id),
+        // evitando un viaje extra secuencial a `parrafos`.
         const [{ data: caps, error: e }, { data: prog }] = await Promise.all([
           supabase.from('capitulos').select('id, numero, titulo')
             .eq('libro_id', book.libro_id).order('numero'),
           userId
             ? supabase.from('progreso_lectura')
-                .select('ultimo_parrafo_id').eq('user_id', userId).eq('libro_id', book.libro_id).maybeSingle()
+                .select('ultimo_parrafo_id, parrafos!ultimo_parrafo_id(capitulo_id)')
+                .eq('user_id', userId).eq('libro_id', book.libro_id).maybeSingle()
             : Promise.resolve({ data: null }),
         ])
         if (e) throw e
         if (!caps || caps.length === 0) throw new Error('Este libro no tiene capítulos cargados.')
 
         let startChapter = 0, pendingParrafo = null
-        if (prog?.ultimo_parrafo_id) {
-          const { data: parr } = await supabase.from('parrafos')
-            .select('capitulo_id').eq('id', prog.ultimo_parrafo_id).maybeSingle()
-          if (parr?.capitulo_id) {
-            const idx = caps.findIndex(c => c.id === parr.capitulo_id)
-            if (idx >= 0) { startChapter = idx; pendingParrafo = prog.ultimo_parrafo_id }
-          }
+        if (prog?.ultimo_parrafo_id && prog?.parrafos?.capitulo_id) {
+          const idx = caps.findIndex(c => c.id === prog.parrafos.capitulo_id)
+          if (idx >= 0) { startChapter = idx; pendingParrafo = prog.ultimo_parrafo_id }
         }
         if (cancelled) return
         setCapitulos(caps); setChapterIndex(startChapter); setPageIndex(0)

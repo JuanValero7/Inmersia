@@ -4,6 +4,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useBibliotecaUsuarioQuery } from '../lib/queries.js'
+import { computeSesionStats } from './useReadingStats.js'
 
 // Misma fórmula que useCartelera: inversa de round(pendingIdx / total * 100)
 function derivarCapActual(pct, totalCaps) {
@@ -11,13 +12,13 @@ function derivarCapActual(pct, totalCaps) {
   return Math.round(pct / 100 * totalCaps) + 1
 }
 
-export function formatSeg(seg) {
-  if (!seg || seg < 60) return seg ? `${Math.round(seg)} s` : '—'
-  const h = Math.floor(seg / 3600)
-  const m = Math.floor((seg % 3600) / 60)
-  if (h > 0) return `${h} h ${m} min`
-  return `${m} min`
+// Normaliza un nombre/título para comparar duplicados (misma imagen re-subida
+// con otra URL): sin acentos, sin mayúsculas, sin espacios de más.
+function normName(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase().replace(/\s+/g, ' ')
 }
+
+export { formatSeg } from './useReadingStats.js'
 
 // Cuántos slots como máximo mostramos por sección (el resto = "+N más").
 const MAX_SLOTS = 20
@@ -237,14 +238,28 @@ export function useAlbum(user) {
         const parrRows = (parrafoImgRes.data || []).filter(r => r.libro_id === libro.libro_id)
 
         const principal = principalMap[libro.libro_id] || {}
-        const cartPersonajes = cartRows.filter(r => r.seccion === 'personajes')
-        const cartLugares    = cartRows.filter(r => r.seccion === 'lugares')
+
+        // La imagen hero (cartelera_principal) ya ocupa el slot 0 del tablero.
+        // Si además quedó cargada como ítem normal (en su propia sección o
+        // colada entre las de Capítulos), la sacamos de ahí para no mostrarla
+        // duplicada. Suele ser una copia con otra URL (imagen re-subida), así
+        // que comparamos por nombre/título normalizado, no por URL.
+        const heroNames = new Set(
+          Object.values(principal).map(h => normName(h.name)).filter(Boolean)
+        )
+        const sinHero = (rows) => heroNames.size
+          ? rows.filter(r => !heroNames.has(normName(r.titulo || r.nombre)))
+          : rows
+
+        const cartPersonajes = sinHero(cartRows.filter(r => r.seccion === 'personajes'))
+        const cartLugares    = sinHero(cartRows.filter(r => r.seccion === 'lugares'))
+        const parrRowsSinHero = sinHero(parrRows)
 
         // No ficción: no hay personajes/lugares reales — una única sección
         // "Infografías" agrupa todo lo curado (mismas filas, sin la etiqueta ficticia).
         const secciones = libro.es_ficcion === false
           ? {
-              infografias: buildSeccion([...cartPersonajes, ...cartLugares, ...parrRows], capActual, {
+              infografias: buildSeccion([...cartPersonajes, ...cartLugares, ...parrRowsSinHero], capActual, {
                 heroItem: principal.personajes || principal.lugares || null,
                 libroId: libro.libro_id, seccion: 'infografias', pegadaSet,
               }),
@@ -256,7 +271,7 @@ export function useAlbum(user) {
               lugares:    buildSeccion(cartLugares,    capActual, {
                 heroItem: principal.lugares    || null, libroId: libro.libro_id, seccion: 'lugares', pegadaSet,
               }),
-              capitulos:  buildSeccion(parrRows, capActual, {
+              capitulos:  buildSeccion(parrRowsSinHero, capActual, {
                 libroId: libro.libro_id, seccion: 'capitulos', pegadaSet,
               }),
             }
@@ -266,13 +281,7 @@ export function useAlbum(user) {
 
         // Stats de sesiones
         const sesiones = sesionesMap[libro.libro_id] || []
-        let totalSeg = 0, sesionMasLargaSeg = 0
-        for (const s of sesiones) {
-          if (!s.ended_at) continue
-          const dur = (new Date(s.ended_at) - new Date(s.started_at)) / 1000
-          totalSeg         += dur
-          sesionMasLargaSeg = Math.max(sesionMasLargaSeg, dur)
-        }
+        const sesionStats = computeSesionStats(sesiones)
 
         return {
           libro,
@@ -282,12 +291,7 @@ export function useAlbum(user) {
           secciones,
           totalBarajitas,
           unlockedBarajitas,
-          stats: {
-            totalSeg:         Math.round(totalSeg),
-            vecesAbierto:     sesiones.length,
-            sesionMasLargaSeg: Math.round(sesionMasLargaSeg),
-            notas:            notasMap[libro.libro_id] || 0,
-          },
+          stats: { ...sesionStats, notas: notasMap[libro.libro_id] || 0 },
           previewAudio: reelMap[libro.libro_id] || null,
         }
       })

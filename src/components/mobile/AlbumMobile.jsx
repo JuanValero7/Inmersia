@@ -37,7 +37,7 @@ function Cell({ item, color, idx, hero, onOpen, pegarMode, onPegar }) {
   if (!item || !item.unlocked) {
     return (
       <div className={`${cls} empty`}>
-        <div className="eslot"><ISlot /><span>{idx === 0 ? 'Video' : 'Pega tu barajita'}</span></div>
+        <div className="eslot"><ISlot /><span>Pega tu barajita</span></div>
       </div>
     )
   }
@@ -56,7 +56,6 @@ function Cell({ item, color, idx, hero, onOpen, pegarMode, onPegar }) {
     )
   }
 
-  const video = idx === 0
   return (
     <div className={`${cls}${pegando ? ' pegando' : ''}`} style={{ '--c': color }} title={item.name || ''} onClick={onOpen}>
       {item.url
@@ -65,7 +64,6 @@ function Cell({ item, color, idx, hero, onOpen, pegarMode, onPegar }) {
       <div className="cvig" />
       <div className="foil" />
       <div className="cbadge">{num}</div>
-      {video && (<><div className="vtag"><i />video</div><div className="vplay"><span><IPlay s={hero ? 16 : 14} /></span></div></>)}
       {item.name && <div className="cname">{item.name}</div>}
     </div>
   )

@@ -303,9 +303,13 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   // Espera a que la paginación DEFINITIVA (medida) esté lista: con la paginación
   // transitoria los límites de página difieren y restaurábamos mal (o nos
   // rendíamos dejando al lector en la página 0 = inicio del capítulo).
+  // El id guardado es el primer párrafo visible de la página donde quedó el
+  // usuario; buscar por primer ítem evita caer en la página anterior cuando el
+  // párrafo viene dividido (ver comentario equivalente en Lector.jsx).
   useEffect(() => {
     if (!pendingRestore || !currentChapData || !measuredReady) return
-    const idx = paginas.findIndex(pg => pg.some(p => p.id === pendingRestore))
+    let idx = paginas.findIndex(pg => pg[0]?.id === pendingRestore)
+    if (idx < 0) idx = paginas.findIndex(pg => pg.some(p => p.id === pendingRestore))
     if (idx >= 0) setPageIndex(idx)
     setPendingRestore(null); restoredRef.current = true
     setGoToLastPage(false)
@@ -326,7 +330,8 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   useEffect(() => {
     if (pendingRestore) return
     if (pageAnchorRef.current) {
-      const newIdx = paginas.findIndex(pg => pg.some(p => p.id === pageAnchorRef.current))
+      let newIdx = paginas.findIndex(pg => pg[0]?.id === pageAnchorRef.current)
+      if (newIdx < 0) newIdx = paginas.findIndex(pg => pg.some(p => p.id === pageAnchorRef.current))
       if (newIdx >= 0) { if (newIdx !== pageIndex) setPageIndex(newIdx); return }
     }
     if (pageIndex >= paginas.length) setPageIndex(Math.max(0, paginas.length - 1))

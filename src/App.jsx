@@ -122,6 +122,23 @@ export default function App() {
     return () => { mounted = false; subscription.unsubscribe() }
   }, [loadLastBooks, navigate])
 
+  // Precargar el chunk del Lector en un momento ocioso: al abrir un libro el
+  // JS ya está en caché y desaparece el spinner de descarga. Aplica también a
+  // invitados (pueden leer 2 capítulos desde la landing/tienda).
+  useEffect(() => {
+    if (!authReady || inLector) return
+    const prefetch = () => {
+      if (lectorEsMobile) import('./components/mobile/LectorMobile.jsx')
+      else import('./components/Lector.jsx')
+    }
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(prefetch, { timeout: 4000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const t = setTimeout(prefetch, 1500)
+    return () => clearTimeout(t)
+  }, [authReady, lectorEsMobile, inLector])
+
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     setUser(null)

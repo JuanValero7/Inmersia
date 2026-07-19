@@ -1,11 +1,19 @@
 // Formato: Plain JavaScript (.jsx)
-// Tablero de Datos: al 0% los libros cubren todo; al avanzar se retiran al azar
-// y revelan la imagen de fondo (imageUrl). Sólo el lienzo.
+// Tablero de Datos/Resumen: los libros cubren la placa de estadísticas de
+// lectura y se retiran al azar a medida que el usuario se acerca al final.
 import { useMemo } from 'react'
 import { rng } from './carteleraHelpers.js'
+import Placa from '../album/Placa.jsx'
+import '../../styles/album.css'
 
 const BOARD_W = 700, BOARD_H = 860
 const COLS = 6, ROWS = 8
+
+// Las stats (useReadingStats) solo se cargan a partir de este avance — ver
+// STATS_FROM_PCT en useCartelera.js. El retiro de libros se remapea al mismo
+// tramo para que no quede un lienzo vacío entre medio (libros ya idos, placa
+// todavía sin datos): antes del umbral no se retira ningún libro.
+const REVEAL_FROM_PCT = 90
 
 const COVERS = [
   '#df9c63', '#d4866f', '#e4bd6e', '#c97a47', '#b96440', '#e0a878',
@@ -60,15 +68,16 @@ function Book({ b, visible }) {
   )
 }
 
-export default function TableroDatos({ pct = 0, scale = 1, imageUrl, onOpenList }) {
+export default function TableroDatos({ pct = 0, scale = 1, stats, onOpenList }) {
   const { books, remRank } = useMemo(buildBooks, [])
   const total = books.length
-  const removed = Math.round(Math.max(0, Math.min(100, pct)) / 100 * total)
+  const revealPct = pct > REVEAL_FROM_PCT ? (pct - REVEAL_FROM_PCT) / (100 - REVEAL_FROM_PCT) * 100 : 0
+  const removed = Math.round(Math.max(0, Math.min(100, revealPct)) / 100 * total)
   return (
     <div className="cart-canvas cart-well" style={{ width: BOARD_W, height: BOARD_H, transform: `scale(${scale})`, cursor: onOpenList ? 'pointer' : 'default' }}
       onClick={onOpenList} title={onOpenList ? 'Ver la lista' : undefined}>
-      <div className="cart-foto" style={{ zIndex: 1 }}>
-        {imageUrl ? <img src={imageUrl} alt="" /> : <div className="cart-foto-empty" />}
+      <div className="cart-foto cart-foto-placa" style={{ zIndex: 1 }}>
+        {stats ? <Placa pct={pct} leido={pct >= 100} stats={stats} /> : <div className="cart-foto-empty" />}
       </div>
       {books.map((b, i) => <Book key={i} b={b} visible={remRank[i] >= removed} />)}
     </div>

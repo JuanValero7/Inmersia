@@ -1,9 +1,11 @@
 // Maneja la ruta /libro/:slug para usuarios autenticados y para invitados.
-// Usuarios: usa el currentBook ya cargado en App (evita un fetch extra).
-// Invitados: fetcha el libro por slug desde `libros` (tabla pública) y
-//            renderiza el Lector en modo guest (máx. 2 capítulos por RLS).
+// Si el currentBook de App corresponde al slug del URL se usa directamente
+// (evita un fetch extra); si no —refresh de página, enlace directo o libro
+// distinto— se fetchea desde `libros` por slug. Para usuarios se embebe
+// bibliotecas_usuarios(leido); invitados leen en modo guest (máx. 2 capítulos
+// por RLS).
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Navigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 
 const LoadingScreen = (
@@ -19,37 +21,43 @@ function mapLibro(data) {
     title: data.titulo, author: data.autor || 'Desconocido',
     pages: data.paginas || 200, _baseColor: data.color || '#cf8a6e',
     summary: data.descripcion || '', cover: data.portada_url || null,
-    es_ficcion: data.es_ficcion ?? true, leido: false,
+    es_ficcion: data.es_ficcion ?? true,
+    leido: data.bibliotecas_usuarios?.[0]?.leido ?? false,
   }
 }
 
 export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, gatoColor, lectorStartNotebook, setLectorStartNotebook, setCartelaJumpId, setForoSource, setCarteleraSource }) {
   const { slug } = useParams()
   const navigate = useNavigate()
-  const [guestBook, setGuestBook] = useState(null)
-  const [guestLoading, setGuestLoading] = useState(!user)
+  const isAuthed = !!user
+  // Los libros navegan por slug o, si no tienen, por id (ver handleOpenBook).
+  const matches = !!currentBook?.libro_id && (currentBook.slug === slug || currentBook.id === slug)
+  const [fetchedBook, setFetchedBook] = useState(null)
+  const [loading, setLoading] = useState(!matches)
 
   useEffect(() => {
-    if (user) { setGuestLoading(false); return }
+    if (matches) { setLoading(false); return }
     let cancelled = false
-    setGuestLoading(true)
+    setLoading(true)
     supabase.from('libros')
-      .select('id, slug, titulo, autor, paginas, descripcion, color, portada_url, es_ficcion')
+      .select(
+        'id, slug, titulo, autor, paginas, descripcion, color, portada_url, es_ficcion'
+        + (isAuthed ? ', bibliotecas_usuarios(leido)' : '')
+      )
       .eq('slug', slug)
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return
-        if (!data) { navigate('/', { replace: true }); return }
-        setGuestBook(mapLibro(data))
-        setGuestLoading(false)
+        if (!data) { navigate(isAuthed ? '/biblioteca' : '/', { replace: true }); return }
+        setFetchedBook(mapLibro(data))
+        setLoading(false)
       })
     return () => { cancelled = true }
-  }, [slug, user, navigate])
+  }, [slug, isAuthed, matches, navigate])
 
-  if (guestLoading) return LoadingScreen
+  if (loading) return LoadingScreen
 
-  const book = user ? currentBook : guestBook
-  if (user && !book) return <Navigate to="/biblioteca" replace />
+  const book = matches ? currentBook : fetchedBook
   if (!book) return null
 
   return (

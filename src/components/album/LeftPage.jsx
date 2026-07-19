@@ -1,5 +1,5 @@
 import AudioPlayer from './AudioPlayer.jsx'
-import StatsPlaque from './StatsPlaque.jsx'
+import Placa from './Placa.jsx'
 import Seccion from './Seccion.jsx'
 
 // Página izquierda: placa (progreso + stats, sin portada) + banda sonora +
@@ -17,22 +17,7 @@ export default function LeftPage({ entry, onOpenBook, onGoForo, onGoInvestigacio
 
       <div className="album-topblock">
         {/* ── PLACA (sin portada) ── */}
-        <div className="album-placa album-placa--stats">
-          <span className="album-placa-corner a">✦</span><span className="album-placa-corner b">✦</span>
-          <span className="album-placa-corner c">✦</span><span className="album-placa-corner d">✦</span>
-
-          <div className="album-placa-frame">
-            <span className="album-placa-ribbon">★ Placa</span>
-            <div className="album-placa-body">
-              <p className="album-placa-edition">Inmersia · Edición de lectura</p>
-              <div className="album-placa-prog">
-                <div className="lab"><span className="k">Progreso</span><span className="v">{libro.leido ? 'Leído' : `${Math.round(pct)}%`}</span></div>
-                <div className="album-placa-track"><div className="album-placa-fill" style={{ width: `${pct}%` }} /></div>
-              </div>
-              <StatsPlaque stats={stats} />
-            </div>
-          </div>
-        </div>
+        <Placa pct={pct} leido={libro.leido} stats={stats} />
 
         {/* ── música + accesos ── */}
         <div className="album-topside">

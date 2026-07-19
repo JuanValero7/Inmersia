@@ -57,7 +57,49 @@
   border:1px solid rgba(120,96,50,.30); box-shadow:0 2px 4px rgba(74,54,34,.25);
   top:-10px; left:50%; transform:translateX(-50%) rotate(var(--tr,-6deg)); }
 
-/* ── DATOS (libros que cubren/revelan) ───────────────────────── */
+/* ── DATOS/RESUMEN (libros que cubren/revelan la placa de stats) ── */
+/* La placa (album.css, .album-placa) se estira a 700×860 con CSS puro —
+   width/height:100% del lienzo, sin transform ni medición por JS — y el
+   contenido de adentro se agranda a mano para ese tamaño. Variables propias
+   del Álbum (scopeadas ahí en .album-root) declaradas acá sin heredar el
+   layout de página completa de .album-root. */
+.cart-root .cart-foto-placa{
+  --ink:#4a3622; --ink-soft:#6b4f34; --foil:#bd9a4e; --crema:#fffdf8; --rojo:#c1453a;
+  --terra:#cf7b4c; --terra-d:#b5613a; --serif:'Playfair Display', Georgia, serif;
+  --clay:2px 2.8px 0 rgba(74,54,34,.28);
+}
+.cart-root .cart-foto-placa .album-placa{
+  width:100%; height:100%; min-width:0; max-width:none;
+  display:flex; flex-direction:column; box-sizing:border-box;
+}
+.cart-root .cart-foto-placa .album-placa-frame{ flex:1; display:flex; flex-direction:column; }
+.cart-root .cart-foto-placa .album-placa-body{
+  flex:1; display:flex; flex-direction:column; justify-content:center; padding:56px 48px;
+}
+.cart-root .cart-foto-placa .album-placa-edition{ font-size:17px; letter-spacing:.16em; margin-bottom:28px; }
+.cart-root .cart-foto-placa .album-placa-prog{ margin:8px 0 32px; }
+.cart-root .cart-foto-placa .album-placa-prog .lab{ margin-bottom:12px; }
+.cart-root .cart-foto-placa .album-placa-prog .lab .k{ font-size:16px; }
+.cart-root .cart-foto-placa .album-placa-prog .lab .v{ font-size:26px; }
+.cart-root .cart-foto-placa .album-placa-track{ height:16px; border-width:2.5px; }
+.cart-root .cart-foto-placa .album-plaque{ margin-top:20px; padding:0; }
+.cart-root .cart-foto-placa .album-plaque-title{ font-size:17px; margin-bottom:32px; }
+.cart-root .cart-foto-placa .album-plaque-title::before,
+.cart-root .cart-foto-placa .album-plaque-title::after{ width:60px; height:2px; }
+.cart-root .cart-foto-placa .album-plaque-grid{ gap:32px 48px; }
+.cart-root .cart-foto-placa .album-plaque-grid > div{ padding-bottom:16px; border-bottom-width:2px; }
+.cart-root .cart-foto-placa .album-plaque-stat-value{ font-size:52px; }
+.cart-root .cart-foto-placa .album-plaque-stat-label{ font-size:16px; margin-top:8px; }
+.cart-root .cart-foto-placa .album-placa-ribbon{ font-size:18px; padding:8px 26px 8px 20px; top:28px; }
+.cart-root .cart-foto-placa .album-placa-corner{ font-size:24px; }
+.cart-root .cart-foto-placa .album-placa-corner.a,
+.cart-root .cart-foto-placa .album-placa-corner.b{ top:26px; }
+.cart-root .cart-foto-placa .album-placa-corner.c,
+.cart-root .cart-foto-placa .album-placa-corner.d{ bottom:26px; }
+.cart-root .cart-foto-placa .album-placa-corner.a,
+.cart-root .cart-foto-placa .album-placa-corner.c{ left:26px; }
+.cart-root .cart-foto-placa .album-placa-corner.b,
+.cart-root .cart-foto-placa .album-placa-corner.d{ right:26px; }
 .cart-root .cart-well{ border-radius:12px; overflow:hidden; background:#2c365a;
   box-shadow:0 26px 54px rgba(20,18,40,.5), 0 0 0 2px rgba(20,18,40,.45); }
 .cart-root .cart-bk{ position:absolute; will-change:transform,opacity; transition:opacity .5s ease, transform .55s cubic-bezier(.22,.61,.25,1); }
@@ -254,7 +296,7 @@
 .cart-root .cap-pill{ display:inline-flex; align-items:center; gap:6px; margin-top:14px; font-size:12.5px; font-weight:800; color:#fffaf2; background:var(--sec); border:2px solid var(--ink); border-radius:999px; padding:4px 12px; box-shadow:1.4px 1.8px 0 #4a362226; }
 .cart-root .polaroid{ flex:0 0 auto; background:var(--cream); padding:11px 11px 30px; border-radius:3px; box-shadow:0 10px 22px rgba(74,54,34,.26), inset 0 0 0 1px rgba(74,54,34,.08); transform:rotate(2.4deg); position:relative; }
 .cart-root .polaroid .tape{ position:absolute; top:-12px; left:50%; transform:translateX(-50%) rotate(-5deg); width:78px; height:24px; background:rgba(222,205,160,.7); border:1px solid rgba(120,96,50,.3); box-shadow:0 2px 5px rgba(74,54,34,.22); }
-.cart-root .pol-img{ display:block; width:210px; height:210px; object-fit:cover; }
+.cart-root .pol-img{ display:block; width:210px; height:210px; object-fit:cover; object-position:50% 20%; }
 .cart-root .pol-empty{ display:grid; place-items:center; width:210px; height:210px; font-size:64px; font-weight:800; color:#fff; background:var(--sec); }
 .cart-root .polaroid .pcap{ position:absolute; left:0; right:0; bottom:7px; text-align:center; font-size:14px; font-weight:700; color:#8a7355; }
 .cart-root .fic-rule{ height:16px; margin:22px 0 4px; color:var(--sec); opacity:.9; }

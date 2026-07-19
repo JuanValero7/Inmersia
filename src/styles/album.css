@@ -123,7 +123,7 @@
   border-radius: 5px; pointer-events: none; z-index: 4;
 }
 .album-placa-art { position: relative; aspect-ratio: 2/3; background: var(--tinta); overflow: hidden; }
-.album-placa-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.album-placa-art img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; display: block; }
 .album-placa-art .vig { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 52%, rgba(36,22,10,.5)); }
 .album-placa-ph {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -252,7 +252,7 @@
 .album-barajita.hero { grid-column: span 2; grid-row: span 2; }
 .album-barajita:hover { transform: translateY(-3px); box-shadow: 3px 6px 0 rgba(74,54,34,.22); }
 .album-barajita-img { position: absolute; inset: 0; }
-.album-barajita-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.album-barajita-img img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; display: block; }
 .album-barajita .vig {
   position: absolute; inset: 0; z-index: 2;
   background: radial-gradient(120% 80% at 30% 12%, rgba(255,255,255,.14), transparent 50%),
@@ -281,7 +281,7 @@
 }
 .album-tab:hover { transform: translateY(-2px); box-shadow: 3px 5px 0 rgba(74,54,34,.24); opacity: .92; }
 .album-tab.active { opacity: 1; box-shadow: 0 0 0 3px var(--terra), var(--clay); }
-.album-tab img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.album-tab img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; display: block; }
 .album-tab-placeholder { width: 100%; height: 100%; display: grid; place-items: center; padding: 4px; }
 .album-tab-placeholder span { font-family: var(--serif); font-weight: 700; font-size: 9px; color: rgba(255,255,255,.9); text-align: center; line-height: 1.15; }
 
@@ -351,14 +351,6 @@
 .album-placeholder-fill span { font-family: var(--serif); font-weight: 700; font-size: 26px; color: rgba(255,250,242,.9); }
 .album-barajita.hero .album-placeholder-fill span { font-size: 40px; }
 
-/* etiqueta + botón de video (primera casilla) */
-.album-barajita .vtag { position: absolute; top: 8px; right: 8px; z-index: 5; display: flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fffaf2; background: rgba(40,26,12,.55); border: 1.5px solid rgba(255,250,242,.4); border-radius: 999px; padding: 2px 8px; }
-.album-barajita .vtag i { width: 6px; height: 6px; border-radius: 50%; background: #7be0a0; }
-.album-barajita .vplay { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; }
-.album-barajita .vplay span { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,253,248,.92); border: 2.5px solid var(--ink); color: var(--ink); box-shadow: 2px 2.6px 0 rgba(74,54,34,.35); transition: transform .16s ease; }
-.album-barajita.card:hover .vplay span { transform: scale(1.08); }
-.album-barajita.hero .vplay span { width: 58px; height: 58px; }
-
 /* ── casilla desbloqueada sin pegar todavía ("lista para pegar") ── */
 .album-barajita.pending {
   background: repeating-linear-gradient(135deg, #fdf3e2 0 10px, #f8ecd2 10px 20px);
@@ -394,7 +386,7 @@
   border: 2px solid var(--ink); background: var(--c, var(--terra));
   display: grid; place-items: center; box-shadow: 1px 1.3px 0 rgba(74,54,34,.28);
 }
-.album-bandeja-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.album-bandeja-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; display: block; }
 .album-bandeja-thumb .ph { font-family: var(--serif); font-weight: 700; font-size: 17px; color: var(--crema); }
 .album-bandeja-meta { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .album-bandeja-meta .sec { font-size: 9.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }

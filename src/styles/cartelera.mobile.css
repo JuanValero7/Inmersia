@@ -133,7 +133,7 @@
   width:46px; height:17px; background:rgba(222,205,160,.8); border:1px solid rgba(120,96,50,.3);
   box-shadow:0 2px 4px rgba(74,54,34,.22);
 }
-.cm-root .cm-pol-pic{ display:block; width:100%; aspect-ratio:1/1; object-fit:cover; border:1.5px solid rgba(74,54,34,0.5); background:#e7decb; }
+.cm-root .cm-pol-pic{ display:block; width:100%; aspect-ratio:1/1; object-fit:cover; object-position:50% 20%; border:1.5px solid rgba(74,54,34,0.5); background:#e7decb; }
 .cm-root .cm-pol-empty{ display:flex; align-items:center; justify-content:center; width:100%; aspect-ratio:1/1;
   border:1.5px solid rgba(74,54,34,0.5); background:#efe7d4; font-size:42px; font-weight:800; color:rgba(74,54,34,.5); }
 .cm-root .cm-pol-cap{ height:30px; display:flex; align-items:center; justify-content:center; font-size:11.5px;

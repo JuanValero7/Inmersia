@@ -1,13 +1,9 @@
-// Una barajita: la primera de cada sección es "hero" (2×2) y lleva el video.
-// Si está desbloqueada y pegada muestra su imagen; si está desbloqueada pero
-// sin pegar, un slot "lista para pegar" clickeable; si no, un slot vacío.
+// Una barajita: la primera de cada sección es "hero" (2×2), la imagen principal
+// del tablero (cartelera_principal). Si está desbloqueada y pegada muestra su
+// imagen; si está desbloqueada pero sin pegar, un slot "lista para pegar"
+// clickeable; si no, un slot vacío.
 import { useState } from 'react'
 
-const PlayIcon = ({ big }) => (
-  <svg width={big ? 22 : 18} height={big ? 22 : 18} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M7 5.5v13a1 1 0 001.5.87l11-6.5a1 1 0 000-1.74l-11-6.5A1 1 0 007 5.5z" />
-  </svg>
-)
 const SlotIcon = () => (
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 15l4-4 3 3 4-5 7 7" /><circle cx="8.5" cy="9" r="1.4" />
@@ -27,7 +23,6 @@ const GhostIcon = () => (
 export default function Barajita({ item, color, idx, onPegar }) {
   const [pegando, setPegando] = useState(false)
   const hero  = idx === 0
-  const video = idx === 0
   const num   = String(idx + 1).padStart(2, '0')
   const heroCls = hero ? ' hero' : ''
 
@@ -38,7 +33,7 @@ export default function Barajita({ item, color, idx, onPegar }) {
         <div className="eghost"><GhostIcon /></div>
         <div className="eslot">
           <SlotIcon />
-          <span>{video ? 'Video · pega tu barajita' : 'Pega tu barajita'}</span>
+          <span>Pega tu barajita</span>
         </div>
       </div>
     )
@@ -71,12 +66,6 @@ export default function Barajita({ item, color, idx, onPegar }) {
       <div className="vig" />
       <div className="foil" />
       <div className="cbadge">{num}</div>
-      {video && (
-        <>
-          <div className="vtag"><i />video</div>
-          <div className="vplay"><span><PlayIcon big={hero} /></span></div>
-        </>
-      )}
       {item.name && <p className="album-barajita-caption">{item.name}</p>}
     </div>
   )

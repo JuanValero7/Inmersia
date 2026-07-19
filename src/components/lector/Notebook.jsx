@@ -32,6 +32,21 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
     if (userId && libroId) loadIndex()
   }, [isOpen, libroId, capituloNum, userId])
 
+  // Flecha ► = "Guardar y continuar", igual que el botón del footer
+  // (se ignora si el usuario está escribiendo en el textarea).
+  useEffect(() => {
+    if (!isOpen) return
+    function handleKeyDown(e) {
+      if (e.key !== 'ArrowRight') return
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      e.preventDefault()
+      handleClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, drafts, userId, libroId])
+
   async function loadIndex() {
     const [predList, anotList, subRes] = await Promise.all([
       supabase.from('predicciones_usuario').select('capitulo_num').eq('user_id', userId).eq('libro_id', libroId),

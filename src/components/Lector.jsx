@@ -147,7 +147,15 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     if (!parrafos?.length || !currentChapter) { setCurrentPaginas([[]]); return }
     let cancelled = false
     ;(async () => {
-      await document.fonts.ready
+      // Esperar solo las caras que la paginación mide (lectura normal/itálica y
+      // Playfair del encabezado), no document.fonts.ready, que bloqueaba hasta
+      // cargar TODAS las fuentes de la página (~16 variantes de Google Fonts).
+      await Promise.all([
+        document.fonts.load(`${fontSize}px ${readingFont}`),
+        document.fonts.load(`italic ${fontSize}px ${readingFont}`),
+        document.fonts.load(`${Math.round(fontSize * 0.6)}px 'Playfair Display'`),
+        document.fonts.load(`700 ${Math.round(fontSize * 1.7)}px 'Playfair Display'`),
+      ]).catch(() => {})
       if (cancelled) return
       const pages = paginarParrafosDesktopDOM(parrafos, {
         pageW:       geom.pageW,
@@ -162,9 +170,15 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   }, [currentChapData?.parrafos, currentChapter?.id, chapterIndex, fontSize, readingFont, geom.pageW, geom.pageH])
 
   // Restaurar posición de lectura guardada una vez que currentPaginas está lista.
+  // El id guardado es el PRIMER párrafo visible de la página donde quedó el
+  // usuario; como el paginador divide párrafos conservando el id, ese id suele
+  // existir también en la página anterior (donde el párrafo empieza). Buscar
+  // por primer ítem reproduce la página exacta; el fallback por contenido
+  // cubre paginaciones distintas (cambio de fuente/tamaño/ventana).
   useEffect(() => {
     if (!pendingRestore) return
-    const idx = currentPaginas.findIndex(pg => pg.some(p => p.id === pendingRestore))
+    let idx = currentPaginas.findIndex(pg => pg[0]?.id === pendingRestore)
+    if (idx < 0) idx = currentPaginas.findIndex(pg => pg.some(p => p.id === pendingRestore))
     if (idx < 0) return
     setPageIndex(doubleView ? idx - (idx % 2) : idx)
     setPendingRestore(null)
@@ -253,9 +267,10 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     for (const p of currentChapData.parrafos) {
       const pgIdx = parrToPage[p.id]
       if (pgIdx === undefined || pgIdx > lastVisiblePage) continue
+      const lado = !doubleView ? 'centro' : pgIdx === pageIndex ? 'izq' : pgIdx === pageIndex + 1 ? 'der' : 'centro'
       for (const m of (currentChapData.mediaByParrafo[p.id] || [])) {
         if (m.tipo === 'imagen' && m.origen === 'explicito' && !seen.has(m.media_id)) {
-          seen.add(m.media_id); imgs.push(m)
+          seen.add(m.media_id); imgs.push({ ...m, _lado: lado })
         }
       }
     }
@@ -273,7 +288,10 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     }
   }, [doubleView, pageIndex, chapterIndex])
 
+  const polaroidRef = useRef(null)
+
   const handleNextPage = useCallback(() => {
+    if (polaroidRef.current?.interceptForward()) return
     const step = doubleView ? 2 : 1
     const next = pageIndex + step
     if (next < currentPaginas.length) {
@@ -283,6 +301,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     }
   }, [doubleView, pageIndex, currentPaginas.length, guestMode, chapterIndex, capitulos.length])
   const handleNextChapter = useCallback(() => {
+    if (polaroidRef.current?.interceptForward()) return
     const next = chapterIndex + 1
     if (next >= capitulos.length) {
       if (guestMode) setShowPaywall(true)
@@ -489,10 +508,10 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
           )}
         </div>
 
-        {/* polaroids: siempre detrás del libro */}
+        {/* polaroids: detrás del libro; la recién revelada se destaca por encima (ver PolaroidStack) */}
         {!loading && !error && book?.libro_id && (
           <div style={{ position: 'absolute', top: '50%', left: `calc(50% + ${halfBook}px)`, transform: 'translateY(-50%) translateX(-110px)', zIndex: 1 }}>
-            <PolaroidStack images={visibleImages} esNoficcion={esNoficcion} />
+            <PolaroidStack ref={polaroidRef} images={visibleImages} esNoficcion={esNoficcion} />
           </div>
         )}
       </div>

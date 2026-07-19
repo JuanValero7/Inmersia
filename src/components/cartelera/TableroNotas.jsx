@@ -86,14 +86,14 @@ const ALL_NOTAS = (() => {
   return out
 })()
 
-function Miniatura({ e, pct, imageUrl, onClick, tableros }) {
+function Miniatura({ e, pct, imageUrl, stats, onClick, tableros }) {
   const Tablero = tableros[e.key]
   return (
     <div className="cart-embed" style={{ left: e.cx, top: e.cy, transform: `translate(-50%,-50%) rotate(${e.rot}deg)` }}>
       <button type="button" className="embox" onClick={onClick} aria-label={`Abrir ${e.label}`}>
         <span className="tape" />
         <div className="embox-clip" style={{ width: MINI_W, height: MINI_H }}>
-          <Tablero pct={pct} scale={MINI_SCALE} imageUrl={imageUrl} />
+          <Tablero pct={pct} scale={MINI_SCALE} imageUrl={imageUrl} stats={stats} />
         </div>
         <div className="veil" />
         <div className="lab">{e.label}</div>
@@ -130,7 +130,7 @@ function FlatsheetContent({ items }) {
   )
 }
 
-export default function TableroNotas({ pct = 0, scale = 1, principal = {}, onOpenSection, esNoficcion = false, notasItems = [], onOpenNotas }) {
+export default function TableroNotas({ pct = 0, scale = 1, principal = {}, stats, onOpenSection, esNoficcion = false, notasItems = [], onOpenNotas }) {
   const embeds   = esNoficcion ? EMBEDS_NOFICCION : EMBEDS_FICCION
   const tableros = esNoficcion ? TABLEROS_NOFICCION : TABLEROS_FICCION
   const visibleCount = Math.round(Math.max(0, Math.min(100, pct)) / 100 * TOTAL_NOTES)
@@ -187,7 +187,7 @@ export default function TableroNotas({ pct = 0, scale = 1, principal = {}, onOpe
 
       {/* miniaturas en vivo */}
       {embeds.map(e => (
-        <Miniatura key={e.key} e={e} pct={pct} imageUrl={principal[e.key]?.url}
+        <Miniatura key={e.key} e={e} pct={pct} imageUrl={principal[e.key]?.url} stats={stats}
           tableros={tableros}
           onClick={() => onOpenSection && onOpenSection(e.key)} />
       ))}

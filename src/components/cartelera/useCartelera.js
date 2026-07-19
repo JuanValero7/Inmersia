@@ -10,6 +10,12 @@
 //   - cartelera_items / predicciones: se filtran en servidor con capitulo < capActual.
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase.js'
+import { useReadingStats } from '../../hooks/useReadingStats.js'
+
+// A partir de qué avance se cargan las estadísticas de lectura para la placa
+// del tablero "Datos"/"Resumen" (ver TableroDatos.jsx). Recién cerca del final
+// del libro tiene sentido pagar esas dos queries extra (sesiones + notas).
+const STATS_FROM_PCT = 90
 
 export function useCartelera(libroId, userId, isSuperuser = false) {
   const [loading, setLoading]       = useState(true)
@@ -17,6 +23,7 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
   const [porcentaje, setPorcentaje] = useState(0)
   const [itemsBySeccion, setItems]  = useState({})
   const [principal, setPrincipal]   = useState({})
+  const stats = useReadingStats(libroId, userId, porcentaje > STATS_FROM_PCT)
 
   useEffect(() => {
     let cancelled = false
@@ -136,5 +143,5 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
     return () => { cancelled = true }
   }, [libroId, userId, isSuperuser])
 
-  return { loading, capituloActual, porcentaje, itemsBySeccion, principal }
+  return { loading, capituloActual, porcentaje, itemsBySeccion, principal, stats }
 }

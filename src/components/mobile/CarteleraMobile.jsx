@@ -252,10 +252,10 @@ function SectionView({ sectionKey, data, onGoBack, onJump, onExplore, initialIte
         <div className="cm-board-area" ref={boardRef} onClick={isNotas ? undefined : openLista}>
           <div className="cart-canvas-box" style={{ width: BOARD_W * scale, height: BOARD_H * scale }}>
             {isNotas
-              ? <TableroNotas pct={data.porcentaje} scale={scale} principal={data.principal} onOpenSection={onJump} esNoficcion={esNoficcion}
+              ? <TableroNotas pct={data.porcentaje} scale={scale} principal={data.principal} stats={data.stats} onOpenSection={onJump} esNoficcion={esNoficcion}
                   notasItems={items} onOpenNotas={openLista} />
               : <Tablero pct={data.porcentaje} scale={scale} imageUrl={data.principal[sectionKey]?.url}
-                  videoUrl={data.principal[sectionKey]?.videoUrl} />}
+                  videoUrl={data.principal[sectionKey]?.videoUrl} stats={data.stats} />}
           </div>
         </div>
       )}

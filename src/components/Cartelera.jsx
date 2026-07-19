@@ -78,11 +78,11 @@ function BoardView({ sectionKey, data, onOpenList, onOpenSection, onGoBack, onGo
       <div className="stage" ref={stageRef}>
         <div className="cart-canvas-box" style={{ width: BOARD_W * scale, height: BOARD_H * scale }}>
           {sectionKey === 'notas'
-            ? <TableroNotas pct={data.porcentaje} scale={scale} principal={data.principal}
+            ? <TableroNotas pct={data.porcentaje} scale={scale} principal={data.principal} stats={data.stats}
                 onOpenSection={onOpenSection} esNoficcion={esNoficcion}
                 notasItems={data.itemsBySeccion.notas || []} onOpenNotas={() => onOpenList('notas')} />
             : <Tablero pct={data.porcentaje} scale={scale} imageUrl={data.principal[sectionKey]?.url}
-                videoUrl={data.principal[sectionKey]?.videoUrl}
+                videoUrl={data.principal[sectionKey]?.videoUrl} stats={data.stats}
                 onOpenList={() => onOpenList(sectionKey)} />}
         </div>
       </div>
