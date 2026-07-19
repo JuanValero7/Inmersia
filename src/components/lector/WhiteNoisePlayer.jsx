@@ -1,9 +1,12 @@
 // Panel de ruido ambiental para libros de no ficción.
 // Reemplaza RecorderPlayer cuando book.es_ficcion === false.
 // Estética clay idéntica al resto del lector.
+// UI pura: el estado de audio (useWhiteNoise) vive en Lector.jsx y llega por
+// `noise`, para que el sonido sobreviva a cierres del popup y remontajes de
+// BookReader (cambio de capítulo no cacheado).
 import { memo } from 'react'
 import { theme } from './clay.jsx'
-import { useWhiteNoise, TIPOS_RUIDO, AMBIENCIAS } from '../../hooks/useWhiteNoise.js'
+import { TIPOS_RUIDO, AMBIENCIAS } from '../../hooks/useWhiteNoise.js'
 
 const s = {
   panel: {
@@ -42,8 +45,8 @@ const s = {
   divider: { height: 1, background: `${theme.ink}18`, margin: '10px 0' },
 }
 
-const WhiteNoisePlayer = memo(function WhiteNoisePlayer({ onClose }) {
-  const { tipo, setTipo, volNoise, setVolNoise, ambiente, setAmbiente, volAmb, setVolAmb } = useWhiteNoise()
+const WhiteNoisePlayer = memo(function WhiteNoisePlayer({ noise, onClose }) {
+  const { tipo, setTipo, volNoise, setVolNoise, ambiente, setAmbiente, volAmb, setVolAmb } = noise
 
   return (
     <div style={s.panel}>

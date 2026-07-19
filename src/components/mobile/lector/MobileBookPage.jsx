@@ -3,7 +3,7 @@ import { findPrefixAtEnd, findSuffixAtStart } from '../../../utils/readerHelpers
 const LINE = 1.72  // alto de línea (coincide con .lm-para en el CSS)
 
 export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaByParrafo, isFirst, pageNum, fontSize, font,
-                    atStart, nextIsChapter, onPrev, onNext, onPlaySfx }) {
+                    atStart, nextIsChapter, onPrev, onNext, hideArrows, onPlaySfx }) {
   const lineH = Math.round(fontSize * LINE)
 
   return (
@@ -69,12 +69,16 @@ export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaB
         })}
       </div>
       <div className="lm-pagenum">{pageNum}</div>
-      <div className={'lm-turn left' + (atStart?' disabled':'')} onClick={atStart?undefined:onPrev}>
-        <span>‹</span><div className="corner" />
-      </div>
-      <div className={'lm-turn right' + (onNext?'':' disabled') + (nextIsChapter?' next-chapter':'')} onClick={onNext || undefined}>
-        <span>{nextIsChapter ? '✦' : '›'}</span><div className="corner" />
-      </div>
+      {!hideArrows && (
+        <>
+          <div className={'lm-turn left' + (atStart?' disabled':'')} onClick={atStart?undefined:onPrev}>
+            <span>‹</span><div className="corner" />
+          </div>
+          <div className={'lm-turn right' + (onNext?'':' disabled') + (nextIsChapter?' next-chapter':'')} onClick={onNext || undefined}>
+            <span>{nextIsChapter ? '✦' : '›'}</span><div className="corner" />
+          </div>
+        </>
+      )}
     </div>
   )
 }

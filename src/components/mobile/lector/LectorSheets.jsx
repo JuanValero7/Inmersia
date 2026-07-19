@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ACCENT, INK } from '../../lector/clay.jsx'
 import { READING_FONTS } from '../../lector/readerConstants.js'
-import { useWhiteNoise, TIPOS_RUIDO, AMBIENCIAS } from '../../../hooks/useWhiteNoise.js'
+import { TIPOS_RUIDO, AMBIENCIAS } from '../../../hooks/useWhiteNoise.js'
 
 const IcClose = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
@@ -110,8 +110,10 @@ export function TypoSheet({ fontSize, onFontSize, readingFont, onReadingFont, re
   )
 }
 
-export function WhiteNoiseSheet({ onClose }) {
-  const { tipo, setTipo, volNoise, setVolNoise, ambiente, setAmbiente, volAmb, setVolAmb } = useWhiteNoise()
+// UI pura: el estado de audio (useWhiteNoise) vive en LectorMobile y llega por
+// `noise` — si el hook viviera aquí, cerrar el sheet desmontaría el audio.
+export function WhiteNoiseSheet({ noise, onClose }) {
+  const { tipo, setTipo, volNoise, setVolNoise, ambiente, setAmbiente, volAmb, setVolAmb } = noise
   const pill = (active) => ({
     fontSize: 12, fontWeight: 700, padding: '5px 13px', borderRadius: 999,
     border: `1.5px solid ${active ? ACCENT : `${INK}44`}`,

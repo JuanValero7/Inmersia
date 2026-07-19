@@ -102,22 +102,28 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
             .eq('libro_id', book.libro_id).order('numero'),
           userId
             ? supabase.from('progreso_lectura')
-                .select('ultimo_parrafo_id, parrafos!ultimo_parrafo_id(capitulo_id)')
+                .select('ultimo_parrafo_id, ultimo_parrafo_offset, parrafos!ultimo_parrafo_id(capitulo_id)')
                 .eq('user_id', userId).eq('libro_id', book.libro_id).maybeSingle()
             : Promise.resolve({ data: null }),
         ])
         if (e) throw e
         if (!caps || caps.length === 0) throw new Error('Este libro no tiene capítulos cargados.')
 
-        let startChapter = 0, pendingParrafo = null
+        // pendingRestore = { parrafoId, offset }: el offset (caracteres dentro
+        // del párrafo) afina la restauración cuando el párrafo es largo y está
+        // dividido en varias páginas (ver paginaDeAnclaje en readerHelpers).
+        let startChapter = 0, pendingAnchor = null
         if (prog?.ultimo_parrafo_id && prog?.parrafos?.capitulo_id) {
           const idx = caps.findIndex(c => c.id === prog.parrafos.capitulo_id)
-          if (idx >= 0) { startChapter = idx; pendingParrafo = prog.ultimo_parrafo_id }
+          if (idx >= 0) {
+            startChapter = idx
+            pendingAnchor = { parrafoId: prog.ultimo_parrafo_id, offset: prog.ultimo_parrafo_offset || 0 }
+          }
         }
         if (cancelled) return
         setCapitulos(caps); setChapterIndex(startChapter); setPageIndex(0)
-        setPendingRestore(pendingParrafo)
-        if (!pendingParrafo) restoredRef.current = true
+        setPendingRestore(pendingAnchor)
+        if (!pendingAnchor) restoredRef.current = true
       } catch (err) {
         if (!cancelled) setError(err.message || String(err))
       } finally {

@@ -293,6 +293,7 @@ export const BookReader = memo(function BookReader({
   pageW = 470, pageH = 560, fontSize = 18, readingFont = "'Crimson Text', Georgia, serif",
   xrayOpen = false, xrayItems = [], onToggleXray, onXrayItemClick,
   ambient = null, ledColor = 'none', onLedColor = null, esNoficcion = false,
+  whiteNoise = null,
 }) {
   const [soundOpen, setSoundOpen] = useState(false)
   const soundRef = useRef(null)
@@ -342,7 +343,7 @@ export const BookReader = memo(function BookReader({
             </button>
             <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 200, display: soundOpen ? 'block' : 'none' }}>
               {esNoficcion
-                ? <WhiteNoisePlayer onClose={() => setSoundOpen(false)} />
+                ? <WhiteNoisePlayer noise={whiteNoise} onClose={() => setSoundOpen(false)} />
                 : <RecorderPlayer ambient={ambient} onClose={() => setSoundOpen(false)} />
               }
             </div>

@@ -98,6 +98,16 @@
 .auth-input::placeholder { color: rgba(74,54,34,0.4); font-weight: 600; }
 .auth-input:focus { box-shadow: 0 0 0 3px rgba(207,123,76,0.28); }
 
+.password-input-wrap { position: relative; }
+.password-input-wrap .auth-input { padding-right: 40px; }
+.password-toggle {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; padding: 0; cursor: pointer;
+  color: rgba(74,54,34,0.55); border-radius: 8px;
+}
+.password-toggle:hover { color: #4a3622; }
+
 /* ── Botón primario (clay) ── */
 .btn-stamp {
   width: 100%; padding: 13px 16px; margin-top: 6px;

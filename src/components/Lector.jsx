@@ -7,11 +7,13 @@ import { supabase } from '../lib/supabase.js'
 import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
 import useLocalStorage from '../hooks/useLocalStorage.js'
 import { useLectorData } from '../hooks/useLectorData.js'
+import { useWhiteNoise } from '../hooks/useWhiteNoise.js'
 import { useXrayItems } from '../hooks/useXrayItems.js'
 import { useSesionLectura } from '../hooks/useSesionLectura.js'
 import '../styles/lector.css'
 
 import { paginarParrafosDesktopDOM } from '../utils/lectorPagination.js'
+import { offsetDeAnclaje, paginaDeAnclaje } from '../utils/readerHelpers.js'
 import { BookReader }      from './lector/BookReader.jsx'
 import { PolaroidStack }   from './lector/PolaroidStack.jsx'
 import { NotebookIcon } from './lector/RecorderPlayer.jsx'
@@ -78,6 +80,11 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
   useSesionLectura(userId, book, guestMode)
   const invalidateBiblioteca = useInvalidateBibliotecaUsuario(userId)
+
+  // Ruido ambiental (no ficción): el hook vive aquí —no dentro del popup ni de
+  // BookReader— para que el sonido siga mientras el lector esté montado y solo
+  // pare al salir o al apagarlo en el panel. Inerte hasta que el usuario lo activa.
+  const whiteNoise = useWhiteNoise()
 
   useEffect(() => {
     if (startWithNotebook) {
@@ -170,15 +177,13 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   }, [currentChapData?.parrafos, currentChapter?.id, chapterIndex, fontSize, readingFont, geom.pageW, geom.pageH])
 
   // Restaurar posición de lectura guardada una vez que currentPaginas está lista.
-  // El id guardado es el PRIMER párrafo visible de la página donde quedó el
-  // usuario; como el paginador divide párrafos conservando el id, ese id suele
-  // existir también en la página anterior (donde el párrafo empieza). Buscar
-  // por primer ítem reproduce la página exacta; el fallback por contenido
-  // cubre paginaciones distintas (cambio de fuente/tamaño/ventana).
+  // El ancla es { parrafoId, offset }: el primer párrafo visible de la página
+  // donde quedó el usuario y en qué carácter del párrafo empieza su fragmento.
+  // paginaDeAnclaje localiza la página que cubre ese punto del texto, válido
+  // aunque la paginación difiera (otro dispositivo, fuente o tamaño).
   useEffect(() => {
     if (!pendingRestore) return
-    let idx = currentPaginas.findIndex(pg => pg[0]?.id === pendingRestore)
-    if (idx < 0) idx = currentPaginas.findIndex(pg => pg.some(p => p.id === pendingRestore))
+    const idx = paginaDeAnclaje(currentPaginas, pendingRestore.parrafoId, pendingRestore.offset)
     if (idx < 0) return
     setPageIndex(doubleView ? idx - (idx % 2) : idx)
     setPendingRestore(null)
@@ -211,7 +216,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     const t = setTimeout(() => {
       supabase.from('progreso_lectura').upsert({
         user_id: userId, libro_id: book.libro_id,
-        ultimo_parrafo_id: firstParr.id, updated_at: new Date().toISOString(),
+        ultimo_parrafo_id: firstParr.id,
+        ultimo_parrafo_offset: offsetDeAnclaje(currentPaginas, pageIndex, firstParr.id),
+        updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,libro_id' }).then(({ error }) => { if (error) console.error('No se pudo guardar el progreso de lectura:', error) })
     }, 600)
     return () => clearTimeout(t)
@@ -504,6 +511,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   ledColor={ledColor}
                   onLedColor={setLedColor}
                   esNoficcion={esNoficcion}
+                  whiteNoise={whiteNoise}
                 />
           )}
         </div>

@@ -29,10 +29,12 @@ import { useLectorData } from '../../hooks/useLectorData.js'
 import { useXrayItems } from '../../hooks/useXrayItems.js'
 import { useSesionLectura } from '../../hooks/useSesionLectura.js'
 import { paginarParrafosMobileDOM } from '../../utils/lectorPaginationMobile.js'
+import { offsetDeAnclaje, paginaDeAnclaje } from '../../utils/readerHelpers.js'
 import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTILIZADO (igual al de PC)
 import { INK, ACCENT } from '../lector/clay.jsx'
 import SuperuserSoundsPanel from '../lector/SuperuserSoundsPanel.jsx'
 import { useAmbientPlayer } from '../../hooks/useAmbientPlayer.js'
+import { useWhiteNoise } from '../../hooks/useWhiteNoise.js'
 import MobileBookPage from './lector/MobileBookPage.jsx'
 import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
 import '../../styles/lector.mobile.css'
@@ -148,7 +150,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const [resenaOpen, setResenaOpen] = useState(false)
 
   // Preferencias de lectura (compartidas con el escritorio vía localStorage)
-  const [fontSize,    setFontSize]    = useLocalStorage('inm_lector_fontSize', 19)
+  const [fontSize,    setFontSize]    = useLocalStorage('inm_lector_fontSize', 16)
   const [readingFont, setReadingFont] = useLocalStorage('inm_lector_font', READING_FONT_DEFAULT)
   const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
   const [autoImages,  setAutoImages]  = useLocalStorage('inm_auto_img', true)
@@ -197,6 +199,10 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const currentMedia    = currentChapData?.mediaByParrafo || {}
   const currentAmbient  = currentChapData?.ambient || null
   const { playing: ambientPlaying, volume: ambientVol, toggle: toggleAmbient, setVol } = useAmbientPlayer(currentAmbient?.url)
+  // Ruido ambiental (no ficción): el hook vive aquí —no dentro del sheet— para
+  // que el sonido siga al cerrar el sheet y solo pare al salir del lector o al
+  // apagarlo en el panel. Inerte hasta que el usuario lo activa.
+  const whiteNoise = useWhiteNoise()
 
   // ── Paginación a prueba de fallos (medida del DOM real) ──
   // No estimamos: paginarParrafosMobileDOM maqueta el texto en un contenedor
@@ -227,6 +233,20 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       const catTop        = catBtn.getBoundingClientRect().top
       contentH -= Math.max(0, contentBottom - catTop)
     }
+
+    // Alto ESTABLE entre aperturas: .lm-screen es fixed/inset:0, así que la
+    // caja hereda el viewport del momento — y la barra de URL móvil lo cambia
+    // (colapsada ≈ +60-100px vs visible). Cada apertura media distinto → otra
+    // paginación → los números de página bailaban. Referimos siempre al
+    // viewport pequeño (100svh = barra visible, constante) descontando el
+    // exceso cuando la barra está colapsada; si svh no está soportado, la
+    // sonda mide 0 y no se descuenta nada (comportamiento previo).
+    const probe = document.createElement('div')
+    probe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:100svh;visibility:hidden;pointer-events:none'
+    document.body.appendChild(probe)
+    const svh = probe.offsetHeight
+    document.body.removeChild(probe)
+    if (svh > 0) contentH -= Math.max(0, window.innerHeight - svh)
 
     contentH = Math.max(160, contentH)
     const lineHeight = Math.round(fontSize * LINE)
@@ -263,8 +283,11 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   // ── Paginación a prueba de fallos (maqueta el DOM real y corta donde toca) ──
   // Lee el ancho de texto real de la hoja, lo pasa a paginarParrafosMobileDOM y
   // guarda el resultado en estado. Se re-ejecuta cuando cambian capítulo, fuente
-  // o geometría, y de nuevo en document.fonts.ready (las fuentes web suelen NO
-  // estar listas en la 1ª carga; con la fuente de respaldo el alto difiere).
+  // o geometría. Antes de medir espera SOLO las caras de fuente que la medición
+  // usa (lectura normal/itálica + Playfair del encabezado): así se pagina UNA
+  // vez con métricas definitivas, en vez de paginar con la fuente de respaldo
+  // y repaginar en fonts.ready — que hacía que el número de página saltara y
+  // difiriera entre aperturas según el estado de la caché de fuentes.
   const measuredReady = paginadoChap === currentChapter?.id
 
   useEffect(() => {
@@ -294,8 +317,17 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       setPaginadoChap(chapId)
     }
 
-    paginar()
-    if (document.fonts?.ready) document.fonts.ready.then(paginar)
+    ;(async () => {
+      if (document.fonts?.load) {
+        await Promise.all([
+          document.fonts.load(`${fontSize}px ${readingFont}`),
+          document.fonts.load(`italic ${fontSize}px ${readingFont}`),
+          document.fonts.load(`${Math.round(fontSize * 0.6)}px 'Playfair Display'`),
+          document.fonts.load(`700 ${Math.round(fontSize * 1.55)}px 'Playfair Display'`),
+        ]).catch(() => {})
+      }
+      paginar()
+    })()
     return () => { cancelled = true }
   }, [currentChapData?.parrafos, currentChapter?.id, fontSize, readingFont, geom.maxH, geom.lineHeight])
 
@@ -303,13 +335,13 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   // Espera a que la paginación DEFINITIVA (medida) esté lista: con la paginación
   // transitoria los límites de página difieren y restaurábamos mal (o nos
   // rendíamos dejando al lector en la página 0 = inicio del capítulo).
-  // El id guardado es el primer párrafo visible de la página donde quedó el
-  // usuario; buscar por primer ítem evita caer en la página anterior cuando el
-  // párrafo viene dividido (ver comentario equivalente en Lector.jsx).
+  // El ancla es { parrafoId, offset }: el primer párrafo visible de la página
+  // donde quedó el usuario y en qué carácter del párrafo empieza su fragmento;
+  // paginaDeAnclaje localiza la página que cubre ese punto del texto (ver
+  // comentario equivalente en Lector.jsx).
   useEffect(() => {
     if (!pendingRestore || !currentChapData || !measuredReady) return
-    let idx = paginas.findIndex(pg => pg[0]?.id === pendingRestore)
-    if (idx < 0) idx = paginas.findIndex(pg => pg.some(p => p.id === pendingRestore))
+    const idx = paginaDeAnclaje(paginas, pendingRestore.parrafoId, pendingRestore.offset)
     if (idx >= 0) setPageIndex(idx)
     setPendingRestore(null); restoredRef.current = true
     setGoToLastPage(false)
@@ -330,8 +362,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   useEffect(() => {
     if (pendingRestore) return
     if (pageAnchorRef.current) {
-      let newIdx = paginas.findIndex(pg => pg[0]?.id === pageAnchorRef.current)
-      if (newIdx < 0) newIdx = paginas.findIndex(pg => pg.some(p => p.id === pageAnchorRef.current))
+      const newIdx = paginaDeAnclaje(paginas, pageAnchorRef.current.parrafoId, pageAnchorRef.current.offset)
       if (newIdx >= 0) { if (newIdx !== pageIndex) setPageIndex(newIdx); return }
     }
     if (pageIndex >= paginas.length) setPageIndex(Math.max(0, paginas.length - 1))
@@ -340,7 +371,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   // mantener ancla actualizada tras cada navegación del usuario
   useEffect(() => {
     const p = paginas[pageIndex]?.[0]
-    if (p) pageAnchorRef.current = p.id
+    if (p) pageAnchorRef.current = { parrafoId: p.id, offset: offsetDeAnclaje(paginas, pageIndex, p.id) }
   }, [pageIndex, paginas])
 
   // ── Guardar progreso (debounce) ──
@@ -350,7 +381,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     const t = setTimeout(() => {
       supabase.from('progreso_lectura').upsert({
         user_id: userId, libro_id: book.libro_id,
-        ultimo_parrafo_id: firstParr.id, updated_at: new Date().toISOString(),
+        ultimo_parrafo_id: firstParr.id,
+        ultimo_parrafo_offset: offsetDeAnclaje(paginas, pageIndex, firstParr.id),
+        updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,libro_id' }).then(({ error }) => { if (error) console.error('No se pudo guardar el progreso de lectura:', error) })
     }, 600)
     return () => clearTimeout(t)
@@ -501,6 +534,8 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     setSegmentos(prev => [...prev, pendingConfirm])
     setPendingConfirm(null)
     window.getSelection()?.removeAllRanges()
+    // Con las flechas ocultas durante el subrayado, este botón también hace de "siguiente página".
+    if (pageIndex < total - 1) setPageIndex(p => p + 1)
   }
   async function guardarSubrayado() {
     if (!userId || !book?.libro_id) return
@@ -574,6 +609,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
                 atStart={atStart} nextIsChapter={atChapterEnd && !atEndOfBook}
                 onPrev={handlePrev}
                 onNext={atEndOfBook && !guestMode ? undefined : handleNext}
+                hideArrows={modoSubrayado}
                 onPlaySfx={playSfx}
               />
         )}
@@ -628,7 +664,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       {sheet==='chapters' && <ChapterSheet chapters={capitulos} current={chapterIndex} onPick={pickChapter} onClose={()=>setSheet(null)} />}
       {sheet==='typo' && <TypoSheet fontSize={fontSize} onFontSize={setFontSize} readingFont={readingFont} onReadingFont={setReadingFont} readingTheme={readingTheme} onReadingTheme={setReadingTheme} onClose={()=>setSheet(null)} />}
       {sheet==='audio' && (book?.es_ficcion === false
-        ? <WhiteNoiseSheet onClose={() => setSheet(null)} />
+        ? <WhiteNoiseSheet noise={whiteNoise} onClose={() => setSheet(null)} />
         : <AudioSheet ambient={currentAmbient} playing={ambientPlaying} volume={ambientVol} onToggle={toggleAmbient} onVolume={setVol} onClose={() => setSheet(null)} />
       )}
       {sheet==='nav' && <NavSheet onGoForo={onGoForo} onGoCartelera={onGoCartelera} onGoBiblioteca={onGoBack} onClose={()=>setSheet(null)} />}

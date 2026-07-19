@@ -10,6 +10,46 @@ const GATO_NARANJA  = '/assets/tienda/gato-naranja-4.webp'
 const GATO_BLANCO   = '/assets/tienda/gato-blanco-5.webp'
 const GATO_NEGRO    = '/assets/cartelera/gato-negro-2.webp'
 
+// icono ojo (mismo trazo que el Preview de la biblioteca)
+function EyeIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+function EyeOffIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="M3 3l18 18" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function PasswordInput({ value, onChange, placeholder, autoComplete }) {
+  const [visible, setVisible] = useState(false)
+  return (
+    <div className="password-input-wrap">
+      <input
+        type={visible ? 'text' : 'password'} required className="auth-input"
+        placeholder={placeholder} autoComplete={autoComplete}
+        value={value} onChange={onChange}
+      />
+      <button
+        type="button" className="password-toggle"
+        onClick={() => setVisible(v => !v)}
+        aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        title={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+      >
+        {visible ? <EyeOffIcon /> : <EyeIcon />}
+      </button>
+    </div>
+  )
+}
+
 // ⬅︎ LANDING: `initialTab` permite abrir en 'login' o 'registro' desde la landing.
 //             `onBack` (opcional) muestra un enlace para volver a la landing.
 export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
@@ -113,7 +153,7 @@ export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
               </div>
               <div className="form-field">
                 <label className="field-label">Contraseña</label>
-                <input type="password" required className="auth-input" placeholder="••••••••" value={loginForm.password} onChange={e => setL('password', e.target.value)} />
+                <PasswordInput placeholder="••••••••" autoComplete="current-password" value={loginForm.password} onChange={e => setL('password', e.target.value)} />
               </div>
               <button type="submit" className="btn-stamp" disabled={loading}>
                 {loading
@@ -165,8 +205,8 @@ export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
                 <input type="email" required className="auth-input" placeholder="tu@correo.com" value={regForm.email} onChange={e => setR('email', e.target.value)} />
               </div>
               <div className="form-row">
-                <div><label className="field-label">Contraseña *</label><input type="password" required className="auth-input" placeholder="6+ caracteres" value={regForm.password} onChange={e => setR('password', e.target.value)} /></div>
-                <div><label className="field-label">Confirmar *</label><input type="password" required className="auth-input" placeholder="Repite" value={regForm.confirmPassword} onChange={e => setR('confirmPassword', e.target.value)} /></div>
+                <div><label className="field-label">Contraseña *</label><PasswordInput placeholder="6+ caracteres" autoComplete="new-password" value={regForm.password} onChange={e => setR('password', e.target.value)} /></div>
+                <div><label className="field-label">Confirmar *</label><PasswordInput placeholder="Repite" autoComplete="new-password" value={regForm.confirmPassword} onChange={e => setR('confirmPassword', e.target.value)} /></div>
               </div>
               <button type="submit" className="btn-stamp" disabled={loading}>
                 {loading
