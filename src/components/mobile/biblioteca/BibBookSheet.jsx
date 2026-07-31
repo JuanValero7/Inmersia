@@ -111,7 +111,7 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
       {book.summary && (
         <div>
           <div className="bibm-lbl">Resumen</div>
-          <p style={{ fontSize: 14.5, fontWeight: 500, lineHeight: 1.6, color: 'rgba(74,54,34,0.85)' }}>{book.summary}</p>
+          <p style={{ fontSize: 14.5, fontWeight: 500, lineHeight: 1.6, color: 'rgba(74,54,34,0.85)', fontFamily: "'Poppins', system-ui, sans-serif" }}>{book.summary}</p>
         </div>
       )}
 
@@ -124,7 +124,7 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
           {!modoForm && miResena && (
             <div>
               <Estrellas valor={miResena.rating} />
-              {miResena.texto && <p style={{ fontSize: 14, color: '#4a2510', marginTop: 6, lineHeight: 1.55, fontWeight: 500 }}>{miResena.texto}</p>}
+              {miResena.texto && <p style={{ fontSize: 14, color: '#4a2510', marginTop: 6, lineHeight: 1.55, fontWeight: 500, fontFamily: "'Poppins', system-ui, sans-serif" }}>{miResena.texto}</p>}
             </div>
           )}
           {!modoForm && !miResena && <p style={{ fontSize: 13.5, color: 'rgba(74,54,34,0.5)', fontStyle: 'italic', fontWeight: 600 }}>Aún no has escrito una reseña.</p>}

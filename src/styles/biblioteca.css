@@ -12,7 +12,7 @@
 }
 
 .bib-body {
-  background-color: #f6f3ec;
+  background-color: #FBF5EC;
   min-height: 100vh;
 }
 
@@ -67,7 +67,7 @@
 }
 
 .inm-bar { height: 10px; border-radius: 8px; background: rgba(74,54,34,0.15); overflow: hidden; }
-.inm-bar > div { height: 100%; border-radius: 8px; background: linear-gradient(90deg, #cf7b4c, #e0a079); }
+.inm-bar > div { height: 100%; border-radius: 8px; background: linear-gradient(90deg, #F2792A, #f59455); }
 
 /* ── Hero "Seguir leyendo" desktop: hojas de otoño (ver clay/HojasOtono.jsx) ── */
 .hero-leaf {

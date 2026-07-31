@@ -6,7 +6,7 @@
    targets táctiles y el tamaño del portal en pantallas chicas.
    ───────────────────────────────────────────────────────────── */
 
-.inm-mobile { font-size: 17px; }
+.inm-mobile { font-size: 17px; --inm-nav-h: 76px; }
 
 /* Hero apilado y centrado, portal más contenido */
 .inm-mobile .inm-hero { padding: 28px 0 36px; }
@@ -19,6 +19,7 @@
 .inm-mobile .inm-portal-scene { max-width: min(360px, 82vw); }
 
 /* La nav móvil: solo logo + botón Crear cuenta (Iniciar sesión se oculta) */
+.inm-mobile .inm-nav-in img { height: auto; width: min(210px, 52vw); }   /* limitado por ancho: comparte fila con el botón */
 .inm-mobile .inm-nav-right { gap: 12px; }
 .inm-mobile .inm-nav-right .inm-lnk { display: none; }
 .inm-mobile .inm-nav .inm-clay-btn { font-size: 0.95rem; padding: 0.55em 1.1em; }
@@ -38,7 +39,16 @@
 
 /* Manifiesto y cierre */
 .inm-mobile .inm-q { max-width: 18ch; }
-.inm-mobile .inm-closing-msg { max-width: 16ch; }
+.inm-mobile .inm-closing-msg { max-width: 16ch; text-align: center; }
+.inm-mobile .inm-closing-cat { height: clamp(150px, 42vw, 220px); }
+.inm-mobile .inm-closing-text, .inm-mobile .inm-closing-ctas { align-items: center; }
 
 /* Footer en columna */
 .inm-mobile .inm-foot-in { flex-direction: column; text-align: center; gap: 10px; }
+
+/* Chips del portal: en móvil el portal es más chico, así que el pin
+   conector (::after) se quedaba corto y caía FUERA del portal (en el
+   margen crema). Alargamos el conector para que el punto entre dentro
+   del cristal del portal. Solo móvil; el desktop no se toca. */
+.inm-mobile .inm-chip.anchor-left::after  { right: -40px; box-shadow: -22px 0 0 -4px var(--inm-ink); }
+.inm-mobile .inm-chip.anchor-right::after { left: -40px;  box-shadow:  22px 0 0 -4px var(--inm-ink); }

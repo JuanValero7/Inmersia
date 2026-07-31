@@ -8,7 +8,7 @@ import { useResena } from '../../hooks/useResena.js'
 // =============================================================
 
 const _MK_INK = '#4a3622';
-const _MK_ACCENT = '#cf7b4c';
+const _MK_ACCENT = '#F2792A';
 const _MK_PANEL = '#fffdf8';
 const COLOR_BOOK_FALLBACK = '#5a3d28';
 
@@ -91,13 +91,13 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
             </button>
             {!esManual && (
               <div style={{ display: 'flex', gap: 10 }}>
-                <button style={{ ...ghost, flex: 1, justifyContent: 'center', color: '#3d6b8a', fontSize: 13.5, padding: '9px 14px' }} onClick={() => onGoForo(book)}>
+                <button style={{ ...ghost, flex: 1, justifyContent: 'center', color: '#000', fontSize: 13.5, padding: '9px 14px' }} onClick={() => onGoForo(book)}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.4"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     Ir al Foro
                   </span>
                 </button>
-                <button style={{ ...ghost, flex: 1, justifyContent: 'center', color: '#5a7a4a', fontSize: 13.5, padding: '9px 14px' }} onClick={() => onGoNotebook(book)}>
+                <button style={{ ...ghost, flex: 1, justifyContent: 'center', color: '#000', fontSize: 13.5, padding: '9px 14px' }} onClick={() => onGoNotebook(book)}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     Cuaderno
@@ -110,7 +110,7 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
           {book.summary && (
             <div>
               <div style={label}>Resumen</div>
-              <p style={{ fontSize: 14.5, color: '#4a2510', lineHeight: 1.65, fontWeight: 500, textAlign: 'justify' }}>{book.summary}</p>
+              <p style={{ fontSize: 14.5, color: '#4a2510', lineHeight: 1.65, fontWeight: 500, textAlign: 'justify', fontFamily: "'Poppins', system-ui, sans-serif" }}>{book.summary}</p>
             </div>
           )}
 
@@ -123,7 +123,7 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
               {!modoForm && miResena && (
                 <div>
                   <Estrellas valor={miResena.rating} />
-                  {miResena.texto && <p style={{ fontSize: 14, color: '#4a2510', marginTop: 6, lineHeight: 1.55, fontWeight: 500 }}>{miResena.texto}</p>}
+                  {miResena.texto && <p style={{ fontSize: 14, color: '#4a2510', marginTop: 6, lineHeight: 1.55, fontWeight: 500, fontFamily: "'Poppins', system-ui, sans-serif" }}>{miResena.texto}</p>}
                 </div>
               )}
               {!modoForm && !miResena && <p style={{ fontSize: 13.5, color: 'rgba(74,54,34,0.5)', fontStyle: 'italic', fontWeight: 600 }}>Aún no has escrito una reseña.</p>}

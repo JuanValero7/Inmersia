@@ -11,7 +11,7 @@ import privacidadRaw from '../../../Documentation/politica-de-privacidad.md?raw'
 // =============================================================
 
 const INK = '#4a3622'
-const ACCENT = '#cf7b4c'
+const ACCENT = '#F2792A'
 
 const DOCS = {
   terminos:   { label: 'Términos y Condiciones', raw: terminosRaw },

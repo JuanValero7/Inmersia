@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
+import { useOpenAuth } from '../../context/authModal.jsx'
 
 const LOGO = '/assets/inmersia-logo.png'
 import { CAT_COLOR } from './tiendaHelpers.jsx'
@@ -25,7 +25,7 @@ import LibroReel from './LibroReel.jsx'
 // =============================================================
 
 export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 'negro', tieneLibro, libroLeido, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo, bloqueado = false }) {
-  const navigate = useNavigate()
+  const openAuth = useOpenAuth()
   const [sel,         setSel]         = useState(null)
   const [reelLibro,   setReelLibro]   = useState(null)
   const [showFilters, setShowFilters] = useState(false)
@@ -55,8 +55,8 @@ export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 
             <button className="tienda-guest-volver" onClick={onVolver}>← Volver</button>
             <img src={LOGO} alt="Inmersia" className="tienda-guest-logo" />
             <nav className="tienda-guest-actions">
-              <button className="tienda-guest-lnk" onClick={() => navigate('/auth', { state: { tab: 'login' } })}>Iniciar sesión</button>
-              <button className="tienda-guest-btn" onClick={() => navigate('/auth', { state: { tab: 'registro' } })}>Crear cuenta</button>
+              <button className="tienda-guest-lnk" onClick={() => openAuth('login')}>Iniciar sesión</button>
+              <button className="tienda-guest-btn" onClick={() => openAuth('registro')}>Crear cuenta</button>
             </nav>
           </div>
         </header>
@@ -101,7 +101,7 @@ export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 
               <div className="int-chips">
                 {availableCats.map(c => (
                   <button key={c} className={clsx('int-chip', selCats.has(c) && 'on')} onClick={() => toggleCat(c)}>
-                    <span className="dot" style={{ background: CAT_COLOR[c] || '#cf8a6e' }} />
+                    <span className="dot" style={{ background: CAT_COLOR[c] || '#F2792A' }} />
                     {c}
                   </button>
                 ))}

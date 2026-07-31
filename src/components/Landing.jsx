@@ -13,9 +13,12 @@ import { FEATURES, WORLDS_IMG } from './landing/landingData.js'
 import { useReveal, usePortal } from './landing/useLandingScene.js'
 import '../styles/landing.css'
 
-const LOGO = '/assets/inmersia-logo.png'
-const LOGO_STACKED = '/assets/landing/inmersia-logo-stacked.png'
-const BOOK = '/assets/landing/libro2-cutout.webp'
+// El sufijo ?v= fuerza al navegador a descargar la versión nueva del logo
+// cuando reemplazamos el archivo manteniendo el mismo nombre (cache-busting).
+// Súbelo (v3 → v4 …) cada vez que cambies las imágenes.
+const LOGO = '/assets/inmersia-logo.png?v=3'
+const BOOK = '/assets/landing/libro2-cutout.webp?v=3'
+const GATO = '/assets/cartelera/gato-blanco-2.webp'
 
 export default function Landing({ onAuth, onGoTienda, mobile = false }) {
   const rootRef = useRef(null)
@@ -27,7 +30,9 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
   const scrollToQue = (e) => {
     e.preventDefault()
     const el = queRef.current
-    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 8, behavior: 'smooth' })
+    if (!el) return
+    const navH = rootRef.current?.querySelector('.inm-nav')?.offsetHeight ?? 0
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - navH - 8, behavior: 'smooth' })
   }
 
   return (
@@ -47,7 +52,7 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
         <div className="inm-wrap inm-hero-grid">
           <div>
             <h1 className="inm-hero-h">
-              Las mejores{' '}<br className="inm-dbr" />historias <em>nunca</em>{' '}<br className="inm-dbr" />estuvieron en el{' '}<br className="inm-dbr" />feed.
+              Escapa de lo efímero y conecta con tu <em>imaginación</em>
             </h1>
             <p className="inm-hero-lede">
               Inmersia convierte cada libro en un mundo para habitar, no en una pantalla más para
@@ -122,11 +127,14 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
       {/* ── CIERRE ── */}
       <section className="inm-band inm-closing inm-rule-top">
         <div className="inm-wrap inm-closing-in">
-          <img className="inm-closing-logo" src={LOGO_STACKED} alt="Inmersia" data-reveal />
-          <p className="inm-closing-msg" data-reveal>Abre tu imaginación. <em>Nosotros nos encargamos del resto.</em></p>
-          <div className="inm-closing-ctas" data-reveal>
-            <a className="inm-clay-btn inm-clay-lg" href="#registro" onClick={go('registro')}>Crear una cuenta</a>
-            <a className="inm-quiet inm-quiet-lg" href="/tienda" onClick={(e) => { e.preventDefault(); onGoTienda?.() }}>Explorar nuestro catálogo →</a>
+          <div className="inm-closing-hero" data-reveal>
+            <img className="inm-closing-cat" src={GATO} alt="" />
+            <div className="inm-closing-text">
+              <p className="inm-closing-msg">Motívate a una <em>nueva aventura</em>.</p>
+              <div className="inm-closing-ctas">
+                <a className="inm-clay-btn inm-clay-lg" href="/tienda" onClick={(e) => { e.preventDefault(); onGoTienda?.() }}>Explora nuestro catálogo</a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -134,7 +142,6 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
       <footer className="inm-footer">
         <div className="inm-wrap inm-foot-in">
           <img src={LOGO} alt="Inmersia" />
-          <p>Las mejores historias nunca estuvieron en el feed.</p>
           <p>© 2026 Inmersia</p>
         </div>
       </footer>

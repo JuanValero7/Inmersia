@@ -5,7 +5,7 @@
 import { useState } from 'react'
 
 export const INK = '#4a3622'
-export const ACCENT = '#cf7b4c'
+export const ACCENT = '#F2792A'
 
 // mezcla un hex con blanco (amt>0) o negro (amt<0)
 export function tint(hex, amt) {
@@ -32,7 +32,7 @@ export const theme = {
   pageEdge: '#e3d6b4',
   navBg: '#fffdf8',
   navBorder: INK,
-  navText: INK,
+  navText: '#000',   // texto de chips/botones del lector (negro)
   navHoverBg: '#fff',
   meter: ACCENT,
 }
@@ -41,7 +41,7 @@ export const theme = {
 // Solo afecta la HOJA + el fondo del lector; el chrome (pills) mantiene su
 // look claro. Compartida por el Lector desktop y mobile vía readingTheme.
 const READER_LIGHT = {
-  deskBg: theme.deskBg,
+  deskBg: '#FBF5EC',
   vignette: theme.vignette,
   pageBg: theme.pageBg,
   pageInk: theme.pageInk,
@@ -77,7 +77,7 @@ export function ClayButton({ children, onClick, variant = 'ghost', style = {}, t
   }
   const skin = variant === 'primary'
     ? { background: ACCENT, color: '#fff', textShadow: '0 1px 1px rgba(0,0,0,0.22)' }
-    : { background: hov ? theme.navHoverBg : theme.navBg, color: theme.navText }
+    : { background: hov ? theme.navHoverBg : theme.navBg, color: '#000' }
   return (
     <button type="button" title={title} disabled={disabled} onClick={disabled ? undefined : onClick}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}

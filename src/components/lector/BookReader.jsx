@@ -201,7 +201,7 @@ function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, r
               const active = f.css === readingFont
               return (
                 <button key={f.label} type="button" onClick={() => onReadingFont(f.css)}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, padding: '8px 10px', cursor: 'pointer', border: `1.5px solid ${active ? theme.accent : theme.ink}`, borderRadius: 11, background: active ? 'rgba(207,123,76,0.12)' : 'transparent', textAlign: 'left' }}>
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, padding: '8px 10px', cursor: 'pointer', border: `1.5px solid ${active ? theme.accent : theme.ink}`, borderRadius: 11, background: active ? 'rgba(242,121,42,0.12)' : 'transparent', textAlign: 'left' }}>
                   <span style={{ fontFamily: f.css, fontSize: 21, lineHeight: 1, color: theme.navText }}>Ag</span>
                   <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: active ? theme.accent : theme.pageMeta }}>{f.label}</span>
                 </button>
@@ -217,7 +217,7 @@ function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, r
                   const active = readingTheme === t.id
                   return (
                     <button key={t.id} type="button" onClick={() => onReadingTheme(t.id)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', cursor: 'pointer', border: `1.5px solid ${active ? theme.accent : theme.ink}`, borderRadius: 11, background: active ? 'rgba(207,123,76,0.12)' : 'transparent' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', cursor: 'pointer', border: `1.5px solid ${active ? theme.accent : theme.ink}`, borderRadius: 11, background: active ? 'rgba(242,121,42,0.12)' : 'transparent' }}>
                       <span style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, background: t.bg, border: `1.5px solid ${theme.ink}`, color: t.fg, fontFamily: "'Playfair Display', serif", fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>A</span>
                       <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, color: active ? theme.accent : theme.navText }}>{t.label}</span>
                     </button>
@@ -234,7 +234,7 @@ function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, r
                   const active = ledColor === opt.id
                   return (
                     <button key={opt.id} type="button" onClick={() => onLedColor(opt.id)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 9px', cursor: 'pointer', border: `1.5px solid ${active && opt.hex ? opt.hex : theme.ink}`, borderRadius: 9, background: active ? (opt.hex ? `${opt.hex}22` : 'rgba(207,123,76,0.12)') : 'transparent' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 9px', cursor: 'pointer', border: `1.5px solid ${active && opt.hex ? opt.hex : theme.ink}`, borderRadius: 9, background: active ? (opt.hex ? `${opt.hex}22` : 'rgba(242,121,42,0.12)') : 'transparent' }}>
                       <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: opt.hex ?? 'transparent', border: opt.hex ? 'none' : `1.5px solid ${theme.ink}`, boxShadow: active && opt.hex ? `0 0 5px ${opt.hex}` : 'none' }} />
                       <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: active && opt.hex ? opt.hex : theme.pageMeta }}>{opt.label}</span>
                     </button>

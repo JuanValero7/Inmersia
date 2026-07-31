@@ -9,7 +9,7 @@ function mapLibro(data) {
   return {
     id: data.id, libro_id: data.id, slug: data.slug,
     title: data.titulo, author: data.autor || 'Desconocido',
-    pages: data.paginas || 200, _baseColor: data.color || '#cf8a6e',
+    pages: data.paginas || 200, _baseColor: data.color || '#F2792A',
     summary: data.descripcion || '', cover: data.portada_url || null,
     es_ficcion: data.es_ficcion ?? true, leido: false,
   }

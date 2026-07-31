@@ -51,7 +51,7 @@ export default function ExplorarPopup({ onGoForo, onGoBack, onGoBiblioteca, btnC
           {onGoBiblioteca && <NavBtn onClick={() => { close(); onGoBiblioteca() }} icon={ICON_BIBLIOTECA} label="Biblioteca" />}
         </div>
       )}
-      <button className={btnClass} type="button" onClick={() => setOpen(o => !o)}>
+      <button className={`${btnClass} cart-explorar-btn`} type="button" onClick={() => setOpen(o => !o)}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" /><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /><path d="M2 12h20" />
         </svg>

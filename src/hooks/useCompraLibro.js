@@ -30,7 +30,10 @@ export function useCompraLibro(user, isSuperuser, onOpenBook) {
   }, [user, isSuperuser, invalidateBiblioteca])
 
   const comprarYLeer = useCallback(async (libro, { pendientes = 0, tieneLibro } = {}) => {
-    if (!tieneLibro?.(libro.id)) {
+    // Invitado: abre la muestra directamente (el lector limita a 2 caps por RLS);
+    // no se adquiere nada porque no hay sesión. Usuario: si aún no lo tiene en su
+    // biblioteca, lo adquiere antes de abrirlo.
+    if (user?.id && !tieneLibro?.(libro.id)) {
       const { error } = await comprar(libro, { pendientes })
       if (error) return { error }
     }
@@ -41,14 +44,14 @@ export function useCompraLibro(user, isSuperuser, onOpenBook) {
       title: libro.titulo,
       author: libro.autor || 'Desconocido',
       pages: libro.paginas || 200,
-      _baseColor: libro.color || '#cf8a6e',
+      _baseColor: libro.color || '#F2792A',
       summary: libro.descripcion || '',
       cover: libro.portada_url || null,
       es_ficcion: libro.es_ficcion ?? true,
       progress: null,
     })
     return { error: null }
-  }, [comprar, onOpenBook])
+  }, [comprar, onOpenBook, user])
 
   return { comprar, comprarYLeer, LIMITE: LIMITE_PENDIENTES }
 }

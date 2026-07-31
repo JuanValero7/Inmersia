@@ -43,7 +43,7 @@ function Estrellas({ valor, size = 15, onChange }) {
 
 // Portada: usa portada_url si existe; si no, genera una con el color del libro.
 function Portada({ libro }) {
-  const c = libro.color || '#cf8a6e'
+  const c = libro.color || '#F2792A'
   return (
     <div className="book book-lg" style={{ '--cov': c }}>
       <div className="book-cover">
@@ -212,7 +212,7 @@ export default function PanelLibro({ libro, user, gatoColor = 'negro', yaAdquiri
             <div className="bkp-tags">
               {libro.categorias.map(cat => (
                 <span key={cat} className="bkp-tag bkp-tag-cat">
-                  <span className="dot" style={{ background: CAT_COLOR[cat] || '#cf8a6e' }} />{cat}
+                  <span className="dot" style={{ background: CAT_COLOR[cat] || '#F2792A' }} />{cat}
                 </span>
               ))}
             </div>

@@ -3,20 +3,20 @@
 
 export const SECCIONES = [
   { key: 'personajes', label: 'Personajes', singular: 'Personaje', sub: 'Quiénes habitan el relato',     color: '#d56a52' },
-  { key: 'lugares',    label: 'Lugares',    singular: 'Lugar',     sub: 'Dónde sucede todo',              color: '#86ad9e' },
-  { key: 'hechos',     label: 'Hechos',     singular: 'Hecho',     sub: 'Lo que ya ha ocurrido',          color: '#e0b256' },
-  { key: 'datos',      label: 'Datos',      singular: 'Dato',      sub: 'Pistas y detalles a recordar',   color: '#7d8db5' },
-  { key: 'notas',      label: 'Notas',      singular: 'Nota',      sub: 'Tus predicciones y apuntes',     color: '#cf8ea4' },
+  { key: 'lugares',    label: 'Lugares',    singular: 'Lugar',     sub: 'Dónde sucede todo',              color: '#7C8A4F'},
+  { key: 'hechos',     label: 'Hechos',     singular: 'Hecho',     sub: 'Lo que ya ha ocurrido',          color: '#F5A623'},
+  { key: 'datos',      label: 'Datos',      singular: 'Dato',      sub: 'Pistas y detalles a recordar',   color: '#2F4A6B'},
+  { key: 'notas',      label: 'Notas',      singular: 'Nota',      sub: 'Tus predicciones y apuntes',     color: '#BE6173'},
 ]
 
 // No-ficción: mismos colores que sus equivalentes visuales de ficción
 // Glosario=Personajes, Datos=Lugares, Referencias=Hechos, Resumen=Datos
 export const SECCIONES_NOFICCION = [
   { key: 'glosario',    label: 'Glosario',    singular: 'Término',    sub: 'Conceptos clave del libro',      color: '#d56a52' },
-  { key: 'datos',       label: 'Datos',       singular: 'Dato',       sub: 'Referencias del mundo real',     color: '#86ad9e' },
-  { key: 'referencias', label: 'Referencias', singular: 'Referencia', sub: 'Ideas y obras citadas',          color: '#e0b256' },
-  { key: 'resumen',     label: 'Resumen',     singular: 'Capítulo',   sub: 'Lo esencial de cada capítulo',  color: '#7d8db5' },
-  { key: 'notas',       label: 'Notas',       singular: 'Nota',       sub: 'Tus predicciones y apuntes',    color: '#cf8ea4' },
+  { key: 'datos',       label: 'Datos',       singular: 'Dato',       sub: 'Referencias del mundo real',     color: '#7C8A4F'},
+  { key: 'referencias', label: 'Referencias', singular: 'Referencia', sub: 'Ideas y obras citadas',          color: '#F5A623'},
+  { key: 'resumen',     label: 'Resumen',     singular: 'Capítulo',   sub: 'Lo esencial de cada capítulo',  color: '#2F4A6B'},
+  { key: 'notas',       label: 'Notas',       singular: 'Nota',       sub: 'Tus predicciones y apuntes',    color: '#BE6173'},
 ]
 
 export const getSecciones = (esNoficcion) => esNoficcion ? SECCIONES_NOFICCION : SECCIONES

@@ -1,7 +1,7 @@
 /* ══ PERFIL · MOBILE · chrome responsive (.pm-*) ══════════════════
    Cáscara mobile del Carnet de Socio. Estética clay / acuarela,
    coherente con el resto de Inmersia (Baloo 2, tinta #4a3622, acento
-   terracota #cf7b4c, bordes con sombra offset).
+   terracota #F2792A, bordes con sombra offset).
 
    Layout vertical: topbar · idcard · pills de sección · área de scroll.
    El idcard cambia de color acuarela según la sección activa.
@@ -11,7 +11,7 @@
 /* ── Raíz: cubre todo el viewport ── */
 .pm-root {
   --ink: #4a3622;
-  --accent: #cf7b4c;
+  --accent: #F2792A;
   --paper: #f6f3ec;
   --cream: #fdfaf2;
   --muted: rgba(74,54,34,0.6);
@@ -20,7 +20,7 @@
   display: flex; flex-direction: column;
   background-color: var(--paper);
   background-image:
-    radial-gradient(58% 36% at 12% 4%, rgba(207,123,76,0.08), transparent 60%),
+    radial-gradient(58% 36% at 12% 4%, rgba(242,121,42,0.08), transparent 60%),
     radial-gradient(62% 44% at 94% 100%, rgba(120,90,50,0.10), transparent 62%);
   padding-top: max(env(safe-area-inset-top), 12px);
   padding-bottom: env(safe-area-inset-bottom);
@@ -35,11 +35,11 @@
 .pm-topbar {
   position: relative; z-index: 6; flex-shrink: 0;
   margin: 8px 12px 0;
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 10px 11px 10px 16px;
+  display: flex; align-items: center; justify-content: flex-start; gap: 10px;
+  padding: 10px 11px 10px 12px;
   border-radius: 18px;
   background-color: #e7dcc2;
-  background-image: radial-gradient(circle at 18% 30%, rgba(207,123,76,0.10), transparent 60%);
+  background-image: radial-gradient(circle at 18% 30%, rgba(242,121,42,0.10), transparent 60%);
   border: 2px solid var(--ink);
   box-shadow: 4px 6px 0 rgba(74,54,34,0.12), inset 0 1px 0 rgba(255,255,255,0.5);
 }
@@ -54,8 +54,8 @@
 .pm-back {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 7px 13px; border-radius: 999px; flex-shrink: 0;
-  background: var(--cream); border: 2px solid var(--ink);
-  color: var(--ink); cursor: pointer; font-weight: 700; font-size: 12.5px;
+  background: var(--accent); border: 2px solid var(--ink);
+  color: #fff; cursor: pointer; font-weight: 700; font-size: 12.5px;
   font-family: inherit; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.18);
   white-space: nowrap; transition: transform 0.13s;
 }
@@ -115,17 +115,17 @@
 .pm-idinfo { flex: 1; min-width: 0; }
 .pm-idname {
   font-size: 1.08rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.01em;
-  color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .pm-idmail {
-  font-size: 12px; font-weight: 600; color: rgba(74,54,34,0.72); margin-top: 3px;
+  font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); margin-top: 3px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .pm-idmeta {
   display: inline-block; margin-top: 7px;
   font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
-  color: rgba(74,54,34,0.65);
-  background: rgba(74,54,34,0.11); border-radius: 999px; padding: 2px 9px;
+  color: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.20); border-radius: 999px; padding: 2px 9px;
 }
 
 /* ── Selector de secciones (pills horizontales con scroll) ── */
@@ -217,6 +217,10 @@
   align-self: flex-start;
 }
 .pm-logout:active { transform: translateY(1px); }
+
+/* Bloques de texto en Poppins (títulos, labels y botones quedan en Baloo) */
+.pm-content .pf-lead, .pm-content .pf-field-val,
+.pm-content .pf-lock-note, .pm-content .pf-input { font-family: 'Poppins', system-ui, sans-serif; }
 
 @media (prefers-reduced-motion: reduce) {
   .pm-tab, .pm-back, .pm-logout, .pm-content .pf-btn { transition: none; }

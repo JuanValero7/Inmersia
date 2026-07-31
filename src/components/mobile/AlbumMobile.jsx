@@ -149,7 +149,7 @@ function SearchBar({ items, onPick }) {
           ? <div className="noresL">Sin coincidencias</div>
           : hits.map(({ e, i }) => (
             <div key={e.libro.libro_id ?? i} className="resL" onMouseDown={() => { onPick(i); setQ(''); setOpen(false) }}>
-              <img src={e.libro.cover || ''} alt="" style={{ background: e.libro._baseColor || '#cf8a6e' }} />
+              <img src={e.libro.cover || ''} alt="" style={{ background: e.libro._baseColor || '#F2792A' }} />
               <div><div className="rt">{e.libro.title}</div><div className="ra">{e.libro.author}</div></div>
             </div>
           ))}
@@ -307,6 +307,7 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
       )}
 
       <div className="album-m-rotate">
+        <button className="album-m-rotate-back" onClick={onGoBack} title="Volver a la biblioteca"><IBack />Biblioteca</button>
         <IRotate />
         <h3>Girá el teléfono</h3>
         <p>El álbum se abre como una doble página. Poné el teléfono en horizontal para verlo completo.</p>
@@ -336,7 +337,7 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
                 <div className="placaL-art">
                   {libro.cover
                     ? <img src={libro.cover} alt="" />
-                    : <div style={{ position: 'absolute', inset: 0, background: libro._baseColor || '#cf7b4c' }} />}
+                    : <div style={{ position: 'absolute', inset: 0, background: libro._baseColor || '#F2792A' }} />}
                   <div className="vig" />
                 </div>
               </div>

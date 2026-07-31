@@ -50,9 +50,17 @@ function PasswordInput({ value, onChange, placeholder, autoComplete }) {
   )
 }
 
-// ⬅︎ LANDING: `initialTab` permite abrir en 'login' o 'registro' desde la landing.
-//             `onBack` (opcional) muestra un enlace para volver a la landing.
-export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
+// ── AuthCard ─────────────────────────────────────────────────────────────
+// Tarjeta (carnet) con toda la lógica de login/registro/recuperación.
+// Se reutiliza en dos envoltorios:
+//   • <Auth>       → escena a pantalla completa (fallback de la ruta /auth).
+//   • <AuthModal>  → pop-up sobre la página actual (landing, tienda, lector…).
+// Props:
+//   `initialTab`  'login' | 'registro'
+//   `onAuthSuccess(user)`  se llama al autenticar con éxito.
+//   `onBack`   (opcional) enlace "← Volver" en la esquina (escena a pantalla completa).
+//   `onClose`  (opcional) botón "×" de cierre (modal).
+export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose }) {
   const [tab,         setTab]         = useState(initialTab === 'registro' ? 'registro' : 'login')
   const [loading,     setLoading]     = useState(false)
   const [error,       setError]       = useState('')
@@ -111,11 +119,7 @@ export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
   }
 
   return (
-    <div className="login-scene">
-      <img className="scene-cat scene-cat--naranja" src={GATO_NARANJA} alt="" aria-hidden="true" />
-      <img className="scene-cat scene-cat--blanco"  src={GATO_BLANCO}  alt="" aria-hidden="true" />
-      <img className="scene-cat scene-cat--negro"   src={GATO_NEGRO}   alt="" aria-hidden="true" />
-
+    <>
       <div className="login-card">
         <div className="login-header">
           {onBack && (
@@ -129,6 +133,15 @@ export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
                 fontFamily: "'Baloo 2', system-ui, sans-serif", fontWeight: 700, fontSize: 13,
               }}
             >← Volver</button>
+          )}
+          {onClose && (
+            <button
+              type="button"
+              className="login-close"
+              onClick={onClose}
+              aria-label="Cerrar"
+              title="Cerrar"
+            >×</button>
           )}
           <img className="login-logo-mark" src={LOGO} alt="Inmersia" />
           <p className="login-sub">Carnet de Acceso a la Colección</p>
@@ -226,6 +239,20 @@ export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
       </div>
 
       {legalDoc && <LegalModal initialDoc={legalDoc} onClose={() => setLegalDoc(null)} />}
+    </>
+  )
+}
+
+// ── Auth (escena a pantalla completa) ────────────────────────────────────
+// Fallback para la ruta /auth (enlaces directos/marcadores). En el flujo
+// normal la autenticación se abre como pop-up con <AuthModal>.
+export default function Auth({ onAuthSuccess, initialTab = 'login', onBack }) {
+  return (
+    <div className="login-scene">
+      <img className="scene-cat scene-cat--naranja" src={GATO_NARANJA} alt="" aria-hidden="true" />
+      <img className="scene-cat scene-cat--blanco"  src={GATO_BLANCO}  alt="" aria-hidden="true" />
+      <img className="scene-cat scene-cat--negro"   src={GATO_NEGRO}   alt="" aria-hidden="true" />
+      <AuthCard onAuthSuccess={onAuthSuccess} initialTab={initialTab} onBack={onBack} />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
+import { useOpenAuth } from '../../../context/authModal.jsx'
 
 const LOGO = '/assets/inmersia-logo.png'
 import { CAT_COLOR } from '../../tienda/tiendaHelpers.jsx'
@@ -47,7 +47,7 @@ function FilterOverlay({ availableCats, selCats, onToggle, onClear, onClose, fil
               <button key={c} className={clsx('int-filter-ov-row', selCats.has(c) && 'on')} onClick={() => onToggle(c)}>
                 <span style={{
                   width: 13, height: 13, borderRadius: '50%', flexShrink: 0,
-                  background: selCats.has(c) ? 'rgba(255,255,255,0.75)' : (CAT_COLOR[c] || '#cf8a6e'),
+                  background: selCats.has(c) ? 'rgba(255,255,255,0.75)' : (CAT_COLOR[c] || '#F2792A'),
                   border: selCats.has(c) ? '2px solid rgba(255,255,255,0.55)' : '2px solid rgba(74,54,34,0.35)',
                 }} />
                 <span style={{ flex: 1 }}>{c}</span>
@@ -71,7 +71,7 @@ function FilterOverlay({ availableCats, selCats, onToggle, onClear, onClose, fil
 }
 
 export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoColor = 'negro', tieneLibro, libroLeido, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo, bloqueado = false }) {
-  const navigate = useNavigate()
+  const openAuth = useOpenAuth()
   const [sel,         setSel]         = useState(null)
   const [reelLibro,   setReelLibro]   = useState(null)
   const [showFilters, setShowFilters] = useState(false)
@@ -122,8 +122,8 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
             <button className="tienda-guest-volver" onClick={onVolver}>← Volver</button>
             <img src={LOGO} alt="Inmersia" className="tienda-guest-logo" />
             <nav className="tienda-guest-actions">
-              <button className="tienda-guest-lnk" onClick={() => navigate('/auth', { state: { tab: 'login' } })}>Iniciar sesión</button>
-              <button className="tienda-guest-btn" onClick={() => navigate('/auth', { state: { tab: 'registro' } })}>Crear cuenta</button>
+              <button className="tienda-guest-lnk" onClick={() => openAuth('login')}>Iniciar sesión</button>
+              <button className="tienda-guest-btn" onClick={() => openAuth('registro')}>Crear cuenta</button>
             </nav>
           </div>
         </header>

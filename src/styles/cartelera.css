@@ -4,15 +4,24 @@
    Inmersia · Cartelera — estilos. Todo scopeado bajo .cart-root
    para no afectar al resto de la app.
    ============================================================= */
-.cart-root{ --ink:#4a3622; --paper:#f6f3ec; --cream:#fdfaf2; --sec:#d56a52;
+.cart-root{ --ink:#4a3622; --paper:#FBF5EC; --cream:#fdfaf2; --sec:#d56a52;
   --idxw:390px; --rowpad:13px; --fscale:1; --thread:#c23b2e;
   position:fixed; inset:0; width:100%; height:100%; overflow:hidden;
-  background:var(--paper); font-family:'Baloo 2', cursive; color:var(--ink); }
+  background:var(--paper); font-family:'Poppins', system-ui, sans-serif; color:var(--ink); }
 .cart-root *{ box-sizing:border-box; }
+
+/* Tipografía: títulos en Baloo 2; el resto (texto, chips, botones) hereda Poppins */
+.cart-root .brand-title,
+.cart-root .ttl h1,
+.cart-root .idx-title b,
+.cart-root .fic-name,
+.cart-root .word,
+.cart-root .initial,
+.cart-root .empty-pane .ek{ font-family:'Baloo 2', cursive; }
 
 /* ── escena cálida ───────────────────────────────────────────── */
 .cart-root .cart-scene{ position:relative; width:100%; height:100%; display:flex; flex-direction:column;
-  background:radial-gradient(120% 90% at 50% 32%, rgba(255,252,244,.9), transparent 62%), var(--paper); }
+  background:var(--paper); }
 .cart-root .cart-scene::after{ content:''; position:absolute; inset:0; opacity:.16; mix-blend-mode:soft-light;
   filter:url(#mesaGrain); pointer-events:none; z-index:1; }
 
@@ -32,6 +41,8 @@
   border:2px solid var(--ink); border-radius:999px; padding:8px 18px; font-family:inherit; font-weight:700;
   font-size:13.5px; cursor:pointer; box-shadow:1.6px 2px 0 #4a362230; transition:transform .12s, box-shadow .12s; white-space:nowrap; }
 .cart-root .cart-sec-btn:hover{ transform:translateY(-1px); box-shadow:2px 3px 0 #4a362240; }
+/* Botón "Explorar" (compartido portada/board/ficha): texto e ícono en negro */
+.cart-root .cart-explorar-btn{ color:#000; }
 .cart-root .cart-sec-btn-lg{ padding:16px 32px; font-size:20px; border-width:3px; box-shadow:2.5px 3.5px 0 #4a362230; }
 .cart-root .cart-sec-btn-lg:hover{ box-shadow:3px 4px 0 #4a362240; }
 .cart-root .cart-sec-hint{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:40; font-size:12px; font-weight:700; letter-spacing:.03em; color:#5a4632;
@@ -65,7 +76,7 @@
    layout de página completa de .album-root. */
 .cart-root .cart-foto-placa{
   --ink:#4a3622; --ink-soft:#6b4f34; --foil:#bd9a4e; --crema:#fffdf8; --rojo:#c1453a;
-  --terra:#cf7b4c; --terra-d:#b5613a; --serif:'Playfair Display', Georgia, serif;
+  --terra:#F2792A; --terra-d:#b5613a; --serif:'Playfair Display', Georgia, serif;
   --clay:2px 2.8px 0 rgba(74,54,34,.28);
 }
 .cart-root .cart-foto-placa .album-placa{
@@ -200,7 +211,7 @@
 }
 .cart-root .cart-sign-tool{ display:flex; flex-direction:column; align-items:center; gap:5px; width:66px;
   background:none; border:none; cursor:pointer; font-family:inherit; padding:5px 6px; border-radius:12px; }
-.cart-root .cart-sign-tool:hover{ background:rgba(207,123,76,0.12); }
+.cart-root .cart-sign-tool:hover{ background:rgba(242,121,42,0.12); }
 .cart-root .cart-sign-tile{
   width:40px; height:40px; flex-shrink:0; border-radius:11px; border:2px solid var(--ink);
   display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800; color:#fff;
@@ -220,7 +231,7 @@
 .cart-root .dock .hint{ font-size:12.5px; font-weight:600; color:#8a7355; }
 
 /* ── PORTADA ─────────────────────────────────────────────────── */
-.cart-root .cart-portada{ background:radial-gradient(120% 90% at 50% 32%, rgba(255,252,244,.9), transparent 62%), var(--paper); }
+.cart-root .cart-portada{ background:var(--paper); }
 .cart-root .cart-portada .topbar{ padding:18px 26px 14px; }
 .cart-root .brand{ display:flex; align-items:baseline; gap:12px; }
 .cart-root .brand-title{ font-size:26px; font-weight:800; letter-spacing:.01em; }
@@ -249,7 +260,7 @@
 .cart-root .go{ display:inline-flex; align-items:center; gap:7px; margin-top:18px; align-self:flex-start; background:rgba(255,250,242,.94); color:#3a2b1c; border:2px solid var(--ink); border-radius:13px; padding:7px 15px; font-weight:800; font-size:14px; box-shadow:1.6px 2px 0 rgba(40,26,12,.3); }
 .cart-root .stub{ position:absolute; left:0; right:0; bottom:26px; z-index:4; text-align:center; font-size:13px; font-weight:700; letter-spacing:.01em; color:rgba(255,250,242,.85); transition:opacity .35s; padding:0 12px; line-height:1.3; }
 .cart-root .panel.is-open .stub{ opacity:0; }
-.cart-root .cart-portada-hint{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:80; font-size:12.5px; font-weight:700; letter-spacing:.03em; color:#5a4632;
+.cart-root .cart-portada-hint{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:80; font-size:12.5px; font-weight:700; letter-spacing:.03em; color:#000;
   background:rgba(255,253,248,.86); border:2px solid var(--ink); border-radius:999px; padding:5px 16px; box-shadow:1.4px 1.8px 0 rgba(74,54,34,.25); pointer-events:none; white-space:nowrap; }
 
 /* ── FICHA (cuaderno a dos páginas) ──────────────────────────── */

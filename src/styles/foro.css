@@ -1,7 +1,7 @@
 /* ══ FORO · Acuarela ═══════════════════════════════════════
    Reescrito para igualar la estética "storybook / acuarela" de
    la Biblioteca: fondo crema, tinta café (#4a3622), acento
-   terracota (#cf7b4c), tipografía Baloo 2, bordes 2px + sombras
+   terracota (#F2792A), tipografía Baloo 2, bordes 2px + sombras
    duras desplazadas y esquinas redondeadas tipo plastilina.
    Mismos nombres de clase que antes → no rompe el JSX.
    La ilustración del pie (foro-gatos.webp) decora ambas pantallas,
@@ -10,7 +10,7 @@
 
 :root {
   --foro-ink: #4a3622;
-  --foro-accent: #cf7b4c;
+  --foro-accent: #F2792A;
   --foro-cream: #f6f3ec;
   --foro-surface: #f1e8d4;
   --foro-card: #fffdf8;
@@ -66,7 +66,7 @@
   padding: 14px 18px;
   border-radius: 22px;
   background-color: #e7dcc2;
-  background-image: radial-gradient(circle at 18% 30%, rgba(207,123,76,0.10), transparent 60%);
+  background-image: radial-gradient(circle at 18% 30%, rgba(242,121,42,0.10), transparent 60%);
   border: 2px solid var(--foro-ink);
   box-shadow: 5px 7px 0 rgba(74,54,34,0.12), inset 0 1px 0 rgba(255,255,255,0.5);
 }
@@ -175,7 +175,7 @@
 .foro-tab:hover { color: var(--foro-ink); }
 .foro-tab.active {
   color: #fff;
-  background: var(--foro-accent);
+  background: #F2792A;
   border-color: var(--foro-ink);
   text-shadow: 0 1px 1px rgba(0,0,0,0.2);
   box-shadow: 1.4px 1.8px 0 rgba(74,54,34,0.2);
@@ -231,7 +231,7 @@
 }
 .foro-filtro-btn:hover { transform: translateY(-1px); }
 .foro-filtro-btn.active {
-  background: var(--foro-accent);
+  background: #F2792A;
   color: #fff;
   text-shadow: 0 1px 1px rgba(0,0,0,0.18);
 }
@@ -312,7 +312,7 @@
 }
 .foro-tag-pill:hover { transform: translateY(-1px); }
 .foro-tag-pill.active {
-  background: var(--foro-accent);
+  background: #F2792A;
   color: #fff;
   border-color: var(--foro-ink);
   text-shadow: 0 1px 1px rgba(0,0,0,0.18);
@@ -371,7 +371,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #cf7b4c, #6f9457);
+  background: linear-gradient(135deg, #F2792A, #6f9457);
   color: #fff;
   font-size: 14px;
   font-weight: 800;
@@ -517,7 +517,7 @@
 .foro-textarea::placeholder { color: rgba(74,54,34,0.4); font-weight: 600; }
 .foro-textarea.small { font-size: 13px; }
 .foro-textarea:focus {
-  box-shadow: 0 0 0 3px rgba(207,123,76,0.25);
+  box-shadow: 0 0 0 3px rgba(242,121,42,0.25);
 }
 
 /* ─── Respuestas (sangradas) ─────────────────────────────── */
@@ -552,6 +552,8 @@
   transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
 }
 .foro-btn-submit.small { padding: 7px 16px; font-size: 12.5px; border-radius: 12px; }
+/* Botón "Entrar a la sala": naranja de marca */
+.foro-btn-sala { background: #F2792A; }
 .foro-btn-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 3px 4px 0 rgba(74,54,34,0.26); }
 .foro-btn-submit:active:not(:disabled) { transform: translateY(1px); box-shadow: 1px 1.5px 0 rgba(74,54,34,0.2); }
 .foro-btn-submit:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
@@ -757,7 +759,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(207,123,76,0.1);
+  background: rgba(242,121,42,0.1);
   border: 2px solid var(--foro-ink);
   border-radius: 14px;
   padding: 12px 16px;
@@ -948,7 +950,7 @@
 }
 .chat-input::placeholder { color: rgba(74,54,34,0.4); font-weight: 600; }
 .chat-input:focus {
-  box-shadow: 0 0 0 3px rgba(207,123,76,0.25);
+  box-shadow: 0 0 0 3px rgba(242,121,42,0.25);
 }
 
 /* ─── Disclaimer dentro del chat ─────────────────────────── */

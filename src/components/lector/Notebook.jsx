@@ -5,9 +5,9 @@ import { theme, ClayButton } from './clay.jsx'
 
 // Tipos (arriba, horizontal)
 const TYPES = [
-  { id: 'pred', label: 'Predicciones', col: '#86ad9e', txt: '#2e6b56' },
-  { id: 'anot', label: 'Anotaciones',  col: '#cf8ea4', txt: '#8a3556' },
-  { id: 'sub',  label: 'Subrayados',   col: '#e0b256', txt: '#9a6310' },
+  { id: 'pred', label: 'Predicciones', col: '#BE6173', txt: '#8a3f4d' },
+  { id: 'anot', label: 'Anotaciones',  col: '#2F4A6B', txt: '#223850' },
+  { id: 'sub',  label: 'Subrayados',   col: '#F5A623', txt: '#9a6310' },
 ]
 
 // Cuaderno de lectura — clay. Tipos arriba en horizontal; los capítulos con
@@ -121,7 +121,7 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
       <div style={{ position: 'relative', width: 'min(860px,93vw)', height: 'min(600px,86vh)' }}>
       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: 'linear-gradient(160deg,#f7f1e4,#efe6d2)', borderRadius: 14, overflow: 'hidden', borderLeft: '14px solid #b3402e', border: `2px solid ${theme.ink}`, boxShadow: `5px 7px 0 ${theme.ink}30, 0 24px 60px rgba(0,0,0,0.55)` }}>
         {/* header */}
-        <div style={{ background: 'linear-gradient(90deg,#b3402e,#8e2f20)', padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ background: '#750F29', padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <span style={{ color: '#fbe9df', fontFamily: "'Baloo 2', sans-serif", fontWeight: 800, fontSize: 15, whiteSpace: 'nowrap' }}>Cuaderno de lectura</span>
           <button onClick={handleClose} style={{ background: 'rgba(255,255,255,0.18)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 16, width: 28, height: 28, cursor: 'pointer', lineHeight: 1 }}>✕</button>
         </div>
@@ -152,7 +152,7 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
                 {subsCap.length === 0
                   ? <p style={{ fontFamily: "'Baloo 2',sans-serif", fontStyle: 'italic', fontSize: 13, color: 'rgba(74,54,34,0.5)' }}>Sin subrayados en este capítulo. Seleccioná texto en el libro para guardar uno.</p>
                   : subsCap.map(s => (
-                    <div key={s.id} style={{ marginBottom: 12, padding: '11px 14px', background: 'rgba(224,178,86,0.2)', borderLeft: '4px solid #e0b256', borderRadius: '0 8px 8px 0', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                    <div key={s.id} style={{ marginBottom: 12, padding: '11px 14px', background: 'rgba(245,166,35,0.18)', borderLeft: '4px solid #F5A623', borderRadius: '0 8px 8px 0', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                       <p style={{ flex: 1, margin: 0, fontFamily: `'Baloo 2', sans-serif`, fontSize: 15, lineHeight: 1.5, color: '#3a2a18' }}>&ldquo;{s.texto_original}&rdquo;</p>
                       <button onClick={() => deleteSubrayado(s.id)} title="Eliminar" style={{ background: 'none', border: 'none', color: 'rgba(160,60,40,0.6)', fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>×</button>
                     </div>
@@ -168,7 +168,7 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
                   onChange={e => editDraft(selCap, type === 'pred' ? 'pred' : 'anot', e.target.value)}
                   placeholder={type === 'pred' ? 'Escribí tus predicciones…' : 'Escribí tus anotaciones…'}
                   maxLength={2000}
-                  style={{ flex: 1, border: 'none', outline: 'none', resize: 'none', background: lined, fontFamily: "'Baloo 2', sans-serif", fontSize: 14, lineHeight: '32px', color: '#2a1f12' }} />
+                  style={{ flex: 1, border: 'none', outline: 'none', resize: 'none', background: lined, fontFamily: "'Poppins', system-ui, sans-serif", fontSize: 14, lineHeight: '32px', color: '#2a1f12' }} />
               </div>
             )}
           </div>
@@ -190,7 +190,7 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
         {/* footer */}
         <div style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(74,54,34,0.12)', background: 'rgba(245,235,210,0.6)', flexShrink: 0 }}>
           <span style={{ fontFamily: "'Baloo 2',sans-serif", fontSize: 11.5, color: 'rgba(74,54,34,0.55)' }}>Cap. {selCap}{selCap === capituloNum ? ' (estás leyendo)' : ''}</span>
-          <ClayButton variant="primary" onClick={handleClose} style={{ fontSize: 13 }}>Guardar y continuar →</ClayButton>
+          <ClayButton variant="primary" onClick={handleClose} style={{ fontSize: 13, background: '#F2792A' }}>Guardar y continuar →</ClayButton>
         </div>
       </div>
       <img src={`/assets/lector/gato-${gatoColor}-3.webp`} alt=""

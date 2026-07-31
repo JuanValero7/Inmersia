@@ -46,10 +46,6 @@ export default function PerfilMobile({ user, gatoColor, onChangeGatoColor, onGoB
 
       {/* ── Header compacto ── */}
       <header className="pm-topbar">
-        <div className="pm-brand">
-          <h1>Mi Carnet</h1>
-          <p>Socio de Inmersia</p>
-        </div>
         <button type="button" className="pm-back" onClick={onGoBack}>
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.4"><path d="M12 6.04A8.97 8.97 0 006 3.75c-1.05 0-2.06.18-3 .51v14.25A8.99 8.99 0 016 18c2.3 0 4.4.87 6 2.29m0-14.25a8.97 8.97 0 016-2.29c1.05 0 2.06.18 3 .51v14.25A8.99 8.99 0 0018 18a8.97 8.97 0 00-6 2.29m0-14.25v14.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
           Biblioteca

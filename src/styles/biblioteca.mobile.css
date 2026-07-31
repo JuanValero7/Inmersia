@@ -7,9 +7,9 @@
 
 .bibm-screen {
   --ink: #4a3622;
-  --accent: #cf7b4c;
+  --accent: #F2792A;
   --green: #6f9457;
-  --paper: #f6f3ec;
+  --paper: #FBF5EC;
   --cream: #fffdf8;
   --muted: rgba(74,54,34,0.6);
   position: fixed;
@@ -19,7 +19,7 @@
   background-color: var(--paper);
   background-image:
     radial-gradient(58% 38% at 14% 6%, rgba(134,173,158,0.14), transparent 60%),
-    radial-gradient(60% 42% at 92% 99%, rgba(207,123,76,0.12), transparent 62%);
+    radial-gradient(60% 42% at 92% 99%, rgba(242,121,42,0.12), transparent 62%);
   color: var(--ink);
   overflow: hidden;
   padding-top: env(safe-area-inset-top);
@@ -42,7 +42,7 @@
 .bibm-icon-btn { flex: 1; height: 42px; padding: 0 14px; display: flex; align-items: center; justify-content: center; background: var(--cream); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; cursor: pointer; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.18); transition: transform 0.12s, box-shadow 0.12s; }
 .bibm-icon-btn svg { width: 19px; height: 19px; flex-shrink: 0; }
 .bibm-icon-btn:active { transform: translateY(1.5px); box-shadow: 0.5px 1px 0 rgba(74,54,34,0.18); }
-.bibm-avatar { width: 40px; height: 40px; flex-shrink: 0; border-radius: 999px; background: linear-gradient(135deg, #cf7b4c, #6f9457); color: #fff; font-weight: 800; font-size: 16px; border: 2px solid var(--ink); cursor: pointer; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.2); display: flex; align-items: center; justify-content: center; transition: transform 0.12s; }
+.bibm-avatar { width: 40px; height: 40px; flex-shrink: 0; border-radius: 999px; background: linear-gradient(135deg, #F2792A, #6f9457); color: #fff; font-weight: 800; font-size: 16px; border: 2px solid var(--ink); cursor: pointer; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.2); display: flex; align-items: center; justify-content: center; transition: transform 0.12s; }
 .bibm-avatar:active { transform: translateY(1.5px); }
 .bibm-search { margin-top: 11px; display: flex; align-items: center; gap: 11px; background: rgba(255,253,247,0.94); border: 2px solid var(--ink); border-radius: 999px; padding: 10px 16px; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.12); }
 .bibm-search input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-weight: 600; font-size: 14.5px; color: var(--ink); }
@@ -77,7 +77,7 @@
 .bibm-hero-auth { color: rgba(74,54,34,0.64); font-size: 13.5px; margin-top: 5px; font-weight: 600; }
 .bibm-hero-prog { margin-top: 16px; }
 .bibm-bar { height: 11px; border-radius: 8px; background: rgba(74,54,34,0.16); overflow: hidden; }
-.bibm-bar > div { height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--accent), #e0a079); }
+.bibm-bar > div { height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--accent), #f59455); }
 .bibm-hero-cta { margin-top: 18px; }
 .bibm-hero-empty { position: relative; z-index: 2; padding: 30px 8px 40px; max-width: 250px; color: rgba(74,54,34,0.62); font-weight: 600; font-size: 14.5px; line-height: 1.5; }
 .bibm-soon { display: inline-block; margin-top: 8px; background: rgba(74,54,34,0.1); color: var(--ink); font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 9px; border-radius: 999px; }
@@ -89,7 +89,7 @@
 .bibm-act:active { transform: translateY(1.5px); }
 .bibm-act.on { background: var(--accent); color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
 .bibm-act.manage { color: var(--green); }
-.bibm-active-filter { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; background: rgba(207,123,76,0.12); border: 2px solid rgba(207,123,76,0.4); border-radius: 13px; padding: 9px 14px; font-size: 13px; font-weight: 600; color: #5a4632; }
+.bibm-active-filter { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; background: rgba(242,121,42,0.12); border: 2px solid rgba(242,121,42,0.4); border-radius: 13px; padding: 9px 14px; font-size: 13px; font-weight: 600; color: #5a4632; }
 .bibm-active-filter strong { font-weight: 800; }
 .bibm-active-filter button { background: none; border: none; color: var(--accent); font-family: inherit; font-weight: 800; font-size: 12.5px; cursor: pointer; flex-shrink: 0; }
 
@@ -104,8 +104,8 @@
 .bibm-btn:active { transform: translateY(1.5px); }
 .bibm-btn:disabled { opacity: 0.5; }
 .bibm-btn.ghost { background: var(--cream); color: var(--ink); text-shadow: none; padding: 13px 18px; box-shadow: 1.8px 2.4px 0 rgba(74,54,34,0.2); }
-.bibm-btn.ghost.foro { color: #3d6b8a; }
-.bibm-btn.ghost.cuad { color: #5a7a4a; }
+.bibm-btn.ghost.foro { color: #000; }
+.bibm-btn.ghost.cuad { color: #000; }
 .bibm-actions { display: flex; gap: 9px; flex-wrap: wrap; }
 .bibm-actions .bibm-btn { flex: 1 1 auto; padding: 12px 14px; font-size: 14px; }
 .bibm-actions .bibm-btn:first-child { flex: 1 1 100%; }
@@ -117,7 +117,7 @@
 .bibm-cat-row { display: flex; align-items: center; gap: 11px; padding: 12px 13px; border-radius: 14px; background: var(--cream); border: 2px solid rgba(74,54,34,0.16); }
 .bibm-filter-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 13px 15px; border-radius: 15px; background: var(--cream); border: 2px solid var(--ink); color: var(--ink); cursor: pointer; font-family: inherit; box-shadow: 1.6px 2.2px 0 rgba(74,54,34,0.16); transition: transform 0.12s; }
 .bibm-filter-row:active { transform: translateY(1.5px); }
-.bibm-filter-row.active { background: #fbeede; border-color: var(--accent); }
+.bibm-filter-row.active { background: #fdece0; border-color: var(--accent); }
 
 /* ── Bottom sheet (base = visible; entra desde abajo) ── */
 .bibm-backdrop { position: fixed; inset: 0; z-index: 200; background: rgba(74,54,34,0.42); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); display: flex; align-items: flex-end; }

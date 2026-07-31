@@ -10,7 +10,7 @@ export default function BookTabs({ items, current, onSelect }) {
             onClick={() => onSelect(i)}
             title={libro.title}
             className={`album-tab${i === current ? ' active' : ''}`}
-            style={{ background: libro._baseColor || '#cf7b4c' }}
+            style={{ background: libro._baseColor || '#F2792A' }}
           >
             {libro.cover
               ? <img src={libro.cover} alt={libro.title} />

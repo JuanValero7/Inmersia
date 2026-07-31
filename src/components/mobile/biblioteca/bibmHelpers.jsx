@@ -11,7 +11,7 @@ import { INK, inmTint, hashOf, spineColor, tituloFontSize, autorFontSize } from 
 
 export { INK, inmTint, hashOf, spineColor }
 
-export const ACCENT = '#cf7b4c'
+export const ACCENT = '#F2792A'
 export const GREEN = '#6f9457'
 export const WALL = '#f1e8d4' // mismo fondo de estante que la versión desktop
 

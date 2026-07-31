@@ -3,7 +3,9 @@
    Estilos de la landing pública. TODO va scopeado bajo .inm-landing
    y con tokens propios (--inm-*) para no chocar con el resto de la app
    (index.css usa otra paleta y pone body { background:#1a0f07 }).
-   Las tipografías (Baloo 2, Playfair Display) ya las carga index.html.
+   Las tipografías (Baloo 2 para títulos, Poppins para texto) ya las
+   carga index.html. La landing ya no usa serif (Playfair/Crimson siguen
+   cargadas en index.html porque las usa el resto de la app, p.ej. el Lector).
    ───────────────────────────────────────────────────────────── */
 
 .inm-landing {
@@ -12,11 +14,15 @@
   --inm-ink-2: #6b4f34;
   --inm-ink-soft: rgba(74, 54, 34, 0.62);
   --inm-ink-faint: rgba(74, 54, 34, 0.16);
-  --inm-accent: #cf7b4c;
+  --inm-accent: #F2792A;
   --inm-accent-2: #b5613a;
   --inm-accent-ink: #7a4020;
+  --inm-orange: #f2792a;   /* naranja de botones */
+  --inm-bordo: #750f29;    /* bordo (corte del manifiesto, realces) */
   /* Papeles */
   --inm-cream: #fffdf8;
+  --inm-bg: #fbf5ec;   /* fondo general de la landing */
+  --inm-nav-h: 92px;   /* alto de la barra superior fija (compensa el padding) */
   --inm-paper: #f6f3ec;
   --inm-paper-warm: #fbefd5;
   --inm-panel: #f4ecda;
@@ -26,19 +32,20 @@
   --inm-c-gold: #cf9b3f;
   --inm-c-blue: #5d6f9c;
   /* Tipografías */
-  --inm-font-ui: 'Baloo 2', system-ui, sans-serif;
-  --inm-font-serif: 'Playfair Display', Georgia, serif;
+  --inm-font-ui: 'Baloo 2', system-ui, sans-serif;      /* títulos + UI */
+  --inm-font-text: 'Poppins', system-ui, sans-serif;    /* bloques de texto */
   /* Sombra clay */
   --inm-clay-sh: 2px 2.8px 0 rgba(74, 54, 34, 0.33);
   --inm-clay-sh-lg: 4px 6px 0 rgba(74, 54, 34, 0.16), 0 22px 50px rgba(40, 26, 12, 0.22);
 
-  font-family: var(--inm-font-serif);
+  font-family: var(--inm-font-text);
   color: var(--inm-ink);
-  background: var(--inm-cream);
+  background: var(--inm-bg);
   line-height: 1.5;
   font-size: 18px;
   overflow-x: hidden;
   min-height: 100vh;
+  padding-top: var(--inm-nav-h);   /* deja hueco para la barra superior fija */
 }
 .inm-landing *,
 .inm-landing *::before,
@@ -50,7 +57,7 @@
 .inm-clay-btn {
   display: inline-flex; align-items: center; gap: 0.5em;
   font-family: var(--inm-font-ui); font-weight: 700; font-size: 1.05rem;
-  color: #fff; background: var(--inm-accent);
+  color: #fff; background: var(--inm-orange);
   border: 2px solid var(--inm-ink); border-radius: 16px;
   padding: 0.78em 1.5em; cursor: pointer; text-decoration: none;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2); box-shadow: var(--inm-clay-sh);
@@ -64,21 +71,21 @@
 .inm-landing button:focus-visible { outline: 3px solid var(--inm-accent); outline-offset: 3px; border-radius: 8px; }
 
 /* ── NAV ── */
-.inm-nav { position: sticky; top: 0; z-index: 40; background: rgba(255, 253, 248, 0.86);
-  backdrop-filter: blur(10px); border-bottom: 1px solid var(--inm-ink-faint); }
+.inm-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--inm-bg);
+  border-bottom: 1px solid var(--inm-ink-faint); }
 .inm-nav-in { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
-.inm-nav-in img { height: 30px; }
+.inm-nav-in img { height: 60px; }
 .inm-nav-right { display: flex; align-items: center; gap: 22px; }
 .inm-lnk { font-family: var(--inm-font-ui); font-weight: 600; font-size: 0.95rem; color: var(--inm-ink); text-decoration: none; }
 .inm-lnk:hover { color: var(--inm-accent-2); }
 .inm-nav .inm-clay-btn { font-size: 0.92rem; padding: 0.5em 1.15em; border-radius: 12px; }
 
 /* ── HERO ── */
-.inm-hero { padding: clamp(44px, 6vw, 82px) 0 clamp(40px, 6vw, 72px); background: var(--inm-cream); }
+.inm-hero { padding: clamp(44px, 6vw, 82px) 0 clamp(40px, 6vw, 72px); background: var(--inm-bg); }
 .inm-hero-grid { display: grid; grid-template-columns: 0.78fr 1fr; gap: clamp(40px, 4.5vw, 64px); align-items: center; }
-.inm-hero-h { font-family: 'Playfair Display', serif; font-weight: 700; font-size: clamp(2.3rem, 4.2vw, 3.5rem);
+.inm-hero-h { font-family: var(--inm-font-ui); font-weight: 700; font-size: clamp(2.3rem, 4.2vw, 3.5rem);
   line-height: 1.06; letter-spacing: -0.01em; margin: 0 0 0.5em; text-wrap: balance; }
-.inm-hero-h em { font-style: italic; color: var(--inm-accent-2); }
+.inm-hero-h em { font-style: italic; color: var(--inm-orange); }
 .inm-hero-lede { font-size: clamp(1.12rem, 1.55vw, 1.36rem); color: var(--inm-ink-2); max-width: 42ch; margin: 0 0 1.6em; }
 .inm-hero-cta { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
 .inm-quiet { font-family: var(--inm-font-ui); font-weight: 600; color: var(--inm-ink); text-decoration: none;
@@ -90,7 +97,7 @@
 .inm-portal-scene { position: relative; width: 100%; max-width: 625px; aspect-ratio: 1 / 1.04; }
 .inm-portal-scene::before { content: ""; position: absolute; left: 50%; top: 40%; width: 92%; height: 86%;
   transform: translate(-50%, -50%);
-  background: radial-gradient(closest-side, rgba(207, 123, 76, 0.30), rgba(207, 123, 76, 0) 72%);
+  background: radial-gradient(closest-side, rgba(242,121,42, 0.30), rgba(242,121,42, 0) 72%);
   filter: blur(8px); z-index: 0; animation: inm-halo 7s ease-in-out infinite; }
 @keyframes inm-halo { 0%,100% { opacity: .58; transform: translate(-50%, -50%) scale(1); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); } }
 .inm-portal-wrap { position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 64%; aspect-ratio: 1 / 1.34; z-index: 2; }
@@ -122,15 +129,15 @@
 /* ── sección genérica ── */
 .inm-band { padding: clamp(60px, 8vw, 108px) 0; }
 .inm-rule-top { border-top: 1px solid var(--inm-ink-faint); }
-.inm-sec-h { font-family: 'Playfair Display', serif; font-weight: 700; font-size: clamp(2rem, 4vw, 3.1rem);
+.inm-sec-h { font-family: var(--inm-font-ui); font-weight: 700; font-size: clamp(2rem, 4vw, 3.1rem);
   line-height: 1.08; letter-spacing: -0.01em; margin: 0 0 0.55em; }
 
 /* manifiesto */
-.inm-manifesto { background: #2c2013; color: #ede0cb; text-align: center; }
-.inm-q { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 500;
+.inm-manifesto { background: var(--inm-bordo); color: #ede0cb; text-align: center; }
+.inm-q { font-family: var(--inm-font-ui); font-weight: 600;
   font-size: clamp(1.7rem, 3.6vw, 2.8rem); line-height: 1.32; max-width: 22ch; margin: 0 auto; }
-.inm-q b { color: var(--inm-accent); font-weight: 600; font-style: normal; }
-.inm-by { font-family: var(--inm-font-serif); font-size: 0.82rem; letter-spacing: 0.08em; color: rgba(237, 224, 203, 0.6); margin-top: 30px; }
+.inm-q b { color: var(--inm-accent); font-weight: 700; }
+.inm-by { font-family: var(--inm-font-text); font-size: 0.82rem; letter-spacing: 0.08em; color: rgba(237, 224, 203, 0.6); margin-top: 30px; }
 
 .inm-ov-head { max-width: 60ch; margin-bottom: 44px; }
 
@@ -138,10 +145,10 @@
 .inm-feature { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(34px, 5vw, 76px); align-items: center; }
 .inm-feature + .inm-feature { margin-top: clamp(56px, 7vw, 100px); }
 .inm-feature.flip .inm-ftxt { order: 2; }
-.inm-idx { font-family: var(--inm-font-serif); font-size: 0.78rem; color: var(--inm-ink-soft); margin-bottom: 10px;
+.inm-idx { font-family: var(--inm-font-text); font-size: 0.78rem; color: var(--inm-ink-soft); margin-bottom: 10px;
   display: flex; align-items: center; gap: 10px; }
 .inm-idx::before { content: ""; width: 22px; height: 1.5px; background: var(--inm-accent); }
-.inm-ftxt h3 { font-family: 'Playfair Display', serif; font-weight: 700; font-size: clamp(1.6rem, 2.6vw, 2.2rem);
+.inm-ftxt h3 { font-family: var(--inm-font-ui); font-weight: 700; font-size: clamp(1.6rem, 2.6vw, 2.2rem);
   line-height: 1.1; margin: 0 0 0.5em; }
 .inm-ftxt p { font-size: 1.1rem; color: var(--inm-ink-2); margin: 0 0 1em; max-width: 46ch; }
 .inm-ftxt ul { list-style: none; padding: 0; margin: 14px 0 0; }
@@ -163,17 +170,21 @@
 /* cierre */
 .inm-closing { background: var(--inm-paper-warm); text-align: center; }
 .inm-closing-in { display: flex; flex-direction: column; align-items: center; }
-.inm-closing-logo { height: clamp(78px, 11vw, 116px); width: auto; margin: 0 auto 30px; }
-.inm-closing-msg { font-family: 'Playfair Display', serif; font-weight: 700; font-size: clamp(2rem, 4.6vw, 3.5rem);
-  line-height: 1.12; letter-spacing: -0.01em; max-width: 18ch; margin: 0 auto 1.1em; }
-.inm-closing-msg em { font-style: italic; color: var(--inm-accent-2); }
-.inm-closing-ctas { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.inm-closing-hero { display: flex; align-items: center; justify-content: center;
+  gap: clamp(20px, 4vw, 52px); flex-wrap: wrap; }
+.inm-closing-cat { height: clamp(160px, 22vw, 290px); width: auto; }
+.inm-closing-text { display: flex; flex-direction: column; align-items: flex-start; gap: clamp(20px, 2.4vw, 30px); }
+.inm-closing-msg { font-family: var(--inm-font-ui); font-weight: 700; font-size: clamp(2rem, 4.6vw, 3.5rem);
+  line-height: 1.12; letter-spacing: -0.01em; max-width: 14ch; margin: 0; text-align: left; }
+.inm-closing-msg em { font-style: italic; color: var(--inm-bordo); }
+.inm-closing-ctas { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
+.inm-closing-ctas .inm-clay-btn { background: var(--inm-bordo); }
 .inm-quiet-lg { font-size: 1.08rem; border-bottom-width: 2px; padding-bottom: 3px; }
 
 /* footer */
-.inm-footer { background: #2c2013; color: rgba(237, 224, 203, 0.66); padding: 40px 0; }
+.inm-footer { background: var(--inm-bg); color: var(--inm-ink-soft); padding: 40px 0; border-top: 1px solid var(--inm-ink-faint); }
 .inm-foot-in { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
-.inm-foot-in img { height: 28px; filter: brightness(0) invert(1) opacity(0.85); }
+.inm-foot-in img { height: 52px; }
 .inm-foot-in p { margin: 0; font-family: var(--inm-font-ui); font-size: 0.86rem; }
 
 /* reveal-on-scroll */
@@ -191,6 +202,8 @@
   .inm-feature, .inm-feature.flip { grid-template-columns: 1fr; }
   .inm-feature .inm-ftxt { order: 0 !important; }
   .inm-feature .inm-vis-wrap { order: -1; }
+  .inm-closing-msg { text-align: center; }
+  .inm-closing-text, .inm-closing-ctas { align-items: center; }
 }
 @media (max-width: 540px) {
   .inm-nav-right .inm-lnk { display: none; }

@@ -23,7 +23,7 @@ import LegalModal from './legal/LegalModal.jsx'
 import '../styles/perfil.css'
 
 // ── Color de barra por sección (acuarela derivada de la paleta) ──
-export const SEC_COLOR = { datos: '#86ad9e', seguridad: '#7d8db5', transac: '#d9a05a', historial: '#cf8ea4', legal: '#a89076' }
+export const SEC_COLOR = { datos: '#7C8A4F', seguridad: '#2F4A6B', transac: '#d9a05a', historial: '#cf8ea4', legal: '#2B1616' }
 
 function tint(hex, amt) {
   const n = parseInt(hex.slice(1), 16)
@@ -168,7 +168,7 @@ export function SecDatos({ nombre, apellido, email, miembroDesde, cargando, onSa
                   border: gatoColor === g.id ? `3px solid ${'var(--accent)'}` : '2px solid rgba(74,54,34,0.2)',
                   background: `var(--cream) url('/assets/biblioteca/gato-${g.id}-1-thumb.webp') center / contain no-repeat`,
                   backgroundOrigin: 'content-box',
-                  boxShadow: gatoColor === g.id ? '0 0 0 3px rgba(207,123,76,0.25)' : 'none',
+                  boxShadow: gatoColor === g.id ? '0 0 0 3px rgba(242,121,42,0.25)' : 'none',
                 }} />
             ))}
           </div>
@@ -328,10 +328,6 @@ export default function Perfil({ user, gatoColor, onChangeGatoColor, onGoBack, o
 
       {/* topbar */}
       <div className="pf-topbar">
-        <div className="pf-brand">
-          <span className="pf-brand-title">Mi Carnet</span>
-          <span className="pf-brand-sub">Socio de Inmersia</span>
-        </div>
         <button className="pf-back" type="button" onClick={onGoBack}>
           <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.4"><path d="M12 6.04A8.97 8.97 0 006 3.75c-1.05 0-2.06.18-3 .51v14.25A8.99 8.99 0 016 18c2.3 0 4.4.87 6 2.29m0-14.25a8.97 8.97 0 016-2.29c1.05 0 2.06.18 3 .51v14.25A8.99 8.99 0 0018 18a8.97 8.97 0 00-6 2.29m0-14.25v14.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
           Biblioteca

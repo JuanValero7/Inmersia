@@ -5,19 +5,20 @@
 
 .album-m-root {
   --ink:#4a3622; --ink-soft:#6b4f34; --ink-faint:#cdbfa6;
-  --terra:#cf7b4c; --terra-d:#b5613a;
+  --terra:#F2792A; --terra-d:#b5613a;
   --crema:#fffdf8; --papel:#f6f3ec; --papel-warm:#efe7d4; --aged:#f3ead2;
   --rojo:#c1453a; --verde:#5f8a72; --oro:#cf9b3f; --azul:#5d6f9c; --rosa:#b5617f;
   --foil:#bd9a4e; --tinta:#241a10;
-  --serif:'Playfair Display', Georgia, serif;
-  --ui:'Baloo 2', system-ui, sans-serif;
+  --serif:'Poppins', system-ui, sans-serif;
+  --ui:'Poppins', system-ui, sans-serif;
+  --titulo:'Baloo 2', system-ui, sans-serif;
   --clay:2px 2.6px 0 rgba(74,54,34,.28);
 
   position:relative;
   width:100%; height:100%; min-height:100dvh;
   color:var(--ink); font-family:var(--ui);
   display:flex; flex-direction:column; overflow:hidden;
-  background:linear-gradient(180deg,#fbf7ee,#f1e8d4);
+  background:#FBF5EC;
 }
 .album-m-root *{ box-sizing:border-box; }
 
@@ -60,7 +61,7 @@
 /* ─── barra superior ─── */
 .album-m-top{ flex:none; display:flex; align-items:center; gap:8px; padding:7px 14px 6px; }
 .album-m-back{ flex:none; display:inline-flex; align-items:center; gap:5px;
-  background:var(--papel-warm); color:var(--ink); border:2px solid var(--ink); border-radius:999px;
+  background:#F2792A; color:#fff; border:2px solid var(--ink); border-radius:999px;
   padding:5px 11px 5px 9px; font-family:var(--ui); font-weight:700; font-size:12px; cursor:pointer;
   box-shadow:1.4px 1.8px 0 rgba(74,54,34,.25); }
 .album-m-back:active{ transform:translateY(1px); }
@@ -237,7 +238,7 @@
 @media (orientation:portrait){
   .album-m-rotate{ position:absolute; inset:0; z-index:120; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:14px; text-align:center; padding:32px;
-    background:linear-gradient(180deg,#fbf7ee,#f1e8d4); color:var(--ink); }
+    background:#FBF5EC; color:var(--ink); }
   .album-m-rotate svg{ color:var(--terra-d); animation:tilt 2.4s ease-in-out infinite; }
   .album-m-rotate h3{ font-family:var(--serif); font-weight:700; font-size:22px; margin:0; }
   .album-m-rotate p{ margin:0; font-weight:600; font-size:13.5px; color:var(--ink-soft); max-width:260px; }
@@ -249,3 +250,22 @@
   .album-m-rotate svg{ animation:none; }
   .cellL.pegando{ animation:none; }
 }
+
+/* ── Títulos en Baloo (nombre del libro, secciones, nombres de barajita).
+      Todo lo demás (incluida la placa) hereda Poppins de --ui/--serif. ── */
+.bhL h2,
+.clabelL h3,
+.cellL .cname,
+.carouselL-head h3,
+.carouselL-name,
+.resL .rt{ font-family:var(--titulo); }
+
+/* ── Botón "volver a la biblioteca" en la pantalla de rotación (arriba izq.) ── */
+.album-m-rotate-back{
+  position:absolute; top:14px; left:14px; z-index:2;
+  display:inline-flex; align-items:center; gap:5px;
+  background:#F2792A; color:#fff; border:2px solid var(--ink); border-radius:999px;
+  padding:7px 13px 7px 11px; font-family:var(--ui); font-weight:700; font-size:12.5px; cursor:pointer;
+  box-shadow:1.4px 1.8px 0 rgba(74,54,34,.25);
+}
+.album-m-rotate-back:active{ transform:translateY(1px); }

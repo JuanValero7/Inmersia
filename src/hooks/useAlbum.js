@@ -100,7 +100,7 @@ export function useAlbum(user) {
     title:       r.libros.titulo,
     author:      r.libros.autor || 'Desconocido',
     pages:       r.libros.paginas || 200,
-    _baseColor:  r.libros.color || '#cf8a6e',
+    _baseColor:  r.libros.color || '#F2792A',
     cover:       r.libros.portada_url || null,
     es_ficcion:  r.libros.es_ficcion ?? true,
     leido:       r.leido,

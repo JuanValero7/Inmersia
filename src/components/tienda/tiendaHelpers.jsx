@@ -15,7 +15,7 @@ export const CAT_COLOR = {
 
 // Mezcla un color hex hacia blanco (amt>0) o negro (amt<0). Devuelve rgb().
 export function itint(hex, amt) {
-  const h = (hex || '#cf8a6e').replace('#', '')
+  const h = (hex || '#F2792A').replace('#', '')
   const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16)
   const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255
   const t = amt < 0 ? 0 : 255, p = Math.abs(amt)

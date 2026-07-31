@@ -61,14 +61,14 @@ function NovedadesSpotlight({ novedades = [], onOpen, onPreview }) {
 
           {libro.descripcion && (
             <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', background: '#fdf6e3', border: `2px solid ${ink}`, borderRadius: '4px 16px 16px 4px',
-              padding: '12px 15px', fontSize: 14, lineHeight: 1.5, color: ink }}>
+              padding: '12px 15px', fontSize: 14, lineHeight: 1.5, color: ink, fontFamily: "'Poppins', system-ui, sans-serif" }}>
               {libro.descripcion}
             </div>
           )}
 
           <div style={{ flexShrink: 0, display: 'flex', gap: 11 }}>
             <button onClick={(e) => onOpen(libro, e.currentTarget.getBoundingClientRect())}
-              style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#cf7b4c', color: '#fff',
+              style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#F2792A', color: '#fff',
                 border: `2px solid ${ink}`, borderRadius: 999, padding: '13px 26px', fontWeight: 700, fontSize: 15,
                 fontFamily: 'inherit', cursor: 'pointer', textShadow: '0 1px 1px rgba(0,0,0,0.2)', boxShadow: `2px 2.8px 0 ${ink}33` }}>
               Ver detalle
@@ -102,7 +102,7 @@ function NovedadesSpotlight({ novedades = [], onOpen, onPreview }) {
                   <div style={{ display: 'flex', gap: 10, marginTop: 5 }}>
                     <button onClick={(e) => onOpen(l, e.currentTarget.getBoundingClientRect())}
                       style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit',
-                        fontWeight: 700, fontSize: 11.5, color: '#b5613a' }}>Ver detalle</button>
+                        fontWeight: 700, fontSize: 11.5, color: '#F2792A' }}>Ver detalle</button>
                     <button onClick={() => onPreview(l)}
                       style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', padding: 0,
                         cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 11.5, color: 'rgba(74,54,34,0.6)' }}>

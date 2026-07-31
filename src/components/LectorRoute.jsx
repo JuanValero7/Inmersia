@@ -19,14 +19,14 @@ function mapLibro(data) {
   return {
     id: data.id, libro_id: data.id, slug: data.slug,
     title: data.titulo, author: data.autor || 'Desconocido',
-    pages: data.paginas || 200, _baseColor: data.color || '#cf8a6e',
+    pages: data.paginas || 200, _baseColor: data.color || '#F2792A',
     summary: data.descripcion || '', cover: data.portada_url || null,
     es_ficcion: data.es_ficcion ?? true,
     leido: data.bibliotecas_usuarios?.[0]?.leido ?? false,
   }
 }
 
-export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, gatoColor, lectorStartNotebook, setLectorStartNotebook, setCartelaJumpId, setForoSource, setCarteleraSource }) {
+export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, gatoColor, openAuth, lectorStartNotebook, setLectorStartNotebook, setCartelaJumpId, setForoSource, setCarteleraSource }) {
   const { slug } = useParams()
   const navigate = useNavigate()
   const isAuthed = !!user
@@ -64,7 +64,7 @@ export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, gatoCol
     <LectorCmp
       book={book}
       guestMode={!user}
-      onRequestAuth={(tab) => navigate('/auth', { state: { tab: tab || 'login' } })}
+      onRequestAuth={(tab) => openAuth?.(tab || 'login')}
       onGoBack={() => navigate(user ? '/biblioteca' : '/')}
       onGoCartelera={(itemId) => { setCartelaJumpId(itemId || null); setCarteleraSource?.('lectura'); navigate(`/investigacion/${book.slug || book.id}`) }}
       onGoForo={() => { setForoSource('lectura'); navigate(`/foro/${book.slug || book.id}`) }}

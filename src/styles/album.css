@@ -5,12 +5,13 @@
 
 .album-root {
   --ink: #4a3622; --ink-soft: #6b4f34; --ink-faint: #cdbfa6;
-  --terra: #cf7b4c; --terra-d: #b5613a;
+  --terra: #F2792A; --terra-d: #b5613a;
   --crema: #fffdf8; --papel: #f6f3ec; --papel-warm: #efe7d4; --aged: #f3ead2;
   --rojo: #c1453a; --verde: #5f8a72; --oro: #cf9b3f; --azul: #5d6f9c; --rosa: #b5617f;
   --foil: #bd9a4e; --tinta: #241a10;
-  --serif: 'Playfair Display', Georgia, serif;
-  --ui: 'Baloo 2', system-ui, sans-serif;
+  --serif: 'Poppins', system-ui, sans-serif;
+  --ui: 'Poppins', system-ui, sans-serif;
+  --titulo: 'Baloo 2', system-ui, sans-serif;
   --clay: 2px 2.8px 0 rgba(74,54,34,.28);
   --clay-lg: 0 22px 48px rgba(74,54,34,.22), 3px 5px 0 rgba(74,54,34,.16);
   --row: 118px;
@@ -23,10 +24,7 @@
   flex-direction: column;
   align-items: center;
   padding: 34px 26px 46px;
-  background:
-    radial-gradient(120% 90% at 50% -10%, rgba(255,255,255,.55), transparent 55%),
-    radial-gradient(circle at 22% 12%, #efe9db, #d9d0bd 90%);
-  background-attachment: fixed;
+  background: #FBF5EC;
 }
 .album-root * { box-sizing: border-box; }
 
@@ -46,7 +44,7 @@
 }
 .album-back {
   display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0;
-  background: var(--papel-warm); color: var(--ink);
+  background: #F2792A; color: #fff;
   border: 2.5px solid var(--ink); border-radius: 999px;
   padding: 10px 16px; font-family: var(--ui); font-weight: 700; font-size: 14px;
   cursor: pointer; box-shadow: var(--clay);
@@ -89,7 +87,7 @@
 .album-page {
   position: relative; padding: 30px 34px 34px;
   background-image:
-    radial-gradient(60% 34% at 8% 2%, rgba(207,123,76,.05), transparent 60%),
+    radial-gradient(60% 34% at 8% 2%, rgba(242,121,42,.05), transparent 60%),
     radial-gradient(60% 40% at 98% 102%, rgba(120,90,50,.06), transparent 62%);
 }
 .album-page-left { border-right: 1.5px solid rgba(74,54,34,.12); }
@@ -291,17 +289,17 @@
 /* ── pantallas de estado ─────────────────────────────────────── */
 .album-loading, .album-empty {
   min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
-  background: radial-gradient(circle at 22% 12%, #efe9db, #d9d0bd 90%);
-  font-family: var(--ui, 'Baloo 2', sans-serif); color: #4a3622;
+  background: #FBF5EC;
+  font-family: 'Poppins', system-ui, sans-serif; color: #4a3622;
 }
-.album-empty h2 { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; margin: 0; color: #4a3622; }
+.album-empty h2 { font-family: 'Baloo 2', system-ui, sans-serif; font-size: 26px; font-weight: 700; margin: 0; color: #4a3622; }
 .album-empty p { font-size: 15px; color: #6b4f34; text-align: center; max-width: 340px; line-height: 1.5; margin: 0; }
 .album-empty .btn-wood {
-  background: #cf7b4c; color: #fffdf8; border: 2.5px solid #4a3622; border-radius: 999px;
-  padding: 10px 22px; font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer;
+  background: #F2792A; color: #fffdf8; border: 2.5px solid #4a3622; border-radius: 999px;
+  padding: 10px 22px; font-family: 'Poppins', system-ui, sans-serif; font-weight: 700; font-size: 14px; cursor: pointer;
   box-shadow: 2px 2.8px 0 rgba(74,54,34,.28);
 }
-.album-loading p { font-family: 'Playfair Display', serif; font-size: 15px; color: #6b4f34; margin: 0; }
+.album-loading p { font-family: 'Poppins', system-ui, sans-serif; font-size: 15px; color: #6b4f34; margin: 0; }
 .spinner { border-radius: 50%; border-style: solid; animation: album-spin .8s linear infinite; }
 @keyframes album-spin { to { transform: rotate(360deg); } }
 
@@ -399,3 +397,12 @@
 @media (min-width: 1440px) {
   .album-bandeja { display: flex; }
 }
+
+/* ── Títulos en Baloo (nombre del libro, secciones, nombres de barajita).
+      Todo lo demás (incluida la placa) hereda Poppins de --ui/--serif. ── */
+.album-book-title,
+.album-sechead h3,
+.album-barajita-caption,
+.album-bandeja-title,
+.album-bandeja-meta .name,
+.album-tab-placeholder span { font-family: var(--titulo); }

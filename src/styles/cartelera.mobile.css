@@ -10,9 +10,7 @@
 
 .cart-root.cm-root{
   display:flex; flex-direction:column;
-  background-image:
-    radial-gradient(58% 34% at 10% 3%, rgba(207,123,76,0.08), transparent 60%),
-    radial-gradient(64% 42% at 96% 99%, rgba(120,90,50,0.10), transparent 62%);
+  background-image:none;
   padding-top:env(safe-area-inset-top);
   padding-bottom:env(safe-area-inset-bottom);
 }
@@ -21,13 +19,21 @@
   overflow:hidden;
 }
 
+/* Tipografía: títulos en Baloo 2; el resto hereda Poppins de .cart-root */
+.cm-root .cm-title h1,
+.cm-root .cm-sec-name h2,
+.cm-root .cm-fic-name,
+.cm-root .cm-sheet-title,
+.cm-root .pv-word,
+.cm-root .pv-initial{ font-family:'Baloo 2', cursive; }
+
 /* ── Header ── */
 .cm-root .cm-header{
   position:relative; z-index:30; flex-shrink:0;
   margin:8px 12px 0; display:flex; align-items:center; gap:9px;
   padding:9px 11px 9px 10px; border-radius:18px;
   background-color:#e7dcc2;
-  background-image:radial-gradient(circle at 18% 30%, rgba(207,123,76,0.10), transparent 60%);
+  background-image:radial-gradient(circle at 18% 30%, rgba(242,121,42,0.10), transparent 60%);
   border:2px solid var(--ink);
   box-shadow:4px 6px 0 rgba(74,54,34,0.12), inset 0 1px 0 rgba(255,255,255,0.5);
 }
@@ -169,7 +175,7 @@
 .cm-root .cm-cat-tool{ display:flex; flex-direction:column; align-items:center; gap:5px; width:60px;
   background:none; border:none; cursor:pointer; font-family:inherit; padding:4px 5px; border-radius:12px;
   -webkit-tap-highlight-color:transparent; }
-.cm-root .cm-cat-tool:active{ background:rgba(207,123,76,0.12); }
+.cm-root .cm-cat-tool:active{ background:rgba(242,121,42,0.12); }
 .cm-root .cm-cat-tile{
   width:38px; height:38px; flex-shrink:0; border-radius:11px; border:2px solid var(--ink);
   display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:800; color:#fff;

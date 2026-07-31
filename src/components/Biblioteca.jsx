@@ -122,7 +122,7 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
   const headerInk = '#3a2b1c';
 
   return (
-    <div className="bib-body" style={{ fontFamily: "'Baloo 2', cursive", color: INK, minHeight: '100%', backgroundColor: '#f6f3ec' }}>
+    <div className="bib-body" style={{ fontFamily: "'Baloo 2', cursive", color: INK, minHeight: '100%', backgroundColor: '#FBF5EC' }}>
       <InmHeader search={searchInput} onSearch={handleSearchChange} onSearchKeyDown={handleSearchKeyDown} displayName={displayName} inicial={inicial}
         onGoPerfil={onGoPerfil} onGoTienda={handleGoTienda} onGoAlbum={onGoAlbum} onSignOut={onSignOut} />
 
@@ -152,7 +152,7 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, flexWrap: 'wrap' }}>
                 <button onClick={() => setShowFilters(v => !v)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 9, background: activeCategory !== null ? '#cf7b4c' : '#fffdf8', color: activeCategory !== null ? '#fff' : INK, border: `2px solid ${INK}`, borderRadius: 999, padding: '10px 17px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap', textShadow: activeCategory !== null ? '0 1px 1px rgba(0,0,0,0.2)' : 'none', boxShadow: `1.6px 2px 0 ${INK}33` }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 9, background: activeCategory !== null ? '#F2792A' : '#fffdf8', color: activeCategory !== null ? '#fff' : INK, border: `2px solid ${INK}`, borderRadius: 999, padding: '10px 17px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap', textShadow: activeCategory !== null ? '0 1px 1px rgba(0,0,0,0.2)' : 'none', boxShadow: `1.6px 2px 0 ${INK}33` }}>
                   <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round"/></svg>
                   Filtrar{activeCategory ? ' · 1' : ''}
                 </button>
@@ -166,7 +166,7 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
 
             {showFilters && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginTop: 16, flexWrap: 'wrap' }}>
-                <button onClick={() => setCategory(null)} style={chip(activeCategory === null, '#cf7b4c')}>Todos</button>
+                <button onClick={() => setCategory(null)} style={chip(activeCategory === null, '#F2792A')}>Todos</button>
                 {hasSinCategoria && (
                   <button onClick={() => setCategory(activeCategory === SIN_CATEGORIA_ID ? null : SIN_CATEGORIA_ID)} style={chip(activeCategory === SIN_CATEGORIA_ID, COLOR_DEFAULT)}>
                     <span style={{ width: 9, height: 9, borderRadius: '50%', background: COLOR_DEFAULT, display: 'inline-block', marginRight: 8, border: `1px solid ${INK}66` }} />

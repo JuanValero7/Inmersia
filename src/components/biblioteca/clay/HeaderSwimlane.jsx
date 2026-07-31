@@ -14,7 +14,7 @@ function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, on
   const ink = INK;
   const bar = {
     display: 'flex', alignItems: 'center', gap: 16, borderRadius: 22, padding: '13px 17px',
-    backgroundColor: '#B5613A',
+    backgroundColor: '#F2792A',
     border: `2px solid ${ink}`,
     boxShadow: `5px 7px 0 ${ink}12, inset 0 1px 0 rgba(255,255,255,0.5)`,
   };
@@ -46,7 +46,7 @@ function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, on
             </button>
           )}
           <button onClick={onGoPerfil} style={{ ...navBtn, padding: '7px 15px 7px 8px' }} title="Mi perfil">
-            <span style={{ width: 27, height: 27, borderRadius: '50%', background: 'linear-gradient(135deg, #cf7b4c, #6f9457)', color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, border: `2px solid ${ink}` }}>{inicial}</span>
+            <span style={{ width: 27, height: 27, borderRadius: '50%', background: 'linear-gradient(135deg, #F2792A, #6f9457)', color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, border: `2px solid ${ink}` }}>{inicial}</span>
             <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
           </button>
           <button onClick={onSignOut} style={{ ...navBtn, padding: '8px 13px' }} title="Salir">
@@ -99,14 +99,14 @@ function RecomendacionSpotlight({ recomendaciones, onOpen, onPreview }) {
 
         {libro.descripcion && (
           <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', background: '#fdf6e3', border: `2px solid ${ink}`, borderRadius: '4px 16px 16px 4px',
-            padding: '12px 15px', fontSize: 14, lineHeight: 1.5, color: ink }}>
+            padding: '12px 15px', fontSize: 14, lineHeight: 1.5, color: ink, fontFamily: "'Poppins', system-ui, sans-serif" }}>
             {libro.descripcion}
           </div>
         )}
 
         <div style={{ flexShrink: 0, display: 'flex', gap: 11 }}>
           <button onClick={(e) => onOpen(libro, e.currentTarget.getBoundingClientRect())}
-            style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#cf7b4c', color: '#fff', border: `2px solid ${ink}`,
+            style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#F2792A', color: '#fff', border: `2px solid ${ink}`,
               borderRadius: 999, padding: '13px 26px', fontWeight: 700, fontSize: 15, fontFamily: 'inherit', cursor: 'pointer',
               textShadow: '0 1px 1px rgba(0,0,0,0.2)', boxShadow: `2px 2.8px 0 ${ink}33` }}>
             Ver detalle
@@ -145,7 +145,7 @@ function RecomendacionSpotlight({ recomendaciones, onOpen, onPreview }) {
 
 
 function HeroFeatured({ book, onOpen }) {
-  const ink = INK, accent = '#cf7b4c';
+  const ink = INK, accent = '#F2792A';
   const [hov, setHov] = React.useState(false);
   const cat = book.categoryName;
   const hasProgress = typeof book.progress === 'number';
@@ -206,7 +206,7 @@ function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOp
   };
   const tabBtn = (active) => ({
     border: `2px solid ${active ? ink : 'transparent'}`, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 14,
-    padding: '8px 18px', borderRadius: 999, background: active ? '#cf7b4c' : 'transparent', color: active ? '#fff' : 'rgba(74,54,34,0.6)',
+    padding: '8px 18px', borderRadius: 999, background: active ? '#F2792A' : 'transparent', color: active ? '#fff' : 'rgba(74,54,34,0.6)',
     whiteSpace: 'nowrap', textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none', boxShadow: active ? `1.4px 1.8px 0 ${ink}33` : 'none', transition: 'all .15s',
   });
   // Mismo <img> en ambas copias (mismo src/height/right/maxWidth), solo cambia

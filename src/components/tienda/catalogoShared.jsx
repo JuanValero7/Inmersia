@@ -41,7 +41,7 @@ export function Pagination({ page, total, onChange }) {
 }
 
 export function CoverCard({ libro }) {
-  const c = libro.color || '#cf8a6e'
+  const c = libro.color || '#F2792A'
   return (
     <div className="book" style={{ '--cov': c }}>
       <div className="book-cover">
@@ -58,8 +58,8 @@ export function CoverCard({ libro }) {
 }
 
 export function BookCard({ libro, adquirido, onOpen }) {
-  const c = libro.color || '#cf8a6e'
-  const catCol = CAT_COLOR[libro.categorias?.[0]] || '#cf8a6e'
+  const c = libro.color || '#F2792A'
+  const catCol = CAT_COLOR[libro.categorias?.[0]] || '#F2792A'
   return (
     <button className={clsx('bk-card', adquirido && 'bk-card-owned')} type="button"
       title={`${libro.titulo} — ${libro.autor}`} onClick={() => onOpen(libro)}>

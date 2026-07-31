@@ -35,7 +35,7 @@ function computeGeom(doubleView) {
 }
 
 function NavButton({ onClick, title, icon, label, id }) {
-  const btnStyle = { display: 'inline-flex', alignItems: 'center', gap: 9, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13.5, cursor: 'pointer', border: `2px solid ${theme.ink}`, borderRadius: 999, padding: '8px 16px 8px 14px', background: theme.navBg, color: theme.navText, boxShadow: `1.6px 2.4px 0 ${theme.ink}30` }
+  const btnStyle = { display: 'inline-flex', alignItems: 'center', gap: 9, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13.5, cursor: 'pointer', border: `2px solid ${theme.ink}`, borderRadius: 999, padding: '8px 16px 8px 14px', background: theme.navBg, color: '#000', boxShadow: `1.6px 2.4px 0 ${theme.ink}30` }
   return (
     <button id={id} type="button" onClick={onClick} title={title} style={btnStyle}>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d={icon}/></svg>
@@ -409,7 +409,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
         <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexShrink: 0 }}>
           {isSuperuser && !loading && !error && book?.libro_id && (
             <button type="button" onClick={() => setAdminPanelOpen(v => !v)} title="Panel de media (superusuario)"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13, cursor: 'pointer', border: `2px solid ${adminPanelOpen ? theme.accent : theme.ink}`, borderRadius: 999, padding: '8px 14px', background: adminPanelOpen ? theme.accent : theme.navBg, color: adminPanelOpen ? '#fff' : theme.navText, boxShadow: `1.6px 2.4px 0 ${theme.ink}30` }}>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13, cursor: 'pointer', border: `2px solid ${adminPanelOpen ? theme.accent : theme.ink}`, borderRadius: 999, padding: '8px 14px', background: adminPanelOpen ? theme.accent : theme.navBg, color: adminPanelOpen ? '#fff' : '#000', boxShadow: `1.6px 2.4px 0 ${theme.ink}30` }}>
               ⚙ Media
             </button>
           )}
@@ -420,7 +420,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
           )}
           {guestMode ? (
             <button type="button" onClick={() => onRequestAuth?.('registro')}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#cf7b4c', border: '2px solid #4a3622', borderRadius: 999, padding: '9px 16px', color: '#fff', fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '1.5px 2px 0 rgba(74,54,34,0.30)' }}>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#F2792A', border: '2px solid #4a3622', borderRadius: 999, padding: '9px 16px', color: '#fff', fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '1.5px 2px 0 rgba(74,54,34,0.30)' }}>
               Crear cuenta
             </button>
           ) : (
@@ -436,22 +436,22 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   <button type="button" onClick={() => { setExplorarOpen(false); onGoForo() }}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
-                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Foro</span>
+                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#000' }}>Foro</span>
                   </button>
                   <button type="button" onClick={() => { setExplorarOpen(false); onGoCartelera() }}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Investigación</span>
+                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#000' }}>Investigación</span>
                   </button>
                   <button type="button" onClick={() => { setExplorarOpen(false); onGoBack() }}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Biblioteca</span>
+                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#000' }}>Biblioteca</span>
                   </button>
                 </div>
               )}
               <button type="button" onClick={() => setExplorarOpen(o => !o)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 999, padding: '9px 16px', color: theme.ink, fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: `1.5px 2px 0 rgba(74,54,34,0.20)` }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 999, padding: '9px 16px', color: '#000', fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: `1.5px 2px 0 rgba(74,54,34,0.20)` }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><path d="M2 12h20"/>
                 </svg>
@@ -530,7 +530,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
           <button type="button" onClick={() => setNotebookOpen(true)}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, background: 'transparent', border: 'none', cursor: 'pointer' }}>
             <NotebookIcon />
-            <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11.5, color: theme.textColor }}>Cuaderno</span>
+            <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11.5, color: '#000' }}>Cuaderno</span>
           </button>
         </div>
       )}
@@ -599,7 +599,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                 Crear cuenta
               </button>
               <button type="button" onClick={() => onRequestAuth?.('login')}
-                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#fffdf8', color: '#4a3622', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
+                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#fffdf8', color: '#000', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
                 Iniciar sesión
               </button>
             </div>

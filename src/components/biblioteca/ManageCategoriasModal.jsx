@@ -7,8 +7,8 @@ import React from 'react'
 // =============================================================
 
 const _CAT_INK = '#4a3622';
-const _CAT_ACCENT = '#cf7b4c';
-const SUGGESTED_PALETTE = ['#7d5bbe', '#3d7ea6', '#e0913f', '#d8553f', '#2fa18d', '#4f93c4', '#6e5f93', '#d56f97', '#5a8c5a', '#bd6a34'];
+const _CAT_ACCENT = '#F2792A';
+const SUGGESTED_PALETTE = ['#F5A623', '#7C8A4F', '#2F4A6B', '#BE6173', '#d56a52'];
 
 function ClayColorPicker({ value, onChange }) {
   return (

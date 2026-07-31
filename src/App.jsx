@@ -5,7 +5,8 @@ import { ensureProfile } from './lib/ensureProfile.js'
 import useIsMobile from './hooks/useIsMobile.js'
 import { useSuperuser } from './hooks/useSuperuser.js'
 import { useGatoColor } from './hooks/useGatoColor.js'
-import Auth from './components/Auth.jsx'
+import AuthModal from './components/AuthModal.jsx'
+import { AuthModalProvider } from './context/authModal.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
 import { LectorRoute } from './components/LectorRoute.jsx'
 
@@ -39,18 +40,13 @@ function ProtectedRoute({ user }) {
   return <Outlet />
 }
 
-// Página de login/registro — lee la pestaña inicial del state de navegación
-function AuthPage({ setUser, loadLastBooks }) {
+// La autenticación ahora es un pop-up (ver <AuthModal>), no una página.
+// La ruta /auth se conserva solo para enlaces antiguos/marcadores: redirige
+// a la raíz y abre el pop-up con la pestaña indicada en el state.
+function AuthRedirect({ openAuth }) {
   const location = useLocation()
-  const navigate  = useNavigate()
-  const initialTab = location.state?.tab ?? 'login'
-  return (
-    <Auth
-      initialTab={initialTab}
-      onBack={() => navigate('/')}
-      onAuthSuccess={(u) => { setUser(u); loadLastBooks(u); navigate('/biblioteca', { replace: true }) }}
-    />
-  )
+  useEffect(() => { openAuth(location.state?.tab ?? 'login') }, [openAuth, location.state])
+  return <Navigate to="/" replace />
 }
 
 export default function App() {
@@ -64,6 +60,12 @@ export default function App() {
   const [carteleraSource,     setCarteleraSource]     = useState('lectura')
   const [lectorStartNotebook, setLectorStartNotebook] = useState(false)
   const [cartelaJumpId,       setCartelaJumpId]       = useState(null)
+  const [authTab,             setAuthTab]             = useState(null) // null | 'login' | 'registro'
+
+  // Abre el pop-up de autenticación en la pestaña indicada.
+  const openAuth = useCallback((tab = 'login') => {
+    setAuthTab(tab === 'registro' ? 'registro' : 'login')
+  }, [])
 
   const navigate    = useNavigate()
   const location    = useLocation()
@@ -175,7 +177,7 @@ export default function App() {
   if (!authReady) return Fallback
 
   return (
-    <>
+    <AuthModalProvider openAuth={openAuth}>
       <Suspense fallback={Fallback}>
         <Routes>
 
@@ -184,16 +186,16 @@ export default function App() {
             user
               ? <Navigate to="/biblioteca" replace />
               : <LandingView
-                  onAuth={(tab) => navigate('/auth', { state: { tab } })}
+                  onAuth={openAuth}
                   onGoTienda={() => navigate('/tienda')}
                 />
           } />
 
-          {/* Auth */}
+          {/* Auth: la ruta se conserva solo para enlaces antiguos → abre el pop-up */}
           <Route path="/auth" element={
             user
               ? <Navigate to="/biblioteca" replace />
-              : <AuthPage setUser={setUser} loadLastBooks={loadLastBooks} />
+              : <AuthRedirect openAuth={openAuth} />
           } />
 
           {/* Reset de contraseña (Supabase redirige aquí) */}
@@ -220,6 +222,7 @@ export default function App() {
               currentBook={currentBook}
               isSuperuser={isSuperuser}
               gatoColor={gatoColor}
+              openAuth={openAuth}
               lectorStartNotebook={lectorStartNotebook}
               setLectorStartNotebook={setLectorStartNotebook}
               setCartelaJumpId={setCartelaJumpId}
@@ -346,6 +349,17 @@ export default function App() {
 
         </Routes>
       </Suspense>
-    </>
+
+      {/* Pop-up de autenticación: se abre sobre la página actual. Al iniciar
+          sesión con éxito solo se cierra — la landing redirige sola a
+          /biblioteca y en tienda/lector el usuario permanece donde estaba. */}
+      {authTab && !user && (
+        <AuthModal
+          initialTab={authTab}
+          onClose={() => setAuthTab(null)}
+          onAuthSuccess={(u) => { setUser(u); loadLastBooks(u); setAuthTab(null) }}
+        />
+      )}
+    </AuthModalProvider>
   )
 }

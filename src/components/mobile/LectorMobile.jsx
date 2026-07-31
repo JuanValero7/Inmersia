@@ -69,7 +69,7 @@ function CassetteIcon() {
 function PolaroidsIcon() {
   const card = (rot, left, top, z, tape) => (
     <span style={{ position: 'absolute', left, top, width: 30, height: 36, background: '#f7f4ec', border: `2px solid ${INK}`, borderRadius: 3, transform: `rotate(${rot}deg)`, boxShadow: `1.5px 2px 0 ${INK}26`, zIndex: z, padding: '3px 3px 0' }}>
-      <span style={{ display: 'block', width: '100%', height: 21, border: `1px solid ${INK}66`, background: 'linear-gradient(135deg,#e7a877,#cf7b4c)' }} />
+      <span style={{ display: 'block', width: '100%', height: 21, border: `1px solid ${INK}66`, background: 'linear-gradient(135deg,#e7a877,#F2792A)' }} />
       {tape && <span style={{ position: 'absolute', top: -4, left: '50%', transform: 'translateX(-50%) rotate(-4deg)', width: 18, height: 7, background: `${ACCENT}cc`, border: `1px solid ${INK}55` }} />}
     </span>
   )
@@ -704,7 +704,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
                 Crear cuenta
               </button>
               <button type="button" onClick={() => onRequestAuth?.('login')}
-                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#fffdf8', color: '#4a3622', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
+                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#fffdf8', color: '#000', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
                 Iniciar sesión
               </button>
             </div>
