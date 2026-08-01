@@ -39,9 +39,8 @@ function Panel({ sec, open, hoveredAny, last, idx, onEnter, onOpen }) {
       <div className="grain" style={{ filter: 'url(#paperGrain)' }} />
       <div className="vignette" />
       <div className="content">
-        <div className="initial" style={idx > 0 ? { marginLeft: 32 } : undefined}>{sec.initial}</div>
+        <div className="initial" style={idx > 0 ? { marginLeft: 32 } : undefined}>{sec.label}</div>
         <div className="reveal">
-          <div className="word">{sec.label}</div>
           <div className="desc">{sec.sub}.</div>
           <div className="go">Explorar
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"><path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>

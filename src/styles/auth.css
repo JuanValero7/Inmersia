@@ -150,7 +150,7 @@
 /* ══ AUTH MODAL (pop-up sobre la página actual) ═══════════════════════════
    Reutiliza la misma .login-card; añade backdrop oscurecido + botón de cierre. */
 .auth-modal-backdrop {
-  position: fixed; inset: 0; z-index: 1000;
+  position: fixed; inset: 0; z-index: 3000;
   display: flex; align-items: center; justify-content: center;
   padding: 24px; overflow-y: auto;
   background: rgba(40,26,12,0.55);

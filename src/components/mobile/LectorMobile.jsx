@@ -690,7 +690,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       {showPaywall && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(20,12,4,0.82)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div style={{ background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 20, padding: '36px 32px', maxWidth: 380, width: '100%', textAlign: 'center', boxShadow: '3px 6px 0 rgba(74,54,34,0.25), 0 20px 40px rgba(0,0,0,0.35)' }}>
-            <div style={{ fontSize: 40, marginBottom: 14 }}>📚</div>
+            <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ height: 40, width: 'auto', marginBottom: 16 }} />
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: '#2c1a0e', margin: '0 0 10px' }}>
               Seguí leyendo en Inmersia
             </h2>
@@ -700,11 +700,11 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
               <button type="button" onClick={() => onRequestAuth?.('registro')}
-                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#8b4d2a', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
+                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
                 Crear cuenta
               </button>
               <button type="button" onClick={() => onRequestAuth?.('login')}
-                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#fffdf8', color: '#000', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
+                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#ffffff', color: '#000', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
                 Iniciar sesión
               </button>
             </div>

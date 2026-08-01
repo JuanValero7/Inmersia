@@ -189,7 +189,6 @@ function Portada({ book, onOpen, secciones = SECCIONES }) {
               <div className="pv-grain" style={{ filter: 'url(#paperGrain)' }} />
               <div className="pv-vig" />
               <div className="pv-content">
-                <span className="pv-initial">{sec.label[0]}</span>
                 <div className="pv-text">
                   <div className="pv-word">{sec.label}</div>
                   <div className="pv-desc">{sec.sub}.</div>

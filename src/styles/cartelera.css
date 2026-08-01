@@ -252,7 +252,7 @@
 .cart-root .panel .vignette{ position:absolute; inset:0; z-index:3; pointer-events:none;
   background:radial-gradient(120% 80% at 30% 18%, rgba(255,255,255,.22), transparent 55%), linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(40,26,12,.20)); }
 .cart-root .panel .content{ position:relative; z-index:4; height:100%; display:flex; flex-direction:column; }
-.cart-root .initial{ font-size:clamp(64px, 11vh, 104px); font-weight:800; line-height:.9; letter-spacing:-.02em; text-shadow:0 2px 0 rgba(40,26,12,.22); }
+.cart-root .initial{ font-size:clamp(24px, 3.3vh, 38px); font-weight:800; line-height:1.02; letter-spacing:-.01em; text-shadow:0 2px 0 rgba(40,26,12,.22); max-width:min(100%, 5.5em); text-wrap:pretty; }
 .cart-root .reveal{ margin-top:auto; transition:opacity .4s ease, transform .45s cubic-bezier(.45,.02,.2,1); opacity:0; transform:translateY(14px); }
 .cart-root .panel.is-open .reveal{ opacity:1; transform:none; }
 .cart-root .word{ font-size:clamp(26px, 3.4vh, 40px); font-weight:800; line-height:1.02; white-space:nowrap; text-shadow:0 2px 0 rgba(40,26,12,.22); }
