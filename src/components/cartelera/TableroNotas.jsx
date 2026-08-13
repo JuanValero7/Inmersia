@@ -1,7 +1,10 @@
 // Formato: Plain JavaScript (.jsx)
-// Tablero de Notas: corcho con las 4 miniaturas EN VIVO de los otros tableros,
+// Tablero de Notas / corcho: las 4 miniaturas EN VIVO de los otros tableros,
 // notas decorativas (sin datos) que se revelan con el avance del libro (pct),
 // e hilos rojos. La cantidad visible = round(pct/100 * TOTAL_NOTES).
+// Geometría parametrizable: por defecto es el corcho vertical (700×860) usado
+// como sección; el landing lo reusa en formato apaisado pasando boardW/boardH,
+// cols/rows, embeds y center propios.
 import { useMemo } from 'react'
 import { rng } from './carteleraHelpers.js'
 import TableroPersonajes from './TableroPersonajes.jsx'
@@ -9,11 +12,16 @@ import TableroLugares from './TableroLugares.jsx'
 import TableroHechos from './TableroHechos.jsx'
 import TableroDatos from './TableroDatos.jsx'
 
-const BOARD_W = 700, BOARD_H = 860
+// Tamaño nativo de cada mini-tablero (todos los tableros dibujan a 700×860).
+const SUB_W = 700
 const MINI_W = 150
-const MINI_SCALE = MINI_W / BOARD_W
-const MINI_H = Math.round(BOARD_H * MINI_SCALE)
+const MINI_SCALE = MINI_W / SUB_W
+const MINI_H = Math.round(860 * MINI_SCALE)
 const TOTAL_NOTES = 60
+
+// Geometría por defecto (corcho vertical de la sección "Notas")
+const DEF_BOARD_W = 700, DEF_BOARD_H = 860
+const DEF_COLS = 9, DEF_ROWS = 10
 
 const TABLEROS_FICCION = {
   personajes: TableroPersonajes,
@@ -28,7 +36,7 @@ const TABLEROS_NOFICCION = {
   resumen: TableroDatos,
 }
 
-// Posiciones idénticas en ficción y no ficción (mismo layout del corcho)
+// Posiciones por defecto (vertical). El landing pasa las suyas por props.
 const EMBEDS_FICCION = [
   { key: 'personajes', label: 'Personajes', cx: 150, cy: 178, rot: -4, pin: '#c23b2e' },
   { key: 'hechos',     label: 'Hechos',     cx: 552, cy: 190, rot: 4,  pin: '#e0b256' },
@@ -42,20 +50,16 @@ const EMBEDS_NOFICCION = [
   { key: 'resumen',     label: 'Resumen',     cx: 548, cy: 684, rot: -4, pin: '#7d8db5' },
 ]
 
-// Usado solo para el cálculo de exclusión de notas (mismas posiciones en ambos tipos)
-const EMBEDS = EMBEDS_FICCION
-
-const CENTER = { cx: BOARD_W * 0.5, cy: BOARD_H * 0.5, w: 214, h: 234, rot: -3 }
+const DEF_CENTER = { cx: DEF_BOARD_W * 0.5, cy: DEF_BOARD_H * 0.5, w: 214, h: 234, rot: -3 }
 
 const PALETTES = ['#f6f0df', '#f7e6ef', '#eef2f8', '#f0f4e8', '#f7f0d8']
 const PINS     = ['#c23b2e', '#cf8ea4', '#e0b256', '#7d8db5', '#5a8a78', '#9e7dbf']
 
-// Posiciones y estilos de las 60 notas: calculados UNA VEZ al cargar el módulo
-// (seed fijo → siempre el mismo resultado). No dependen de datos de Supabase.
-const ALL_NOTAS = (() => {
+// Posiciones y estilos de las notas: seed fijo → mismo resultado siempre.
+// No dependen de datos de Supabase. Se recalcula solo si cambia la geometría.
+function buildNotas({ boardW, boardH, cols, rows, embeds, center, excludeRects = [] }) {
   const r = rng(20260606)
-  const cols = 9, rows = 10
-  const cellW = BOARD_W / cols, cellH = BOARD_H / rows
+  const cellW = boardW / cols, cellH = boardH / rows
   const cells = Array.from({ length: cols * rows }, (_, i) => i)
   for (let i = cells.length - 1; i > 0; i--) {
     const j = Math.floor(r() * (i + 1));
@@ -70,9 +74,10 @@ const ALL_NOTAS = (() => {
     const frot = r(), fbg = r(), fw = r(), fh = r(), fdeco = r(), fpin = r()
     const x = (col + 0.1 + fx * 0.8) * cellW
     const y = (row + 0.1 + fy * 0.8) * cellH
-    const onEmbed  = EMBEDS.some(e => Math.abs(x - e.cx) < 95 && Math.abs(y - e.cy) < 105)
-    const onCenter = Math.abs(x - CENTER.cx) < CENTER.w * 0.48 && Math.abs(y - CENTER.cy) < CENTER.h * 0.48
-    if (onEmbed || onCenter) continue
+    const onEmbed  = embeds.some(e => Math.abs(x - e.cx) < 95 && Math.abs(y - e.cy) < 105)
+    const onCenter = Math.abs(x - center.cx) < center.w * 0.48 && Math.abs(y - center.cy) < center.h * 0.48
+    const onExcluded = excludeRects.some(rc => Math.abs(x - rc.cx) < rc.halfW && Math.abs(y - rc.cy) < rc.halfH)
+    if (onEmbed || onCenter || onExcluded) continue
     out.push({
       x, y,
       rot:  (frot * 2 - 1) * 13,
@@ -84,7 +89,7 @@ const ALL_NOTAS = (() => {
     })
   }
   return out
-})()
+}
 
 function Miniatura({ e, pct, imageUrl, stats, onClick, tableros }) {
   const Tablero = tableros[e.key]
@@ -102,39 +107,51 @@ function Miniatura({ e, pct, imageUrl, stats, onClick, tableros }) {
   )
 }
 
-const FLATSHEET_MAX = 3
+// Sello de goma del expediente: cambia con el avance de lectura.
+function fileStamp(pct) {
+  if (pct >= 100) return { txt: 'Expediente completo', cls: 'is-done' }
+  if (pct > 0)    return { txt: 'Caso abierto',        cls: 'is-open' }
+  return                 { txt: 'Sin pistas aún',      cls: 'is-empty' }
+}
 
-// contenido real del papel central: vacío / entra directo / mockup+contador si no entra
-function FlatsheetContent({ items }) {
-  if (items.length === 0) {
-    return <div className="cart-flatsheet-empty">Tus predicciones aparecerán acá.<br />Escribilas desde el Cuaderno mientras leés.</div>
-  }
-  if (items.length <= FLATSHEET_MAX) {
-    return (
-      <div className="cart-flatsheet-notes">
-        {items.map(it => (
-          <div key={it.id} className="cart-flatsheet-note">
-            <span className="cart-flatsheet-cap">Cap. {it.capitulo_numero}</span>
-            <p className="cart-flatsheet-txt">{it.descripcion}</p>
-          </div>
-        ))}
-      </div>
-    )
-  }
+// Expediente central: carpeta SIEMPRE cerrada. Muestra la pestaña rotulada, un
+// clip, el sello por avance (uno de tres) y un contador de teorías anotadas. El
+// clic sobre ella abre las predicciones del Cuaderno (onOpenNotas), sin desplegar
+// nada aquí. Se mantiene simple a propósito.
+function FlatsheetContent({ items, pct = 0 }) {
+  const stamp = fileStamp(pct)
+  const n = items.length
+  const countTxt = n === 0 ? 'Aún sin teorías'
+    : n === 1 ? '1 teoría anotada' : `${n} teorías anotadas`
   return (
-    <div className="cart-flatsheet-stack">
-      <span className="fs-leaf fs-leaf-1" />
-      <span className="fs-leaf fs-leaf-2" />
-      <span className="fs-leaf-top"><strong>+{items.length}</strong><small>predicciones</small></span>
-    </div>
+    <>
+      <span className="cart-file-peek" aria-hidden="true" />
+      <span className="cart-file-tab">Mis teorías</span>
+      <span className="cart-file-clip" aria-hidden="true" />
+      <span className={`cart-file-stamp ${stamp.cls}`}>{stamp.txt}</span>
+      <span className="cart-file-face">
+        <span className="cart-file-count">{countTxt}</span>
+        <span className="cart-file-open">Toca para abrir →</span>
+      </span>
+    </>
   )
 }
 
-export default function TableroNotas({ pct = 0, scale = 1, principal = {}, stats, onOpenSection, esNoficcion = false, notasItems = [], onOpenNotas }) {
-  const embeds   = esNoficcion ? EMBEDS_NOFICCION : EMBEDS_FICCION
+export default function TableroNotas({
+  pct = 0, scale = 1, principal = {}, stats, onOpenSection, esNoficcion = false,
+  notasItems = [], onOpenNotas,
+  boardW = DEF_BOARD_W, boardH = DEF_BOARD_H, cols = DEF_COLS, rows = DEF_ROWS,
+  embeds: embedsProp, center = DEF_CENTER, excludeRects, decorNotas = true, threads = true,
+}) {
+  const embeds   = embedsProp || (esNoficcion ? EMBEDS_NOFICCION : EMBEDS_FICCION)
   const tableros = esNoficcion ? TABLEROS_NOFICCION : TABLEROS_FICCION
   const visibleCount = Math.round(Math.max(0, Math.min(100, pct)) / 100 * TOTAL_NOTES)
-  const visibleNotas = ALL_NOTAS.slice(0, visibleCount)
+
+  const allNotas = useMemo(
+    () => decorNotas ? buildNotas({ boardW, boardH, cols, rows, embeds, center, excludeRects }) : [],
+    [decorNotas, boardW, boardH, cols, rows, embeds, center, excludeRects]
+  )
+  const visibleNotas = allNotas.slice(0, visibleCount)
 
   // hilos: loop entre las 4 miniaturas + cada nota a la miniatura más cercana
   const links = useMemo(() => {
@@ -146,15 +163,15 @@ export default function TableroNotas({ pct = 0, scale = 1, principal = {}, stats
       out.push([{ cx: n.x, cy: n.y }, best])
     }
     return out
-  }, [visibleCount, esNoficcion])
+  }, [visibleCount, embeds, visibleNotas])
 
   return (
-    <div className="cart-canvas cart-cork" style={{ width: BOARD_W, height: BOARD_H, transform: `scale(${scale})` }}>
+    <div className="cart-canvas cart-cork" style={{ width: boardW, height: boardH, transform: `scale(${scale})` }}>
       {/* hoja rayada plana al centro: predicciones reales del usuario */}
       <button type="button" className="cart-flatsheet" onClick={() => onOpenNotas?.()}
-        style={{ left: CENTER.cx, top: CENTER.cy, width: CENTER.w, height: CENTER.h, transform: `translate(-50%,-50%) rotate(${CENTER.rot}deg)` }}
+        style={{ left: center.cx, top: center.cy, width: center.w, height: center.h, transform: `translate(-50%,-50%) rotate(${center.rot}deg)` }}
         aria-label="Ver tus predicciones">
-        <FlatsheetContent items={notasItems} />
+        <FlatsheetContent items={notasItems} pct={pct} />
       </button>
 
       {/* notas decorativas (sin datos, reveladas por pct) */}
@@ -176,17 +193,19 @@ export default function TableroNotas({ pct = 0, scale = 1, principal = {}, stats
         </div>
       ))}
 
-      {/* hilos rojos */}
-      <svg className="cart-threads" width={BOARD_W} height={BOARD_H}>
-        {links.map(([a, b], k) => {
-          const mx = (a.cx + b.cx) / 2, my = (a.cy + b.cy) / 2
-          const sag = Math.min(28, Math.hypot(a.cx - b.cx, a.cy - b.cy) * 0.07 + 5)
-          return <path key={k} d={`M ${a.cx} ${a.cy} Q ${mx} ${my + sag} ${b.cx} ${b.cy}`} fill="none" stroke="#c23b2e" strokeWidth="2.4" strokeLinecap="round" opacity="0.85" />
-        })}
-      </svg>
+      {/* hilos rojos (el landing los apaga y dibuja los suyos propios) */}
+      {threads && (
+        <svg className="cart-threads" width={boardW} height={boardH}>
+          {links.map(([a, b], k) => {
+            const mx = (a.cx + b.cx) / 2, my = (a.cy + b.cy) / 2
+            const sag = Math.min(28, Math.hypot(a.cx - b.cx, a.cy - b.cy) * 0.07 + 5)
+            return <path key={k} d={`M ${a.cx} ${a.cy} Q ${mx} ${my + sag} ${b.cx} ${b.cy}`} fill="none" stroke="#c23b2e" strokeWidth="2.4" strokeLinecap="round" opacity="0.85" />
+          })}
+        </svg>
+      )}
 
-      {/* miniaturas en vivo */}
-      {embeds.map(e => (
+      {/* miniaturas en vivo (los embeds "phantom" sólo tejen hilos, no se dibujan) */}
+      {embeds.filter(e => !e.phantom).map(e => (
         <Miniatura key={e.key} e={e} pct={pct} imageUrl={principal[e.key]?.url} stats={stats}
           tableros={tableros}
           onClick={() => onOpenSection && onOpenSection(e.key)} />

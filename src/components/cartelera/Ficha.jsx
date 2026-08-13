@@ -9,6 +9,7 @@ import Signpost from './Signpost.jsx'
 import ExplorarPopup from './ExplorarPopup.jsx'
 
 const BOOK_W = 1180, BOOK_H = 760
+const TABS_H = 46   // alto de la fila de pestañas por encima del cuaderno
 
 function Magnifier() {
   return (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
@@ -20,7 +21,7 @@ function Wave({ color }) {
     <path d="M2 8 Q22 1 42 8 T82 8 T122 8 T162 8 T202 8 T242 8 T282 8 T318 8" /></svg>)
 }
 
-export default function Ficha({ section, items = [], onBackTablero, initialItemId, onGoBack, onGoForo, onGoBiblioteca, onOpenList, secciones, gatoColor }) {
+export default function Ficha({ section, items = [], onBackPortada, initialItemId, onGoBack, onGoForo, onGoBiblioteca, onOpenList, secciones = [], gatoColor }) {
   const total = items.length
   const [sel, setSel] = useState(initialItemId || items[0]?.id || null)
   const [query, setQuery] = useState('')
@@ -34,7 +35,7 @@ export default function Ficha({ section, items = [], onBackTablero, initialItemI
     const fit = () => {
       const w = el.clientWidth, h = el.clientHeight
       if (!w || !h) return
-      setScale(Math.max(0.32, Math.min(w / BOOK_W, h / BOOK_H, 1)))
+      setScale(Math.max(0.32, Math.min(w / BOOK_W, h / (BOOK_H + TABS_H), 1)))
     }
     let rafId = null
     const ro = new ResizeObserver(() => {
@@ -60,7 +61,7 @@ export default function Ficha({ section, items = [], onBackTablero, initialItemI
 
   return (
     <div className="cart-scene" style={rootStyle}>
-      {onOpenList && <Signpost current={section.key} onOpenSection={onOpenList} secciones={secciones} gatoColor={gatoColor} />}
+      <Signpost gatoColor={gatoColor} />
       <div className="topbar">
         <div className="ttl">
           <h1>{section.label}</h1>
@@ -69,12 +70,32 @@ export default function Ficha({ section, items = [], onBackTablero, initialItemI
         <div className="cart-sec-hint">Sigue leyendo para revelar una sorpresa</div>
         <div className="actions actions-col">
           <ExplorarPopup onGoForo={onGoForo} onGoBack={onGoBack} onGoBiblioteca={onGoBiblioteca} />
-          <button className="cart-sec-btn cart-sec-btn-lg" type="button" onClick={onBackTablero}>Mural</button>
         </div>
       </div>
 
       <div className="stage" ref={stageRef}>
         <div className="book-scale" style={{ transform: `scale(${scale})` }}>
+          {/* pestañas separadoras (estilo carpeta): saltan a cualquier otra sección.
+              A la derecha, una lengüeta más grande vuelve al landing de la cartelera. */}
+          <div className="cart-tabs" role="tablist" aria-label="Secciones">
+            {secciones.map(s => (
+              <button key={s.key} type="button" role="tab"
+                aria-selected={s.key === section.key}
+                className={clsx('cart-tab', s.key === section.key && 'active')}
+                style={{ '--tab': s.color }}
+                onClick={() => { if (s.key !== section.key) onOpenList(s.key) }}>
+                {s.label}
+              </button>
+            ))}
+            {onBackPortada && (
+              <button type="button" className="cart-tab cart-tab-back" onClick={onBackPortada}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+                Cartelera
+              </button>
+            )}
+          </div>
           <div className="book">
             {/* índice */}
             <div className="page left">

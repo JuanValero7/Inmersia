@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Permanent+Marker&display=swap');
 
 /* =============================================================
    Inmersia · Cartelera — estilos. Todo scopeado bajo .cart-root
@@ -50,7 +50,6 @@
 
 /* ── escenario y lienzo escalable ────────────────────────────── */
 .cart-root .stage{ position:relative; z-index:10; flex:1; min-height:0; overflow:hidden; display:flex; align-items:center; justify-content:center; padding:6px 20px; }
-.cart-root .cart-canvas-box{ position:relative; overflow:hidden; }
 .cart-root .cart-canvas{ position:relative; transform-origin:top left; }
 
 /* placeholder cuando no hay imagen de fondo (cartelera_principal vacía) */
@@ -176,50 +175,197 @@
 .cart-root .cart-nota-txt{ margin:0; font-size:11.5px; font-weight:600; line-height:1.25; color:#4a3622;
   display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
 .cart-root .cart-pin{ position:absolute; top:-7px; left:50%; transform:translateX(-50%); width:15px; height:15px; border-radius:50%; box-shadow:0 3px 4px rgba(20,12,4,.45); }
-.cart-root .cart-flatsheet{ position:absolute; z-index:5; transform-origin:center center; border-radius:3px;
-  background:#fbf7ec; background-image:repeating-linear-gradient(0deg, transparent 0 21px, rgba(74,90,140,.18) 21px 22px); background-position:0 16px;
-  box-shadow:0 14px 26px rgba(40,26,12,.34), inset 0 0 0 1px rgba(74,54,34,.10);
-  border:0; margin:0; cursor:pointer; font-family:inherit; text-align:left; display:flex;
-  padding:14px 10px 10px 24px; }
-.cart-root .cart-flatsheet::before{ content:''; position:absolute; left:11%; top:0; bottom:0; width:2px; background:rgba(196,80,68,.55); }
-.cart-root .cart-flatsheet-empty{ align-self:center; font-size:11.5px; font-weight:600; line-height:1.4; color:rgba(74,54,34,.55); }
-.cart-root .cart-flatsheet-notes{ display:flex; flex-direction:column; gap:9px; width:100%; overflow:hidden; }
-.cart-root .cart-flatsheet-cap{ font-size:10px; font-weight:800; color:var(--thread); letter-spacing:.04em; }
-.cart-root .cart-flatsheet-txt{ margin:2px 0 0; font-size:11.5px; font-weight:600; line-height:1.3; color:#4a3622;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.cart-root .cart-flatsheet-stack{ position:relative; width:100%; align-items:center; justify-content:center; display:flex; }
-.cart-root .fs-leaf{ position:absolute; inset:8% 4%; background:#f3ede0; border-radius:2px; box-shadow:0 3px 8px rgba(40,26,12,.25); }
-.cart-root .fs-leaf-1{ transform:rotate(-6deg) translate(-4px,2px); }
-.cart-root .fs-leaf-2{ transform:rotate(4deg) translate(3px,-2px); }
-.cart-root .fs-leaf-top{ position:relative; display:flex; flex-direction:column; align-items:center; gap:2px;
-  background:#fff; border-radius:2px; box-shadow:0 4px 10px rgba(40,26,12,.3); padding:16px 12px; }
-.cart-root .fs-leaf-top strong{ font-size:22px; color:var(--thread); line-height:1; }
-.cart-root .fs-leaf-top small{ font-size:10px; font-weight:700; color:#6b5a3e; text-transform:uppercase; letter-spacing:.03em; }
+/* ── Expediente central: carpeta SIEMPRE cerrada ─────────────────────
+   Pestaña rotulada, clip, papeles asomando y el sello por avance como
+   protagonista. Al clic abre las predicciones del Cuaderno. */
+.cart-root .cart-flatsheet{ position:absolute; z-index:5; transform-origin:center center; border-radius:5px 5px 7px 7px;
+  background:linear-gradient(160deg, #e6d6af 0%, #dcca9f 40%, #d2be8e 100%);
+  box-shadow:0 16px 30px rgba(40,26,12,.42), inset 0 1px 0 rgba(255,255,255,.4), inset 0 0 0 1px rgba(120,96,52,.3);
+  border:0; margin:0; cursor:pointer; font-family:inherit; text-align:center; overflow:visible;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding:0 16px 20px; }
+/* pliegue frontal inferior: sugiere la tapa cerrada de la carpeta */
+.cart-root .cart-flatsheet::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:20px; z-index:2;
+  background:linear-gradient(180deg, rgba(120,96,52,0), rgba(120,96,52,.16) 55%, rgba(120,96,52,.32));
+  border-radius:0 0 7px 7px; }
+/* papeles asomando por el borde superior (contenido dentro de la carpeta) */
+.cart-root .cart-file-peek{ position:absolute; left:14px; right:22px; top:-6px; height:12px; z-index:0; border-radius:3px 3px 0 0;
+  background:#f7f1e2; box-shadow:0 -2px 4px rgba(40,26,12,.18), inset 0 1px 0 rgba(255,255,255,.7); }
+.cart-root .cart-file-peek::before{ content:''; position:absolute; left:6px; right:-8px; top:2px; height:12px; border-radius:3px 3px 0 0;
+  background:#efe7d3; box-shadow:0 -2px 4px rgba(40,26,12,.14); z-index:-1; }
+/* pestaña rotulada, sobresale por arriba a la izquierda */
+.cart-root .cart-file-tab{ position:absolute; top:-15px; left:18px; z-index:3;
+  padding:5px 16px 7px; background:linear-gradient(180deg, #e6d6af, #d6c396); border-radius:7px 7px 0 0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5), 0 -2px 6px rgba(40,26,12,.16);
+  font-family:'Courier New', ui-monospace, monospace; font-size:10px; font-weight:800; letter-spacing:.09em;
+  text-transform:uppercase; color:#5a4326; white-space:nowrap; }
+/* clip metálico: mitad por encima del borde superior derecho */
+.cart-root .cart-file-clip{ position:absolute; top:-13px; right:30px; width:14px; height:40px; z-index:6;
+  border:2.6px solid #aab0b6; border-radius:8px; background:transparent;
+  box-shadow:0 1px 2px rgba(0,0,0,.35), inset 0 0 0 .5px rgba(255,255,255,.45); }
+.cart-root .cart-file-clip::before{ content:''; position:absolute; left:2.4px; right:2.4px; top:5px; bottom:3px;
+  border:2px solid #c4c9ce; border-radius:5px; border-bottom-color:transparent; }
+/* sello de goma protagonista, diagonal y gastado, centrado arriba */
+.cart-root .cart-file-stamp{ position:absolute; z-index:4; left:50%; top:38%; transform:translate(-50%,-50%) rotate(-8deg);
+  max-width:82%; padding:4px 10px; border:2.4px solid currentColor; border-radius:4px;
+  font-family:'Courier New', ui-monospace, monospace; font-size:12.5px; font-weight:800; letter-spacing:.04em;
+  line-height:1.05; text-align:center; text-transform:uppercase; white-space:nowrap;
+  opacity:.82; mix-blend-mode:multiply; pointer-events:none; }
+.cart-root .cart-file-stamp.is-empty{ color:#7c7266; border-style:dashed; opacity:.6; }
+.cart-root .cart-file-stamp.is-open{ color:#b8402f; }
+.cart-root .cart-file-stamp.is-done{ color:#3f7a52; }
+/* pie de la carpeta: contador + llamada a abrir */
+.cart-root .cart-file-face{ position:relative; z-index:3; display:flex; flex-direction:column; align-items:center; gap:2px; }
+.cart-root .cart-file-count{ font-size:12px; font-weight:800; color:#5a4326; letter-spacing:.01em; }
+.cart-root .cart-file-open{ font-size:10px; font-weight:700; color:rgba(74,54,34,.55); text-transform:uppercase; letter-spacing:.04em; }
 
-/* ── gato-dock (otras categorías) ───────────────────────────────── */
-.cart-root .cart-signpost{ position:absolute; left:20px; bottom:65px; z-index:24; display:flex; align-items:flex-end; gap:10px; }
-.cart-root .cart-sign-btn{ background:none; border:none; padding:0; cursor:pointer; flex-shrink:0; line-height:0; }
-.cart-root .cart-sign-img{ width:180px; display:block; filter:drop-shadow(2px 6px 5px rgba(60,40,18,0.34));
-  transition:transform .2s cubic-bezier(.3,1.3,.5,1); }
-.cart-root .cart-sign-btn:hover .cart-sign-img{ transform:scale(1.04); }
-.cart-root .cart-sign-btn:active .cart-sign-img{ transform:scale(0.95); }
-.cart-root .cart-sign-tray{
-  display:flex; align-items:flex-end; gap:6px; background:#fff; border:2px solid var(--ink); border-radius:18px;
-  padding:9px; margin-bottom:8px;
-  box-shadow:2.5px 3.5px 0 rgba(74,54,34,0.22), 0 8px 22px rgba(0,0,0,0.16);
-  transform-origin:left bottom; animation:cartSignTray .22s cubic-bezier(.34,1.56,.64,1);
-}
-.cart-root .cart-sign-tool{ display:flex; flex-direction:column; align-items:center; gap:5px; width:66px;
-  background:none; border:none; cursor:pointer; font-family:inherit; padding:5px 6px; border-radius:12px; }
-.cart-root .cart-sign-tool:hover{ background:rgba(242,121,42,0.12); }
-.cart-root .cart-sign-tile{
-  width:40px; height:40px; flex-shrink:0; border-radius:11px; border:2px solid var(--ink);
-  display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800; color:#fff;
-  text-shadow:0 1px 1px rgba(0,0,0,0.25); box-shadow:1.4px 1.8px 0 rgba(74,54,34,0.18);
-}
-.cart-root .cart-sign-lbl{ font-size:11px; font-weight:700; color:var(--ink); }
-@keyframes cartSignTray{ from{ transform:translateX(-10px) scaleX(.86); } to{ transform:none; } }
-@media (prefers-reduced-motion:reduce){ .cart-root .cart-sign-tray{ animation:none; } }
+/* ── LANDING (cartelera apaisada con marco de madera) ────────────── */
+.cart-root .cart-landing{ background:var(--paper); }
+.cart-root .cart-landing .topbar{ padding:18px 26px 12px; }
+.cart-root .cart-landing-stage{ position:relative; z-index:10; flex:1; min-height:0; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; padding:6px 24px; }
+
+/* Marco de madera oscuro (mismo tratamiento que los estantes: gradiente + veta + borde de tinta) */
+.cart-root .cart-landing-frame{ position:relative; box-sizing:content-box; border-radius:15px; transform-origin:center center;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,224,178,.045) 0 3px, rgba(0,0,0,.05) 3px 8px),
+    linear-gradient(150deg, #5b3e23 0%, #3c2814 52%, #281a0c 100%);
+  border:2px solid #180d04;
+  box-shadow:0 32px 62px rgba(26,15,6,.52), inset 0 2px 0 rgba(255,226,182,.14), inset 0 -4px 8px rgba(0,0,0,.42); }
+.cart-root .cart-landing-frame::before{ content:''; position:absolute; inset:6px; border-radius:10px; pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(255,226,182,.10), inset 0 0 0 2px rgba(20,12,4,.35); }
+.cart-root .cart-landing-inner{ position:relative; border-radius:5px; background:var(--cream);
+  box-shadow:0 0 0 2px rgba(18,10,3,.6); }
+
+/* En el landing el fondo NO es corcho: es un pizarrón blanco de marcador, con una
+   superficie mate translúcida (deja pasar el respaldo claro de atrás) y sin la
+   textura de puntitos. El marco de madera hace de borde. */
+.cart-root .cart-landing .cart-cork{ border-radius:4px;
+  background:
+    linear-gradient(155deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 40%),
+    linear-gradient(0deg, rgba(150,160,175,.08), rgba(150,160,175,.08)),
+    rgba(250,251,253,.76);
+  box-shadow:
+    inset 0 2px 6px rgba(255,255,255,.7),
+    inset 0 -24px 48px rgba(120,132,150,.12),
+    inset 0 0 0 2px rgba(120,132,150,.28); }
+.cart-root .cart-landing .cart-cork::before{ display:none; }
+
+/* Mapa = zona de Lugares (mat de papel + chincheta; todo el mapa lleva a la lista) */
+.cart-root .cart-map{ position:absolute; z-index:8; padding:8px 8px 9px; border:0; border-radius:5px; background:#fbf7ec;
+  cursor:pointer; transform-origin:center center; transition:box-shadow .14s;
+  box-shadow:0 15px 28px rgba(40,26,12,.42), 0 1px 0 rgba(255,255,255,.55) inset; }
+.cart-root .cart-map:hover{ box-shadow:0 18px 34px rgba(40,26,12,.5), 0 1px 0 rgba(255,255,255,.6) inset; }
+.cart-root .cart-map img{ display:block; width:100%; height:100%; object-fit:cover; border-radius:3px;
+  box-shadow:inset 0 0 0 1px rgba(74,54,34,.18); }
+/* chincheta que sujeta la hoja del mapa al corcho */
+.cart-root .cart-map-pin{ position:absolute; top:-8px; left:50%; transform:translateX(-50%); z-index:4;
+  width:16px; height:16px; border-radius:50%; box-shadow:0 3px 4px rgba(20,12,4,.45);
+  background:radial-gradient(circle at 35% 30%, #fff7, #5a8a78 62%, rgba(0,0,0,.35)); }
+/* pines de ubicación (aparecen 1 cada 10% de avance) */
+.cart-root .cart-map-dot{ position:absolute; width:18px; height:26px; transform:translate(-50%,-100%); z-index:3;
+  pointer-events:none; filter:drop-shadow(0 2px 2px rgba(20,12,4,.4));
+  animation:cartPinDrop .3s cubic-bezier(.34,1.56,.64,1); }
+@keyframes cartPinDrop{ from{ opacity:0; transform:translate(-50%,-150%); } to{ opacity:1; transform:translate(-50%,-100%); } }
+@media (prefers-reduced-motion:reduce){ .cart-root .cart-map-dot{ animation:none; } }
+
+/* rótulo de zona (color por inline: Lugares/Personajes) */
+/* Etiquetas de zona: cinta washi / masking tape translúcida, rotulada a marcador.
+   El color de cada zona llega por --tag (inline) y se usa semitransparente para
+   que se vea el corcho debajo. Extremos "cortados a mano" con clip-path dentado. */
+.cart-root .cart-zone-tag{ position:absolute; z-index:9;
+  transform:translate(-50%,-50%) rotate(var(--tape-rot,-2deg));
+  color:var(--ink); border:0; border-radius:0; padding:7px 20px;
+  font-family:'Permanent Marker', 'Baloo 2', cursive; font-weight:400; font-size:16px;
+  letter-spacing:.01em; line-height:1; cursor:pointer; white-space:nowrap;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 2px, rgba(0,0,0,.03) 2px 5px),
+    color-mix(in srgb, var(--tag,#d56a52) 52%, transparent);
+  /* drop-shadow (no box-shadow) para que la sombra siga la forma dentada del clip-path */
+  filter:drop-shadow(0 1px 2px rgba(40,26,12,.28));
+  clip-path:polygon(
+    0 6%, 2% 22%, 0 38%, 2% 54%, 0 70%, 2% 86%, 0 100%, 100% 94%,
+    98% 78%, 100% 62%, 98% 46%, 100% 30%, 98% 14%, 100% 0);
+  transition:transform .12s, filter .12s; }
+.cart-root .cart-zone-tag:hover{
+  filter:drop-shadow(0 3px 5px rgba(40,26,12,.35)) brightness(1.05);
+  transform:translate(-50%,-50%) rotate(var(--tape-rot,-2deg)) scale(1.05); }
+
+/* fotos tipo pasaporte alineadas (siluetas placeholder que se agregan con el avance).
+   Son sólo decorativas (no interactivas): el click lo captura .cart-pass-zone, que
+   cubre todo el espacio de las fotografías, así ninguna se "levanta" con el cursor. */
+.cart-root .cart-pass{ position:absolute; z-index:7; padding:5px 5px 11px; border:0; border-radius:2px; background:#fcfbf7;
+  pointer-events:none; transform:translate(-50%,-50%); transform-origin:center center;
+  box-shadow:0 9px 17px rgba(40,26,12,.4), 0 1px 0 rgba(255,255,255,.6) inset;
+  animation:cartFadeIn .32s ease; }
+@keyframes cartFadeIn{ from{ opacity:0; } to{ opacity:1; } }
+/* zona clickeable única sobre todas las fotos de Personajes */
+.cart-root .cart-pass-zone{ position:absolute; z-index:8; background:transparent; border:0; padding:0;
+  cursor:pointer; border-radius:8px; transition:background .14s, box-shadow .14s; }
+.cart-root .cart-pass-zone:hover{ background:rgba(74,54,34,.05); box-shadow:0 0 0 1.5px rgba(74,54,34,.14) inset; }
+.cart-root .cart-pass-clip{ width:100%; height:100%; overflow:hidden; border-radius:1px;
+  box-shadow:inset 0 0 0 1px rgba(74,54,34,.18); }
+.cart-root .cart-pass-sil{ display:block; width:100%; height:100%; }
+.cart-root .cart-pass-pin{ position:absolute; top:-6px; left:50%; transform:translateX(-50%); z-index:2;
+  width:13px; height:13px; border-radius:50%; box-shadow:0 3px 4px rgba(20,12,4,.45); }
+
+/* pila de documentos (placeholders ilegibles con tachones y comentarios) */
+.cart-root .cart-doc{ position:absolute; padding:0; border:0; background:#fbf7ec; pointer-events:none; border-radius:2px;
+  transform:translate(-50%,-50%) rotate(var(--rot,0deg)); transform-origin:center center;
+  box-shadow:0 8px 16px rgba(40,26,12,.42), 0 1px 0 rgba(255,255,255,.55) inset; animation:cartFadeIn .32s ease; }
+.cart-root .cart-doc-svg{ display:block; width:100%; height:100%; }
+.cart-root .cart-doc-pin{ position:absolute; top:-6px; left:50%; transform:translateX(-50%); z-index:2;
+  width:14px; height:14px; border-radius:50%; box-shadow:0 3px 4px rgba(20,12,4,.45); }
+
+/* zona HECHOS: variedad de evidencias (factura, polaroid, recorte de diario) */
+.cart-root .cart-hecho{ position:absolute; z-index:7; padding:0; border:0; background:transparent; pointer-events:none;
+  transform:translate(-50%,-50%) rotate(var(--rot,0deg)); transform-origin:center center;
+  animation:cartFadeIn .32s ease; }
+.cart-root .cart-hecho-pin{ position:absolute; top:-6px; left:50%; transform:translateX(-50%); z-index:3;
+  width:13px; height:13px; border-radius:50%; box-shadow:0 3px 4px rgba(20,12,4,.45); }
+.cart-root .cart-hecho .hf-svg{ display:block; width:100%; height:100%; }
+/* factura: papel angosto crema (encabezado + renglones + código de barras) */
+.cart-root .cart-hecho-factura{ background:#fbf8f0; border-radius:1px; box-shadow:0 8px 15px rgba(40,26,12,.42); }
+/* recorte de diario: papel de periódico (foto + columna de texto) */
+.cart-root .cart-hecho-periodico{ background:#efe9db; border-radius:1px; box-shadow:0 8px 15px rgba(40,26,12,.4); }
+/* polaroid: marco blanco, foto de fondo OPACO y pie de foto */
+.cart-root .cart-hecho-polaroid{ background:#fcfbf7; border-radius:2px; padding:6px 6px 20px;
+  box-shadow:0 9px 17px rgba(40,26,12,.42); }
+.cart-root .hf-pola-photo{ width:100%; height:100%; border-radius:1px; box-shadow:inset 0 0 0 1px rgba(20,12,4,.18); }
+.cart-root .hf-pola-cap{ position:absolute; left:18%; right:18%; bottom:8px; height:3px; border-radius:2px;
+  background:rgba(90,70,50,.42); }
+/* plano azul (blueprint) decorativo detrás de las evidencias de Hechos */
+.cart-root .cart-plano{ position:absolute; z-index:5; transform-origin:center center;
+  transform:rotate(var(--rot,0deg)); border-radius:3px; overflow:hidden; opacity:.96;
+  box-shadow:0 12px 24px rgba(16,28,52,.42), 0 0 0 1px rgba(20,40,80,.4) inset; }
+.cart-root .cart-plano-svg{ display:block; width:100%; height:100%; }
+
+/* placa: imagen única (se destapa al leer) → abre pop-up */
+.cart-root .cart-placa-holder{ position:absolute; z-index:10; transform:translate(-50%,-50%); }
+.cart-root .cart-placa{ position:relative; display:block; padding:0; border:0; background:transparent; cursor:pointer;
+  transform:rotate(var(--rot,-4deg)); transform-origin:center center; transition:transform .15s; }
+.cart-root .cart-placa:hover{ transform:rotate(var(--rot,-4deg)) scale(1.06); }
+.cart-root .cart-placa-clip{ position:relative; width:100%; height:100%; overflow:hidden; border-radius:4px;
+  box-shadow:0 10px 20px rgba(40,26,12,.45), inset 0 0 0 1.5px rgba(20,12,4,.5); }
+.cart-root .cart-placa-pin{ position:absolute; top:-7px; left:50%; transform:translateX(-50%); z-index:3;
+  width:15px; height:15px; border-radius:50%; box-shadow:0 3px 4px rgba(20,12,4,.45);
+  background:radial-gradient(circle at 35% 30%, #fff7, #e0b256 62%, rgba(0,0,0,.35)); }
+
+/* pop-up de la placa */
+.cart-root .cart-map-modal{ position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center;
+  padding:24px; background:rgba(30,18,8,.55); backdrop-filter:blur(2px); }
+.cart-root .cart-map-modal-card{ position:relative; background:var(--cream); border:3px solid var(--ink); border-radius:16px;
+  padding:16px; box-shadow:0 30px 70px rgba(20,12,4,.5); }
+.cart-root .cart-map-modal-x{ position:absolute; top:-14px; right:-14px; width:34px; height:34px; border-radius:50%;
+  background:#fffdf8; border:2px solid var(--ink); cursor:pointer; font-size:20px; line-height:1; font-weight:800; color:#5a4632;
+  box-shadow:1.6px 2px 0 rgba(74,54,34,.25); display:flex; align-items:center; justify-content:center; }
+.cart-root .cart-map-modal-media{ border-radius:8px; overflow:hidden; box-shadow:0 12px 26px rgba(40,26,12,.4); display:flex; }
+.cart-root .cart-map-modal-foot{ display:flex; flex-direction:column; align-items:stretch; gap:10px; margin-top:14px; }
+.cart-root .cart-map-modal-ttl{ font-weight:800; font-size:14px; color:var(--ink); text-align:center; }
+.cart-root .cart-map-modal-foot .cart-sec-btn{ display:flex; width:100%; justify-content:center; }
+
+/* ── gato (decorativo) ──────────────────────────────────────────── */
+.cart-root .cart-signpost{ position:absolute; left:20px; bottom:44px; z-index:24; line-height:0; pointer-events:none; }
+.cart-root .cart-sign-img{ width:180px; display:block; filter:drop-shadow(2px 6px 5px rgba(60,40,18,0.34)); }
 
 /* ── pie (avance, sólo lectura) ──────────────────────────────── */
 .cart-root .dock{ position:relative; z-index:30; display:flex; align-items:center; gap:16px; padding:8px 26px 14px; color:#6f5a40; }
@@ -264,7 +410,22 @@
   background:rgba(255,253,248,.86); border:2px solid var(--ink); border-radius:999px; padding:5px 16px; box-shadow:1.4px 1.8px 0 rgba(74,54,34,.25); pointer-events:none; white-space:nowrap; }
 
 /* ── FICHA (cuaderno a dos páginas) ──────────────────────────── */
-.cart-root .book-scale{ transform-origin:center center; }
+.cart-root .book-scale{ transform-origin:center center; width:1180px; }
+/* pestañas separadoras (lengüetas de carpeta) por encima del cuaderno */
+.cart-root .cart-tabs{ display:flex; align-items:flex-end; gap:6px; padding:0 26px; }
+.cart-root .cart-tab{ font-family:inherit; cursor:pointer; font-size:15px; font-weight:800; color:#7a6547;
+  background:color-mix(in srgb, var(--tab) 22%, #e7ddc8); border:2px solid var(--ink); border-bottom:none;
+  border-top:4px solid var(--tab); border-radius:13px 13px 0 0; padding:8px 20px 10px; margin-bottom:-2px;
+  box-shadow:0 -3px 9px rgba(74,54,34,.10); transition:background .15s, transform .12s, color .15s; }
+.cart-root .cart-tab:hover:not(.active){ transform:translateY(-2px); background:color-mix(in srgb, var(--tab) 34%, #e7ddc8); }
+.cart-root .cart-tab.active{ background:var(--cream); color:var(--ink); padding-bottom:13px; position:relative; z-index:2;
+  box-shadow:0 -4px 12px rgba(74,54,34,.14); }
+/* lengüeta grande de vuelta al landing, empujada al extremo derecho */
+.cart-root .cart-tab-back{ --tab:#6f4a2a; margin-left:auto; display:inline-flex; align-items:center; gap:7px;
+  font-size:17px; padding:12px 26px 14px; color:#fffaf2; border-top-color:#4a3622;
+  background:#6f4a2a; }
+.cart-root .cart-tab-back:hover:not(.active){ transform:translateY(-2px); background:#7d5430; }
+.cart-root .cart-tab-back svg{ margin-top:-1px; }
 .cart-root .book{ position:relative; display:flex; width:1180px; height:760px; border-radius:14px; }
 .cart-root .book::before,.cart-root .book::after{ content:''; position:absolute; top:10px; bottom:10px; width:12px; z-index:0; border-radius:6px; background:repeating-linear-gradient(0deg, #efe7d4 0 3px, #e3d8c0 3px 6px); box-shadow:0 10px 22px rgba(74,54,34,.22); }
 .cart-root .book::before{ left:-9px; } .cart-root .book::after{ right:-9px; }
