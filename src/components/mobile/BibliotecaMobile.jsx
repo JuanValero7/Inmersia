@@ -195,8 +195,11 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
             <div className="bibm-hero">
               {heroTab === 'seguir' && (
                 <>
-                  <img className="bibm-hero-cat" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" />
-                  <div className="bibm-hero-fade" />
+                  {featured?.heroUrlMobile
+                    ? <img className="bibm-hero-bg" src={featured.heroUrlMobile} alt="" />
+                    : <img className="bibm-hero-cat" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" />}
+                  {/* Velo crema para legibilidad: solo en el fallback (sin imagen de fondo), igual que en desktop. */}
+                  {!featured?.heroUrlMobile && <div className="bibm-hero-fade" />}
                 </>
               )}
               <div style={{ position: 'relative', zIndex: 2 }}>

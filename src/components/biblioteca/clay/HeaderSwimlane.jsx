@@ -220,13 +220,22 @@ function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOp
       <div style={surface}>
         {tab === 'seguir' && (
           <>
-            {/* Hojas de otoño: detrás del gato y del degradado a propósito
-                (capa ambiental, no debe competir visualmente con nada). */}
-            <HojasOtono />
+            {featured?.heroUrl ? (
+              // Fondo alegórico del libro (acuarela IA), a sangre: cubre TODO el hero
+              // (incl. la zona antes crema). Va detrás; el contenido (zIndex 1) y el
+              // gato quedan encima. Sin velo crema.
+              <img src={featured.heroUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none' }} />
+            ) : (
+              // Sin imagen todavía: capa ambiental de hojas de otoño (fallback).
+              <HojasOtono />
+            )}
             {/* Copia A: recortada por el propio overflow:hidden de la tarjeta,
                 así el navegador la recorta siguiendo la curva del borde sin artefactos. */}
             <img src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" style={gatoImgStyle(-GATO_BLEED)} />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, #f1e8d4 28%, rgba(241,232,212,0.55) 46%, rgba(241,232,212,0) 66%)', zIndex: 0, pointerEvents: 'none' }} />
+            {/* Velo crema para legibilidad: solo en el fallback (sin imagen de fondo). */}
+            {!featured?.heroUrl && (
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, #f1e8d4 28%, rgba(241,232,212,0.55) 46%, rgba(241,232,212,0) 66%)', zIndex: 0, pointerEvents: 'none' }} />
+            )}
           </>
         )}
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>

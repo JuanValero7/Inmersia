@@ -106,6 +106,8 @@ export function useBiblioteca(user, lastOpenedBookIds) {
       summary: r.libros.descripcion || '',
       leido: r.leido,
       cover: r.libros.portada_url || null,
+      heroUrl: r.libros.metadata?.hero_url || null,
+      heroUrlMobile: r.libros.metadata?.hero_url_mobile || null,
       es_ficcion: r.libros.es_ficcion ?? true,
       progress: typeof progMap[r.libros.id] === 'number' ? progMap[r.libros.id] / 100 : null,
     }))

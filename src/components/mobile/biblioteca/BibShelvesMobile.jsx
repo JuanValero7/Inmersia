@@ -23,7 +23,7 @@ function Band({ c, w = '62%', t = 1.7 }) {
 function Spine({ book, onOpen }) {
   const w = spineW(book), h = spineH(book)
   const hh = hashOf(book.id)
-  const bg = inmTint(spineColor(book), 0.44)
+  const bg = spineColor(book)
   const accentCol = inmTint(spineColor(book), -0.34)
   const round = `${8 + (hh % 4)}px ${7 + (hh % 5)}px 1px 1px`
   return (
@@ -35,7 +35,7 @@ function Spine({ book, onOpen }) {
         justifyContent: 'space-between', overflow: 'hidden' }}>
       <Band c={accentCol} />
       <span className="bibm-bk-ttl" style={{ position: 'relative', fontSize: 11.5, fontWeight: 800,
-        maxWidth: w - 4, color: '#37260f', letterSpacing: '0.01em' }}>{book.title}</span>
+        maxWidth: w - 4, color: '#fff', letterSpacing: '0.01em' }}>{book.title}</span>
       <Band c={accentCol} />
     </div>
   )

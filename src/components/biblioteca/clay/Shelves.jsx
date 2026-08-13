@@ -35,13 +35,13 @@ function Band({ c, w = '62%', t = 1.8 }) {
   return <div style={{ width: w, height: t, background: c, borderRadius: 2 }} />;
 }
 
-// ── Lomo (contorno de tinta + relleno acuarela claro) ───────
+// ── Lomo (contorno de tinta + relleno = color asignado del libro) ───────
 function ShSpine({ book, color, onOpen }) {
   const wsp = spineW(book), h = spineH(book);
   const hh = hashOf(book.id);
   const ink = ACUA.ink;
   const click = onOpen ? (e) => onOpen(book, e.currentTarget.getBoundingClientRect()) : undefined;
-  const bg = inmTint(color, 0.44);
+  const bg = color;
   const accentCol = inmTint(color, -0.34);
   const round = `${8 + (hh % 4)}px ${7 + (hh % 5)}px 1px 1px`;
   return (
@@ -52,7 +52,7 @@ function ShSpine({ book, color, onOpen }) {
         justifyContent: 'space-between', overflow: 'hidden' }}>
       <Band c={accentCol} />
       <span className="inm-bk-ttl" style={{ position: 'relative', fontSize: 12.5, fontWeight: 800,
-        maxWidth: wsp - 4, color: '#37260f', letterSpacing: '0.01em' }}>{book.title}</span>
+        maxWidth: wsp - 4, color: '#fff', letterSpacing: '0.01em' }}>{book.title}</span>
       <Band c={accentCol} />
     </div>
   );
