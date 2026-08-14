@@ -50,46 +50,80 @@
 .bibm-search-x { background: none; border: none; color: rgba(74,54,34,0.5); cursor: pointer; display: flex; padding: 2px; }
 
 /* ── Scroll area ──
-   .bibm-scroll es el scroll general de la pantalla (una sola tira):
-   saludo, hero, últimos abiertos y encabezado de colección viven en su
-   flujo normal. Los estantes (.bibm-shelves-pane) son un bloque de
-   alto fijo dentro de ese mismo flujo — recién se ven cuando el scroll
-   general baja hasta ahí — pero con SU PROPIO overflow-y:auto interno,
-   así que una vez ahí, seguir bajando el dedo scrollea las categorías
-   sin mover el resto de la vista. */
+   .bibm-scroll es el ÚNICO scroll de la pantalla (una sola tira vertical):
+   saludo, hero, tira de tarjetas, encabezado de colección y la grilla de
+   categorías viven todos en su flujo normal. Ya no hay panel anidado. */
 .bibm-scroll { position: relative; z-index: 3; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 14px calc(30px + env(safe-area-inset-bottom)); }
-.bibm-shelves-pane { margin-top: 22px; height: 68vh; max-height: 680px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .bibm-greeting { font-weight: 800; font-size: 25px; letter-spacing: -0.01em; color: #3a2b1c; margin-bottom: 14px; }
 .bibm-sec-ttl { font-weight: 800; font-size: 18px; color: #3a2b1c; line-height: 1.15; margin-bottom: 12px; }
 .bibm-sec-sub { margin-left: 8px; font-size: 12.5px; font-weight: 600; color: rgba(74,54,34,0.55); white-space: nowrap; }
 
 /* ── Hero ── */
-.bibm-hero { position: relative; overflow: hidden; border-radius: 24px; padding: 14px 15px 17px; background-color: #f1e8d4; border: 2px solid var(--ink); box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 4px 6px 0 rgba(74,54,34,0.12), 7px 12px 22px rgba(74,54,34,0.16); min-height: 290px; }
-.bibm-hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; pointer-events: none; z-index: 0; }
+.bibm-hero { position: relative; overflow: hidden; border-radius: 24px; padding: 14px 15px 17px 26px; background-color: #f1e8d4; border: 2px solid var(--ink); box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 4px 6px 0 rgba(74,54,34,0.12), 7px 12px 22px rgba(74,54,34,0.16); min-height: 290px; display: flex; flex-direction: column; justify-content: center; }
+/* Envoltura del contenido: centra verticalmente en el hueco disponible */
+.bibm-hero-inner { width: 100%; }
+/* Se escala ligeramente (scale) para cubrir la línea de papel que asomaba en
+   los laterales por el redondeo del borde: el overflow:hidden del hero recorta
+   el excedente y la imagen llega a sangre hasta el borde. */
+.bibm-hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; pointer-events: none; z-index: 0; transform: scale(1.05); }
 .bibm-hero-cat { position: absolute; right: -8px; bottom: -4px; height: 78%; width: auto; max-width: 88%; object-fit: contain; object-position: right bottom; pointer-events: none; z-index: 0; }
 .bibm-hero-fade { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(95deg, #f1e8d4 30%, rgba(241,232,212,0.78) 48%, rgba(241,232,212,0.1) 72%), linear-gradient(0deg, rgba(241,232,212,0.85) 4%, transparent 34%); }
+/* Etiqueta estática del hero (ya no hay pestañas: "Seguir leyendo" es lo único). */
 .bibm-hero-tabs { display: flex; flex-wrap: nowrap; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,253,247,0.72); box-shadow: inset 0 0 0 2px rgba(74,54,34,0.22); margin-bottom: 4px; }
 .bibm-hero-tab { border: 2px solid transparent; cursor: pointer; font-family: inherit; font-weight: 700; font-size: 12px; padding: 6px 12px; border-radius: 999px; background: transparent; color: rgba(74,54,34,0.6); white-space: nowrap; transition: all 0.15s; }
 .bibm-hero-tab.active { background: var(--accent); color: #fff; border-color: var(--ink); text-shadow: 0 1px 1px rgba(0,0,0,0.2); box-shadow: 1.2px 1.6px 0 rgba(74,54,34,0.22); }
-.bibm-hero-body { display: flex; gap: 14px; align-items: flex-start; margin-top: 16px; }
+.bibm-hero-body { display: flex; gap: 16px; align-items: center; margin-top: 0; }
 .bibm-hero-cover { cursor: pointer; flex-shrink: 0; transform: rotate(-5deg); transform-origin: center bottom; transition: transform 0.35s cubic-bezier(.2,.75,.3,1); filter: drop-shadow(4px 9px 12px rgba(74,54,34,0.32)); }
 .bibm-hero-cover:active { transform: rotate(0deg) translateY(-4px); }
 .bibm-hero-ttl { font-weight: 800; font-size: 19.5px; line-height: 1.12; letter-spacing: -0.015em; color: var(--ink); overflow-wrap: break-word; }
 .bibm-hero-auth { color: rgba(74,54,34,0.64); font-size: 13.5px; margin-top: 5px; font-weight: 600; }
 .bibm-hero-prog { margin-top: 16px; }
-.bibm-bar { height: 11px; border-radius: 8px; background: rgba(74,54,34,0.16); overflow: hidden; }
+.bibm-bar { height: 11px; max-width: 150px; border-radius: 8px; background: rgba(74,54,34,0.16); overflow: hidden; }
 .bibm-bar > div { height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--accent), #f59455); }
-.bibm-hero-cta { margin-top: 18px; }
+.bibm-hero-cta { margin-top: 18px; align-self: flex-start; padding: 9px 16px; font-size: 13px; gap: 7px; box-shadow: 1.6px 2.2px 0 rgba(74,54,34,0.26); }
+.bibm-hero-cta svg { width: 15px; height: 15px; }
 .bibm-hero-empty { position: relative; z-index: 2; padding: 30px 8px 40px; max-width: 250px; color: rgba(74,54,34,0.62); font-weight: 600; font-size: 14.5px; line-height: 1.5; }
 .bibm-soon { display: inline-block; margin-top: 8px; background: rgba(74,54,34,0.1); color: var(--ink); font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 9px; border-radius: 999px; }
 
+/* ── Tira inferior (Últimos abiertos / Novedades / Para ti) ── */
+.bibm-lane-tabs { display: flex; flex-wrap: nowrap; gap: 5px; padding: 4px; border-radius: 999px; background: rgba(244,236,218,0.9); box-shadow: inset 0 0 0 2px rgba(74,54,34,0.18); margin-bottom: 14px; }
+.bibm-lane-tab { flex: 1; border: 2px solid transparent; cursor: pointer; font-family: inherit; font-weight: 700; font-size: 12.5px; padding: 8px 6px; border-radius: 999px; background: transparent; color: rgba(74,54,34,0.6); white-space: nowrap; transition: all 0.15s; }
+.bibm-lane-tab.active { background: var(--accent); color: #fff; border-color: var(--ink); text-shadow: 0 1px 1px rgba(0,0,0,0.2); box-shadow: 1.2px 1.6px 0 rgba(74,54,34,0.22); }
+.bibm-lane-empty { padding: 22px 6px; color: rgba(74,54,34,0.6); font-weight: 600; font-size: 13.5px; line-height: 1.5; }
+
+/* ── Colección estilo Kindle: mosaicos de categoría paginados ── */
+.bibm-cat-pager { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.bibm-cat-page { flex: 0 0 100%; scroll-snap-align: start; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 140px; gap: 12px; padding-bottom: 2px; }
+.bibm-cat-tile { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: #f1e8d4; border: 2px solid var(--ink); border-radius: 16px; padding: 12px; cursor: pointer; font-family: inherit; box-shadow: 2px 4px 0 rgba(74,54,34,0.16); transition: transform 0.12s; }
+.bibm-cat-tile:active { transform: translateY(1.5px); }
+/* Fondo: hero de un libro de la categoría, difuminado + velo crema. */
+.bibm-cat-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; z-index: 0; pointer-events: none; }
+.bibm-cat-veil { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(180deg, rgba(241,232,212,0.7) 0%, rgba(241,232,212,0.8) 100%); }
+/* Marco de lomos inferior: hilera de libros subiendo del borde de abajo, a
+   todo el ancho (pegados a las esquinas), teñidos con el color de categoría. */
+.bibm-cat-spines { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; display: flex; gap: 2px; padding: 0; align-items: flex-end; pointer-events: none; }
+.bibm-cat-spines span { border: 1.6px solid var(--ink); border-bottom: none; border-radius: 3px 3px 0 0; box-shadow: inset -2px 0 0 rgba(0,0,0,0.09), inset 2px 0 0 rgba(255,255,255,0.12); }
+.bibm-cat-meta { position: relative; z-index: 2; max-width: 100%; }
+.bibm-cat-name { font-weight: 800; font-size: 14.5px; color: #3a2b1c; line-height: 1.12; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.bibm-cat-count { margin-top: 2px; font-size: 11.5px; font-weight: 700; color: rgba(74,54,34,0.6); }
+.bibm-dots { display: flex; justify-content: center; align-items: center; gap: 7px; margin-top: 15px; }
+.bibm-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(74,54,34,0.22); transition: all 0.18s; }
+.bibm-dot.on { background: var(--accent); width: 20px; border-radius: 999px; }
+.bibm-cat-back { display: inline-flex; align-items: center; gap: 5px; background: var(--cream); color: #5a4632; border: 2px solid var(--ink); border-radius: 12px; padding: 7px 13px; font-family: inherit; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.18); margin-bottom: 15px; transition: transform 0.12s; }
+.bibm-cat-back:active { transform: translateY(1.5px); }
+.bibm-cat-open-head { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
+
 /* ── Encabezado colección + acciones ── */
-.bibm-col-head { display: flex; flex-direction: column; gap: 12px; }
-.bibm-col-actions { display: flex; gap: 9px; }
+.bibm-col-head { display: flex; flex-direction: column; gap: 8px; }
+.bibm-col-actions { position: relative; display: flex; gap: 9px; }
+/* Gato 7 reposando sobre el borde superior del botón "Gestionar" (mitad derecha):
+   posicionado absoluto para no empujar el título; la cola cae sobre el botón. z-index
+   lo pinta por encima y pointer-events:none deja que el toque llegue igual al botón. */
+.bibm-manage-gato { position: absolute; right: 8px; bottom: 100%; margin-bottom: -18px; z-index: 3; width: 84px; height: auto; object-fit: contain; pointer-events: none; filter: drop-shadow(2px 4px 5px rgba(74,54,34,0.28)); }
 .bibm-act { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: var(--cream); color: var(--accent); border: 2px solid var(--ink); border-radius: 999px; padding: 11px 14px; font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.2); transition: transform 0.12s; }
 .bibm-act:active { transform: translateY(1.5px); }
 .bibm-act.on { background: var(--accent); color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
-.bibm-act.manage { color: var(--green); }
+.bibm-act.manage { color: #2B1616; }
 .bibm-active-filter { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; background: rgba(242,121,42,0.12); border: 2px solid rgba(242,121,42,0.4); border-radius: 13px; padding: 9px 14px; font-size: 13px; font-weight: 600; color: #5a4632; }
 .bibm-active-filter strong { font-weight: 800; }
 .bibm-active-filter button { background: none; border: none; color: var(--accent); font-family: inherit; font-weight: 800; font-size: 12.5px; cursor: pointer; flex-shrink: 0; }

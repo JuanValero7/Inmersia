@@ -97,14 +97,14 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
 
   const hasSinCategoria = React.useMemo(() => books.some(b => !b.categoria_id), [books]);
 
-  // Repisa "Últimos abiertos" (máx 3) — excluye el libro ya mostrado en "Seguir leyendo"
+  // Repisa "Últimos abiertos" (máx 4) — excluye el libro ya mostrado en "Seguir leyendo"
   const portadas = React.useMemo(() => {
     const nonManual = books.filter(b => b.id !== 'manual' && b.id !== featured?.id)
     if (lastOpenedBookIds?.length) {
       const ordered = lastOpenedBookIds.filter(id => id !== featured?.id).map(id => nonManual.find(b => b.id === id)).filter(Boolean)
-      return ordered.slice(0, 3)
+      return ordered.slice(0, 4)
     }
-    return nonManual.slice(0, 3)
+    return nonManual.slice(0, 4)
   }, [books, lastOpenedBookIds, featured]);
 
   const openBook = React.useCallback((book) => { setSelectedBook(book); }, []);
@@ -157,7 +157,7 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
                   Filtrar{activeCategory ? ' · 1' : ''}
                 </button>
                 <button onClick={() => setShowManage(true)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#fffdf8', color: '#6f9457', border: `2px solid ${INK}`, borderRadius: 999, padding: '10px 17px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: `1.6px 2px 0 ${INK}33` }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#fffdf8', color: '#2B1616', border: `2px solid ${INK}`, borderRadius: 999, padding: '10px 17px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: `1.6px 2px 0 ${INK}33` }}>
                   <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   Gestionar tu colección
                 </button>
@@ -222,7 +222,13 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
           onEmpezarLeer={() => handleEmpezarLeerLibro(selectedLibro)}
         />
       )}
-      {reelLibro && <LibroReel libro={reelLibro} onClose={() => setReelLibro(null)} />}
+      {reelLibro && (
+        <LibroReel
+          libro={reelLibro}
+          onClose={() => setReelLibro(null)}
+          onFinish={() => { setSelectedLibro(reelLibro); setReelLibro(null); }}
+        />
+      )}
     </div>
   );
 }

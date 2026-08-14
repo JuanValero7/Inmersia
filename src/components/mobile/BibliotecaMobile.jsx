@@ -12,8 +12,8 @@ import { useBiblioteca } from '../../hooks/useBiblioteca.js'
 import { useCompraLibro, LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
 import { SIN_CATEGORIA_ID, COLOR_DEFAULT } from '../biblioteca/constants.js'
 import { INK, BookCover } from './biblioteca/bibmHelpers.jsx'
-import { MobileShelves } from './biblioteca/BibShelvesMobile.jsx'
-import { UltimosAbiertosMobile } from './biblioteca/UltimosAbiertosMobile.jsx'
+import { MobileCategoryBrowser } from './biblioteca/BibCategoryBrowserMobile.jsx'
+import { UltimosAbiertosMobile, LibroCardsMobile } from './biblioteca/UltimosAbiertosMobile.jsx'
 import BibBookSheet from './biblioteca/BibBookSheet.jsx'
 import { FilterScreen, ManageScreen } from './biblioteca/BibScreensMobile.jsx'
 import PanelLibro from '../tienda/PanelLibro.jsx'
@@ -21,37 +21,14 @@ import LibroReel from '../tienda/LibroReel.jsx'
 import '../../styles/tienda.css' // estilos de PanelLibro/LibroReel (.bkp-*, .reel-*) — sin esto renderizan sin overlay/estilos
 import '../../styles/biblioteca.mobile.css'
 
-const HERO_TABS = [
-  { id: 'seguir', label: 'Seguir leyendo' },
+// Tira inferior desacoplada del hero: "Seguir leyendo" queda solo en el hero;
+// acá el usuario alterna entre sus últimos abiertos y las sugerencias de la
+// Tienda (Novedades / Para ti), todas con el mismo formato de tarjeta.
+const LANE_TABS = [
+  { id: 'ultimos', label: 'Últimos abiertos' },
   { id: 'novedades', label: 'Novedades' },
   { id: 'recom', label: 'Para ti' },
 ]
-
-// Lista compacta (solo título + autor, máx 3, sin tarjeta) para Novedades / Para ti:
-// cada fila es texto plano separado de la siguiente por una línea divisoria.
-// Al tocar un ítem se abre primero el Preview (LibroReel) y, al cerrarlo, el
-// PanelLibro — el mismo recorrido que tiene un libro al tocarlo en la Tienda
-// (ver CatalogoInteriorMobile.jsx: click abre reel, handleReelClose abre panel).
-function LibroListaSimple({ libros, onOpen }) {
-  const visibles = libros.slice(0, 3)
-  return (
-    <div>
-      {visibles.map((l, i) => (
-        <button key={l.id} onClick={() => onOpen(l)} style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, width: '100%',
-          background: 'none', border: 'none', borderBottom: i < visibles.length - 1 ? '1.5px solid rgba(74,54,34,0.16)' : 'none',
-          padding: '12px 2px', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-        }}>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: 14, color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.titulo}</div>
-            <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: 'rgba(74,54,34,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.autor}</div>
-          </div>
-          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" style={{ flexShrink: 0, opacity: 0.4 }}><path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
-      ))}
-    </div>
-  )
-}
 
 export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, isSuperuser, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoNotebook }) {
   // Lógica de datos compartida con Biblioteca desktop (ver src/hooks/useBiblioteca.js)
@@ -72,7 +49,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
   // para no recalcular estantes/grupos en cada pulsación.
   const deferredSearch = React.useDeferredValue(search)
   const [activeCategory, setActiveCategory] = React.useState(null) // null | uuid | SIN_CATEGORIA_ID
-  const [heroTab, setHeroTab] = React.useState('seguir')
+  const [laneTab, setLaneTab] = React.useState('ultimos') // tira inferior: 'ultimos' | 'novedades' | 'recom'
   const [screen, setScreen] = React.useState(null) // null | 'filter' | 'manage'
 
   // ── Wrappers que sincronizan estado de UI tras las primitivas del hook ──
@@ -191,62 +168,63 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
 
         {!loadingBooks && (
           <>
-            {/* Hero "Seguir leyendo" con el gato */}
+            {/* Hero "Seguir leyendo" con el gato — único elemento del hero */}
             <div className="bibm-hero">
-              {heroTab === 'seguir' && (
-                <>
-                  {featured?.heroUrlMobile
-                    ? <img className="bibm-hero-bg" src={featured.heroUrlMobile} alt="" />
-                    : <img className="bibm-hero-cat" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" />}
-                  {/* Velo crema para legibilidad: solo en el fallback (sin imagen de fondo), igual que en desktop. */}
-                  {!featured?.heroUrlMobile && <div className="bibm-hero-fade" />}
-                </>
-              )}
-              <div style={{ position: 'relative', zIndex: 2 }}>
-                <div className="bibm-hero-tabs">
-                  {HERO_TABS.map(t => (
-                    <button key={t.id} className={'bibm-hero-tab' + (heroTab === t.id ? ' active' : '')} onClick={() => setHeroTab(t.id)}>{t.label}</button>
-                  ))}
-                </div>
-                {heroTab === 'seguir' ? (
-                  featured ? (
-                    <div className="bibm-hero-body">
-                      <div className="bibm-hero-cover" onClick={(e) => openBook(featured, e.currentTarget.getBoundingClientRect())}>
-                        <BookCover book={featured} h={150} />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                        <div className="bibm-hero-ttl">{featured.title}</div>
-                        <div className="bibm-hero-auth">{featured.author}</div>
-                        {typeof featured.progress === 'number' && (
-                          <div className="bibm-hero-prog">
-                            <div style={{ marginBottom: 6 }}>
-                              <span style={{ fontWeight: 700, fontSize: 14, color: INK }}>{Math.round(featured.progress * 100)}% <span style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(74,54,34,0.55)' }}>leído</span></span>
-                            </div>
-                            <div className="bibm-bar"><div style={{ width: `${Math.round(featured.progress * 100)}%` }} /></div>
-                          </div>
-                        )}
-                        <button className="bibm-btn bibm-hero-cta" onClick={(e) => openBook(featured, e.currentTarget.getBoundingClientRect())}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                          {typeof featured.progress === 'number' ? 'Continuar' : 'Abrir libro'}
-                        </button>
-                      </div>
+              {featured?.heroUrlMobile
+                ? <img className="bibm-hero-bg" src={featured.heroUrlMobile} alt="" />
+                : <img className="bibm-hero-cat" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" />}
+              {/* Velo crema para legibilidad: solo en el fallback (sin imagen de fondo), igual que en desktop. */}
+              {!featured?.heroUrlMobile && <div className="bibm-hero-fade" />}
+              <div className="bibm-hero-inner" style={{ position: 'relative', zIndex: 2 }}>
+                {featured ? (
+                  <div className="bibm-hero-body">
+                    <div className="bibm-hero-cover" onClick={(e) => openBook(featured, e.currentTarget.getBoundingClientRect())}>
+                      <BookCover book={featured} h={190} />
                     </div>
-                  ) : <div className="bibm-hero-empty">Cuando empieces a leer un libro aparecerá acá para que retomes donde lo dejaste.</div>
-                ) : heroTab === 'novedades'
-                  ? (novedades.length > 0
-                      ? <LibroListaSimple key="novedades" libros={novedades} onOpen={setReelLibro} />
-                      : <div className="bibm-hero-empty">Pronto verás acá los libros recién llegados a la biblioteca. <span className="bibm-soon">Próximamente</span></div>)
-                  : (recomendaciones.length > 0
-                      ? <LibroListaSimple key="recomendaciones" libros={recomendaciones} onOpen={setReelLibro} />
-                      : <div className="bibm-hero-empty">Estamos preparando recomendaciones a tu medida. <span className="bibm-soon">Próximamente</span></div>)}
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                      <div className="bibm-hero-ttl">{featured.title}</div>
+                      <div className="bibm-hero-auth">{featured.author}</div>
+                      {typeof featured.progress === 'number' && (
+                        <div className="bibm-hero-prog">
+                          <div style={{ marginBottom: 6 }}>
+                            <span style={{ fontWeight: 700, fontSize: 14, color: INK }}>{Math.round(featured.progress * 100)}% <span style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(74,54,34,0.55)' }}>leído</span></span>
+                          </div>
+                          <div className="bibm-bar"><div style={{ width: `${Math.round(featured.progress * 100)}%` }} /></div>
+                        </div>
+                      )}
+                      <button className="bibm-btn bibm-hero-cta" onClick={(e) => openBook(featured, e.currentTarget.getBoundingClientRect())}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        {typeof featured.progress === 'number' ? 'Continuar' : 'Abrir libro'}
+                      </button>
+                    </div>
+                  </div>
+                ) : <div className="bibm-hero-empty">Cuando empieces a leer un libro aparecerá acá para que retomes donde lo dejaste.</div>}
               </div>
             </div>
 
-            {/* Últimos abiertos (máx 3) */}
-            {ultimosVisible.length > 0 && (
+            {/* Tira inferior: Últimos abiertos / Novedades / Para ti */}
+            {(ultimosVisible.length > 0 || novedades.length > 0 || recomendaciones.length > 0) && (
               <div style={{ marginTop: 30 }}>
-                <div className="bibm-sec-ttl">Últimos abiertos</div>
-                <UltimosAbiertosMobile books={ultimosVisible} onOpen={openBook} />
+                <div className="bibm-lane-tabs">
+                  {LANE_TABS.map(t => (
+                    <button key={t.id} className={'bibm-lane-tab' + (laneTab === t.id ? ' active' : '')} onClick={() => setLaneTab(t.id)}>{t.label}</button>
+                  ))}
+                </div>
+                {laneTab === 'ultimos' && (
+                  ultimosVisible.length > 0
+                    ? <UltimosAbiertosMobile books={ultimosVisible} onOpen={openBook} />
+                    : <div className="bibm-lane-empty">Todavía no abriste ningún libro. Cuando empieces a leer, aparecerán acá.</div>
+                )}
+                {laneTab === 'novedades' && (
+                  novedades.length > 0
+                    ? <LibroCardsMobile libros={novedades.slice(0, 3)} onOpen={setReelLibro} badge="Recién llegado" />
+                    : <div className="bibm-lane-empty">Pronto verás acá los libros recién llegados a la biblioteca. <span className="bibm-soon">Próximamente</span></div>
+                )}
+                {laneTab === 'recom' && (
+                  recomendaciones.length > 0
+                    ? <LibroCardsMobile libros={recomendaciones.slice(0, 3)} onOpen={setReelLibro} badge="Para ti" />
+                    : <div className="bibm-lane-empty">Estamos preparando recomendaciones a tu medida. <span className="bibm-soon">Próximamente</span></div>
+                )}
               </div>
             )}
 
@@ -255,6 +233,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
               <div className="bibm-col-head">
                 <div className="bibm-sec-ttl">Tu colección <span className="bibm-sec-sub">{collectionCount} {collectionCount === 1 ? 'libro' : 'libros'}</span></div>
                 <div className="bibm-col-actions">
+                  <img className="bibm-manage-gato" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" loading="lazy" />
                   <button className={'bibm-act' + (activeCategory ? ' on' : '')} onClick={() => setScreen('filter')}>
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round"/></svg>
                     Filtrar{activeCategory ? ' · 1' : ''}
@@ -274,12 +253,11 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
               )}
             </div>
 
-            {/* Estantes — bloque de alto fijo con SU PROPIO scroll interno.
-                Vive en el flujo normal: solo se ve cuando el scroll general
-                baja hasta acá, y a partir de ahí seguir bajando scrollea
-                dentro de los estantes en vez de mover el resto de la vista. */}
-            <div className="bibm-noscroll bibm-shelves-pane">
-              <MobileShelves groups={groups} onOpen={openBook} />
+            {/* Colección estilo Kindle: mosaicos de categoría paginados (6 por
+                pantalla, puntitos si hay más) y, al tocar uno, drill-in a las
+                portadas de esa categoría. Sin scroll anidado. */}
+            <div style={{ marginTop: 22 }}>
+              <MobileCategoryBrowser groups={groups} onOpen={openBook} />
             </div>
           </>
         )}

@@ -153,7 +153,7 @@ export function useBiblioteca(user, lastOpenedBookIds) {
   const books = useMemo(() => rawBooks.map(b => {
     const cat = b.categoria_id ? categoriasMap[b.categoria_id] : null
     // El color de la categoría es solo para sus chips/etiquetas (ver cat.color
-    // en FlatShelves/BibShelvesMobile/filtros); el libro conserva su propio color.
+    // en FlatShelves/BibCategoryBrowserMobile/filtros); el libro conserva su color.
     return { ...b, color: b._baseColor || COLOR_BOOK_FALLBACK2, categoryName: cat?.nombre || '' }
   }), [rawBooks, categoriasMap])
 

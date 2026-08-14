@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { supabase } from '../../lib/supabase.js'
 
-export default function LibroReel({ libro, onClose }) {
+export default function LibroReel({ libro, onClose, onFinish }) {
   const [reels,   setReels]   = useState([])
   const [current, setCurrent] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -49,6 +49,17 @@ export default function LibroReel({ libro, onClose }) {
 
   function goTo(idx) {
     setCurrent(Math.max(0, Math.min(reels.length - 1, idx)))
+  }
+
+  // Avanzar: en el último panel, un toque a la derecha cierra el preview y
+  // abre el detalle del libro (onFinish, o el propio onClose que en tienda ya
+  // abre el PanelLibro al cerrar).
+  function handleNext() {
+    if (current >= reels.length - 1) {
+      (onFinish || onClose)()
+      return
+    }
+    goTo(current + 1)
   }
 
   function handleBackdropClick(e) {
@@ -109,7 +120,7 @@ export default function LibroReel({ libro, onClose }) {
 
         {/* Zonas de toque tipo stories: izquierda = atrás, derecha = adelante */}
         <div className="reel-tap-zone reel-tap-zone-izq" onClick={() => goTo(current - 1)} />
-        <div className="reel-tap-zone reel-tap-zone-der" onClick={() => goTo(current + 1)} />
+        <div className="reel-tap-zone reel-tap-zone-der" onClick={handleNext} />
       </div>
     </div>
   )

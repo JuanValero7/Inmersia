@@ -125,7 +125,7 @@ export default function Ficha({ section, items = [], onBackPortada, initialItemI
                   )
                 })}
                 {total === 0 && (
-                  <div className="idx-vacio">Sin datos disponibles todavía. Avanzá en la lectura para revelar nuevas pistas.</div>
+                  <div className="idx-vacio">Sin datos disponibles todavía. Avanza en la lectura para revelar nuevas pistas.</div>
                 )}
                 {total > 0 && filtered.length === 0 && (
                   <div className="idx-vacio">Sin resultados para &ldquo;{query}&rdquo;.</div>
@@ -144,9 +144,9 @@ export default function Ficha({ section, items = [], onBackPortada, initialItemI
                 <div className="empty-pane">
                   <svg className="empty-arrow" width="58" height="40" viewBox="0 0 58 40" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M54 20H6" /><path d="M18 8 6 20l12 12" /></svg>
-                  <div className="ek">{total === 0 ? 'Sin datos disponibles' : 'Elegí un nombre del índice'}</div>
+                  <div className="ek">{total === 0 ? 'Sin datos disponibles' : 'Elige un nombre del índice'}</div>
                   <p>{total === 0
-                    ? 'Cuando avances en la lectura, acá aparecerán las fichas de esta sección.'
+                    ? 'Cuando avances en la lectura, aquí aparecerán las fichas de esta sección.'
                     : 'Su ficha aparecerá aquí: descripción, etiquetas y —si la tiene— una imagen.'}</p>
                 </div>
               )}

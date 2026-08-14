@@ -50,7 +50,7 @@ export function CarteleraMobileLista({ section, items = [], onPick, initialScrol
       </div>
 
       {items.length === 0 ? (
-        <div className="cm-list-empty">Sin datos disponibles todavía. Avanzá en la lectura para revelar nuevas pistas.</div>
+        <div className="cm-list-empty">Sin datos disponibles todavía. Avanza en la lectura para revelar nuevas pistas.</div>
       ) : filtered.length === 0 ? (
         <div className="cm-list-empty">Sin resultados para &ldquo;{query}&rdquo;.</div>
       ) : (

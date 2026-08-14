@@ -24,17 +24,22 @@ export const spineH = (b) => Math.round(112 + (hashOf(b.id + 'h') % 44)) // 112.
 // portada + lomo/base + canto de páginas, con título y autor
 // superpuestos. El ancho se deriva de `h` para no romper los
 // tamaños ya afinados en cada sitio (hero, carrusel, ficha...).
-export function BookCover({ book, h = 150 }) {
+// `fill`: ocupa el 100% del ancho del contenedor (para grillas/estantes
+// responsive donde la celda define el ancho); el aspect-ratio del .book fija
+// el alto. El tamaño de fuente usa un ancho nominal `fillW` (px de una celda
+// típica) para no depender de `h`.
+export function BookCover({ book, h = 150, fill = false, fillW = 105 }) {
   const w = Math.round(h * 210 / 305)
   const c = book.color || '#8c6838'
+  const fw = fill ? fillW : w
   return (
-    <div className="book" style={{ '--cov': c, width: w }}>
+    <div className="book" style={{ '--cov': c, width: fill ? '100%' : w }}>
       <div className="book-cover">
         {book.cover
           ? <img className="book-art-img" src={book.cover} alt={book.title} />
           : <div className="book-art-empty" />}
-        <span className="book-scribble" style={{ fontSize: autorFontSize(w, book.author) }}>{book.author}</span>
-        <span className="book-title" style={{ fontSize: tituloFontSize(w, book.title) }}>{book.title}</span>
+        <span className="book-scribble" style={{ fontSize: autorFontSize(fw, book.author) }}>{book.author}</span>
+        <span className="book-title" style={{ fontSize: tituloFontSize(fw, book.title) }}>{book.title}</span>
       </div>
       <div className="book-base" />
       <div className="book-pages" />

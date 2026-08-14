@@ -43,7 +43,7 @@ export function usePerfilQuery(userId) {
 // libros visible=true, ordenados por fecha — Tienda (catálogo completo)
 // y Biblioteca (Novedades/Recomendaciones, un subconjunto del mismo dato).
 const CATALOGO_LIBROS_COLS =
-  'id, slug, titulo, autor, paginas, descripcion, color, portada_url, anio, categorias, moods, es_ficcion, visible, created_at'
+  'id, slug, titulo, autor, paginas, descripcion, color, portada_url, metadata, anio, categorias, moods, es_ficcion, visible, created_at'
 
 export function useCatalogoLibrosQuery() {
   return useQuery({

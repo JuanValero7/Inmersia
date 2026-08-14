@@ -275,7 +275,7 @@
 .cart-root .cart-zone-tag{ position:absolute; z-index:9;
   transform:translate(-50%,-50%) rotate(var(--tape-rot,-2deg));
   color:var(--ink); border:0; border-radius:0; padding:7px 20px;
-  font-family:'Permanent Marker', 'Baloo 2', cursive; font-weight:400; font-size:16px;
+  font-family:'Poppins', system-ui, sans-serif; font-weight:700; font-size:15px;
   letter-spacing:.01em; line-height:1; cursor:pointer; white-space:nowrap;
   background:
     repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 2px, rgba(0,0,0,.03) 2px 5px),

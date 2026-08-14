@@ -31,10 +31,8 @@ function EyeIcon({ size = 15 }) {
   )
 }
 
-function NovedadesSpotlight({ novedades = [], onOpen, onPreview }) {
+function NovedadesSpotlight({ novedades = [], idx, setIdx, onOpen, onPreview }) {
   const ink = INK
-  const [idx, setIdx] = React.useState(0)
-  React.useEffect(() => { if (idx >= novedades.length) setIdx(0) }, [novedades.length, idx])
   if (!novedades.length) return null
 
   const libro = novedades[idx]

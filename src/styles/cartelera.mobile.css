@@ -141,17 +141,26 @@
 
 /* ── Gato-dock (otras categorías) ── */
 .cm-root .cm-cat-dock{ position:absolute; left:12px; bottom:16px; z-index:45; display:flex; align-items:flex-end; gap:9px; }
+/* Ancla del gato: la burbuja "Cartelera" se posiciona relativa a ESTA (sobre el gato),
+   sin que la altura de la burbuja de secciones (al lateral) la desplace. */
+.cm-root .cm-cat-anchor{ position:relative; display:flex; align-items:flex-end; flex-shrink:0; }
 .cm-root .cm-cat-btn{ background:none; border:none; padding:0; cursor:pointer; flex-shrink:0;
   -webkit-tap-highlight-color:transparent; line-height:0; }
 .cm-root .cm-cat-img{ width:84px; display:block; filter:drop-shadow(2px 5px 4px rgba(60,40,18,0.34));
   transition:transform .2s cubic-bezier(.3,1.3,.5,1); }
 .cm-root .cm-cat-btn:active .cm-cat-img{ transform:scale(0.95); }
 .cm-root .cm-cat-tray{
-  display:flex; align-items:flex-end; gap:5px; background:#fff; border:2px solid var(--ink); border-radius:18px;
+  display:flex; flex-direction:column; align-items:stretch; gap:6px; background:#fff; border:2px solid var(--ink); border-radius:18px;
   padding:8px; margin-bottom:6px;
   box-shadow:2.5px 3.5px 0 rgba(74,54,34,0.22), 0 8px 22px rgba(0,0,0,0.16);
   transform-origin:left bottom; animation:cmTray .26s cubic-bezier(.34,1.56,.64,1);
 }
+/* Burbuja "Cartelera": flota justo encima del gato (relativa al ancla) */
+.cm-root .cm-cat-tray-board{ position:absolute; left:0; bottom:100%; margin:0 0 8px; z-index:1; }
+/* Burbuja de secciones: al lateral del gato; rejilla que envuelve, acotada a la pantalla */
+.cm-root .cm-cat-tray-others{ max-width:calc(100vw - 84px - 30px); }
+.cm-root .cm-cat-tool-board{ flex-direction:row; justify-content:flex-start; width:100%; border-radius:12px; }
+.cm-root .cm-cat-others{ display:flex; flex-wrap:wrap; gap:5px; justify-content:flex-start; }
 .cm-root .cm-cat-tool{ display:flex; flex-direction:column; align-items:center; gap:5px; width:60px;
   background:none; border:none; cursor:pointer; font-family:inherit; padding:4px 5px; border-radius:12px;
   -webkit-tap-highlight-color:transparent; }

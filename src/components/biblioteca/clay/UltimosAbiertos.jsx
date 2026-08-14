@@ -26,14 +26,23 @@ function UltimosAbiertos({ books, onOpen }) {
         const pct = hasProgress ? Math.round(b.progress * 100) : null
         return (
           <div key={b.id} onClick={(e) => onOpen(b, e.currentTarget.getBoundingClientRect())} style={{
-            flex: '1 1 260px', minWidth: 260, display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer',
+            position: 'relative', overflow: 'hidden',
+            flex: '1 1 240px', minWidth: 240, display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer',
             background: '#f1e8d4', border: `2px solid ${ink}`, borderRadius: 16,
             padding: '12px 16px', boxShadow: `2px 5px 0 ${ink}1a`,
           }}>
-            <div className="inm-bk" style={{ flexShrink: 0 }}>
+            {b.heroUrl && (
+              <>
+                {/* Fondo alegórico del libro (acuarela IA), a sangre dentro de la ficha. */}
+                <img src={b.heroUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none' }} />
+                {/* Velo crema: más denso hacia la derecha, donde va el texto. */}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(241,232,212,0.55) 0%, rgba(241,232,212,0.82) 55%, rgba(241,232,212,0.9) 100%)', zIndex: 0, pointerEvents: 'none' }} />
+              </>
+            )}
+            <div className="inm-bk" style={{ flexShrink: 0, position: 'relative', zIndex: 1 }}>
               <BookCover book={b} h={110} />
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
               <div style={{ fontWeight: 800, fontSize: 13.5, color: ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.title}</div>
               <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(74,54,34,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.author}</div>
               {hasProgress ? (

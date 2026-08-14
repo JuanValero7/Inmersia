@@ -73,10 +73,8 @@ function EmptyLane({ msg }) {
   );
 }
 
-function RecomendacionSpotlight({ recomendaciones, onOpen, onPreview }) {
+function RecomendacionSpotlight({ recomendaciones, idx, setIdx, onOpen, onPreview }) {
   const ink = INK
-  const [idx, setIdx] = React.useState(0)
-  React.useEffect(() => { if (idx >= recomendaciones.length) setIdx(0) }, [recomendaciones.length, idx])
   if (!recomendaciones.length) return null
 
   const libro = recomendaciones[idx]
@@ -194,6 +192,20 @@ function HeroFeatured({ book, onOpen }) {
 function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOpenLibro, onPreviewLibro, gatoColor = 'negro' }) {
   const ink = INK;
   const [tab, setTab] = React.useState('seguir');
+  // Índice del libro en foco dentro de cada spotlight (Novedades /
+  // Recomendaciones). Vive acá para que el fondo hero pueda cambiar al
+  // libro seleccionado cuando el usuario clickea otra portada de la lista.
+  const [novIdx, setNovIdx] = React.useState(0);
+  const [recIdx, setRecIdx] = React.useState(0);
+  React.useEffect(() => { if (novIdx >= novedades.length) setNovIdx(0) }, [novedades.length, novIdx]);
+  React.useEffect(() => { if (recIdx >= recomendaciones.length) setRecIdx(0) }, [recomendaciones.length, recIdx]);
+
+  // Fondo hero del libro que está en foco en la pestaña activa.
+  const heroUrl =
+    tab === 'seguir' ? (featured?.heroUrl || null)
+    : tab === 'novedades' ? (novedades[novIdx]?.metadata?.hero_url || null)
+    : (recomendaciones[recIdx]?.metadata?.hero_url || null);
+
   const CARD_H = 500;
   const BORDER_W = 2; // grosor del borde de la tarjeta — overflow:hidden recorta 2px adentro del borde, no en el borde mismo
   const GATO_BLEED = 124; // cuánto asoma el gato por debajo de la tarjeta
@@ -218,25 +230,24 @@ function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOp
   return (
     <div style={{ position: 'relative', marginTop: 20 }}>
       <div style={surface}>
+        {heroUrl ? (
+          // Fondo alegórico del libro en foco (acuarela IA), a sangre: cubre TODO
+          // el hero. Cambia con la pestaña y con el libro seleccionado dentro de
+          // Novedades/Recomendaciones. Va detrás; el contenido (zIndex 1) y el
+          // gato quedan encima. Sin velo crema.
+          <img key={heroUrl} src={heroUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none' }} />
+        ) : (
+          // Sin imagen todavía: capa ambiental de hojas de otoño (fallback).
+          <HojasOtono />
+        )}
         {tab === 'seguir' && (
-          <>
-            {featured?.heroUrl ? (
-              // Fondo alegórico del libro (acuarela IA), a sangre: cubre TODO el hero
-              // (incl. la zona antes crema). Va detrás; el contenido (zIndex 1) y el
-              // gato quedan encima. Sin velo crema.
-              <img src={featured.heroUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none' }} />
-            ) : (
-              // Sin imagen todavía: capa ambiental de hojas de otoño (fallback).
-              <HojasOtono />
-            )}
-            {/* Copia A: recortada por el propio overflow:hidden de la tarjeta,
-                así el navegador la recorta siguiendo la curva del borde sin artefactos. */}
-            <img src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" style={gatoImgStyle(-GATO_BLEED)} />
-            {/* Velo crema para legibilidad: solo en el fallback (sin imagen de fondo). */}
-            {!featured?.heroUrl && (
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, #f1e8d4 28%, rgba(241,232,212,0.55) 46%, rgba(241,232,212,0) 66%)', zIndex: 0, pointerEvents: 'none' }} />
-            )}
-          </>
+          // Copia A del gato: recortada por el propio overflow:hidden de la tarjeta,
+          // así el navegador la recorta siguiendo la curva del borde sin artefactos.
+          <img src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" style={gatoImgStyle(-GATO_BLEED)} />
+        )}
+        {/* Velo crema para legibilidad: solo en el fallback (sin imagen de fondo). */}
+        {!heroUrl && (
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, #f1e8d4 28%, rgba(241,232,212,0.55) 46%, rgba(241,232,212,0) 66%)', zIndex: 0, pointerEvents: 'none' }} />
         )}
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
           <div style={{ display: 'inline-flex', alignSelf: 'flex-start', gap: 4, padding: 5, borderRadius: 999, background: 'rgba(255,253,247,0.7)', boxShadow: `inset 0 0 0 2px ${ink}38`, marginBottom: 6, flexShrink: 0 }}>
@@ -249,9 +260,9 @@ function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOp
               ? (featured ? <HeroFeatured book={featured} onOpen={onOpen} /> : <EmptyLane msg="Cuando empieces a leer un libro aparecerá acá para que retomes donde lo dejaste." />)
               : tab === 'novedades'
                 ? (novedades.length > 0
-                    ? <NovedadesSpotlight novedades={novedades} onOpen={onOpenLibro} onPreview={onPreviewLibro} />
+                    ? <NovedadesSpotlight novedades={novedades} idx={novIdx} setIdx={setNovIdx} onOpen={onOpenLibro} onPreview={onPreviewLibro} />
                     : <EmptyLane msg="Pronto verás acá los libros recién llegados a la biblioteca." />)
-                : (recomendaciones.length > 0 ? <RecomendacionSpotlight recomendaciones={recomendaciones} onOpen={onOpenLibro} onPreview={onPreviewLibro} /> : <EmptyLane msg="Estamos preparando recomendaciones a tu medida. ¡Vuelve pronto!" />)}
+                : (recomendaciones.length > 0 ? <RecomendacionSpotlight recomendaciones={recomendaciones} idx={recIdx} setIdx={setRecIdx} onOpen={onOpenLibro} onPreview={onPreviewLibro} /> : <EmptyLane msg="Estamos preparando recomendaciones a tu medida. ¡Vuelve pronto!" />)}
           </div>
         </div>
       </div>

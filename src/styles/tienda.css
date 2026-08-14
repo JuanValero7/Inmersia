@@ -372,10 +372,11 @@
   /* Ficha del libro · pantalla completa desde la derecha */
   .bkp-scrim{display:none;}
   .bkp{width:100vw;min-width:0;max-width:100vw;border-left:none;box-shadow:none;}
-  .bkp::before{display:none;}
+  /* Gato de fondo igual que en desktop (no rompiendo el texto de la sinopsis) */
+  .bkp::before{display:block;}
   .bkp-close{top:14px;right:14px;}
   .bkp-header{flex-direction:row;align-items:flex-start;text-align:left;gap:16px;padding:54px 18px 0;}
-  .bkp-gato{display:block;float:right;width:130px;height:auto;margin:0 0 10px 14px;}
+  .bkp-gato{display:none;}
   .bkp-title{font-size:21px;}
   .bkp-author{font-size:14px;}
   .bkp-preview{font-size:13px;padding:9px 18px;margin-top:11px;}

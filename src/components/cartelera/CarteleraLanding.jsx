@@ -451,7 +451,7 @@ export default function CarteleraLanding({
           <div className="dock-bar"><span style={{ width: `${pct}%` }} /></div>
           <span className="count">{pct}%</span>
         </div>
-        <span className="hint">El corcho crece y cada sección se revela a medida que avanzás en la lectura</span>
+        <span className="hint">El corcho crece y cada sección se revela a medida que avanzas en la lectura</span>
       </div>
 
       {popup === 'lugares' && (

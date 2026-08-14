@@ -70,23 +70,31 @@ function CatDock({ currentKey, onJump, onGoLanding, secciones = SECCIONES, gatoC
 
   return (
     <div className="cm-cat-dock" ref={ref}>
-      <button type="button" className="cm-cat-btn" onClick={() => setOpen(o => !o)} aria-label="Menú del gato">
-        <img className="cm-cat-img" src={`/assets/cartelera/gato-${gatoColor}-2.webp`} alt="Gato" />
-      </button>
-      {open && (
-        <div className="cm-cat-tray">
-          {onGoLanding && (
-            <button type="button" className="cm-cat-tool" onClick={() => { setOpen(false); onGoLanding() }}>
+      {/* Ancla: el gato + la burbuja de "Cartelera" flotando justo encima */}
+      <div className="cm-cat-anchor">
+        {open && onGoLanding && (
+          <div className="cm-cat-tray cm-cat-tray-board">
+            <button type="button" className="cm-cat-tool cm-cat-tool-board" onClick={() => { setOpen(false); onGoLanding() }}>
               <span className="cm-cat-tile cm-cat-tile-board"><BoardIcon /></span>
               <span className="cm-cat-lbl">Cartelera</span>
             </button>
-          )}
-          {others.map(s => (
-            <button key={s.key} type="button" className="cm-cat-tool" onClick={() => { setOpen(false); onJump(s.key) }}>
-              <span className="cm-cat-tile" style={{ background: s.color }}>{s.label[0]}</span>
-              <span className="cm-cat-lbl">{s.label}</span>
-            </button>
-          ))}
+          </div>
+        )}
+        <button type="button" className="cm-cat-btn" onClick={() => setOpen(o => !o)} aria-label="Menú del gato">
+          <img className="cm-cat-img" src={`/assets/cartelera/gato-${gatoColor}-2.webp`} alt="Gato" />
+        </button>
+      </div>
+      {/* Burbuja de secciones, al lateral del gato */}
+      {open && (
+        <div className="cm-cat-tray cm-cat-tray-others">
+          <div className="cm-cat-others">
+            {others.map(s => (
+              <button key={s.key} type="button" className="cm-cat-tool" onClick={() => { setOpen(false); onJump(s.key) }}>
+                <span className="cm-cat-tile" style={{ background: s.color }}>{s.label[0]}</span>
+                <span className="cm-cat-lbl">{s.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

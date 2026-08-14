@@ -1,4 +1,5 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
 import terminosRaw from '../../../Documentation/terminos-y-condiciones.md?raw'
 import privacidadRaw from '../../../Documentation/politica-de-privacidad.md?raw'
 
@@ -130,9 +131,12 @@ export default function LegalModal({ initialDoc = 'terminos', onClose }) {
     return () => document.removeEventListener('keydown', h)
   }, [onClose])
 
-  return (
+  // Portal a document.body: evita quedar atrapado en el contexto de apilamiento
+  // de la vista contenedora (p. ej. .pm-scroll en el perfil mobile), donde los
+  // tabs/topbar del perfil (con z-index mayor) se pintaban encima del modal.
+  return createPortal(
     <div onClick={onClose} style={{
-      position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(50,34,18,0.45)', backdropFilter: 'blur(5px)',
+      position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(50,34,18,0.45)', backdropFilter: 'blur(5px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Baloo 2', cursive",
     }}>
       <div onClick={e => e.stopPropagation()} style={{
@@ -156,6 +160,7 @@ export default function LegalModal({ initialDoc = 'terminos', onClose }) {
           <Doc raw={DOCS[doc].raw} onNavigate={setDoc} />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

@@ -150,7 +150,7 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
                   </p>
                 )}
                 {subsCap.length === 0
-                  ? <p style={{ fontFamily: "'Baloo 2',sans-serif", fontStyle: 'italic', fontSize: 13, color: 'rgba(74,54,34,0.5)' }}>Sin subrayados en este capítulo. Seleccioná texto en el libro para guardar uno.</p>
+                  ? <p style={{ fontFamily: "'Baloo 2',sans-serif", fontStyle: 'italic', fontSize: 13, color: 'rgba(74,54,34,0.5)' }}>Sin subrayados en este capítulo. Selecciona texto en el libro para guardar uno.</p>
                   : subsCap.map(s => (
                     <div key={s.id} style={{ marginBottom: 12, padding: '11px 14px', background: 'rgba(245,166,35,0.18)', borderLeft: '4px solid #F5A623', borderRadius: '0 8px 8px 0', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                       <p style={{ flex: 1, margin: 0, fontFamily: `'Baloo 2', sans-serif`, fontSize: 15, lineHeight: 1.5, color: '#3a2a18' }}>&ldquo;{s.texto_original}&rdquo;</p>
@@ -161,12 +161,12 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
             ) : (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '14px 24px 12px', minHeight: 0 }}>
                 <p style={{ fontFamily: "'Baloo 2',sans-serif", fontSize: 13, color: 'rgba(74,54,34,0.6)', marginBottom: 10, fontWeight: 600 }}>
-                  {type === 'pred' ? '¿Qué creés que pasará en el próximo capítulo?' : 'Tus notas sobre este capítulo.'}
+                  {type === 'pred' ? '¿Qué crees que pasará en el próximo capítulo?' : 'Tus notas sobre este capítulo.'}
                 </p>
                 <textarea
                   value={type === 'pred' ? nt.pred : nt.anot}
                   onChange={e => editDraft(selCap, type === 'pred' ? 'pred' : 'anot', e.target.value)}
-                  placeholder={type === 'pred' ? 'Escribí tus predicciones…' : 'Escribí tus anotaciones…'}
+                  placeholder={type === 'pred' ? 'Escribe tus predicciones…' : 'Escribe tus anotaciones…'}
                   maxLength={2000}
                   style={{ flex: 1, border: 'none', outline: 'none', resize: 'none', background: lined, fontFamily: "'Poppins', system-ui, sans-serif", fontSize: 14, lineHeight: '32px', color: '#2a1f12' }} />
               </div>

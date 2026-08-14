@@ -29,6 +29,7 @@ function Estrellas({ valor, onChange }) {
 function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook, categories, onAssignCategory }) {
   const bg = book.color || COLOR_BOOK_FALLBACK;
   const [saving, setSaving] = React.useState(false);
+  const [resumenOpen, setResumenOpen] = React.useState(false); // siempre arranca colapsado
   const esManual = book.id === 'manual';
 
   // Reseña (lógica compartida con BibBookSheet, ver src/hooks/useResena.js)
@@ -63,10 +64,11 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
             <div style={{ minWidth: 0 }}>
               <h2 style={{ color: '#fff', fontSize: 23, fontWeight: 800, lineHeight: 1.18, textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>{book.title}</h2>
               <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, marginTop: 4, fontWeight: 600 }}>{book.author}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                {book.categoryName && <span style={{ background: 'rgba(255,255,255,0.25)', color: '#fff', borderRadius: 999, fontSize: 11.5, fontWeight: 700, padding: '3px 11px', border: '1.5px solid rgba(255,255,255,0.4)' }}>{book.categoryName}</span>}
-                <span style={{ background: 'rgba(0,0,0,0.16)', color: 'rgba(255,255,255,0.92)', borderRadius: 999, fontSize: 11.5, fontWeight: 700, padding: '3px 11px' }}>{book.pages.toLocaleString()} páginas</span>
-              </div>
+              {book.categoryName && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                  <span style={{ background: 'rgba(255,255,255,0.25)', color: '#fff', borderRadius: 999, fontSize: 11.5, fontWeight: 700, padding: '3px 11px', border: '1.5px solid rgba(255,255,255,0.4)' }}>{book.categoryName}</span>
+                </div>
+              )}
             </div>
             <button onClick={onClose} style={{ flexShrink: 0, width: 36, height: 36, borderRadius: '50%', background: 'rgba(0,0,0,0.2)', border: '2px solid rgba(255,255,255,0.45)', cursor: 'pointer', color: '#fff', fontSize: 18, lineHeight: 1 }}>×</button>
           </div>
@@ -109,8 +111,17 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
 
           {book.summary && (
             <div>
-              <div style={label}>Resumen</div>
-              <p style={{ fontSize: 14.5, color: '#4a2510', lineHeight: 1.65, fontWeight: 500, textAlign: 'justify', fontFamily: "'Poppins', system-ui, sans-serif" }}>{book.summary}</p>
+              <button onClick={() => setResumenOpen(o => !o)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', ...label, marginBottom: resumenOpen ? 8 : 0 }}>
+                <span>Resumen</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                  style={{ transform: resumenOpen ? 'rotate(180deg)' : 'none', transition: 'transform .18s' }}>
+                  <polyline points="6 9 12 15 18 9" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              {resumenOpen && (
+                <p style={{ fontSize: 14.5, color: '#4a2510', lineHeight: 1.65, fontWeight: 500, textAlign: 'justify', fontFamily: "'Poppins', system-ui, sans-serif" }}>{book.summary}</p>
+              )}
             </div>
           )}
 
