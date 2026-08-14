@@ -26,9 +26,7 @@ function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, on
   return (
     <div style={{ padding: '22px 32px 0' }}>
       <div style={bar}>
-        <div style={{ background: '#fffdf8', border: `2px solid ${ink}`, borderRadius: 14, padding: '9px 15px', display: 'flex', alignItems: 'center', boxShadow: `1.5px 2px 0 ${ink}1f`, flexShrink: 0 }}>
-          <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ height: 34, width: 'auto' }} />
-        </div>
+        <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ height: 40, width: 'auto', flexShrink: 0, marginLeft: 4 }} />
         <div style={{ flex: 1, maxWidth: 460, marginLeft: 6, display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,253,247,0.9)', border: `2px solid ${ink}`, borderRadius: 999, padding: '10px 18px', boxShadow: `1.5px 2px 0 ${ink}14` }}>
           <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={ink} strokeWidth="2.4"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35" strokeLinecap="round"/></svg>
           <input value={search} onChange={e => onSearch(e.target.value)} onKeyDown={onSearchKeyDown} placeholder="Buscar por título, autor… (Enter para buscar)"

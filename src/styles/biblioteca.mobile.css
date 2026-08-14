@@ -37,7 +37,7 @@
 /* ── Header ── */
 .bibm-header-wrap { position: relative; z-index: 6; flex-shrink: 0; padding: 8px 14px 0; }
 .bibm-header { display: flex; align-items: center; gap: 10px; }
-.bibm-logo { background: var(--cream); border: 2px solid var(--ink); border-radius: 13px; padding: 7px 13px; display: flex; align-items: center; box-shadow: 1.6px 2px 0 rgba(74,54,34,0.18); }
+.bibm-logo { background: var(--accent); border: 2px solid var(--ink); border-radius: 13px; padding: 7px 13px; display: flex; align-items: center; box-shadow: 1.6px 2px 0 rgba(74,54,34,0.18); }
 .bibm-logo img { height: 24px; width: auto; display: block; }
 .bibm-icon-btn { flex: 1; height: 42px; padding: 0 14px; display: flex; align-items: center; justify-content: center; background: var(--cream); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; cursor: pointer; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.18); transition: transform 0.12s, box-shadow 0.12s; }
 .bibm-icon-btn svg { width: 19px; height: 19px; flex-shrink: 0; }
