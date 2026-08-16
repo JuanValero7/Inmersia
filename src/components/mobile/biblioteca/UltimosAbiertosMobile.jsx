@@ -13,6 +13,7 @@
 // =============================================================
 import React from 'react'
 import { INK, BookCover } from './bibmHelpers.jsx'
+import { imgUrl } from '../../../lib/img.js'
 
 // Chasis común: portada + fondo acuarela del libro + contenido a la derecha.
 function BibCard({ book, heroUrl, onClick, children }) {
@@ -25,7 +26,7 @@ function BibCard({ book, heroUrl, onClick, children }) {
     }}>
       {heroUrl && (
         <>
-          <img src={heroUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none' }} />
+          <img src={imgUrl(heroUrl, { width: 640 })} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none' }} />
           {/* Velo crema: más denso hacia la derecha, donde va el texto. */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(241,232,212,0.5) 0%, rgba(241,232,212,0.82) 52%, rgba(241,232,212,0.92) 100%)', zIndex: 0, pointerEvents: 'none' }} />
         </>

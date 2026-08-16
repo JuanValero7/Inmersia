@@ -21,7 +21,8 @@
 /* La nav móvil: solo logo + botón Crear cuenta (Iniciar sesión se oculta) */
 .inm-mobile .inm-nav-in img { height: auto; width: min(210px, 52vw); }   /* limitado por ancho: comparte fila con el botón */
 .inm-mobile .inm-nav-right { gap: 12px; }
-.inm-mobile .inm-nav-right .inm-lnk { display: none; }
+.inm-mobile .inm-nav-right .inm-lnk { display: none; }          /* el texto no cabe; usamos el icono */
+.inm-mobile .inm-nav-right .inm-login-ico { display: inline-flex; }
 .inm-mobile .inm-nav .inm-clay-btn { font-size: 0.95rem; padding: 0.55em 1.1em; }
 
 /* Targets táctiles cómodos (≥ 44px) */
@@ -45,10 +46,3 @@
 
 /* Footer en columna */
 .inm-mobile .inm-foot-in { flex-direction: column; text-align: center; gap: 10px; }
-
-/* Chips del portal: en móvil el portal es más chico, así que el pin
-   conector (::after) se quedaba corto y caía FUERA del portal (en el
-   margen crema). Alargamos el conector para que el punto entre dentro
-   del cristal del portal. Solo móvil; el desktop no se toca. */
-.inm-mobile .inm-chip.anchor-left::after  { right: -40px; box-shadow: -22px 0 0 -4px var(--inm-ink); }
-.inm-mobile .inm-chip.anchor-right::after { left: -40px;  box-shadow:  22px 0 0 -4px var(--inm-ink); }

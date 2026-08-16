@@ -12,6 +12,10 @@ import { useCartelera } from './cartelera/useCartelera.js'
 import { getSecciones } from './cartelera/carteleraHelpers.js'
 import CarteleraLanding from './cartelera/CarteleraLanding.jsx'
 import Ficha from './cartelera/Ficha.jsx'
+import { useOnboarding } from '../context/onboarding.jsx'
+import { TEXTO_INTRO_CARTELERA, PISTA_HECHOS } from './onboarding/textos.js'
+import TutorialHint from './onboarding/TutorialHint.jsx'
+import TutorialToast from './onboarding/TutorialToast.jsx'
 import '../styles/cartelera.css'
 
 function Filters() {
@@ -39,6 +43,22 @@ export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, 
     if (view.key) setSearchParams({ seccion: view.key }, { replace: true })
     else setSearchParams({}, { replace: true })
   }, [view.key, setSearchParams])
+
+  // ── Tutorial (paso 'investigacion') ──
+  // Vive acá arriba y no en el landing a propósito: el landing se desmonta al
+  // abrir una sección, así que un estado local haría reaparecer la bienvenida
+  // cada vez que el usuario vuelve al tablero.
+  //   1. bienvenida bloqueante → al cerrarla el tablero queda libre;
+  //   2. pista no invasiva que recuerda ir a Hechos, hasta que entre ahí.
+  const onboarding = useOnboarding()
+  const tutorialInv = onboarding.active && onboarding.step === 'investigacion'
+  const [introVista, setIntroVista] = useState(false)
+  const [pistaCerrada, setPistaCerrada] = useState(false)
+  const hechosKey = esNoficcion ? 'referencias' : 'hechos'
+  const enHechos = view.kind === 'ficha' && view.key === hechosKey
+  useEffect(() => { if (enHechos) setPistaCerrada(true) }, [enHechos])
+  const showIntro = tutorialInv && !introVista
+  const showPista = tutorialInv && introVista && !pistaCerrada
 
   useEffect(() => {
     if (!jumpToItemId || bookLoading) return
@@ -75,6 +95,17 @@ export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, 
     <div className="cart-root">
       <Filters />
       {content}
+
+      {showIntro && (
+        <TutorialHint
+          logo
+          title={TEXTO_INTRO_CARTELERA.title}
+          body={TEXTO_INTRO_CARTELERA.body}
+          buttonLabel={TEXTO_INTRO_CARTELERA.buttonLabel}
+          onClose={() => setIntroVista(true)}
+        />
+      )}
+      {showPista && <TutorialToast text={PISTA_HECHOS} onClose={() => setPistaCerrada(true)} />}
     </div>
   )
 }

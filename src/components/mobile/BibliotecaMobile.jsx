@@ -10,8 +10,14 @@
 import React from 'react'
 import { useBiblioteca } from '../../hooks/useBiblioteca.js'
 import { useCompraLibro, LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
-import { SIN_CATEGORIA_ID, COLOR_DEFAULT } from '../biblioteca/constants.js'
+import { SIN_CATEGORIA_ID, COLOR_DEFAULT, MANUAL_LIBRO_ID } from '../biblioteca/constants.js'
 import { INK, BookCover } from './biblioteca/bibmHelpers.jsx'
+import { imgUrl } from '../../lib/img.js'
+import { saludoBienvenida } from '../../lib/genero.js'
+import { useOnboarding } from '../../context/onboarding.jsx'
+import WelcomePopup from '../onboarding/WelcomePopup.jsx'
+import TutorialHint from '../onboarding/TutorialHint.jsx'
+import { TEXTO_ALBUM_HINT, TEXTO_TIENDA_FINAL } from '../onboarding/textos.js'
 import { MobileCategoryBrowser } from './biblioteca/BibCategoryBrowserMobile.jsx'
 import { UltimosAbiertosMobile, LibroCardsMobile } from './biblioteca/UltimosAbiertosMobile.jsx'
 import BibBookSheet from './biblioteca/BibBookSheet.jsx'
@@ -59,14 +65,14 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
     return err
   }
   async function assignCategoriaToBook(catalogoLibroId, categoria_id) {
-    if (catalogoLibroId === 'manual') return
+    if (catalogoLibroId === MANUAL_LIBRO_ID) return
     await assignCategoriaToBookBase(catalogoLibroId, categoria_id)
     setSelectedBook(prev => prev && prev.id === catalogoLibroId ? { ...prev, categoria_id } : prev)
   }
 
   // Compra desde el panel in-place (Novedades/Para ti) — mismas primitivas y
   // mismo límite de pendientes que la Tienda (ver useCompraLibro).
-  const pendientes = React.useMemo(() => books.filter(b => b.id !== 'manual' && !b.leido).length, [books])
+  const pendientes = React.useMemo(() => books.filter(b => b.id !== MANUAL_LIBRO_ID && !b.leido).length, [books])
   const { comprar: comprarLibro, comprarYLeer: comprarYLeerLibro } = useCompraLibro(user, isSuperuser, onOpenBook)
   const handleComprarLibro = async (libro) => {
     const { error } = await comprarLibro(libro, { pendientes })
@@ -86,6 +92,18 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
     setReelLibro(null)
   }
 
+  // ── Onboarding ──
+  const onboarding = useOnboarding()
+  const manualBook = React.useMemo(() => books.find(b => b.id === MANUAL_LIBRO_ID), [books])
+  const showWelcome    = onboarding.active && onboarding.step === 'bienvenida'
+  const showAlbumHint  = onboarding.active && onboarding.step === 'album'
+  const showTiendaHint = onboarding.active && onboarding.step === 'tienda_final'
+  const openManual = React.useCallback(() => {
+    if (!manualBook) return
+    onboarding.advance('bienvenida')   // bienvenida → manual
+    onOpenBook(manualBook)
+  }, [manualBook, onboarding, onOpenBook])
+
   // ── Filtrado + agrupado (derivados de UI) ──
   const searchedBooks = React.useMemo(() => books.filter(b => {
     const q = deferredSearch.toLowerCase()
@@ -104,16 +122,15 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
   }, [categories, searchedBooks, activeCategory])
 
   const counts = React.useMemo(() => {
-    const m = { __all: books.filter(b => b.id !== 'manual').length }
+    const m = { __all: books.filter(b => b.id !== MANUAL_LIBRO_ID).length }
     categories.forEach(c => { m[c.id] = books.filter(b => b.categoria_id === c.id).length })
     m[SIN_CATEGORIA_ID] = books.filter(b => !b.categoria_id).length
     return m
   }, [books, categories])
-  const hasSinCategoria = (counts[SIN_CATEGORIA_ID] || 0) > 0
 
   // Últimos abiertos (máx 3) — featured viene del hook; se excluye para no duplicar "Seguir leyendo"
   const ultimos = React.useMemo(() => {
-    const nonManual = books.filter(b => b.id !== 'manual' && b.id !== featured?.id)
+    const nonManual = books.filter(b => b.id !== MANUAL_LIBRO_ID && b.id !== featured?.id)
     if (lastOpenedBookIds?.length) {
       return lastOpenedBookIds.filter(id => id !== featured?.id).map(id => nonManual.find(b => b.id === id)).filter(Boolean).slice(0, 3)
     }
@@ -125,7 +142,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
     return ultimos.filter(b => ids.has(b.id))
   }, [ultimos, searchedBooks, deferredSearch])
 
-  const collectionCount = books.filter(b => b.id !== 'manual').length
+  const collectionCount = books.filter(b => b.id !== MANUAL_LIBRO_ID).length
   const activeName = activeCategory
     ? (categoriasMap[activeCategory]?.nombre || (activeCategory === SIN_CATEGORIA_ID ? 'Sin categoría' : ''))
     : null
@@ -138,7 +155,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
       {/* Header */}
       <div className="bibm-header-wrap">
         <div className="bibm-header">
-          <div className="bibm-logo"><img src="/assets/inmersia-logo.png" alt="Inmersia" /></div>
+          <div className="bibm-logo"><img src="/assets/inmersia-logo2.png" alt="Inmersia" /></div>
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 10 }}>
             <button className="bibm-icon-btn" onClick={onGoTienda} title="Ir a la Tienda" aria-label="Ir a la Tienda">
               <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4m1.6 8L5 5H3m4 8a2 2 0 100 4 2 2 0 000-4zm10 0a2 2 0 100 4 2 2 0 000-4z" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -160,7 +177,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
 
       {/* Contenido — una sola tira de scroll general */}
       <div className="bibm-noscroll bibm-scroll">
-        <div className="bibm-greeting">¡Bienvenido, {displayName.split(' ')[0]}!</div>
+        <div className="bibm-greeting">¡{saludoBienvenida(user?.user_metadata?.genero)}, {displayName.split(' ')[0]}!</div>
 
         {loadingBooks && (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(74,54,34,0.5)', fontSize: 15, fontWeight: 600 }}>Cargando tu biblioteca…</div>
@@ -171,7 +188,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
             {/* Hero "Seguir leyendo" con el gato — único elemento del hero */}
             <div className="bibm-hero">
               {featured?.heroUrlMobile
-                ? <img className="bibm-hero-bg" src={featured.heroUrlMobile} alt="" />
+                ? <img className="bibm-hero-bg" src={imgUrl(featured.heroUrlMobile, { width: 800 })} alt="" />
                 : <img className="bibm-hero-cat" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" />}
               {/* Velo crema para legibilidad: solo en el fallback (sin imagen de fondo), igual que en desktop. */}
               {!featured?.heroUrlMobile && <div className="bibm-hero-fade" />}
@@ -296,12 +313,41 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
       {/* Pantallas */}
       {screen === 'filter' && (
         <FilterScreen categories={categories} counts={counts} active={activeCategory}
-          hasSinCategoria={hasSinCategoria} onPick={setActiveCategory} onClose={() => setScreen(null)} />
+          onPick={setActiveCategory} onClose={() => setScreen(null)} />
       )}
       {screen === 'manage' && (
         <ManageScreen categories={categories} counts={counts}
           onCreate={createCategoria} onUpdate={updateCategoria} onDelete={deleteCategoria}
           onClose={() => setScreen(null)} />
+      )}
+
+      {showWelcome && (
+        <WelcomePopup
+          user={user}
+          manualReady={!!manualBook}
+          onOpenManual={openManual}
+          onSkip={onboarding.skip}
+        />
+      )}
+
+      {showAlbumHint && (
+        <TutorialHint
+          logo
+          title={TEXTO_ALBUM_HINT.title}
+          body={TEXTO_ALBUM_HINT.body}
+          buttonLabel={TEXTO_ALBUM_HINT.buttonLabel}
+          onClose={onGoAlbum}
+        />
+      )}
+
+      {showTiendaHint && (
+        <TutorialHint
+          logo
+          title={TEXTO_TIENDA_FINAL.title}
+          body={TEXTO_TIENDA_FINAL.body}
+          buttonLabel={TEXTO_TIENDA_FINAL.buttonLabel}
+          onClose={() => onboarding.advance('tienda_final')}   // tienda_final → done
+        />
       )}
     </div>
   )

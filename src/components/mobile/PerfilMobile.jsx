@@ -22,10 +22,12 @@ import {
   NAV, TITLES, SEC_COLOR, washBg, I,
 } from '../Perfil.jsx'                 // ← sub-vistas + helpers REUTILIZADOS (¡mayúscula!)
 import { usePerfilData } from '../../hooks/usePerfilData.js'  // ← lógica de datos compartida
+import { useOnboarding } from '../../context/onboarding.jsx'
 import '../../styles/perfil.css'        // base .pf-* (lo usan las sub-vistas)
 import '../../styles/perfil.mobile.css'           // overrides + chrome mobile .pm-*
 
 export default function PerfilMobile({ user, gatoColor, onChangeGatoColor, onGoBack, onSignOut }) {
+  const onboarding = useOnboarding()
   // — MISMA lógica de datos que Perfil.jsx (ver src/hooks/usePerfilData.js) —
   const {
     sec, setSec,
@@ -99,7 +101,8 @@ export default function PerfilMobile({ user, gatoColor, onChangeGatoColor, onGoB
           {sec === 'historial' && <SecHistorial />}
           {sec === 'legal'     && <SecLegal />}
 
-          <button type="button" className="pm-logout" onClick={onSignOut}>{I.logout} Cerrar sesión</button>
+          <button type="button" className="pm-logout" style={{ marginTop: 24 }} onClick={onboarding.restart}>{I.datos} Repetir tutorial</button>
+          <button type="button" className="pm-logout" style={{ marginTop: 12 }} onClick={onSignOut}>{I.logout} Cerrar sesión</button>
         </div>
       </div>
     </div>

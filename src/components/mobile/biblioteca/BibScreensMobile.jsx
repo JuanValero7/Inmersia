@@ -7,7 +7,6 @@
 // =============================================================
 import React from 'react'
 import { INK, ACCENT } from './bibmHelpers.jsx'
-import { SIN_CATEGORIA_ID } from '../../biblioteca/constants.js'
 
 const PALETTE = ['#F5A623', '#7C8A4F', '#2F4A6B', '#BE6173', '#d56a52']
 
@@ -36,9 +35,10 @@ function ScreenShell({ title, onClose, children, footer }) {
 }
 
 // ── Pantalla de Filtros ─────────────────────────────────────
-export function FilterScreen({ categories, counts, active, hasSinCategoria, onPick, onClose }) {
+export function FilterScreen({ categories, counts, active, onPick, onClose }) {
+  // "Sin categoría" no se ofrece como filtro: no es una categoría (sus libros
+  // viven en la colección base). Solo "Todos" + categorías reales.
   const rows = [{ id: null, nombre: 'Todos los libros', color: ACCENT }, ...categories]
-  if (hasSinCategoria) rows.push({ id: SIN_CATEGORIA_ID, nombre: 'Sin categoría', color: '#7a4a28' })
   return (
     <ScreenShell title="Filtrar" onClose={onClose}
       footer={active != null && (

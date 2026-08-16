@@ -28,6 +28,7 @@ import useLocalStorage from '../../hooks/useLocalStorage.js'
 import { useLectorData } from '../../hooks/useLectorData.js'
 import { useXrayItems } from '../../hooks/useXrayItems.js'
 import { useSesionLectura } from '../../hooks/useSesionLectura.js'
+import { useOnboarding } from '../../context/onboarding.jsx'
 import { paginarParrafosMobileDOM } from '../../utils/lectorPaginationMobile.js'
 import { offsetDeAnclaje, paginaDeAnclaje } from '../../utils/readerHelpers.js'
 import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTILIZADO (igual al de PC)
@@ -35,6 +36,7 @@ import { INK, ACCENT } from '../lector/clay.jsx'
 import SuperuserSoundsPanel from '../lector/SuperuserSoundsPanel.jsx'
 import { useAmbientPlayer } from '../../hooks/useAmbientPlayer.js'
 import { useWhiteNoise } from '../../hooks/useWhiteNoise.js'
+import { AMBIENTE_FICCION_ACTIVO } from '../lector/readerConstants.js'
 import MobileBookPage from './lector/MobileBookPage.jsx'
 import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
 import '../../styles/lector.mobile.css'
@@ -145,6 +147,27 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
   useSesionLectura(userId, book, guestMode)
   const invalidateBiblioteca = useInvalidateBibliotecaUsuario(userId)
+
+  // Paywall: cerrar con Escape. Y si el invitado se autentica (guestMode pasa a
+  // false) lo ocultamos para que no quede atascado encima del lector desbloqueado.
+  useEffect(() => {
+    if (!showPaywall) return
+    const onKey = (e) => { if (e.key === 'Escape') setShowPaywall(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showPaywall])
+  useEffect(() => { if (!guestMode) setShowPaywall(false) }, [guestMode])
+
+  // Onboarding: durante el paso 'manual' del tutorial, el botón Explorar ni
+  // siquiera aparece hasta llegar al capítulo 2 (el texto del manual lo anuncia
+  // ahí), y cuando aparece su única salida es Investigación.
+  const onboarding = useOnboarding()
+  const tutorialManual = onboarding.active && onboarding.step === 'manual'
+  const explorarVisible = !tutorialManual || chapterIndex >= 1
+  const irCartelera = useCallback((itemId) => {
+    if (tutorialManual) onboarding.advance('manual')   // manual → investigacion
+    onGoCartelera(itemId)
+  }, [tutorialManual, onboarding, onGoCartelera])
 
   // ── Reseña (UI) ──
   const [resenaOpen, setResenaOpen] = useState(false)
@@ -550,7 +573,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   }
 
   const CAT_ITEMS = [
-    { key: 'audio',    label: 'Audio',    icon: <CassetteIcon />,       act: () => setSheet('audio') },
+    // Audio: en ficción está oculto (ver AMBIENTE_FICCION_ACTIVO); en no ficción
+    // abre el ruido ambiental.
+    ...(esNoficcion || AMBIENTE_FICCION_ACTIVO ? [{ key: 'audio', label: 'Audio', icon: <CassetteIcon />, act: () => setSheet('audio') }] : []),
     { key: 'imagen',   label: 'Imagen',   icon: <PolaroidsIcon />,      act: openImage },
     ...(!guestMode ? [{ key: 'cuaderno', label: 'Cuaderno', icon: <SpiralNotebookIcon />, act: openNotebook }] : []),
     ...(!guestMode ? [{ key: 'subrayar', label: modoSubrayado ? 'Apagar ✏' : 'Subrayar', icon: <HighlighterIcon active={modoSubrayado} />, act: activarModoSubrayado }] : []),
@@ -570,7 +595,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
           <button type="button" className="lm-explore lm-create-account-btn" onClick={() => onRequestAuth?.('registro')} title="Crear cuenta">
             Crear cuenta
           </button>
-        ) : (
+        ) : explorarVisible && (
           <button className="lm-explore" onClick={() => setSheet('nav')} title="Explorar"><Compass /></button>
         )}
         {isLeido && book?.libro_id && (
@@ -583,9 +608,11 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* Controles */}
       <div className="lm-controls">
-        <button className="lm-ctrl cap" onClick={() => setSheet('chapters')}>
+        <button className="lm-ctrl cap" onClick={() => { if (!tutorialManual) setSheet('chapters') }}
+          disabled={tutorialManual} title={tutorialManual ? 'Durante el tutorial la lectura es en orden' : undefined}
+          style={tutorialManual ? { opacity: 0.55 } : undefined}>
           <span className="lm-ctrl-label">Cap. {currentChapter?.numero ?? chapterIndex + 1}{currentChapter?.titulo ? ` · ${currentChapter.titulo}` : ''}</span>
-          <span className="chev">▼</span>
+          <span className="chev">{tutorialManual ? '🔒' : '▼'}</span>
         </button>
         <button className="lm-ctrl xray" onClick={() => setSheet('xray')} title="X-ray">X-ray</button>
         <button className="lm-ctrl typo" onClick={() => setSheet('typo')} title="Texto">
@@ -660,14 +687,14 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       )}
 
       {/* Sheets */}
-      {sheet==='xray'     && <XraySheet items={xrayItems} chapterNum={currentChapter?.numero ?? chapterIndex + 1} esNoficcion={esNoficcion} onClose={() => setSheet(null)} onItemClick={(itemId) => { setSheet(null); onGoCartelera(itemId) }} />}
+      {sheet==='xray'     && <XraySheet items={xrayItems} chapterNum={currentChapter?.numero ?? chapterIndex + 1} esNoficcion={esNoficcion} onClose={() => setSheet(null)} onItemClick={(itemId) => { setSheet(null); irCartelera(itemId) }} />}
       {sheet==='chapters' && <ChapterSheet chapters={capitulos} current={chapterIndex} onPick={pickChapter} onClose={()=>setSheet(null)} />}
       {sheet==='typo' && <TypoSheet fontSize={fontSize} onFontSize={setFontSize} readingFont={readingFont} onReadingFont={setReadingFont} readingTheme={readingTheme} onReadingTheme={setReadingTheme} onClose={()=>setSheet(null)} />}
       {sheet==='audio' && (book?.es_ficcion === false
         ? <WhiteNoiseSheet noise={whiteNoise} onClose={() => setSheet(null)} />
         : <AudioSheet ambient={currentAmbient} playing={ambientPlaying} volume={ambientVol} onToggle={toggleAmbient} onVolume={setVol} onClose={() => setSheet(null)} />
       )}
-      {sheet==='nav' && <NavSheet onGoForo={onGoForo} onGoCartelera={onGoCartelera} onGoBiblioteca={onGoBack} onClose={()=>setSheet(null)} />}
+      {sheet==='nav' && <NavSheet onGoForo={onGoForo} onGoCartelera={irCartelera} onGoBiblioteca={onGoBack} onClose={()=>setSheet(null)} soloInvestigacion={tutorialManual} />}
 
       {/* Overlay imagen */}
       {imageOpen && <ImageOverlay images={visibleImages} chapter={currentChapter} chapterIndex={chapterIndex} onClose={()=>setImageOpen(false)} autoImages={autoImages} onToggleAutoImages={() => setAutoImages(v => !v)} esNoficcion={esNoficcion} />}
@@ -688,15 +715,17 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* Paywall de invitado */}
       {showPaywall && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(20,12,4,0.82)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 20, padding: '36px 32px', maxWidth: 380, width: '100%', textAlign: 'center', boxShadow: '3px 6px 0 rgba(74,54,34,0.25), 0 20px 40px rgba(0,0,0,0.35)' }}>
-            <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ height: 40, width: 'auto', marginBottom: 16 }} />
+        <div onClick={() => setShowPaywall(false)} style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(20,12,4,0.82)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative', background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 20, padding: '36px 32px', maxWidth: 380, width: '100%', textAlign: 'center', boxShadow: '3px 6px 0 rgba(74,54,34,0.25), 0 20px 40px rgba(0,0,0,0.35)' }}>
+            <button type="button" onClick={() => setShowPaywall(false)} aria-label="Cerrar" title="Cerrar"
+              style={{ position: 'absolute', top: 10, right: 12, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1.5px solid rgba(74,54,34,0.3)', color: '#9a6a4a', borderRadius: '50%', cursor: 'pointer', fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1 }}>×</button>
+            <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ display: 'block', height: 40, width: 'auto', margin: '0 auto 16px' }} />
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: '#2c1a0e', margin: '0 0 10px' }}>
-              Seguí leyendo en Inmersia
+              Sigue leyendo en Inmersia
             </h2>
             <p style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 14, color: '#6b4c34', lineHeight: 1.55, margin: '0 0 24px' }}>
               Ya leíste los dos capítulos de muestra.<br />
-              Creá tu cuenta gratis para continuar.
+              Crea tu cuenta gratis para continuar.
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
               <button type="button" onClick={() => onRequestAuth?.('registro')}

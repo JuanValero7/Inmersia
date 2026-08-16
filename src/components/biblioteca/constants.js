@@ -5,13 +5,13 @@
 // ─────────────────────────────────────────────────────────────
 import { MANUAL_LIBRO_ID } from '../../lib/constants.js'
 
+// Re-exportado para que la Biblioteca (desktop + mobile) identifique al
+// Manual del Explorador por su UUID real. Antes existía además un
+// MANUAL_USUARIO sintético (id 'manual') que se inyectaba en la lista de
+// libros; se eliminó porque duplicaba la fila real que ensureProfile ya
+// crea en bibliotecas_usuarios (el usuario veía DOS manuales).
+export { MANUAL_LIBRO_ID }
+
 export const COLOR_DEFAULT = '#7a4a28'
 export const COLOR_BOOK_FALLBACK2 = '#5a3d28'
 export const SIN_CATEGORIA_ID = '__sin_categoria'
-
-export const MANUAL_USUARIO = {
-  id: 'manual', libro_id: MANUAL_LIBRO_ID, categoria_id: null,
-  title: 'Manual del Explorador', author: 'Biblioteca Virtual',
-  pages: 8, _baseColor: '#5a7a4a', cover: null, progress: null,
-  summary: 'Tu guía de bienvenida a Inmersia. Descubre cómo leer, anotar, investigar y conectar con otros lectores.',
-}

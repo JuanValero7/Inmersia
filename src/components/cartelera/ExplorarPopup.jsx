@@ -3,6 +3,7 @@
 // Gestiona su propio estado open/close y el dismiss al hacer click fuera.
 // La integración con el tour de Foro vive aquí.
 import { useState, useEffect } from 'react'
+import { useOnboarding } from '../../context/onboarding.jsx'
 
 const BTN_STYLE = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }
 const LBL_STYLE = { fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }
@@ -24,6 +25,10 @@ export default function ExplorarPopup({ onGoForo, onGoBack, onGoBiblioteca, btnC
   const [open, setOpen] = useState(false)
   const close = () => setOpen(false)
 
+  // Tutorial (paso 'investigacion'): la única salida es el Foro.
+  const onboarding = useOnboarding()
+  const soloForo = onboarding.active && onboarding.step === 'investigacion'
+
   useEffect(() => {
     if (!open) return
     const h = (e) => { if (!e.target.closest('.cart-explorar-popup')) close() }
@@ -33,6 +38,7 @@ export default function ExplorarPopup({ onGoForo, onGoBack, onGoBiblioteca, btnC
 
   const handleGoForo = () => {
     close()
+    if (soloForo) onboarding.advance('investigacion')   // investigacion → foro
     onGoForo()
   }
 
@@ -47,8 +53,8 @@ export default function ExplorarPopup({ onGoForo, onGoBack, onGoBiblioteca, btnC
           whiteSpace: 'nowrap',
         }}>
           {onGoForo     && <NavBtn onClick={handleGoForo}            icon={ICON_FORO}       label="Foro" />}
-          {onGoBack     && <NavBtn onClick={() => { close(); onGoBack() }}     icon={ICON_LECTURA}    label="Lectura" />}
-          {onGoBiblioteca && <NavBtn onClick={() => { close(); onGoBiblioteca() }} icon={ICON_BIBLIOTECA} label="Biblioteca" />}
+          {!soloForo && onGoBack     && <NavBtn onClick={() => { close(); onGoBack() }}     icon={ICON_LECTURA}    label="Lectura" />}
+          {!soloForo && onGoBiblioteca && <NavBtn onClick={() => { close(); onGoBiblioteca() }} icon={ICON_BIBLIOTECA} label="Biblioteca" />}
         </div>
       )}
       <button className={`${btnClass} cart-explorar-btn`} type="button" onClick={() => setOpen(o => !o)}>

@@ -3,6 +3,7 @@
 // en ambos archivos.
 import clsx from 'clsx'
 import { CAT_COLOR, itint, tituloSizeClass, autorSizeClass } from './tiendaHelpers.jsx'
+import { imgUrl } from '../../lib/img.js'
 
 export const PG_SIZE = 15
 
@@ -46,7 +47,7 @@ export function CoverCard({ libro }) {
     <div className="book" style={{ '--cov': c }}>
       <div className="book-cover">
         {libro.portada_url
-          ? <img className="book-art-img" src={libro.portada_url} alt={libro.titulo} loading="lazy" />
+          ? <img className="book-art-img" src={imgUrl(libro.portada_url, { width: 300 })} alt={libro.titulo} loading="lazy" />
           : <div className="book-art-empty" />}
         <span className={clsx('book-scribble', autorSizeClass(libro.autor))}>{libro.autor}</span>
         <span className={clsx('book-title', tituloSizeClass(libro.titulo))}>{libro.titulo}</span>

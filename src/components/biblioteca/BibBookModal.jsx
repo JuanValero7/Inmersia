@@ -1,6 +1,7 @@
 import React from 'react'
 import { inmTint } from './clay/helpers.jsx'
 import { useResena } from '../../hooks/useResena.js'
+import { MANUAL_LIBRO_ID } from './constants.js'
 
 // =============================================================
 // ACUARELA · BibBookModal
@@ -30,7 +31,7 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
   const bg = book.color || COLOR_BOOK_FALLBACK;
   const [saving, setSaving] = React.useState(false);
   const [resumenOpen, setResumenOpen] = React.useState(false); // siempre arranca colapsado
-  const esManual = book.id === 'manual';
+  const esManual = book.id === MANUAL_LIBRO_ID;
 
   // Reseña (lógica compartida con BibBookSheet, ver src/hooks/useResena.js)
   const { miResena, form, setForm, modoForm, setModoForm, enviando, submitResena } = useResena(book, user, esManual);

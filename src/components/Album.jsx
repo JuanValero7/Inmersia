@@ -1,11 +1,14 @@
 // Álbum de barajitas — orquestador desktop.
 // Ruta: /album · Accesible desde Biblioteca.
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useAlbum } from '../hooks/useAlbum.js'
+import { useOnboarding } from '../context/onboarding.jsx'
 import LeftPage  from './album/LeftPage.jsx'
 import RightPage from './album/RightPage.jsx'
 import BookTabs  from './album/BookTabs.jsx'
 import Bandeja   from './album/Bandeja.jsx'
+import TutorialHint from './onboarding/TutorialHint.jsx'
+import { TEXTO_ALBUM } from './onboarding/textos.js'
 import '../styles/album.css'
 
 function LoadingScreen() {
@@ -21,7 +24,7 @@ function EmptyScreen({ onGoBack }) {
   return (
     <div className="album-empty">
       <h2>Tu álbum está vacío</h2>
-      <p>Agregá libros a tu biblioteca y empezá a leer para coleccionar barajitas.</p>
+      <p>Agrega libros a tu biblioteca y empieza a leer para coleccionar barajitas.</p>
       <button onClick={onGoBack} className="btn-wood">Ir a la biblioteca</button>
     </div>
   )
@@ -79,6 +82,22 @@ export default function Album({ user, gatoColor = 'negro', onOpenBook, onGoBack,
 
   const safeIdx = useMemo(() => Math.min(currentIdx, Math.max(0, items.length - 1)), [currentIdx, items.length])
 
+  // ── Onboarding (paso 'album'): basta con ENTRAR al Álbum para cerrar el paso.
+  // Antes hacía falta pegar la última barajita del Manual; si el usuario volvía
+  // a la Biblioteca sin pegarla, el paso seguía en 'album' y la pista "Ir al
+  // Álbum" reaparecía cada vez → loop infinito. Ahora se avanza en el montaje,
+  // una sola vez (introLanzadaRef), y se muestra la bienvenida del Álbum. ──
+  const onboarding = useOnboarding()
+  const tutorialAlbum = onboarding.active && onboarding.step === 'album'
+  const [showAlbumIntro, setShowAlbumIntro] = useState(false)
+  const introLanzadaRef = useRef(false)
+  useEffect(() => {
+    if (!tutorialAlbum || loading || introLanzadaRef.current) return
+    introLanzadaRef.current = true
+    setShowAlbumIntro(true)
+    onboarding.advance('album')   // album → tienda_final
+  }, [tutorialAlbum, loading, onboarding])
+
   if (loading)       return <LoadingScreen />
   if (!items.length) return <EmptyScreen onGoBack={onGoBack} />
 
@@ -109,12 +128,22 @@ export default function Album({ user, gatoColor = 'negro', onOpenBook, onGoBack,
           )}
 
           <p className="album-hint">
-            Cada libro de tu biblioteca abre su propia doble página · seguí leyendo para desbloquear más <b>barajitas</b>
+            Cada libro de tu biblioteca abre su propia doble página · sigue leyendo para desbloquear más <b>barajitas</b>
           </p>
         </div>
 
         <Bandeja entry={entry} />
       </div>
+
+      {showAlbumIntro && (
+        <TutorialHint
+          logo
+          title={TEXTO_ALBUM.title}
+          body={TEXTO_ALBUM.body}
+          buttonLabel={TEXTO_ALBUM.buttonLabel}
+          onClose={() => setShowAlbumIntro(false)}
+        />
+      )}
     </div>
   )
 }

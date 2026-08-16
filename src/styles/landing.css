@@ -79,6 +79,12 @@
 .inm-lnk { font-family: var(--inm-font-ui); font-weight: 600; font-size: 0.95rem; color: var(--inm-ink); text-decoration: none; }
 .inm-lnk:hover { color: var(--inm-accent-2); }
 .inm-nav .inm-clay-btn { font-size: 0.92rem; padding: 0.5em 1.15em; border-radius: 12px; }
+/* Botón-icono "Iniciar sesión" para móvil (donde no cabe el texto). En
+   desktop se usa el enlace .inm-lnk y este icono queda oculto. */
+.inm-login-ico { display: none; align-items: center; justify-content: center; width: 42px; height: 42px;
+  border-radius: 50%; border: 2px solid var(--inm-ink); background: var(--inm-cream); color: var(--inm-ink);
+  flex-shrink: 0; box-shadow: var(--inm-clay-sh); transition: transform .12s ease, box-shadow .12s ease; }
+.inm-login-ico:active { transform: translate(1px, 1px); box-shadow: 1px 1.4px 0 rgba(74, 54, 34, 0.33); }
 
 /* ── HERO ── */
 .inm-hero { padding: clamp(44px, 6vw, 82px) 0 clamp(40px, 6vw, 72px); background: var(--inm-bg); }
@@ -120,10 +126,6 @@
 .inm-chip.swap { opacity: 0; }
 .inm-chip.cB { animation-delay: 1.2s; }
 .inm-chip .inm-d { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; transition: background .4s ease; }
-.inm-chip::after { content: ""; position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%;
-  background: var(--inm-cream); border: 2px solid var(--inm-ink); transform: translateY(-50%); }
-.inm-chip.anchor-left::after { right: -22px; box-shadow: -13px 0 0 -4px var(--inm-ink); }
-.inm-chip.anchor-right::after { left: -22px; box-shadow: 13px 0 0 -4px var(--inm-ink); }
 @keyframes inm-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 
 /* ── sección genérica ── */

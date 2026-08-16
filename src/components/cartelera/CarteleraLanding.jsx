@@ -240,6 +240,9 @@ export default function CarteleraLanding({
   const scale = useFitScale(stageRef, TOTAL_W, TOTAL_H)
   const [popup, setPopup] = useState(null)       // 'lugares' | 'personajes' | null
 
+  // El tutorial (paso 'investigacion') se pinta desde Cartelera.jsx, que
+  // sobrevive al cambio landing ⇄ ficha.
+
   const embeds = esNoficcion ? EMBEDS_NOFICCION : EMBEDS_FICCION
   const pct = data.porcentaje
 
@@ -482,6 +485,7 @@ export default function CarteleraLanding({
             <TableroHechos pct={pct} scale={320 / SUB_W} imageUrl={hechosImg?.url} videoUrl={hechosImg?.videoUrl} />
           </div>} />
       )}
+
     </div>
   )
 }

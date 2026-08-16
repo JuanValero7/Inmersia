@@ -12,6 +12,8 @@
 // =============================================================
 import React from 'react'
 import { INK, inmTint, BookCover, WALL } from './bibmHelpers.jsx'
+import { imgUrl } from '../../../lib/img.js'
+import { SIN_CATEGORIA_ID } from '../../biblioteca/constants.js'
 
 const PER_PAGE = 6
 const PER_SHELF = 4    // portadas por repisa en el drill-in
@@ -52,7 +54,7 @@ function CategoryTile({ group, onOpen }) {
     <button className="bibm-cat-tile" onClick={() => onOpen(cat.id)}>
       {bg && (
         <>
-          <img className="bibm-cat-bg" src={bg} alt="" />
+          <img className="bibm-cat-bg" src={imgUrl(bg, { width: 640 })} alt="" />
           <div className="bibm-cat-veil" />
         </>
       )}
@@ -137,7 +139,11 @@ function ShelfCovers({ books, onOpen }) {
 
 export function MobileCategoryBrowser({ groups, onOpen }) {
   const [openedId, setOpenedId] = React.useState(null)
-  const opened = groups.find(g => g.cat.id === openedId)
+  // "Sin categoría" no es una categoría: sus libros van como colección base
+  // (repisa sin título) y las categorías reales como mosaico debajo.
+  const sinCat = groups.find(g => g.cat.id === SIN_CATEGORIA_ID)
+  const realGroups = groups.filter(g => g.cat.id !== SIN_CATEGORIA_ID)
+  const opened = realGroups.find(g => g.cat.id === openedId)
 
   if (!groups.length) {
     return <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(74,54,34,0.5)', fontWeight: 600, fontSize: 14 }}>No hay libros que mostrar.</div>
@@ -161,5 +167,23 @@ export function MobileCategoryBrowser({ groups, onOpen }) {
     )
   }
 
-  return <CategoryPager groups={groups} onOpen={setOpenedId} />
+  // Nivel superior: colección base (sin categoría, sin título) + mosaico de
+  // categorías reales debajo.
+  const tieneBase = sinCat && sinCat.books.length > 0
+  const tieneCats = realGroups.length > 0
+  return (
+    <div>
+      {tieneBase && (
+        <div style={{ marginBottom: tieneCats ? 28 : 0 }}>
+          <ShelfCovers books={sinCat.books} onOpen={onOpen} />
+        </div>
+      )}
+      {tieneCats && (
+        <>
+          {tieneBase && <div style={{ fontWeight: 800, fontSize: 15, color: '#3a2b1c', margin: '0 0 12px' }}>Mis categorías</div>}
+          <CategoryPager groups={realGroups} onOpen={setOpenedId} />
+        </>
+      )}
+    </div>
+  )
 }

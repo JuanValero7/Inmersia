@@ -5,6 +5,7 @@ import { theme, tint, getReaderPalette } from './clay.jsx'
 import { READING_FONTS } from './readerConstants.js'
 import { findPrefixAtEnd, findSuffixAtStart } from '../../utils/readerHelpers.js'
 import { RecorderPlayer } from './RecorderPlayer.jsx'
+import { AMBIENTE_FICCION_ACTIVO } from './readerConstants.js'
 import WhiteNoisePlayer from './WhiteNoisePlayer.jsx'
 import '../../styles/lector.css'
 
@@ -93,7 +94,7 @@ const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, onPlay
 })
 
 // ── Selector de capítulo (slim) ─────────────────────────────
-function ChapterSelect({ chapters, chapterIndex, onChapterSelect }) {
+function ChapterSelect({ chapters, chapterIndex, onChapterSelect, locked = false }) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState({ top: 0, left: 0 })
   const btnRef = useRef(null)
@@ -112,6 +113,7 @@ function ChapterSelect({ chapters, chapterIndex, onChapterSelect }) {
   }, [open])
 
   function handleClick() {
+    if (locked) return   // durante el tutorial: sin saltos de capítulo (lectura lineal)
     if (!open && btnRef.current) {
       const r = btnRef.current.getBoundingClientRect()
       setPos({ top: r.bottom + 6, left: r.left })
@@ -123,10 +125,11 @@ function ChapterSelect({ chapters, chapterIndex, onChapterSelect }) {
 
   return (
     <>
-      <button ref={btnRef} type="button" onClick={handleClick}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, maxWidth: 320, fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: theme.navBg, color: theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
+      <button ref={btnRef} type="button" onClick={handleClick} disabled={locked}
+        title={locked ? 'Durante el tutorial la lectura es en orden' : undefined}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, maxWidth: 320, fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 12, cursor: locked ? 'default' : 'pointer', opacity: locked ? 0.55 : 1, border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: theme.navBg, color: theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
-        <span style={{ fontSize: 8, opacity: 0.6, flexShrink: 0 }}>{open ? '▲' : '▼'}</span>
+        <span style={{ fontSize: 8, opacity: 0.6, flexShrink: 0 }}>{locked ? '🔒' : (open ? '▲' : '▼')}</span>
       </button>
       {open && createPortal(
         <div ref={menuRef} style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 1000, minWidth: 250, background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 14, boxShadow: `2px 4px 0 ${theme.ink}26, 0 12px 28px rgba(0,0,0,0.28)`, overflow: 'auto', maxHeight: 320, padding: 5 }}>
@@ -293,7 +296,7 @@ export const BookReader = memo(function BookReader({
   pageW = 470, pageH = 560, fontSize = 18, readingFont = "'Crimson Text', Georgia, serif",
   xrayOpen = false, xrayItems = [], onToggleXray, onXrayItemClick,
   ambient = null, ledColor = 'none', onLedColor = null, esNoficcion = false,
-  whiteNoise = null,
+  whiteNoise = null, chapterLocked = false,
 }) {
   const [soundOpen, setSoundOpen] = useState(false)
   const soundRef = useRef(null)
@@ -333,8 +336,9 @@ export const BookReader = memo(function BookReader({
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, position: 'relative' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 12, padding: '0 6px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <ChapterSelect chapters={chapters || []} chapterIndex={chapterIndex} onChapterSelect={onChapterSelect} />
+          <ChapterSelect chapters={chapters || []} chapterIndex={chapterIndex} onChapterSelect={onChapterSelect} locked={chapterLocked} />
           <TypographyControl fontSize={fontSize} onFontSize={onFontSize} readingFont={readingFont} onReadingFont={onReadingFont} readingTheme={readingTheme} onReadingTheme={onReadingTheme} ledColor={ledColor} onLedColor={onLedColor} />
+          {(esNoficcion || AMBIENTE_FICCION_ACTIVO) && (
           <div ref={soundRef} style={{ position: 'relative' }}>
             <button type="button" onClick={() => setSoundOpen(o => !o)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: soundOpen ? theme.accent : theme.navBg, color: soundOpen ? '#fff' : theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26`, whiteSpace: 'nowrap' }}>
@@ -348,6 +352,7 @@ export const BookReader = memo(function BookReader({
               }
             </div>
           </div>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 'auto' }}>
           {/* X-ray */}

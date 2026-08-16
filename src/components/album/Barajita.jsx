@@ -51,7 +51,7 @@ export default function Barajita({ item, color, idx, onPegar }) {
       <div className={`album-barajita pending${heroCls}${pegando ? ' pegando' : ''}`} onClick={handleClick}>
         <div className="eslot pend">
           <StickIcon />
-          <span>Tenés una barajita para pegar</span>
+          <span>Tienes una barajita para pegar</span>
         </div>
       </div>
     )

@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { supabase } from '../../lib/supabase.js'
+import { imgUrl, preloadImages } from '../../lib/img.js'
+
+// Ancho objetivo de un slide (pantalla completa en móvil, tarjeta en desktop).
+// Retina: pedimos ~2x del ancho de tarjeta y dejamos que quality lo comprima.
+const REEL_W = 900
 
 export default function LibroReel({ libro, onClose, onFinish }) {
   const [reels,   setReels]   = useState([])
@@ -20,6 +25,9 @@ export default function LibroReel({ libro, onClose, onFinish }) {
         if (cancelled) return
         setReels(data || [])
         setLoading(false)
+        // Precarga TODAS las imágenes del preview de una vez: así al tocar
+        // "siguiente" el slide ya está en caché y no se ve el hueco de carga.
+        preloadImages((data || []).map(r => imgUrl(r.imagen_url, { width: REEL_W })))
       })
     return () => { cancelled = true }
   }, [libro.id])
@@ -107,7 +115,7 @@ export default function LibroReel({ libro, onClose, onFinish }) {
           key={current}
           className="reel-slide"
           style={{
-            backgroundImage: slide.imagen_url ? `url(${slide.imagen_url})` : undefined,
+            backgroundImage: slide.imagen_url ? `url(${imgUrl(slide.imagen_url, { width: REEL_W })})` : undefined,
             backgroundColor: libro.color || '#2a1a0a',
           }}
         >

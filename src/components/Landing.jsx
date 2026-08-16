@@ -42,6 +42,12 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
           <img src={LOGO} alt="Inmersia" />
           <nav className="inm-nav-right">
             <a className="inm-lnk" href="#login" onClick={go('login')}>Iniciar sesión</a>
+            <a className="inm-login-ico" href="#login" onClick={go('login')} aria-label="Iniciar sesión" title="Iniciar sesión">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </a>
             <a className="inm-clay-btn" href="#registro" onClick={go('registro')}>Crear cuenta</a>
           </nav>
         </div>
@@ -60,7 +66,6 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
               adéntrate en una nueva aventura.
             </p>
             <div className="inm-hero-cta">
-              <a className="inm-clay-btn" href="#registro" onClick={go('registro')}>Empezar a leer</a>
               <a className="inm-quiet" href="#que-hace" onClick={scrollToQue}>¿Qué es Inmersia?</a>
             </div>
           </div>
@@ -108,7 +113,6 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
               <div className="inm-ftxt">
                 <div className="inm-idx">{f.idx}</div>
                 <h3>{f.title}</h3>
-                <p>{f.body}</p>
                 <ul>
                   {f.bullets.map((b) => <li key={b}>{b}</li>)}
                 </ul>

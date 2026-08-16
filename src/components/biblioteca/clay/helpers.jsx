@@ -1,5 +1,6 @@
 import React from 'react'
 import { INK, inmTint, hashOf, spineColor, tituloFontSize, autorFontSize } from '../coverHelpers.shared.js'
+import { imgUrl } from '../../../lib/img.js'
 
 // =============================================================
 // ACUARELA · helpers + portada generada (face-out).
@@ -25,7 +26,7 @@ function BookCover({ book, h = 174 }) {
     <div className="book" style={{ '--cov': c, width: w }}>
       <div className="book-cover">
         {book.cover
-          ? <img className="book-art-img" src={book.cover} alt={book.title} loading="lazy" />
+          ? <img className="book-art-img" src={imgUrl(book.cover, { width: Math.round(w * 2) })} alt={book.title} loading="lazy" />
           : <div className="book-art-empty" />}
         <span className="book-scribble" style={{ fontSize: autorFontSize(w, book.author) }}>{book.author}</span>
         <span className="book-title" style={{ fontSize: tituloFontSize(w, book.title) }}>{book.title}</span>
@@ -36,4 +37,36 @@ function BookCover({ book, h = 174 }) {
   );
 }
 
-export { inmTint, hashOf, spineColor, spineW, spineH, BookCover, INK };
+// ─── Cantoneras de cuero (estilo álbum de fotos) ────────────
+// Cuatro triángulos rellenos, uno por esquina, como los soportes
+// donde se calza una foto: la imagen parece meterse por debajo. La
+// punta exterior la redondea el propio contenedor (que debe ser
+// position:relative + overflow:hidden + border-radius). Uso
+// compartido: hero (Swimlane) y fichas de "últimos abiertos"
+// (LateralHome), variando solo `size`.
+function CornerMounts({ size = 46 }) {
+  const mount = (v, h) => {
+    const clip = v === 'top'
+      ? (h === 'left' ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(0 0, 100% 0, 100% 100%)')
+      : (h === 'left' ? 'polygon(0 0, 0 100%, 100% 100%)' : 'polygon(100% 0, 100% 100%, 0 100%)');
+    // luz desde el exterior de cada esquina → la hipotenusa (interior) más oscura
+    const angle = v === 'top' ? (h === 'left' ? 135 : 225) : (h === 'left' ? 45 : 315);
+    const sx = h === 'left' ? 1.4 : -1.4, sy = v === 'top' ? 1.4 : -1.4;
+    return {
+      position: 'absolute', [v]: 0, [h]: 0, width: size, height: size, zIndex: 3, pointerEvents: 'none',
+      background: `linear-gradient(${angle}deg, #6b4f31 0%, #4a3622 52%, #34261a 100%)`,
+      clipPath: clip, WebkitClipPath: clip,
+      filter: `drop-shadow(${sx}px ${sy}px 1.3px rgba(40,26,14,0.42))`,
+    };
+  };
+  return (
+    <>
+      <div style={mount('top', 'left')} />
+      <div style={mount('top', 'right')} />
+      <div style={mount('bottom', 'left')} />
+      <div style={mount('bottom', 'right')} />
+    </>
+  );
+}
+
+export { inmTint, hashOf, spineColor, spineW, spineH, BookCover, CornerMounts, INK };

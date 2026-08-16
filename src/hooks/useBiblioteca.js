@@ -21,7 +21,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { usePerfilQuery, useCatalogoLibrosQuery, useBibliotecaUsuarioQuery, useInvalidateBibliotecaUsuario } from '../lib/queries.js'
-import { MANUAL_USUARIO, COLOR_BOOK_FALLBACK2 } from '../components/biblioteca/constants.js'
+import { MANUAL_LIBRO_ID, COLOR_BOOK_FALLBACK2 } from '../components/biblioteca/constants.js'
 
 const NOVEDADES_COUNT = 5
 const RECOMENDACIONES_COUNT = 5
@@ -111,7 +111,10 @@ export function useBiblioteca(user, lastOpenedBookIds) {
       es_ficcion: r.libros.es_ficcion ?? true,
       progress: typeof progMap[r.libros.id] === 'number' ? progMap[r.libros.id] / 100 : null,
     }))
-    return [MANUAL_USUARIO, ...mapped]
+    // El Manual del Explorador ya viene aquí como fila real de la BD
+    // (ensureProfile lo inserta con MANUAL_LIBRO_ID). No inyectamos ninguno
+    // sintético para no duplicarlo.
+    return mapped
   }, [bibliotecaQuery.data, progresos])
 
   // ── CRUD categorías ──
@@ -138,7 +141,7 @@ export function useBiblioteca(user, lastOpenedBookIds) {
   // Primitiva pura: reasigna + recarga. NO sincroniza el libro
   // seleccionado (eso es UI; cada componente lo hace en su wrapper).
   async function assignCategoriaToBook(catalogoLibroId, categoria_id) {
-    if (catalogoLibroId === 'manual') return
+    if (catalogoLibroId === MANUAL_LIBRO_ID) return
     const { error } = await supabase.from('bibliotecas_usuarios').update({ categoria_id })
       .eq('user_id', user.id).eq('libro_id', catalogoLibroId)
     if (error) { console.error('assignCategoriaToBook:', error.message); return }
@@ -158,12 +161,14 @@ export function useBiblioteca(user, lastOpenedBookIds) {
   }), [rawBooks, categoriasMap])
 
   const featured = useMemo(() => {
-    const nonManual = books.filter(b => b.id !== 'manual')
+    const nonManual = books.filter(b => b.id !== MANUAL_LIBRO_ID)
     if (lastOpenedBookIds?.length) {
       const last = nonManual.find(b => b.id === lastOpenedBookIds[0])
       if (last) return last
     }
-    return nonManual[0] || null
+    // Usuario nuevo: su único libro es el Manual del Explorador → que sea él
+    // quien ocupe el hero "Seguir leyendo" (antes quedaba vacío).
+    return nonManual[0] || books.find(b => b.id === MANUAL_LIBRO_ID) || null
   }, [books, lastOpenedBookIds])
 
   const displayName = perfil?.nombre ? `${perfil.nombre} ${perfil.apellido || ''}`.trim() : (user?.email?.split('@')[0] || 'Lector')

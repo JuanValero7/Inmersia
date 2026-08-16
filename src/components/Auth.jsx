@@ -66,7 +66,7 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
   const [error,       setError]       = useState('')
   const [success,     setSuccess]     = useState('')
   const [loginForm,   setLoginForm]   = useState({ email: '', password: '' })
-  const [regForm,     setRegForm]     = useState({ nombre: '', apellido: '', fechaNacimiento: '', email: '', password: '', confirmPassword: '' })
+  const [regForm,     setRegForm]     = useState({ nombre: '', apellido: '', fechaNacimiento: '', genero: '', email: '', password: '', confirmPassword: '' })
   const [forgotEmail, setForgotEmail] = useState('')
   const [legalDoc,    setLegalDoc]    = useState(null) // null | 'terminos' | 'privacidad'
 
@@ -106,6 +106,7 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
         nombre: regForm.nombre.trim(),
         apellido: regForm.apellido.trim(),
         fecha_nacimiento: regForm.fechaNacimiento || null,
+        genero: regForm.genero || null,
       } },
     })
     // El perfil y el Manual del Explorador se crean en App.jsx (ensureProfile) al
@@ -114,7 +115,7 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
     // devuelve sesión y no hay auth.uid() disponible todavía para el insert).
     if (signUpError) { setLoading(false); setError(signUpError.message); return }
     setLoading(false)
-    if (data.session) { onAuthSuccess(data.user) }
+    if (data.session) { onAuthSuccess(data.user, { isNewAccount: true }) }
     else { setSuccess('¡Registro exitoso! Revisa tu correo para confirmar tu cuenta.'); setTab('login') }
   }
 
@@ -212,6 +213,15 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
               <div className="form-field">
                 <label className="field-label">Fecha de nacimiento *</label>
                 <input type="date" required className="auth-input" value={regForm.fechaNacimiento} onChange={e => setR('fechaNacimiento', e.target.value)} style={{ colorScheme: 'light' }} />
+              </div>
+              <div className="form-field">
+                <label className="field-label">Género *</label>
+                <select required className="auth-input" value={regForm.genero} onChange={e => setR('genero', e.target.value)} style={{ colorScheme: 'light' }}>
+                  <option value="" disabled>Selecciona una opción</option>
+                  <option value="masculino">Masculino</option>
+                  <option value="femenino">Femenino</option>
+                  <option value="diverso">Diverso</option>
+                </select>
               </div>
               <div className="form-field">
                 <label className="field-label">Correo electrónico *</label>

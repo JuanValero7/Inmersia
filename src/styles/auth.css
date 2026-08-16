@@ -153,8 +153,11 @@
   position: fixed; inset: 0; z-index: 3000;
   display: flex; align-items: center; justify-content: center;
   padding: 24px; overflow-y: auto;
-  background: rgba(40,26,12,0.55);
-  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  /* Velo sólido (sin backdrop-filter): el blur reblurea en CADA frame todo el
+     fondo animado de la landing (portal, mundos, chips); al abrir el picker
+     nativo de fecha o el desplegable de género obligaba a recomponer esa zona
+     y se sentía lentísimo. Un velo un poco más opaco dimma igual, sin coste. */
+  background: rgba(40,26,12,0.62);
   font-family: 'Baloo 2', cursive;
   animation: auth-modal-fade 0.18s ease-out;
 }

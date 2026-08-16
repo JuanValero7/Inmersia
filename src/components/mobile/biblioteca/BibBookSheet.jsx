@@ -9,6 +9,7 @@
 import React from 'react'
 import { INK, ACCENT, inmTint, BookCover } from './bibmHelpers.jsx'
 import { useResena } from '../../../hooks/useResena.js'
+import { MANUAL_LIBRO_ID } from '../../biblioteca/constants.js'
 
 function Estrellas({ valor, onChange }) {
   const [hover, setHover] = React.useState(0)
@@ -25,7 +26,7 @@ function Estrellas({ valor, onChange }) {
 }
 
 function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook, onAssignCategory }) {
-  const esManual = book.id === 'manual'
+  const esManual = book.id === MANUAL_LIBRO_ID
   const c = book.color || '#5a3d28'
   const hasProgress = typeof book.progress === 'number'
   const pct = hasProgress ? Math.round(book.progress * 100) : 0

@@ -10,6 +10,7 @@ import { useLectorData } from '../hooks/useLectorData.js'
 import { useWhiteNoise } from '../hooks/useWhiteNoise.js'
 import { useXrayItems } from '../hooks/useXrayItems.js'
 import { useSesionLectura } from '../hooks/useSesionLectura.js'
+import { useOnboarding } from '../context/onboarding.jsx'
 import '../styles/lector.css'
 
 import { paginarParrafosDesktopDOM } from '../utils/lectorPagination.js'
@@ -77,6 +78,28 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
     miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
   } = useLectorData(book, setChapterIndex, setPageIndex)
+
+  // Paywall: cerrar con Escape. Y si el invitado se autentica (guestMode pasa a
+  // false) lo ocultamos para que no quede atascado encima del lector desbloqueado.
+  useEffect(() => {
+    if (!showPaywall) return
+    const onKey = (e) => { if (e.key === 'Escape') setShowPaywall(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showPaywall])
+  useEffect(() => { if (!guestMode) setShowPaywall(false) }, [guestMode])
+
+  // Onboarding: durante el paso 'manual' del tutorial, el botón Explorar ni
+  // siquiera aparece hasta llegar al capítulo 2 (el texto del manual lo anuncia
+  // ahí), y cuando aparece su única salida es Investigación.
+  const onboarding = useOnboarding()
+  const tutorialManual = onboarding.active && onboarding.step === 'manual'
+  const explorarVisible = !tutorialManual || chapterIndex >= 1
+  const irInvestigacion = useCallback(() => {
+    setExplorarOpen(false)
+    if (tutorialManual) onboarding.advance('manual')   // manual → investigacion
+    onGoCartelera()
+  }, [tutorialManual, onboarding, onGoCartelera])
 
   useSesionLectura(userId, book, guestMode)
   const invalidateBiblioteca = useInvalidateBibliotecaUsuario(userId)
@@ -423,7 +446,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
               style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#F2792A', border: '2px solid #4a3622', borderRadius: 999, padding: '9px 16px', color: '#fff', fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '1.5px 2px 0 rgba(74,54,34,0.30)' }}>
               Crear cuenta
             </button>
-          ) : (
+          ) : explorarVisible && (
             <div className="inm-explorar-popup" style={{ position: 'relative' }}>
               {explorarOpen && (
                 <div style={{
@@ -433,21 +456,25 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)',
                   whiteSpace: 'nowrap',
                 }}>
-                  <button type="button" onClick={() => { setExplorarOpen(false); onGoForo() }}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
-                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#000' }}>Foro</span>
-                  </button>
-                  <button type="button" onClick={() => { setExplorarOpen(false); onGoCartelera() }}
+                  {!tutorialManual && (
+                    <button type="button" onClick={() => { setExplorarOpen(false); onGoForo() }}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
+                      <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#000' }}>Foro</span>
+                    </button>
+                  )}
+                  <button type="button" onClick={irInvestigacion}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                     <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#000' }}>Investigación</span>
                   </button>
-                  <button type="button" onClick={() => { setExplorarOpen(false); onGoBack() }}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#000' }}>Biblioteca</span>
-                  </button>
+                  {!tutorialManual && (
+                    <button type="button" onClick={() => { setExplorarOpen(false); onGoBack() }}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                      <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#000' }}>Biblioteca</span>
+                    </button>
+                  )}
                 </div>
               )}
               <button type="button" onClick={() => setExplorarOpen(o => !o)}
@@ -494,6 +521,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   onNextChapter={handleNextChapter}
                   onToggleView={handleToggleView}
                   onChapterSelect={handleChapterSelect}
+                  chapterLocked={tutorialManual}
                   xrayOpen={xrayOpen}
                   xrayItems={xrayItems}
                   onToggleXray={() => setXrayOpen(v => !v)}
@@ -583,15 +611,17 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* Paywall de invitado */}
       {showPaywall && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(20,12,4,0.82)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 20, padding: '40px 48px', maxWidth: 420, width: '100%', textAlign: 'center', boxShadow: '3px 6px 0 rgba(74,54,34,0.25), 0 20px 40px rgba(0,0,0,0.35)' }}>
-            <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ height: 46, width: 'auto', marginBottom: 18 }} />
+        <div onClick={() => setShowPaywall(false)} style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(20,12,4,0.82)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative', background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 20, padding: '40px 48px', maxWidth: 420, width: '100%', textAlign: 'center', boxShadow: '3px 6px 0 rgba(74,54,34,0.25), 0 20px 40px rgba(0,0,0,0.35)' }}>
+            <button type="button" onClick={() => setShowPaywall(false)} aria-label="Cerrar" title="Cerrar"
+              style={{ position: 'absolute', top: 12, right: 14, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1.5px solid rgba(74,54,34,0.3)', color: '#9a6a4a', borderRadius: '50%', cursor: 'pointer', fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1 }}>×</button>
+            <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ display: 'block', height: 46, width: 'auto', margin: '0 auto 18px' }} />
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: '#2c1a0e', margin: '0 0 12px' }}>
-              Seguí leyendo en Inmersia
+              Sigue leyendo en Inmersia
             </h2>
             <p style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 15, color: '#6b4c34', lineHeight: 1.55, margin: '0 0 28px' }}>
               Ya leíste los dos capítulos de muestra.<br />
-              Creá tu cuenta gratis para continuar.
+              Crea tu cuenta gratis para continuar.
             </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <button type="button" onClick={() => onRequestAuth?.('registro')}

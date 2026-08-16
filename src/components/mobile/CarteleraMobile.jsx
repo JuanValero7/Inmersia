@@ -19,6 +19,10 @@ import { useCartelera } from '../cartelera/useCartelera.js'
 import { SECCIONES, getSecciones } from '../cartelera/carteleraHelpers.js'
 import CarteleraLandingMobile from './CarteleraLandingMobile.jsx'
 import CarteleraMobileFicha, { CarteleraMobileLista } from './CarteleraMobileFicha.jsx'
+import { useOnboarding } from '../../context/onboarding.jsx'
+import TutorialHint from '../onboarding/TutorialHint.jsx'
+import TutorialToast from '../onboarding/TutorialToast.jsx'
+import { TEXTO_INTRO_CARTELERA, PISTA_HECHOS } from '../onboarding/textos.js'
 import '../../styles/cartelera.css'
 import '../../styles/cartelera.mobile.css'
 
@@ -208,27 +212,44 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
     setView({ kind: 'board', key: k })
   }
 
+  // Tutorial (paso 'investigacion'): la única salida es el Foro y el "atrás" del
+  // header se oculta. Primero la bienvenida bloqueante; al cerrarla el tablero
+  // queda libre y sólo queda una pista no invasiva que recuerda ir a Hechos.
+  const onboarding = useOnboarding()
+  const tutorialInvestigacion = onboarding.active && onboarding.step === 'investigacion'
+  const [introVista, setIntroVista] = useState(false)
+  const [pistaCerrada, setPistaCerrada] = useState(false)
+  const hechosKey = esNoficcion ? 'referencias' : 'hechos'
+  const enHechos = view.kind === 'board' && view.key === hechosKey
+  useEffect(() => { if (enHechos) setPistaCerrada(true) }, [enHechos])
+  const goForo = () => { if (tutorialInvestigacion) onboarding.advance('investigacion'); onGoForo() }
+
   if (bookLoading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-warm)' }}>
       <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3, borderColor: 'rgba(139,77,42,0.2)', borderTopColor: '#8b4d2a' }} />
     </div>
   )
 
-  const exploreProps = { onClose: () => setExplore(false), onGoLectura, onGoForo, onGoBiblioteca }
+  // Durante el tutorial de Investigación: Explorar solo muestra Foro y el botón
+  // "atrás" del header (que sale a la Lectura) se oculta.
+  const exploreProps = tutorialInvestigacion
+    ? { onClose: () => setExplore(false), onGoLectura: null, onGoForo: goForo, onGoBiblioteca: null }
+    : { onClose: () => setExplore(false), onGoLectura, onGoForo, onGoBiblioteca }
+  const backProp = tutorialInvestigacion ? null : onGoBack
   const dataWithBook = { ...data, book }
 
   return (
     <div className="cart-root cm-root">
       {view.kind === 'landing' ? (
         <div className="cm-screen">
-          <Header book={book} onBack={onGoBack} onExplore={() => setExplore(true)} />
+          <Header book={book} onBack={backProp} onExplore={() => setExplore(true)} />
           <CarteleraLandingMobile data={dataWithBook} esNoficcion={esNoficcion} onOpenSection={openSection} />
         </div>
       ) : (
         <SectionView
           sectionKey={view.key}
           data={dataWithBook}
-          onGoBack={onGoBack}
+          onGoBack={backProp}
           onGoLanding={() => setView({ kind: 'landing', key: null })}
           onJump={openSection}
           onExplore={() => setExplore(true)}
@@ -238,6 +259,19 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
         />
       )}
       {explore && <ExploreSheet {...exploreProps} />}
+
+      {tutorialInvestigacion && !introVista && (
+        <TutorialHint
+          logo
+          title={TEXTO_INTRO_CARTELERA.title}
+          body={`${TEXTO_INTRO_CARTELERA.body} ${TEXTO_INTRO_CARTELERA.extraMovil}`}
+          buttonLabel={TEXTO_INTRO_CARTELERA.buttonLabel}
+          onClose={() => setIntroVista(true)}
+        />
+      )}
+      {tutorialInvestigacion && introVista && !pistaCerrada && (
+        <TutorialToast text={PISTA_HECHOS} onClose={() => setPistaCerrada(true)} />
+      )}
     </div>
   )
 }

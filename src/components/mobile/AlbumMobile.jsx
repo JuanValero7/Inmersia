@@ -1,6 +1,9 @@
 // src/components/mobile/AlbumMobile.jsx
 import { useState, useEffect, useRef } from 'react'
 import { useAlbum, formatSeg } from '../../hooks/useAlbum.js'
+import { useOnboarding } from '../../context/onboarding.jsx'
+import TutorialHint from '../onboarding/TutorialHint.jsx'
+import { TEXTO_ALBUM } from '../onboarding/textos.js'
 import '../../styles/album.css'
 import '../../styles/album.mobile.css'
 
@@ -244,6 +247,20 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
     return () => document.removeEventListener('keydown', onKey)
   }, [idx, items.length, sheet])
 
+  // ── Onboarding (paso 'album'): basta con ENTRAR al Álbum para cerrar el paso
+  // (ver el comentario largo en Album.jsx: atarlo a pegar la última barajita
+  // dejaba la pista "Ir al Álbum" repitiéndose en bucle en la Biblioteca). ──
+  const onboarding = useOnboarding()
+  const tutorialAlbum = onboarding.active && onboarding.step === 'album'
+  const [showAlbumIntro, setShowAlbumIntro] = useState(false)
+  const introLanzadaRef = useRef(false)
+  useEffect(() => {
+    if (!tutorialAlbum || loading || introLanzadaRef.current) return
+    introLanzadaRef.current = true
+    setShowAlbumIntro(true)
+    onboarding.advance('album')   // album → tienda_final
+  }, [tutorialAlbum, loading, onboarding])
+
   if (loading) {
     return (
       <div className="album-m-root"><div className="album-m-rotate" style={{ display: 'flex', position: 'static', flex: 1 }}>
@@ -254,7 +271,7 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
     return (
       <div className="album-m-root"><div className="album-m-rotate" style={{ display: 'flex', position: 'static', flex: 1 }}>
         <h3>Tu álbum está vacío</h3>
-        <p>Agregá libros a tu biblioteca y empezá a leer para coleccionar barajitas.</p>
+        <p>Agrega libros a tu biblioteca y empieza a leer para coleccionar barajitas.</p>
         <button className="album-m-back" onClick={onGoBack}>Ir a la biblioteca</button>
       </div></div>
     )
@@ -389,6 +406,16 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
         entry={entry}
         onClose={() => setSheet(null)}
       />
+
+      {showAlbumIntro && (
+        <TutorialHint
+          logo
+          title={TEXTO_ALBUM.title}
+          body={TEXTO_ALBUM.body}
+          buttonLabel={TEXTO_ALBUM.buttonLabel}
+          onClose={() => setShowAlbumIntro(false)}
+        />
+      )}
     </div>
   )
 }

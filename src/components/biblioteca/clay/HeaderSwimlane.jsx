@@ -1,7 +1,8 @@
 import React from 'react'
-import { INK, inmTint, BookCover } from './helpers.jsx'
+import { INK, inmTint, BookCover, CornerMounts } from './helpers.jsx'
 import { NovedadesSpotlight } from './NovedadesSpotlight.jsx'
 import { HojasOtono } from './HojasOtono.jsx'
+import { imgUrl } from '../../../lib/img.js'
 // =============================================================
 // ACUARELA · Header (logo + buscador + nav) y Swimlane (hero).
 // Header cableado: search, Tienda, Perfil, Salir.
@@ -10,7 +11,7 @@ import { HojasOtono } from './HojasOtono.jsx'
 // Exporta: window.InmHeader, Swimlane
 // =============================================================
 
-function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, onGoPerfil, onGoTienda, onGoAlbum, onSignOut }) {
+function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, onGoPerfil, onSignOut }) {
   const ink = INK;
   const bar = {
     display: 'flex', alignItems: 'center', gap: 16, borderRadius: 22, padding: '13px 17px',
@@ -26,23 +27,13 @@ function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, on
   return (
     <div style={{ padding: '22px 32px 0' }}>
       <div style={bar}>
-        <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ height: 40, width: 'auto', flexShrink: 0, marginLeft: 4 }} />
-        <div style={{ flex: 1, maxWidth: 460, marginLeft: 6, display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,253,247,0.9)', border: `2px solid ${ink}`, borderRadius: 999, padding: '10px 18px', boxShadow: `1.5px 2px 0 ${ink}14` }}>
+        <img src="/assets/inmersia-logo2.png" alt="Inmersia" style={{ height: 40, width: 'auto', flexShrink: 0, marginLeft: 4 }} />
+        <div style={{ flex: 1, maxWidth: 620, marginLeft: 6, display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,253,247,0.9)', border: `2px solid ${ink}`, borderRadius: 999, padding: '10px 18px', boxShadow: `1.5px 2px 0 ${ink}14` }}>
           <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={ink} strokeWidth="2.4"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35" strokeLinecap="round"/></svg>
           <input value={search} onChange={e => onSearch(e.target.value)} onKeyDown={onSearchKeyDown} placeholder="Buscar por título, autor… (Enter para buscar)"
             style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontWeight: 600, fontSize: 15, color: ink }} />
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 11, flexShrink: 0 }}>
-          <button onClick={onGoTienda} style={navBtn} title="Tienda">
-            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4m1.6 8L5 5H3m4 8a2 2 0 100 4 2 2 0 000-4zm10 0a2 2 0 100 4 2 2 0 000-4z" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Tienda
-          </button>
-          {onGoAlbum && (
-            <button onClick={onGoAlbum} style={navBtn} title="Álbum">
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              Álbum
-            </button>
-          )}
           <button onClick={onGoPerfil} style={{ ...navBtn, padding: '7px 15px 7px 8px' }} title="Mi perfil">
             <span style={{ width: 27, height: 27, borderRadius: '50%', background: 'linear-gradient(135deg, #F2792A, #6f9457)', color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, border: `2px solid ${ink}` }}>{inicial}</span>
             <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
@@ -205,43 +196,45 @@ function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOp
     : (recomendaciones[recIdx]?.metadata?.hero_url || null);
 
   const CARD_H = 500;
-  const BORDER_W = 2; // grosor del borde de la tarjeta — overflow:hidden recorta 2px adentro del borde, no en el borde mismo
-  const GATO_BLEED = 124; // cuánto asoma el gato por debajo de la tarjeta
-  const GATO_H = 375; // 75% de CARD_H, en px fijo para que las dos copias del gato calcen pixel a pixel
+  const CARD_R = 26;   // radio de la tarjeta (las esquineras lo siguen)
+  const GATO_H = 230;  // gato contenido dentro del hero (más pequeño, sin sangrado)
+  // Sin borde-marco: la imagen de fondo va a sangre y solo las 4 ESQUINERAS
+  // (abajo) marcan sus límites. Sombra suave (no plana) para dar profundidad
+  // sin el look de "slab/diapositiva".
   const surface = {
-    position: 'relative', overflow: 'hidden', borderRadius: 30, padding: '20px 22px 22px', height: CARD_H,
+    position: 'relative', overflow: 'hidden', borderRadius: CARD_R, padding: '20px 22px 22px', height: CARD_H,
     display: 'flex', flexDirection: 'column',
-    backgroundColor: '#f1e8d4', border: `${BORDER_W}px solid ${ink}`,
-    boxShadow: `inset 0 1px 0 rgba(255,255,255,0.4), 5px 8px 0 ${ink}17, 10px 16px 30px ${ink}26`,
+    backgroundColor: '#f1e8d4', boxShadow: `0 10px 26px ${ink}1f`,
   };
   const tabBtn = (active) => ({
     border: `2px solid ${active ? ink : 'transparent'}`, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 14,
     padding: '8px 18px', borderRadius: 999, background: active ? '#F2792A' : 'transparent', color: active ? '#fff' : 'rgba(74,54,34,0.6)',
     whiteSpace: 'nowrap', textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none', boxShadow: active ? `1.4px 1.8px 0 ${ink}33` : 'none', transition: 'all .15s',
   });
-  // Mismo <img> en ambas copias (mismo src/height/right/maxWidth), solo cambia
-  // `bottom` para que las dos ventanas de recorte queden alineadas pixel a pixel.
-  const gatoImgStyle = (bottom) => ({
-    position: 'absolute', right: 0, bottom, height: GATO_H, width: 'auto', maxWidth: '69%',
+  // Gato contenido dentro del hero (sin sangrado por debajo): asoma en la
+  // esquina inferior derecha, detrás del contenido (zIndex 0).
+  const gatoStyle = {
+    position: 'absolute', right: 6, bottom: 0, height: GATO_H, width: 'auto', maxWidth: '46%',
     objectFit: 'contain', objectPosition: 'right bottom', pointerEvents: 'none', zIndex: 0, opacity: 1,
-  });
+  };
   return (
     <div style={{ position: 'relative', marginTop: 20 }}>
       <div style={surface}>
         {heroUrl ? (
-          // Fondo alegórico del libro en foco (acuarela IA), a sangre: cubre TODO
-          // el hero. Cambia con la pestaña y con el libro seleccionado dentro de
-          // Novedades/Recomendaciones. Va detrás; el contenido (zIndex 1) y el
-          // gato quedan encima. Sin velo crema.
-          <img key={heroUrl} src={heroUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none' }} />
+          // Fondo alegórico del libro en foco (acuarela IA), a sangre, con el
+          // MISMO tratamiento difuminado + velo crema que las fichas de "Últimos
+          // abiertos": queda desaturado al fondo para que el contenido resalte.
+          // Cambia con la pestaña y con el libro en foco.
+          <>
+            <img key={heroUrl} src={imgUrl(heroUrl, { width: 1000 })} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', filter: 'blur(0.75px)', transform: 'scale(1.03)', zIndex: 0, pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', background: 'linear-gradient(90deg, rgba(241,232,212,0.28) 0%, rgba(241,232,212,0.5) 48%, rgba(241,232,212,0.62) 100%)' }} />
+          </>
         ) : (
           // Sin imagen todavía: capa ambiental de hojas de otoño (fallback).
           <HojasOtono />
         )}
         {tab === 'seguir' && (
-          // Copia A del gato: recortada por el propio overflow:hidden de la tarjeta,
-          // así el navegador la recorta siguiendo la curva del borde sin artefactos.
-          <img src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" style={gatoImgStyle(-GATO_BLEED)} />
+          <img src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" style={gatoStyle} />
         )}
         {/* Velo crema para legibilidad: solo en el fallback (sin imagen de fondo). */}
         {!heroUrl && (
@@ -263,19 +256,9 @@ function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOp
                 : (recomendaciones.length > 0 ? <RecomendacionSpotlight recomendaciones={recomendaciones} idx={recIdx} setIdx={setRecIdx} onOpen={onOpenLibro} onPreview={onPreviewLibro} /> : <EmptyLane msg="Estamos preparando recomendaciones a tu medida. ¡Vuelve pronto!" />)}
           </div>
         </div>
+        {/* Cantoneras que marcan los límites de la imagen de fondo. */}
+        <CornerMounts size={46} />
       </div>
-
-      {tab === 'seguir' && (
-        // Copia B: ventana rectangular pegada justo debajo de la tarjeta (ahí
-        // ya no hay curva de borde que respetar), muestra solo la continuación
-        // del gato — el pedazo que antes se veía colgando de la esquina.
-        // top/left/right van inset en BORDER_W para calzar exacto con el punto
-        // donde overflow:hidden recortó la Copia A (el borde de la tarjeta
-        // vive fuera de esa zona recortada, no en su límite).
-        <div style={{ position: 'absolute', top: CARD_H - BORDER_W, left: BORDER_W, right: BORDER_W, height: GATO_BLEED, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-          <img src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" style={gatoImgStyle(0)} />
-        </div>
-      )}
     </div>
   );
 }

@@ -1,12 +1,17 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useNavigate, Outlet, useLocation } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from './lib/supabase.js'
 import { ensureProfile } from './lib/ensureProfile.js'
+import { MANUAL_LIBRO_ID } from './lib/constants.js'
+import { queryKeys } from './lib/queries.js'
+import { LIMITE_PENDIENTES } from './hooks/useCompraLibro.js'
 import useIsMobile from './hooks/useIsMobile.js'
 import { useSuperuser } from './hooks/useSuperuser.js'
 import { useGatoColor } from './hooks/useGatoColor.js'
 import AuthModal from './components/AuthModal.jsx'
 import { AuthModalProvider } from './context/authModal.jsx'
+import { useOnboardingController, OnboardingProvider } from './context/onboarding.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
 import { LectorRoute } from './components/LectorRoute.jsx'
 
@@ -61,6 +66,7 @@ export default function App() {
   const [lectorStartNotebook, setLectorStartNotebook] = useState(false)
   const [cartelaJumpId,       setCartelaJumpId]       = useState(null)
   const [authTab,             setAuthTab]             = useState(null) // null | 'login' | 'registro'
+  const [limiteAviso,         setLimiteAviso]         = useState(false) // aviso "límite de pendientes alcanzado"
 
   // Abre el pop-up de autenticación en la pestaña indicada.
   const openAuth = useCallback((tab = 'login') => {
@@ -68,6 +74,8 @@ export default function App() {
   }, [])
 
   const navigate    = useNavigate()
+  const queryClient = useQueryClient()
+  const onboarding  = useOnboardingController(user, navigate)
   const location    = useLocation()
   const isMobile    = useIsMobile()
   const isSuperuser = useSuperuser(user ?? null)
@@ -149,7 +157,7 @@ export default function App() {
   }
 
   function pushBookId(bookId, currentUser) {
-    if (bookId === 'manual') return // no es un libro real: no tiene UUID y rompería el array ultimos_libros
+    if (bookId === MANUAL_LIBRO_ID) return // el Manual no entra en "seguir leyendo"
     const next = [bookId, ...lastOpenedBookIdsRef.current.filter(id => id !== bookId)].slice(0, 3)
     lastOpenedBookIdsRef.current = next
     setLastOpenedBookIds(next)
@@ -174,10 +182,60 @@ export default function App() {
     navigate(`/libro/${book.slug || book.id}`)
   }, [user, navigate])
 
+  // Tras autenticarse desde el paywall de invitado (estando en /libro/:slug),
+  // agrega ese libro a la biblioteca del usuario respetando el límite de
+  // lecturas pendientes. Cuenta nueva o usuario bajo el límite → se adquiere y
+  // sigue leyendo. Usuario existente que ya llegó al límite → no se adquiere y
+  // se lo expulsa a su Biblioteca con un aviso (misma regla que la Tienda).
+  const acquireBookAfterAuth = useCallback(async (u) => {
+    if (!u?.id || !location.pathname.startsWith('/libro/')) return
+    const slug = location.pathname.split('/')[2]
+    if (!slug) return
+
+    // Resolver el libro: usar currentBook si coincide con la URL; si no, buscarlo.
+    let libroId = (currentBook?.slug === slug || currentBook?.id === slug) ? currentBook?.libro_id : null
+    if (!libroId) {
+      const { data } = await supabase.from('libros').select('id').eq('slug', slug).maybeSingle()
+      libroId = data?.id
+    }
+    if (!libroId) return
+
+    // Estado de su biblioteca + condición de superusuario, en paralelo.
+    const [{ data: filas }, { count: superCount }] = await Promise.all([
+      supabase.from('bibliotecas_usuarios').select('libro_id, leido').eq('user_id', u.id),
+      supabase.from('superusuarios').select('*', { count: 'exact', head: true }).eq('user_id', u.id),
+    ])
+    if ((filas || []).some(f => f.libro_id === libroId)) return // ya lo tenía: sigue leyendo
+
+    const esSuper    = (superCount ?? 0) > 0
+    const pendientes = (filas || []).filter(f => f.libro_id !== MANUAL_LIBRO_ID && !f.leido).length
+
+    if (!esSuper && pendientes >= LIMITE_PENDIENTES) {
+      setLimiteAviso(true)
+      navigate('/biblioteca', { replace: true })
+      return
+    }
+
+    const { error } = await supabase
+      .from('bibliotecas_usuarios')
+      .insert({ user_id: u.id, libro_id: libroId, leido: false })
+    if (error) { console.error('No se pudo agregar el libro tras autenticarse:', error.message); return }
+    queryClient.invalidateQueries({ queryKey: queryKeys.bibliotecaUsuario(u.id) })
+    // Permanece en el lector; el efecto de guestMode oculta el paywall al dejar de ser invitado.
+  }, [location.pathname, currentBook, navigate, queryClient])
+
+  // El aviso de "límite alcanzado" se autodescarta a los 7 s.
+  useEffect(() => {
+    if (!limiteAviso) return
+    const t = setTimeout(() => setLimiteAviso(false), 7000)
+    return () => clearTimeout(t)
+  }, [limiteAviso])
+
   if (!authReady) return Fallback
 
   return (
     <AuthModalProvider openAuth={openAuth}>
+      <OnboardingProvider value={onboarding}>
       <Suspense fallback={Fallback}>
         <Routes>
 
@@ -318,6 +376,7 @@ export default function App() {
               <Foro
                 book={currentBook}
                 user={user}
+                isSuperuser={isSuperuser}
                 onGoBack={() => {
                   const slug = currentBook?.slug || location.pathname.split('/').at(-1)
                   const dest = foroSource === 'cartelera'
@@ -357,9 +416,29 @@ export default function App() {
         <AuthModal
           initialTab={authTab}
           onClose={() => setAuthTab(null)}
-          onAuthSuccess={(u) => { setUser(u); loadLastBooks(u); setAuthTab(null) }}
+          onAuthSuccess={(u, opts) => {
+            setUser(u); loadLastBooks(u); setAuthTab(null)
+            // Cuenta nueva: el tutorial la lleva a Biblioteca; no se adquiere la
+            // muestra que estaba leyendo. Usuario existente: lógica de siempre.
+            if (!opts?.isNewAccount) acquireBookAfterAuth(u)
+          }}
         />
       )}
+
+      {/* Aviso: llegó al límite de lecturas pendientes al intentar sumar un libro. */}
+      {limiteAviso && (
+        <div style={{ position: 'fixed', top: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 4000, maxWidth: 460, width: 'calc(100% - 32px)' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 14, padding: '14px 16px', boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)', fontFamily: "'Baloo 2', sans-serif" }}>
+            <span style={{ fontSize: 20, lineHeight: 1.2 }}>📚</span>
+            <p style={{ margin: 0, flex: 1, fontSize: 14, color: '#4a3622', lineHeight: 1.45 }}>
+              Alcanzaste tu límite de {LIMITE_PENDIENTES} lecturas pendientes. Termina alguna para sumar este libro a tu biblioteca.
+            </p>
+            <button type="button" onClick={() => setLimiteAviso(false)} aria-label="Cerrar"
+              style={{ background: 'transparent', border: 'none', color: '#9a6a4a', cursor: 'pointer', fontSize: 20, fontWeight: 700, lineHeight: 1, padding: 0 }}>×</button>
+          </div>
+        </div>
+      )}
+      </OnboardingProvider>
     </AuthModalProvider>
   )
 }

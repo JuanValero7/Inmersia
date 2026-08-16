@@ -19,6 +19,7 @@ import React, { useState, useMemo } from 'react'
 import clsx from 'clsx'
 import { supabase } from '../lib/supabase.js'
 import { usePerfilData } from '../hooks/usePerfilData.js'
+import { useOnboarding } from '../context/onboarding.jsx'
 import LegalModal from './legal/LegalModal.jsx'
 import '../styles/perfil.css'
 
@@ -308,6 +309,7 @@ export function SecLegal() {
 
 // ════════════════════ Componente principal ══════════════════
 export default function Perfil({ user, gatoColor, onChangeGatoColor, onGoBack, onSignOut }) {
+  const onboarding = useOnboarding()
   // Lógica de datos compartida con PerfilMobile (ver src/hooks/usePerfilData.js)
   const {
     sec, setSec,
@@ -361,6 +363,7 @@ export default function Perfil({ user, gatoColor, onChangeGatoColor, onGoBack, o
             ))}
           </div>
           <div className="pf-nav-spacer"></div>
+          <button className="pf-nav-item" onClick={onboarding.restart}>{I.datos} Repetir tutorial</button>
           <button className="pf-logout" onClick={onSignOut}>{I.logout} Cerrar sesión</button>
         </nav>
 

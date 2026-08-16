@@ -206,12 +206,16 @@ export function AudioSheet({ ambient, playing, volume, onToggle, onVolume, onClo
   )
 }
 
-export function NavSheet({ onGoForo, onGoCartelera, onGoBiblioteca, onClose }) {
-  const items = [
+// `soloInvestigacion` (tutorial paso 'manual'): oculta Foro/Biblioteca y deja
+// solo Investigación. El Lector ya oculta el botón Explorar hasta el cap. 2,
+// así que si esta hoja se abre durante el tutorial, Investigación está lista.
+export function NavSheet({ onGoForo, onGoCartelera, onGoBiblioteca, onClose, soloInvestigacion = false }) {
+  const todos = [
     { label:'Biblioteca',    act: onGoBiblioteca, icon:<g><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></g> },
     { label:'Investigación', act: onGoCartelera,  icon:<g><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></g> },
     { label:'Foro',          act: onGoForo,       icon:<path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/> },
   ]
+  const items = soloInvestigacion ? todos.filter(it => it.label === 'Investigación') : todos
   return (
     <div className="lm-backdrop" onClick={onClose}>
       <div className="lm-sheet" onClick={e=>e.stopPropagation()}>

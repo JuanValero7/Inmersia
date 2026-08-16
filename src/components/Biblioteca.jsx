@@ -1,7 +1,7 @@
 import React from 'react'
 import { useBiblioteca } from '../hooks/useBiblioteca.js'
 import { useCompraLibro, LIMITE_PENDIENTES } from '../hooks/useCompraLibro.js'
-import { SIN_CATEGORIA_ID, COLOR_DEFAULT } from './biblioteca/constants.js'
+import { SIN_CATEGORIA_ID, COLOR_DEFAULT, MANUAL_LIBRO_ID } from './biblioteca/constants.js'
 import '../styles/tienda.css'
 import '../styles/biblioteca.css'
 import BibBookModal from './biblioteca/BibBookModal.jsx'
@@ -9,9 +9,14 @@ import ManageCategoriasModal from './biblioteca/ManageCategoriasModal.jsx'
 import PanelLibro from './tienda/PanelLibro.jsx'
 import LibroReel from './tienda/LibroReel.jsx'
 import { InmHeader, Swimlane } from './biblioteca/clay/HeaderSwimlane.jsx'
-import { FlatShelves } from './biblioteca/clay/Shelves.jsx'
-import { UltimosAbiertos } from './biblioteca/clay/UltimosAbiertos.jsx'
+import { CategoriasHome } from './biblioteca/clay/CategoriasHome.jsx'
+import { LateralHome } from './biblioteca/clay/LateralHome.jsx'
 import { INK } from './biblioteca/clay/helpers.jsx'
+import { saludoBienvenida } from '../lib/genero.js'
+import { useOnboarding } from '../context/onboarding.jsx'
+import WelcomePopup from './onboarding/WelcomePopup.jsx'
+import TutorialHint from './onboarding/TutorialHint.jsx'
+import { TEXTO_ALBUM_HINT, TEXTO_TIENDA_FINAL } from './onboarding/textos.js'
 
 // =============================================================
 // ACUARELA · VistaBiblioteca (orquestador).
@@ -44,7 +49,7 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
 
   // Compra desde el panel in-place (Novedades/Recomendaciones) — mismas
   // primitivas y mismo límite de pendientes que la Tienda (ver useCompraLibro).
-  const pendientes = React.useMemo(() => books.filter(b => b.id !== 'manual' && !b.leido).length, [books]);
+  const pendientes = React.useMemo(() => books.filter(b => b.id !== MANUAL_LIBRO_ID && !b.leido).length, [books]);
   const { comprar: comprarLibro, comprarYLeer: comprarYLeerLibro } = useCompraLibro(user, isSuperuser, onOpenBook);
   const handleComprarLibro = async (libro) => {
     const { error } = await comprarLibro(libro, { pendientes });
@@ -62,7 +67,7 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
     return err;
   }
   async function assignCategoriaToBook(catalogoLibroId, categoria_id) {
-    if (catalogoLibroId === 'manual') return;
+    if (catalogoLibroId === MANUAL_LIBRO_ID) return;
     await assignCategoriaToBookBase(catalogoLibroId, categoria_id);
     setSelectedBook(prev => prev && prev.id === catalogoLibroId ? { ...prev, categoria_id } : prev);
   }
@@ -95,19 +100,30 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
     return out.filter(g => g.books.length);
   }, [categories, searchedBooks]);
 
-  const hasSinCategoria = React.useMemo(() => books.some(b => !b.categoria_id), [books]);
-
-  // Repisa "Últimos abiertos" (máx 4) — excluye el libro ya mostrado en "Seguir leyendo"
+  // "Últimos abiertos" del lateral (máx 2) — excluye el libro ya mostrado en
+  // el hero "Seguir leyendo" para que no se repita.
   const portadas = React.useMemo(() => {
-    const nonManual = books.filter(b => b.id !== 'manual' && b.id !== featured?.id)
+    const nonManual = books.filter(b => b.id !== MANUAL_LIBRO_ID && b.id !== featured?.id)
     if (lastOpenedBookIds?.length) {
       const ordered = lastOpenedBookIds.filter(id => id !== featured?.id).map(id => nonManual.find(b => b.id === id)).filter(Boolean)
-      return ordered.slice(0, 4)
+      return ordered.slice(0, 2)
     }
-    return nonManual.slice(0, 4)
+    return nonManual.slice(0, 2)
   }, [books, lastOpenedBookIds, featured]);
 
   const openBook = React.useCallback((book) => { setSelectedBook(book); }, []);
+
+  // ── Onboarding ──
+  const onboarding = useOnboarding();
+  const manualBook = React.useMemo(() => books.find(b => b.id === MANUAL_LIBRO_ID), [books]);
+  const showWelcome     = onboarding.active && onboarding.step === 'bienvenida';
+  const showAlbumHint   = onboarding.active && onboarding.step === 'album';
+  const showTiendaHint  = onboarding.active && onboarding.step === 'tienda_final';
+  const openManual = React.useCallback(() => {
+    if (!manualBook) return;
+    onboarding.advance('bienvenida');   // bienvenida → manual
+    onOpenBook(manualBook);
+  }, [manualBook, onboarding, onOpenBook]);
 
   const handleGoTienda = () => {
     onGoTienda()
@@ -124,31 +140,31 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
   return (
     <div className="bib-body" style={{ fontFamily: "'Baloo 2', cursive", color: INK, minHeight: '100%', backgroundColor: '#FBF5EC' }}>
       <InmHeader search={searchInput} onSearch={handleSearchChange} onSearchKeyDown={handleSearchKeyDown} displayName={displayName} inicial={inicial}
-        onGoPerfil={onGoPerfil} onGoTienda={handleGoTienda} onGoAlbum={onGoAlbum} onSignOut={onSignOut} />
+        onGoPerfil={onGoPerfil} onSignOut={onSignOut} />
 
       <div style={{ padding: '26px 32px 56px' }}>
-        <div style={{ fontWeight: 800, fontSize: 32, letterSpacing: '-0.01em', color: headerInk }}>¡Bienvenido, {displayName.split(' ')[0]}!</div>
+        <div style={{ fontWeight: 800, fontSize: 32, letterSpacing: '-0.01em', color: headerInk }}>¡{saludoBienvenida(user?.user_metadata?.genero)}, {displayName.split(' ')[0]}!</div>
 
         {loadingBooks ? (
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(74,54,34,0.5)', fontSize: 17, fontWeight: 600 }}>Cargando tu biblioteca…</div>
         ) : (
           <>
-            <Swimlane featured={featured} onOpen={openBook} novedades={novedades} recomendaciones={recomendaciones} onOpenLibro={setSelectedLibro} onPreviewLibro={setReelLibro} gatoColor={gatoColor} />
-
-            {portadas.length > 0 && (
-              <div style={{ marginTop: 36, position: 'relative', zIndex: 2 }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: 800, fontSize: 19, color: headerInk, whiteSpace: 'nowrap' }}>Últimos abiertos</span>
-                </div>
-                <UltimosAbiertos books={portadas} onOpen={openBook} />
+            {/* Fila superior: hero (60%) + lateral con 2 últimos abiertos y
+                accesos a Tienda/Álbum (40%). */}
+            <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+              <div style={{ flex: 3, minWidth: 0 }}>
+                <Swimlane featured={featured} onOpen={openBook} novedades={novedades} recomendaciones={recomendaciones} onOpenLibro={setSelectedLibro} onPreviewLibro={setReelLibro} gatoColor={gatoColor} />
               </div>
-            )}
+              <div style={{ flex: 2, minWidth: 0 }}>
+                <LateralHome books={portadas} onOpen={openBook} onGoTienda={handleGoTienda} onGoAlbum={onGoAlbum} />
+              </div>
+            </div>
 
             {/* Encabezado colección + acciones */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginTop: 44, position: 'relative', zIndex: 2 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', flexShrink: 0 }}>
                 <span style={{ fontWeight: 800, fontSize: 24, color: headerInk, whiteSpace: 'nowrap' }}>Tu colección</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(74,54,34,0.55)', whiteSpace: 'nowrap' }}>{books.filter(b => b.id !== 'manual').length} {books.filter(b => b.id !== 'manual').length === 1 ? 'libro' : 'libros'}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(74,54,34,0.55)', whiteSpace: 'nowrap' }}>{books.filter(b => b.id !== MANUAL_LIBRO_ID).length} {books.filter(b => b.id !== MANUAL_LIBRO_ID).length === 1 ? 'libro' : 'libros'}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, flexWrap: 'wrap' }}>
                 <button onClick={() => setShowFilters(v => !v)}
@@ -167,12 +183,6 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
             {showFilters && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginTop: 16, flexWrap: 'wrap' }}>
                 <button onClick={() => setCategory(null)} style={chip(activeCategory === null, '#F2792A')}>Todos</button>
-                {hasSinCategoria && (
-                  <button onClick={() => setCategory(activeCategory === SIN_CATEGORIA_ID ? null : SIN_CATEGORIA_ID)} style={chip(activeCategory === SIN_CATEGORIA_ID, COLOR_DEFAULT)}>
-                    <span style={{ width: 9, height: 9, borderRadius: '50%', background: COLOR_DEFAULT, display: 'inline-block', marginRight: 8, border: `1px solid ${INK}66` }} />
-                    Sin categoría
-                  </button>
-                )}
                 {categories.map(c => (
                   <button key={c.id} onClick={() => setCategory(activeCategory === c.id ? null : c.id)} style={chip(activeCategory === c.id, c.color)}>
                     <span style={{ width: 9, height: 9, borderRadius: '50%', background: c.color, display: 'inline-block', marginRight: 8, border: `1px solid ${INK}66` }} />
@@ -182,10 +192,10 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
               </div>
             )}
 
-            <div style={{ marginTop: 28, overflowX: 'auto' }}>
+            <div style={{ marginTop: 28 }}>
               {groups.length === 0
                 ? <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(74,54,34,0.5)', fontWeight: 600, fontSize: 16 }}>No hay libros que mostrar.</div>
-                : <FlatShelves groups={groups} activeCat={activeCategory} onOpen={openBook} />}
+                : <CategoriasHome groups={groups} activeCat={activeCategory} onOpen={openBook} />}
             </div>
           </>
         )}
@@ -227,6 +237,35 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
           libro={reelLibro}
           onClose={() => setReelLibro(null)}
           onFinish={() => { setSelectedLibro(reelLibro); setReelLibro(null); }}
+        />
+      )}
+
+      {showWelcome && (
+        <WelcomePopup
+          user={user}
+          manualReady={!!manualBook}
+          onOpenManual={openManual}
+          onSkip={onboarding.skip}
+        />
+      )}
+
+      {showAlbumHint && (
+        <TutorialHint
+          logo
+          title={TEXTO_ALBUM_HINT.title}
+          body={TEXTO_ALBUM_HINT.body}
+          buttonLabel={TEXTO_ALBUM_HINT.buttonLabel}
+          onClose={onGoAlbum}
+        />
+      )}
+
+      {showTiendaHint && (
+        <TutorialHint
+          logo
+          title={TEXTO_TIENDA_FINAL.title}
+          body={TEXTO_TIENDA_FINAL.body}
+          buttonLabel={TEXTO_TIENDA_FINAL.buttonLabel}
+          onClose={() => onboarding.advance('tienda_final')}   // tienda_final → done
         />
       )}
     </div>

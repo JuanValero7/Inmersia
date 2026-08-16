@@ -38,7 +38,7 @@ export default function Bandeja({ entry }) {
           )
         })}
       </div>
-      <p className="album-bandeja-hint">Tocá el espacio vacío que le corresponde en el álbum para pegarla.</p>
+      <p className="album-bandeja-hint">Toca el espacio vacío que le corresponde en el álbum para pegarla.</p>
     </aside>
   )
 }

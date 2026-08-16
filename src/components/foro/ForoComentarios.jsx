@@ -11,7 +11,10 @@ const FORO_TAGS = [
 
 const PAGE_SIZE = 15
 
-export default function ForoComentarios({ foro, user, onCountChange }) {
+// `readOnly`: el foro se muestra pero no se puede comentar ni responder
+// (usado en el Manual del Explorador para lectores normales; los superusuarios
+// sí pueden, para poder dejar el comentario "oficial" del gato).
+export default function ForoComentarios({ foro, user, onCountChange, readOnly = false }) {
   const [comentarios,     setComentarios]     = useState([])
   const [repliesByParent, setRepliesByParent] = useState({})
   const [perfilesMap,     setPerfilesMap]     = useState({})
@@ -286,12 +289,14 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
                       </div>
                     )}
                     <div className="foro-acciones">
-                      <button
-                        type="button" className="foro-accion-btn"
-                        onClick={() => { setReplyOpenFor(isReplyOpen ? null : c.id); setReplyText(''); setReplyEsSpoiler(false) }}
-                      >
-                        Responder
-                      </button>
+                      {!readOnly && (
+                        <button
+                          type="button" className="foro-accion-btn"
+                          onClick={() => { setReplyOpenFor(isReplyOpen ? null : c.id); setReplyText(''); setReplyEsSpoiler(false) }}
+                        >
+                          Responder
+                        </button>
+                      )}
                       {replies.length > 0 && (
                         <button type="button" className="foro-accion-btn" onClick={() => toggleReplies(c.id)}>
                           {isExpanded
@@ -393,11 +398,13 @@ export default function ForoComentarios({ foro, user, onCountChange }) {
       </main>
 
       {/* ── FAB ── */}
-      <button type="button" className="foro-fab" onClick={() => setShowModal(true)} title="Nuevo comentario">
-        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-          <path d="M12 5v14M5 12h14" strokeLinecap="round"/>
-        </svg>
-      </button>
+      {!readOnly && (
+        <button type="button" className="foro-fab" onClick={() => setShowModal(true)} title="Nuevo comentario">
+          <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path d="M12 5v14M5 12h14" strokeLinecap="round"/>
+          </svg>
+        </button>
+      )}
 
       {/* ── Modal nuevo comentario ── */}
       {showModal && (

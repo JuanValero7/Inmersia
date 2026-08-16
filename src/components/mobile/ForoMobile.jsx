@@ -17,11 +17,23 @@ import ForoComentarios from '../foro/ForoComentarios.jsx'   // ← reutilizado
 import ForoChat from '../foro/ForoChat.jsx'                  // ← reutilizado
 import { useForoData } from '../../hooks/useForoData.js'     // ← lógica de datos compartida
 import { useBookBySlug } from '../../hooks/useBookBySlug.js'
+import { useOnboarding } from '../../context/onboarding.jsx'
+import { MANUAL_LIBRO_ID } from '../../lib/constants.js'
 import '../../styles/foro.css'        // base (clases que usan las sub-vistas)
 import '../../styles/foro.mobile.css'  // overrides responsive del chrome
 
-export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera }) {
+export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera, isSuperuser = false }) {
   const { book, loading: bookLoading } = useBookBySlug(bookProp)
+
+  // Manual del Explorador: comentarios en solo-lectura (salvo superusuario);
+  // el Chat queda abierto para quien quiera conversar ahí.
+  const esManual = book?.libro_id === MANUAL_LIBRO_ID
+  const readOnly = esManual && !isSuperuser
+
+  // Tutorial (paso 'foro'): la única salida es Biblioteca (avanza a 'album').
+  const onboarding = useOnboarding()
+  const tutorialForo = onboarding.active && onboarding.step === 'foro'
+  const irBibliotecaFin = () => { onboarding.advance('foro'); onGoBiblioteca?.() }
   // — MISMA lógica de datos que Foro.jsx (ver src/hooks/useForoData.js) —
   const {
     foro, miNombre, loading,
@@ -46,7 +58,7 @@ export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura
 
       {/* ── Header compacto ── */}
       <header className="foro-header foro-m-header">
-        {onGoBack && (
+        {onGoBack && !tutorialForo && (
           <button type="button" className="foro-arrow-btn" onClick={onGoBack} title="Volver" aria-label="Volver">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 18l-6-6 6-6" />
@@ -82,7 +94,7 @@ export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura
       ) : !foro ? (
         <div className="foro-state-msg" style={{ padding: '72px 0' }}>No se encontró el foro.</div>
       ) : activeTab === 'comentarios' ? (
-        <ForoComentarios foro={foro} user={user} onCountChange={setComentariosCount} />
+        <ForoComentarios foro={foro} user={user} onCountChange={setComentariosCount} readOnly={readOnly} />
       ) : (
         <ForoChat foro={foro} book={book} user={user} miNombre={miNombre} onSesionChange={setHasSesion} />
       )}
@@ -94,19 +106,19 @@ export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura
             <div className="foro-m-sheet-grip" />
             <p className="foro-m-sheet-title">Ir a…</p>
             <div className="foro-m-sheet-nav">
-              {onGoLectura && (
+              {onGoLectura && !tutorialForo && (
                 <button type="button" onClick={() => goNav(onGoLectura)}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0118 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
                   <span>Lectura</span>
                 </button>
               )}
               {onGoBiblioteca && (
-                <button type="button" onClick={() => goNav(onGoBiblioteca)}>
+                <button type="button" onClick={() => goNav(tutorialForo ? irBibliotecaFin : onGoBiblioteca)}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                   <span>Biblioteca</span>
                 </button>
               )}
-              {onGoCartelera && (
+              {onGoCartelera && !tutorialForo && (
                 <button type="button" onClick={() => goNav(onGoCartelera)}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                   <span>Investigación</span>

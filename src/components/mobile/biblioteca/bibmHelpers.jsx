@@ -8,6 +8,7 @@
 // =============================================================
 import React from 'react'
 import { INK, inmTint, hashOf, spineColor, tituloFontSize, autorFontSize } from '../../biblioteca/coverHelpers.shared.js'
+import { imgUrl } from '../../../lib/img.js'
 
 export { INK, inmTint, hashOf, spineColor }
 
@@ -36,7 +37,7 @@ export function BookCover({ book, h = 150, fill = false, fillW = 105 }) {
     <div className="book" style={{ '--cov': c, width: fill ? '100%' : w }}>
       <div className="book-cover">
         {book.cover
-          ? <img className="book-art-img" src={book.cover} alt={book.title} />
+          ? <img className="book-art-img" src={imgUrl(book.cover, { width: 320 })} alt={book.title} loading="lazy" />
           : <div className="book-art-empty" />}
         <span className="book-scribble" style={{ fontSize: autorFontSize(fw, book.author) }}>{book.author}</span>
         <span className="book-title" style={{ fontSize: tituloFontSize(fw, book.title) }}>{book.title}</span>

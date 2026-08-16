@@ -32,17 +32,16 @@ export const CHIP_WORLDS = [
   [ { c: 'var(--inm-c-red)',  t: 'Investiga, predice, recuerda', a: 'topL' }, { c: 'var(--inm-c-gold)', t: 'Anota, subraya: tu impronta', a: 'midR' } ],
 ]
 
-// Las 5 vistas de Inmersia (recuadros con captura)
+// Las vistas de Inmersia (recuadros con captura)
 export const FEATURES = [
   {
     id: 'lector',
     idx: '01 — Lector inmersivo',
     title: 'Una historia que se ve y se oye.',
-    body: 'Inmersia no te muestra texto y ya. Cada capítulo puede traer ilustraciones y un ambiente sonoro que acompaña la escena — la lluvia, la posada, el bosque al atardecer. Te metes en la historia sin darte cuenta.',
     bullets: [
       'Ilustraciones que aparecen en los momentos clave',
-      'Sonido ambiente que sigue lo que estás leyendo',
-      'Modo día y noche · retomas donde dejaste · sin anuncios',
+      'Efectos de sonido que acompañan la lectura',
+      'Personalización total de tu experiencia',
     ],
     shot: '/assets/landing/shot-01-lector.webp',
     flip: false,
@@ -51,10 +50,9 @@ export const FEATURES = [
     id: 'diario',
     idx: '02 — Diario del aventurero',
     title: 'Un recuerdo y un portal a tus pensamientos.',
-    body: 'Subraya una frase, deja una nota al margen, guarda esa cita que te dejó pensando. Tu diario de lectura viaja contigo de libro en libro — para volver, releer y recordar por qué te marcó tanto.',
     bullets: [
-      'Subrayados y notas al margen',
-      'Tus citas favoritas, todas juntas',
+      'Escribe tus predicciones y al terminar comprueba si acertaste',
+      'Subraya tus citas favoritas, anota tus pensamientos y compártelo con quien quieras',
       'Siempre a mano, en cualquier dispositivo',
     ],
     shot: '/assets/landing/shot-02-diario.webp',
@@ -64,11 +62,10 @@ export const FEATURES = [
     id: 'investigacion',
     idx: '03 — Zona de investigación',
     title: 'Un misterio, una misión, un lugar donde explorar.',
-    body: 'Cada libro esconde un tablón secreto. Personajes, lugares, hechos y datos clave se van pinchando solos a medida que avanzas — como un detective armando el caso en la pared. Ves cómo todo se conecta, sin perderte y sin spoilers.',
     bullets: [
-      'Personajes, lugares, hechos y datos de la trama',
-      'Se desbloquea con tu lectura, capítulo a capítulo',
-      'Imposible spoilearte: solo aparece lo que ya pasaste',
+      'Personajes, lugares, hechos. Todo lo que ha pasado en un solo lugar',
+      'Tu progreso adelanta la «investigación». Cada capítulo desbloquea nueva información',
+      'Si lo tuyo no es la ficción, no te preocupes. Glosario, datos, referencias y resumen toman la cartelera',
     ],
     shot: '/assets/landing/shot-03-investigacion.webp',
     flip: false,
@@ -77,11 +74,9 @@ export const FEATURES = [
     id: 'foro',
     idx: '04 — Foro y Ágora',
     title: 'Un foro, una charla, un encuentro con motivo.',
-    body: 'Teoriza, cita lo que te marcó y discute los giros con gente que va por tu mismo capítulo. La parte buena de las redes — la conversación — sin todo lo demás.',
     bullets: [
-      'Conversaciones por libro y por capítulo',
-      'Teorías, citas y debate sano',
-      'Lees solo, pero no aislado',
+      'Conversa en tiempo real con otros lectores',
+      'Deja comentarios y discute teorías, citas e ideas',
     ],
     shot: '/assets/landing/shot-04-foro.webp',
     flip: true,
@@ -90,13 +85,23 @@ export const FEATURES = [
     id: 'biblioteca',
     idx: '05 — Biblioteca personalizada',
     title: 'Un escape y un encuentro.',
-    body: 'Todo lo tuyo en un solo lugar: lo que estás leyendo, lo que dejaste a medias y lo que tienes en cola para después. Inmersia lleva la cuenta de tu progreso para que siempre sepas dónde retomar.',
     bullets: [
-      'Leyendo ahora, por leer y terminados',
-      'Tu progreso de lectura, libro por libro',
-      'Armas tu propia cola de lecturas',
+      'Todos tus libros en un solo lugar',
+      'Ordénalos en colecciones, como tú quieras',
+      'Visita tu perfil, tu álbum y nuestra tienda',
     ],
     shot: '/assets/landing/shot-05-biblioteca.webp',
     flip: false,
+  },
+  {
+    id: 'album',
+    idx: '06 — Tu álbum',
+    title: 'Un premio que se colecciona.',
+    bullets: [
+      'Tu lugar de recompensas, sigue y guarda tus logros en Inmersia',
+      'Cada libro es una página de tu álbum para coleccionar',
+    ],
+    shot: '/assets/landing/shot-06-album.webp',
+    flip: true,
   },
 ]
