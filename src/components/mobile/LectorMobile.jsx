@@ -43,6 +43,9 @@ import '../../styles/lector.mobile.css'
 
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
 const LINE = 1.72  // alto de línea (coincide con .lm-para en el CSS)
+// Referencia estable para los capítulos sin subrayados: un [] nuevo en cada
+// render invalidaría el memo de las páginas del libro.
+const EMPTY_SUBRAYADOS = []
 
 // ── Iconos lineales ──────────────────────────────────────────
 const Compass = () => (
@@ -137,7 +140,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   // Lógica de datos compartida con el Lector de escritorio (ver src/hooks/useLectorData.js)
   const {
     userId, capitulos, chapterCache, loading, loadingCap, error,
-    isLeido, setIsLeido,
+    isLeido, setIsLeido, subrayadosPorCap, olvidarSubrayado,
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
     fetchChapter, playSfx, persistChapterAdvance, subrayar,
@@ -221,6 +224,11 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const currentChapData = currentChapter ? chapterCache[currentChapter.id] : null
   const currentMedia    = currentChapData?.mediaByParrafo || {}
   const currentAmbient  = currentChapData?.ambient || null
+  const currentCapNum   = currentChapter?.numero ?? chapterIndex + 1
+  // Solo los textos: es lo que necesita el render para anclar la marca.
+  const currentSubrayados = useMemo(
+    () => (subrayadosPorCap[currentCapNum] || EMPTY_SUBRAYADOS).map(s => s.texto),
+    [subrayadosPorCap, currentCapNum])
   const { playing: ambientPlaying, volume: ambientVol, toggle: toggleAmbient, setVol } = useAmbientPlayer(currentAmbient?.url)
   // Ruido ambiental (no ficción): el hook vive aquí —no dentro del sheet— para
   // que el sonido siga al cerrar el sheet y solo pare al salir del lector o al
@@ -630,7 +638,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
             ? <div className="lm-page"><div className="lm-page-inner" data-lm-pagebox><div className="lm-page-msg">Cargando capítulo…</div></div></div>
             : <MobileBookPage
                 chapter={currentChapter} chapterIndex={chapterIndex}
-                parrafos={page} mediaByParrafo={currentMedia}
+                parrafos={page} mediaByParrafo={currentMedia} subrayados={currentSubrayados}
                 isFirst={pageIndex===0} pageNum={pageIndex+1}
                 fontSize={fontSize} font={readingFont}
                 atStart={atStart} nextIsChapter={atChapterEnd && !atEndOfBook}
@@ -711,6 +719,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         capituloNum={capitulos[chapterIndex]?.numero ?? chapterIndex + 1}
         capitulos={capitulos}
         gatoColor={gatoColor}
+        onSubrayadoBorrado={olvidarSubrayado}
       />
 
       {/* Paywall de invitado */}

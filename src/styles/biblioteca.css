@@ -63,7 +63,7 @@
   position:absolute; left:8%; right:8%; top:14%; z-index:3; text-align:center; pointer-events:none;
   font-weight:800; line-height:1.08; letter-spacing:.01em; text-transform:uppercase;
   color:#f7efdd; text-shadow:0 2px 0 rgba(58,36,20,0.28);
-  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden;
 }
 
 .inm-bar { height: 10px; border-radius: 8px; background: rgba(74,54,34,0.15); overflow: hidden; }

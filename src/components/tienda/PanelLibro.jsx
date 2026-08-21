@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import clsx from 'clsx'
 import { supabase } from '../../lib/supabase.js'
-import { CAT_COLOR, tituloSizeClass, autorSizeClass } from './tiendaHelpers.jsx'
+import { CAT_COLOR, autorSizeClass } from './tiendaHelpers.jsx'
+import CoverTitle from '../CoverTitle.jsx'
 import { imgUrl } from '../../lib/img.js'
 
 // =============================================================
@@ -52,7 +53,7 @@ function Portada({ libro }) {
           ? <img className="book-art-img" src={imgUrl(libro.portada_url, { width: 520 })} alt={libro.titulo} />
           : <div className="book-art-empty" />}
         <span className={clsx('book-scribble', autorSizeClass(libro.autor))}>{libro.autor}</span>
-        <span className={clsx('book-title', tituloSizeClass(libro.titulo))}>{libro.titulo}</span>
+        <CoverTitle title={libro.titulo} />
       </div>
       <div className="book-base" />
       <div className="book-pages" />

@@ -2,7 +2,8 @@
 // (desktop) y CatalogoInteriorMobile.jsx (mobile) — antes duplicadas idénticas
 // en ambos archivos.
 import clsx from 'clsx'
-import { CAT_COLOR, itint, tituloSizeClass, autorSizeClass } from './tiendaHelpers.jsx'
+import { CAT_COLOR, itint, autorSizeClass } from './tiendaHelpers.jsx'
+import CoverTitle from '../CoverTitle.jsx'
 import { imgUrl } from '../../lib/img.js'
 
 export const PG_SIZE = 15
@@ -50,7 +51,7 @@ export function CoverCard({ libro }) {
           ? <img className="book-art-img" src={imgUrl(libro.portada_url, { width: 300 })} alt={libro.titulo} loading="lazy" />
           : <div className="book-art-empty" />}
         <span className={clsx('book-scribble', autorSizeClass(libro.autor))}>{libro.autor}</span>
-        <span className={clsx('book-title', tituloSizeClass(libro.titulo))}>{libro.titulo}</span>
+        <CoverTitle title={libro.titulo} />
       </div>
       <div className="book-base" />
       <div className="book-pages" />

@@ -471,21 +471,14 @@
   position:absolute; left:8%; right:8%; top:14%; z-index:3; text-align:center; pointer-events:none;
   font-weight:800; font-size:13.5px; line-height:1.08; letter-spacing:.01em; text-transform:uppercase;
   color:#f7efdd; text-shadow:0 2px 0 rgba(58,36,20,0.28);
-  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden;
 }
-/* Títulos largos: reduce la fuente para que no desborden la portada.
-   El line-clamp de arriba es el tope duro: con 2 líneas como máximo el
-   título nunca ocupa más de ~25% del alto del libro, sea cual sea su longitud. */
-.book-title.book-title-sm{ font-size:11.5px; }
-.book-title.book-title-xs{ font-size:10px; letter-spacing:0; }
-.book-title.book-title-xxs{ font-size:8.8px; letter-spacing:0; }
+/* Los títulos largos los achica CoverTitle midiendo el texto real; acá solo
+   queda el tamaño base y el line-clamp de arriba como tope duro (3 líneas). */
 
 @media(max-width:640px){
   .book{ width:90px; }
   .book-title{ font-size:11.5px; }
-  .book-title.book-title-sm{ font-size:10px; }
-  .book-title.book-title-xs{ font-size:8.8px; }
-  .book-title.book-title-xxs{ font-size:7.8px; }
   .book-scribble{ font-size:10px; }
   .book-scribble.book-scribble-sm{ font-size:9px; }
   .book-scribble.book-scribble-xs{ font-size:8px; }
@@ -494,18 +487,12 @@
 /* ── Variante grande, para el panel lateral de detalle (PanelLibro.jsx) ── */
 .book-lg{ width:142px; }
 .book-lg .book-title{ font-size:15px; }
-.book-lg .book-title.book-title-sm{ font-size:13px; }
-.book-lg .book-title.book-title-xs{ font-size:11.5px; }
-.book-lg .book-title.book-title-xxs{ font-size:10px; }
 .book-lg .book-scribble{ font-size:13px; }
 .book-lg .book-scribble.book-scribble-sm{ font-size:11.5px; }
 .book-lg .book-scribble.book-scribble-xs{ font-size:10px; }
 @media(max-width:640px){
   .book-lg{ width:118px; }
   .book-lg .book-title{ font-size:13px; }
-  .book-lg .book-title.book-title-sm{ font-size:11.5px; }
-  .book-lg .book-title.book-title-xs{ font-size:10px; }
-  .book-lg .book-title.book-title-xxs{ font-size:8.8px; }
   .book-lg .book-scribble{ font-size:11.5px; }
   .book-lg .book-scribble.book-scribble-sm{ font-size:10px; }
   .book-lg .book-scribble.book-scribble-xs{ font-size:8.8px; }

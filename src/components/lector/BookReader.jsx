@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { theme, tint, getReaderPalette } from './clay.jsx'
 import { READING_FONTS } from './readerConstants.js'
-import { findPrefixAtEnd, findSuffixAtStart } from '../../utils/readerHelpers.js'
+import { marcasDelParrafo } from '../../utils/readerHelpers.js'
 import { RecorderPlayer } from './RecorderPlayer.jsx'
 import { AMBIENTE_FICCION_ACTIVO } from './readerConstants.js'
 import WhiteNoisePlayer from './WhiteNoisePlayer.jsx'
@@ -17,7 +17,7 @@ const LED_OPTIONS = [
 ]
 
 // ── Contenido de una página (datos reales) ──────────────────
-const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, onPlaySfx, onTextSelect, fontSize, readingFont, isFirst, chapterTitle, chapterNum, pal = getReaderPalette('light') }) {
+const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, subrayados = [], onPlaySfx, onTextSelect, fontSize, readingFont, isFirst, chapterTitle, chapterNum, pal = getReaderPalette('light') }) {
   function handleMouseUp() {
     if (!onTextSelect) return
     const sel = window.getSelection()
@@ -44,48 +44,23 @@ const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, onPlay
           return <div key={p.id ?? `sep-${pIdx}`} style={{ textAlign: 'center', color: pal.pageMeta, margin: '20px 0', letterSpacing: '0.4em' }}>❧</div>
         const isDlg = p.tipo === 'dialogo'
         const text = p.contenido || ''
-        const textLower = text.toLowerCase()
-        const anchors = []
-        const sfxUnanchored = []
-        for (const s of sfx) {
-          const ref = s.metadata?.texto_ref
-          if (ref) {
-            const pos = textLower.indexOf(ref.toLowerCase())
-            if (pos !== -1) {
-              anchors.push({ start: pos, end: pos + ref.length, s })
-            } else {
-              const partialStart = findPrefixAtEnd(text, ref)
-              if (partialStart !== -1) {
-                anchors.push({ start: partialStart, end: text.length, s })
-              } else {
-                const partialEnd = findSuffixAtStart(text, ref)
-                if (partialEnd !== -1) anchors.push({ start: 0, end: partialEnd, s })
-              }
-            }
-          } else {
-            sfxUnanchored.push(s)
-          }
-        }
-        anchors.sort((a, b) => a.start - b.start)
-        let sfxContent = null
-        if (anchors.length > 0) {
-          sfxContent = []
-          let last = 0
-          for (const { start, end, s } of anchors) {
-            if (last < start) sfxContent.push(<span key={`t${last}`}>{text.slice(last, start)}</span>)
-            sfxContent.push(<span key={`s${start}`} className="sfx-glow" onClick={(e) => { e.stopPropagation(); onPlaySfx(s) }}>{text.slice(start, end)}</span>)
-            last = end
-          }
-          if (last < text.length) sfxContent.push(<span key={`t${last}`}>{text.slice(last)}</span>)
-        }
-        const paraGlow = sfxUnanchored.length > 0 && anchors.length === 0
-        const handleParaClick = paraGlow ? (e) => { e.stopPropagation(); onPlaySfx(sfxUnanchored[0]) } : undefined
+        const { segmentos, sfxSinAnclar, anclados } = marcasDelParrafo(text, sfx, subrayados)
+        const paraGlow = sfxSinAnclar.length > 0 && anclados === 0
+        const handleParaClick = paraGlow ? (e) => { e.stopPropagation(); onPlaySfx(sfxSinAnclar[0]) } : undefined
         return (
           <p key={p.id ?? `p-${pIdx}`} data-parrafo-id={p.id}
             onClick={paraGlow ? handleParaClick : undefined}
             className={paraGlow ? 'sfx-glow' : undefined}
             style={{ whiteSpace: 'pre-line', margin: '0 0 0.7em', textAlign: 'justify', hyphens: 'auto', textIndent: isDlg ? 0 : '1.2em', fontStyle: isDlg ? 'italic' : 'normal', color: pal.pageInk }}>
-            {sfxContent ?? p.contenido}
+            {segmentos
+              ? segmentos.map(seg => (
+                <span key={seg.start}
+                  className={[seg.sfx && 'sfx-glow', seg.subrayado && 'subrayado-marca'].filter(Boolean).join(' ') || undefined}
+                  onClick={seg.sfx ? (e) => { e.stopPropagation(); onPlaySfx(seg.sfx) } : undefined}>
+                  {seg.text}
+                </span>
+              ))
+              : text}
           </p>
         )
       })}
@@ -269,7 +244,7 @@ function SideTurn({ side, onClick, kind, pal = getReaderPalette('light') }) {
   )
 }
 
-const Leaf = memo(function Leaf({ parrafos, side, pageNum, fontSize, readingFont, pageW, pageH, mediaByParrafo, onPlaySfx, onTextSelect, onPrev, onNext, nextKind, chapterTitle, chapterNum, isFirst, empty, pal = getReaderPalette('light') }) {
+const Leaf = memo(function Leaf({ parrafos, side, pageNum, fontSize, readingFont, pageW, pageH, mediaByParrafo, subrayados, onPlaySfx, onTextSelect, onPrev, onNext, nextKind, chapterTitle, chapterNum, isFirst, empty, pal = getReaderPalette('light') }) {
   const radius = side === 'left' ? '5px 2px 2px 5px' : side === 'right' ? '2px 5px 5px 2px' : '5px'
   const innerShadow = side === 'left' ? 'inset -16px 0 26px -14px rgba(60,35,12,0.38)' : side === 'right' ? 'inset 16px 0 26px -14px rgba(60,35,12,0.30)' : 'none'
   const pad = Math.round(pageW * 0.11)
@@ -279,7 +254,7 @@ const Leaf = memo(function Leaf({ parrafos, side, pageNum, fontSize, readingFont
       <div style={{ position: 'absolute', inset: 0, padding: `${Math.round(pageH*0.075)}px ${pad}px ${Math.round(pageH*0.085)}px`, overflow: 'hidden' }}>
         {empty
           ? <div style={{ color: pal.pageMeta, fontFamily: "'Playfair Display', serif", fontSize: 14, textAlign: 'center', marginTop: pageH/2 - 80 }}>— fin del capítulo —</div>
-          : <PageContent parrafos={parrafos} mediaByParrafo={mediaByParrafo} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} fontSize={fontSize} readingFont={readingFont} isFirst={isFirst} chapterTitle={chapterTitle} chapterNum={chapterNum} pal={pal} />}
+          : <PageContent parrafos={parrafos} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} fontSize={fontSize} readingFont={readingFont} isFirst={isFirst} chapterTitle={chapterTitle} chapterNum={chapterNum} pal={pal} />}
       </div>
       {pageNum && <div style={{ position: 'absolute', bottom: 20, [side === 'right' ? 'right' : 'left']: pad, fontSize: 11, color: pal.pageMeta, fontFamily: "'Playfair Display', serif" }}>{pageNum}</div>}
       {(side === 'left' || side === 'single') && onPrev && <SideTurn side="left" onClick={onPrev} kind="prev" pal={pal} />}
@@ -290,7 +265,7 @@ const Leaf = memo(function Leaf({ parrafos, side, pageNum, fontSize, readingFont
 
 export const BookReader = memo(function BookReader({
   chapter, chapters, chapterIndex, paginas, pageIndex, doubleView,
-  mediaByParrafo, onPlaySfx, onPrevPage, onNextPage, onNextChapter,
+  mediaByParrafo, subrayados, onPlaySfx, onPrevPage, onNextPage, onNextChapter,
   onToggleView, onChapterSelect, onTextSelect,
   onFontSize, onReadingFont, readingTheme = 'light', onReadingTheme,
   pageW = 470, pageH = 560, fontSize = 18, readingFont = "'Crimson Text', Georgia, serif",
@@ -389,10 +364,10 @@ export const BookReader = memo(function BookReader({
 
       <div className="book-shadow" style={{ display: 'flex', position: 'relative', filter: bookFilter }}>
         {doubleView && <div style={edge('5px 0 0 5px')} />}
-        <Leaf parrafos={left} side={doubleView ? 'left' : 'single'} pageNum={pageIndex + 1} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onPrev={onPrevPage} onNext={!doubleView ? (isLast ? onNextChapter : onNextPage) : undefined} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={pageIndex === 0} chapterTitle={chapter.titulo} chapterNum={chapter.numero ?? chapterIndex + 1} pal={pal} />
+        <Leaf parrafos={left} side={doubleView ? 'left' : 'single'} pageNum={pageIndex + 1} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onPrev={onPrevPage} onNext={!doubleView ? (isLast ? onNextChapter : onNextPage) : undefined} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={pageIndex === 0} chapterTitle={chapter.titulo} chapterNum={chapter.numero ?? chapterIndex + 1} pal={pal} />
         {doubleView && <div style={{ width: 20, height: pageH, background: 'linear-gradient(to right, rgba(0,0,0,0.34) 0%, rgba(90,55,20,0.12) 45%, rgba(0,0,0,0.28) 100%)', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.42)', flexShrink: 0 }} />}
         {doubleView && (
-          <Leaf parrafos={right} side="right" pageNum={showRight ? pageIndex + 2 : ''} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onNext={isLast ? onNextChapter : onNextPage} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={false} empty={!showRight} pal={pal} />
+          <Leaf parrafos={right} side="right" pageNum={showRight ? pageIndex + 2 : ''} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onNext={isLast ? onNextChapter : onNextPage} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={false} empty={!showRight} pal={pal} />
         )}
         <div style={edge('0 5px 5px 0')} />
       </div>

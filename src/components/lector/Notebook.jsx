@@ -13,7 +13,7 @@ const TYPES = [
 // Cuaderno de lectura — clay. Tipos arriba en horizontal; los capítulos con
 // notas (o el que estás leyendo) son las pestañas laterales.
 // Mantiene las queries Supabase: predicciones / anotaciones / subrayados.
-const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capituloNum, capitulos = [], gatoColor = 'negro' }) {
+const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capituloNum, capitulos = [], gatoColor = 'negro', onSubrayadoBorrado }) {
   const [type, setType] = useState('pred')
   const [selCap, setSelCap] = useState(capituloNum)
   const [tabCaps, setTabCaps] = useState([])
@@ -107,6 +107,7 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
   async function deleteSubrayado(id) {
     await supabase.from('subrayados_usuario').delete().eq('id', id)
     setSubrayados(prev => prev.filter(s => s.id !== id))
+    onSubrayadoBorrado?.(id)
   }
 
   if (!isOpen) return null

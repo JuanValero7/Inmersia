@@ -1,5 +1,6 @@
 import React from 'react'
-import { INK, inmTint, hashOf, spineColor, tituloFontSize, autorFontSize } from '../coverHelpers.shared.js'
+import { INK, inmTint, hashOf, spineColor, tituloBaseFontSize, autorFontSize } from '../coverHelpers.shared.js'
+import CoverTitle from '../../CoverTitle.jsx'
 import { imgUrl } from '../../../lib/img.js'
 
 // =============================================================
@@ -29,7 +30,7 @@ function BookCover({ book, h = 174 }) {
           ? <img className="book-art-img" src={imgUrl(book.cover, { width: Math.round(w * 2) })} alt={book.title} loading="lazy" />
           : <div className="book-art-empty" />}
         <span className="book-scribble" style={{ fontSize: autorFontSize(w, book.author) }}>{book.author}</span>
-        <span className="book-title" style={{ fontSize: tituloFontSize(w, book.title) }}>{book.title}</span>
+        <CoverTitle title={book.title} size={tituloBaseFontSize(w)} />
       </div>
       <div className="book-base" />
       <div className="book-pages" />

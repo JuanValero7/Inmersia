@@ -24,6 +24,18 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
 
+// Filas de subrayados_usuario → { [capitulo_num]: [{ id, texto }, ...] }
+function agruparSubrayados(filas) {
+  const porCap = {}
+  for (const f of filas || []) {
+    if (!f.texto_original) continue
+    const cap = f.capitulo_num
+    if (!porCap[cap]) porCap[cap] = []
+    porCap[cap].push({ id: f.id, texto: f.texto_original })
+  }
+  return porCap
+}
+
 // `setChapterIndex` y `setPageIndex` son los setters de UI de cada componente:
 // la carga de la lista de capítulos los usa para reposicionar al restaurar
 // progreso. Son setters de useState (estables), por eso no van en deps.
@@ -40,6 +52,11 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
   const restoredRef = useRef(false)
   const invalidateBiblioteca = useInvalidateBibliotecaUsuario(userId)
 
+  // ── Subrayados del usuario (para pintarlos sobre el texto) ──
+  // Se traen de una sola vez para todo el libro y se agrupan por capítulo: son
+  // filas cortas y así cambiar de capítulo no dispara una consulta nueva.
+  const [subrayadosPorCap, setSubrayadosPorCap] = useState({})
+
   // ── Reseña ──
   const [resenaForm, setResenaForm] = useState({ rating: 0, texto: '' })
   const [resenaEnviando, setResenaEnviando] = useState(false)
@@ -53,6 +70,22 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
       setUserReady(true)
     })
   }, [])
+
+  // Subrayados: todos los del usuario en este libro, agrupados por capítulo
+  useEffect(() => {
+    if (!userId || !book?.libro_id) { setSubrayadosPorCap({}); return }
+    let cancelado = false
+    supabase.from('subrayados_usuario')
+      .select('id, texto_original, capitulo_num')
+      .eq('user_id', userId).eq('libro_id', book.libro_id)
+      .limit(500)
+      .then(({ data, error: err }) => {
+        if (cancelado) return
+        if (err) { console.error('subrayados:', err.message); return }
+        setSubrayadosPorCap(agruparSubrayados(data))
+      })
+    return () => { cancelado = true }
+  }, [userId, book?.libro_id])
 
   // Reseña: traer la mía cuando el libro está terminado
   useEffect(() => {
@@ -190,13 +223,30 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
   // Insertar un subrayado (el guard de selección/usuario lo hace cada componente)
   async function subrayar(text, parrafoId, chapterIndex) {
     const cap = capitulos[chapterIndex]
-    await supabase.from('subrayados_usuario').insert({
+    const capNum = cap?.numero ?? chapterIndex + 1
+    const texto = text.slice(0, 1000)
+    const { data } = await supabase.from('subrayados_usuario').insert({
       user_id: userId, libro_id: book.libro_id,
-      capitulo_num: cap?.numero ?? chapterIndex + 1,
-      texto_original: text.slice(0, 1000),
+      capitulo_num: capNum,
+      texto_original: texto,
       parrafo_id: parrafoId || null,
-    })
+    }).select('id').single()
+    // Sin recargar: la marca amarilla aparece en cuanto se guarda.
+    setSubrayadosPorCap(prev => ({
+      ...prev,
+      [capNum]: [...(prev[capNum] || []), { id: data?.id ?? null, texto }],
+    }))
   }
+
+  // El Cuaderno es quien borra en Supabase; acá solo se retira la marca del
+  // texto para que el libro no siga mostrando un subrayado que ya no existe.
+  const olvidarSubrayado = useCallback((id) => {
+    setSubrayadosPorCap(prev => {
+      const out = {}
+      for (const [cap, lista] of Object.entries(prev)) out[cap] = lista.filter(s => s.id !== id)
+      return out
+    })
+  }, [])
 
   // ── Operaciones de superusuario ───────────────────────────────
 
@@ -279,7 +329,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
   return {
     // datos
     userId, capitulos, chapterCache, loading, loadingCap, error,
-    isLeido, setIsLeido,
+    isLeido, setIsLeido, subrayadosPorCap, olvidarSubrayado,
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
     // operaciones

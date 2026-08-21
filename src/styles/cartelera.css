@@ -222,7 +222,7 @@
 .cart-root .cart-landing{ background:var(--paper); }
 .cart-root .cart-landing .topbar{ padding:18px 26px 12px; }
 .cart-root .cart-landing-stage{ position:relative; z-index:10; flex:1; min-height:0; overflow:hidden;
-  display:flex; align-items:center; justify-content:center; padding:6px 24px; }
+  display:flex; align-items:center; justify-content:center; padding:6px 24px 40px; }
 
 /* Marco de madera oscuro (mismo tratamiento que los estantes: gradiente + veta + borde de tinta) */
 .cart-root .cart-landing-frame{ position:relative; box-sizing:content-box; border-radius:15px; transform-origin:center center;
@@ -409,6 +409,16 @@
 .cart-root .cart-portada-hint{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:80; font-size:12.5px; font-weight:700; letter-spacing:.03em; color:#000;
   background:rgba(255,253,248,.86); border:2px solid var(--ink); border-radius:999px; padding:5px 16px; box-shadow:1.4px 1.8px 0 rgba(74,54,34,.25); pointer-events:none; white-space:nowrap; }
 
+/* Chip montado a caballo sobre el borde inferior del marco de la pizarra. La
+   posición sale sola por ser hijo del marco (bottom:0 = borde exterior) y el
+   translate lo centra sobre esa línea; la contraescala la pone el JSX, que es
+   quien conoce la escala del tablero. */
+.cart-root .cart-board-hint{ position:absolute; left:50%; bottom:0; z-index:90;
+  transform-origin:center center; pointer-events:none; white-space:nowrap;
+  font-size:16px; font-weight:800; letter-spacing:.01em; color:#3a2b1c;
+  background:#fffdf8; border:2px solid var(--ink); border-radius:999px; padding:9px 26px;
+  box-shadow:2px 3px 0 rgba(40,26,12,.28), 0 10px 22px rgba(26,15,6,.35); }
+
 /* ── FICHA (cuaderno a dos páginas) ──────────────────────────── */
 .cart-root .book-scale{ transform-origin:center center; width:1180px; }
 /* pestañas separadoras (lengüetas de carpeta) por encima del cuaderno */
@@ -425,7 +435,6 @@
   font-size:17px; padding:12px 26px 14px; color:#fffaf2; border-top-color:#4a3622;
   background:#6f4a2a; }
 .cart-root .cart-tab-back:hover:not(.active){ transform:translateY(-2px); background:#7d5430; }
-.cart-root .cart-tab-back svg{ margin-top:-1px; }
 .cart-root .book{ position:relative; display:flex; width:1180px; height:760px; border-radius:14px; }
 .cart-root .book::before,.cart-root .book::after{ content:''; position:absolute; top:10px; bottom:10px; width:12px; z-index:0; border-radius:6px; background:repeating-linear-gradient(0deg, #efe7d4 0 3px, #e3d8c0 3px 6px); box-shadow:0 10px 22px rgba(74,54,34,.22); }
 .cart-root .book::before{ left:-9px; } .cart-root .book::after{ right:-9px; }
@@ -469,7 +478,6 @@
 .cart-root .polaroid{ flex:0 0 auto; background:var(--cream); padding:11px 11px 30px; border-radius:3px; box-shadow:0 10px 22px rgba(74,54,34,.26), inset 0 0 0 1px rgba(74,54,34,.08); transform:rotate(2.4deg); position:relative; }
 .cart-root .polaroid .tape{ position:absolute; top:-12px; left:50%; transform:translateX(-50%) rotate(-5deg); width:78px; height:24px; background:rgba(222,205,160,.7); border:1px solid rgba(120,96,50,.3); box-shadow:0 2px 5px rgba(74,54,34,.22); }
 .cart-root .pol-img{ display:block; width:210px; height:210px; object-fit:cover; object-position:50% 20%; }
-.cart-root .pol-empty{ display:grid; place-items:center; width:210px; height:210px; font-size:64px; font-weight:800; color:#fff; background:var(--sec); }
 .cart-root .polaroid .pcap{ position:absolute; left:0; right:0; bottom:7px; text-align:center; font-size:14px; font-weight:700; color:#8a7355; }
 .cart-root .fic-rule{ height:16px; margin:22px 0 4px; color:var(--sec); opacity:.9; }
 .cart-root .fic-desc{ position:relative; z-index:2; font-size:calc(18px * var(--fscale)); font-weight:500; line-height:34px; color:#5a4632; max-width:60ch; text-wrap:pretty; margin:0; }

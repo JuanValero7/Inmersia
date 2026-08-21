@@ -1,8 +1,8 @@
-import { findPrefixAtEnd, findSuffixAtStart } from '../../../utils/readerHelpers.js'
+import { marcasDelParrafo } from '../../../utils/readerHelpers.js'
 
 const LINE = 1.72  // alto de línea (coincide con .lm-para en el CSS)
 
-export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaByParrafo, isFirst, pageNum, fontSize, font,
+export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaByParrafo, subrayados = [], isFirst, pageNum, fontSize, font,
                     atStart, nextIsChapter, onPrev, onNext, hideArrows, onPlaySfx }) {
   const lineH = Math.round(fontSize * LINE)
 
@@ -22,48 +22,23 @@ export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaB
           if (p.tipo === 'separador') return <div key={p.id ?? `s${i}`} className="lm-sep">❧</div>
           const sfx = (mediaByParrafo[p.id] || []).filter(m => m.origen === 'explicito' && m.tipo === 'audio')
           const text = p.contenido || ''
-          const textLower = text.toLowerCase()
-          const anchors = []
-          const sfxUnanchored = []
-          for (const s of sfx) {
-            const ref = s.metadata?.texto_ref
-            if (ref) {
-              const pos = textLower.indexOf(ref.toLowerCase())
-              if (pos !== -1) {
-                anchors.push({ start: pos, end: pos + ref.length, s })
-              } else {
-                const partialStart = findPrefixAtEnd(text, ref)
-                if (partialStart !== -1) {
-                  anchors.push({ start: partialStart, end: text.length, s })
-                } else {
-                  const partialEnd = findSuffixAtStart(text, ref)
-                  if (partialEnd !== -1) anchors.push({ start: 0, end: partialEnd, s })
-                }
-              }
-            } else {
-              sfxUnanchored.push(s)
-            }
-          }
-          anchors.sort((a, b) => a.start - b.start)
-          let sfxContent = null
-          if (anchors.length > 0) {
-            sfxContent = []
-            let last = 0
-            for (const { start, end, s } of anchors) {
-              if (last < start) sfxContent.push(<span key={`t${last}`}>{text.slice(last, start)}</span>)
-              sfxContent.push(<span key={`s${start}`} className="sfx-glow" onClick={(e) => { e.stopPropagation(); onPlaySfx(s) }}>{text.slice(start, end)}</span>)
-              last = end
-            }
-            if (last < text.length) sfxContent.push(<span key={`t${last}`}>{text.slice(last)}</span>)
-          }
-          const paraGlow = sfxUnanchored.length > 0 && anchors.length === 0
-          const handleParaClick = paraGlow ? (e) => { e.stopPropagation(); onPlaySfx(sfxUnanchored[0]) } : undefined
+          const { segmentos, sfxSinAnclar, anclados } = marcasDelParrafo(text, sfx, subrayados)
+          const paraGlow = sfxSinAnclar.length > 0 && anclados === 0
+          const handleParaClick = paraGlow ? (e) => { e.stopPropagation(); onPlaySfx(sfxSinAnclar[0]) } : undefined
           return (
             <p key={p.id ?? `p${i}`} data-parrafo-id={p.id}
               onClick={paraGlow ? handleParaClick : undefined}
               className={'lm-para' + (p.tipo==='dialogo'?' dlg':'') + (paraGlow ? ' sfx-glow' : '')}
               style={{ fontFamily: font }}>
-              {sfxContent ?? p.contenido}
+              {segmentos
+                ? segmentos.map(seg => (
+                  <span key={seg.start}
+                    className={[seg.sfx && 'sfx-glow', seg.subrayado && 'subrayado-marca'].filter(Boolean).join(' ') || undefined}
+                    onClick={seg.sfx ? (e) => { e.stopPropagation(); onPlaySfx(seg.sfx) } : undefined}>
+                    {seg.text}
+                  </span>
+                ))
+                : text}
             </p>
           )
         })}

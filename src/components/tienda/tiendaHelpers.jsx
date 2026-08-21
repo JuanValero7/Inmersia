@@ -23,19 +23,9 @@ export function itint(hex, amt) {
   return `rgb(${mix(r)},${mix(g)},${mix(b)})`
 }
 
-// Clase de tamaño para el título superpuesto en la portada (.book-title):
-// a más caracteres, fuente más pequeña, para que no desborde la portada.
-// Además .book-title recorta a 2 líneas (line-clamp) como tope absoluto,
-// así el texto nunca supera ~25% del alto del libro por muy largo que sea.
-export function tituloSizeClass(titulo) {
-  const len = (titulo || '').length
-  if (len > 52) return 'book-title-xxs'
-  if (len > 36) return 'book-title-xs'
-  if (len > 22) return 'book-title-sm'
-  return ''
-}
-
-// Igual que tituloSizeClass pero para el nombre del autor (.book-scribble).
+// Clase de tamaño para el nombre del autor (.book-scribble): a más
+// caracteres, fuente más pequeña, para que no desborde la portada. El título
+// no usa clases: lo ajusta CoverTitle midiendo el texto real.
 export function autorSizeClass(autor) {
   const len = (autor || '').length
   if (len > 28) return 'book-scribble-xs'

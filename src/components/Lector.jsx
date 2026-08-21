@@ -23,6 +23,9 @@ import { theme, ClayButton, getReaderPalette } from './lector/clay.jsx'
 import SuperuserSoundsPanel from './lector/SuperuserSoundsPanel.jsx'
 
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
+// Referencia estable para los capítulos sin subrayados: un [] nuevo en cada
+// render invalidaría el memo de las páginas del libro.
+const EMPTY_SUBRAYADOS = []
 
 // Geometría de página: el libro llena la pantalla.
 function computeGeom(doubleView) {
@@ -71,7 +74,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   // Lógica de datos compartida con LectorMobile (ver src/hooks/useLectorData.js)
   const {
     userId, capitulos, chapterCache, loading, loadingCap, error,
-    isLeido, setIsLeido,
+    isLeido, setIsLeido, subrayadosPorCap, olvidarSubrayado,
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
     fetchChapter, playSfx, persistChapterAdvance, subrayar,
@@ -166,6 +169,11 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const currentChapData = currentChapter ? chapterCache[currentChapter.id] : null
   const currentMedia    = currentChapData?.mediaByParrafo || {}
   const currentAmbient  = currentChapData?.ambient || null
+  const currentCapNum   = currentChapter?.numero ?? chapterIndex + 1
+  // Solo los textos: es lo que necesita el render para anclar la marca.
+  const currentSubrayados = useMemo(
+    () => (subrayadosPorCap[currentCapNum] || EMPTY_SUBRAYADOS).map(s => s.texto),
+    [subrayadosPorCap, currentCapNum])
 
   const [currentPaginas, setCurrentPaginas] = useState([[]])
 
@@ -515,6 +523,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   pageIndex={pageIndex}
                   doubleView={doubleView}
                   mediaByParrafo={currentMedia}
+                  subrayados={currentSubrayados}
                   onPlaySfx={playSfx}
                   onPrevPage={handlePrevPage}
                   onNextPage={handleNextPage}
@@ -571,6 +580,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
         capituloNum={capitulos[chapterIndex]?.numero ?? chapterIndex + 1}
         capitulos={capitulos}
         gatoColor={gatoColor}
+        onSubrayadoBorrado={olvidarSubrayado}
       />
 
       {/* Reseña */}

@@ -159,6 +159,19 @@
   text-shadow: 0 0 6px rgba(242,121,42,0.9), 0 0 14px rgba(242,121,42,0.6), 0 0 24px rgba(242,121,42,0.35);
 }
 .sfx-glow:hover { text-shadow: 0 0 6px rgba(242,121,42,1), 0 0 14px rgba(242,121,42,0.85), 0 0 28px rgba(242,121,42,0.6); }
+
+/* Marca de subrayado del usuario: trazo de resaltador amarillo (el mismo tono
+   que el Cuaderno usa para "Subrayados"). Translúcido a propósito, para que la
+   tinta se lea igual sobre el papel claro y sobre el oscuro. El borde
+   irregular imita el paso del marcador, no una caja. */
+.subrayado-marca {
+  background:
+    linear-gradient(100deg, rgba(245,166,35,0) 0, rgba(245,166,35,0.34) 1.2%, rgba(245,166,35,0.34) 98.8%, rgba(245,166,35,0) 100%);
+  border-radius: 2px;
+  padding: 0.06em 0.1em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
 .lm-sep { text-align: center; color: var(--page-meta); line-height: 1.4; margin: 14px 0; letter-spacing: 0.4em; }
 .lm-pagenum {
   position: absolute; bottom: 16px; right: 30px;

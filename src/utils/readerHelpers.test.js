@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { offsetDeAnclaje, paginaDeAnclaje } from './readerHelpers.js'
+import { offsetDeAnclaje, paginaDeAnclaje, marcasDelParrafo } from './readerHelpers.js'
 
 // Fragmenta un texto en trozos de ~n caracteres cortando por palabra,
 // simulando lo que hace el paginador con un párrafo largo.
@@ -68,5 +68,65 @@ describe('offsetDeAnclaje / paginaDeAnclaje', () => {
     const paginas = [[{ id: 'a', contenido: 'texto' }], [{ id: 'b', contenido: 'otro' }]]
     expect(offsetDeAnclaje(paginas, 1, 'b')).toBe(0)
     expect(paginaDeAnclaje(paginas, 'b', 0)).toBe(1)
+  })
+})
+
+// ── Marcas sobre el párrafo (SFX + subrayados) ──────────────────────────────
+const sfxDe = (ref) => ({ metadata: { texto_ref: ref } })
+// Reconstruir el texto desde los segmentos debe devolver el original: ningún
+// carácter se pierde ni se duplica al trocear.
+const reconstruir = (segs) => segs.map(s => s.text).join('')
+
+describe('marcasDelParrafo', () => {
+  const T = 'El mar estaba en calma y el faro seguía encendido.'
+
+  it('sin marcas devuelve segmentos null (texto plano)', () => {
+    const { segmentos, sfxSinAnclar, anclados } = marcasDelParrafo(T, [], [])
+    expect(segmentos).toBe(null)
+    expect(sfxSinAnclar).toEqual([])
+    expect(anclados).toBe(0)
+  })
+
+  it('marca el subrayado sin tocar el resto del texto', () => {
+    const { segmentos } = marcasDelParrafo(T, [], ['estaba en calma'])
+    expect(reconstruir(segmentos)).toBe(T)
+    expect(segmentos.filter(s => s.subrayado).map(s => s.text)).toEqual(['estaba en calma'])
+  })
+
+  it('un tramo dentro del subrayado y del SFX lleva las dos marcas', () => {
+    const { segmentos } = marcasDelParrafo(T, [sfxDe('el faro')], ['y el faro seguía'])
+    expect(reconstruir(segmentos)).toBe(T)
+    const ambas = segmentos.filter(s => s.subrayado && s.sfx)
+    expect(ambas.map(s => s.text)).toEqual(['el faro'])
+    // el resto del subrayado sigue marcado, sin sonido
+    expect(segmentos.filter(s => s.subrayado && !s.sfx).map(s => s.text)).toEqual(['y ', ' seguía'])
+  })
+
+  it('subrayados solapados no duplican ni pierden texto', () => {
+    const { segmentos } = marcasDelParrafo(T, [], ['mar estaba en', 'estaba en calma'])
+    expect(reconstruir(segmentos)).toBe(T)
+    expect(segmentos.filter(s => s.subrayado).map(s => s.text).join('')).toBe('mar estaba en calma')
+  })
+
+  it('marca la parte visible cuando la paginación parte el subrayado', () => {
+    const subrayado = 'el faro seguía encendido'
+    const primera = 'El mar estaba en calma y el faro'          // fragmento que cierra la página
+    const segunda = 'seguía encendido.'                          // fragmento que abre la siguiente
+    expect(marcasDelParrafo(primera, [], [subrayado]).segmentos.filter(s => s.subrayado).map(s => s.text))
+      .toEqual(['el faro'])
+    expect(marcasDelParrafo(segunda, [], [subrayado]).segmentos.filter(s => s.subrayado).map(s => s.text))
+      .toEqual(['seguía encendido'])
+  })
+
+  it('un subrayado de otro fragmento no marca nada', () => {
+    expect(marcasDelParrafo(T, [], ['una frase que no está acá']).segmentos).toBe(null)
+  })
+
+  it('los SFX sin texto_ref salen aparte, para iluminar el párrafo entero', () => {
+    const suelto = { metadata: {} }
+    const { segmentos, sfxSinAnclar, anclados } = marcasDelParrafo(T, [suelto], [])
+    expect(segmentos).toBe(null)
+    expect(sfxSinAnclar).toEqual([suelto])
+    expect(anclados).toBe(0)
   })
 })

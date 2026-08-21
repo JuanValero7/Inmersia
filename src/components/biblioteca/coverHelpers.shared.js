@@ -27,21 +27,17 @@ export const STORYBOOK = ['#e7dcc2', '#a7c4d2', '#86ad9e', '#d98b5f', '#d56a52',
 
 export const spineColor = (b) => b.color || STORYBOOK[hashOf(b.id) % STORYBOOK.length]
 
-// Tamaño de letra del título superpuesto en la portada ilustrada (BookCover):
-// proporcional al ancho de la portada (w), y más pequeño cuanto más largo es
-// el texto — misma lógica que tituloSizeClass/autorSizeClass de la Tienda,
-// pero en px directos porque aquí el ancho de portada varía por contexto
-// (hero, repisa, carrusel, ficha) en vez de ser un tamaño fijo por CSS.
-export function tituloFontSize(w, titulo) {
-  const base = w * 0.115
-  const len = (titulo || '').length
-  if (len > 52) return +(base * 0.65).toFixed(1)
-  if (len > 36) return +(base * 0.74).toFixed(1)
-  if (len > 22) return +(base * 0.85).toFixed(1)
-  return +base.toFixed(1)
+// Tamaño de letra BASE del título superpuesto en la portada ilustrada
+// (BookCover): proporcional al ancho de la portada (w), que aquí varía por
+// contexto (hero, repisa, carrusel, ficha) en vez de ser fijo por CSS como en
+// la Tienda. Es solo el punto de partida: CoverTitle mide el texto ya maquetado
+// y lo achica desde acá si no entra en las 3 líneas de tope.
+export function tituloBaseFontSize(w) {
+  return +(w * 0.115).toFixed(1)
 }
 
-// Igual que tituloFontSize pero para el nombre del autor (book-scribble).
+// Igual que tituloBaseFontSize pero para el nombre del autor (book-scribble),
+// que es de una sola línea y se recorta con elipsis: no necesita ajuste medido.
 export function autorFontSize(w, autor) {
   const base = w * 0.10
   const len = (autor || '').length

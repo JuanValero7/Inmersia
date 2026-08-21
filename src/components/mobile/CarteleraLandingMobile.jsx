@@ -37,6 +37,9 @@ const SUB_W = 700                // ancho nativo de cada tablero (para escalar)
 // Hoja de predicciones (hub): centro exacto del tablero
 const CENTER = { cx: 430, cy: 500, w: 220, h: 234, rot: -3 }
 
+// Alto reservado bajo la pizarra para el chip de su borde inferior
+const HINT_ROOM = 34
+
 // ── Zona PERSONAJES (cuadrante superior IZQUIERDO) ────────────────
 const PERSON = { cx: 190, cy: 170 }
 const PERSON_CHIP = { x: 120, y: 46 }
@@ -176,7 +179,9 @@ function hechoPinAbs(it) {
 
 // Escala el tablero fijo (vertical) según el modo. En 'scroll' encaja al ancho
 // y el alto define el recorrido; en 'fit' entra completo.
-function useBoardScale(totalW, totalH) {
+// `reservaAbajo`: alto libre debajo del tablero para el chip que se monta sobre
+// su borde inferior (ver .cart-board-hint), igual que en el desktop.
+function useBoardScale(totalW, totalH, reservaAbajo = 0) {
   const ref = useRef(null)
   const [scale, setScale] = useState(0.5)
   useEffect(() => {
@@ -186,7 +191,7 @@ function useBoardScale(totalW, totalH) {
       const w = el.clientWidth, h = el.clientHeight
       if (!w) return
       const s = MODE === 'fit'
-        ? Math.min((w - 8) / totalW, (h - 8) / totalH)
+        ? Math.min((w - 8) / totalW, (h - 8 - reservaAbajo) / totalH)
         : (w - 8) / totalW
       setScale(Math.max(0.2, Math.min(s, 1)))
     }
@@ -194,14 +199,14 @@ function useBoardScale(totalW, totalH) {
     fit()
     const ro = new ResizeObserver(onResize); ro.observe(el)
     return () => { ro.disconnect(); if (raf) cancelAnimationFrame(raf) }
-  }, [totalW, totalH])
+  }, [totalW, totalH, reservaAbajo])
   return [ref, scale]
 }
 
 export default function CarteleraLandingMobile({ data, esNoficcion = false, onOpenSection }) {
   const TOTAL_W = BOARD_W + FRAME * 2
   const TOTAL_H = BOARD_H + FRAME * 2
-  const [scrollRef, scale] = useBoardScale(TOTAL_W, TOTAL_H)
+  const [scrollRef, scale] = useBoardScale(TOTAL_W, TOTAL_H, HINT_ROOM)
   const [popup, setPopup] = useState(null)   // 'personajes' | 'lugares' | 'datos' | 'hechos' | null
 
   const pct = data.porcentaje
@@ -384,6 +389,11 @@ export default function CarteleraLandingMobile({ data, esNoficcion = false, onOp
                   </div>
                 </button>
               </div>
+            </div>
+            {/* A caballo sobre el borde inferior del marco, con la escala
+                inversa para que el texto no encoja con el tablero. */}
+            <div className="cart-board-hint" style={{ transform: `translate(-50%, 50%) scale(${1 / scale})` }}>
+              Toca una categoría para ver los detalles
             </div>
           </div>
         </div>

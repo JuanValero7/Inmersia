@@ -82,13 +82,13 @@ export default function CarteleraMobileFicha({ section, item, onBack, backLabel 
       <button type="button" className="cm-fic-back" onClick={onBack}><BackIcon s={14} /> {backLabel}</button>
 
       <div className="cm-ficha" key={item.id}>
-        <div className="cm-polaroid">
-          <span className="tape" />
-          {item.imagen?.url
-            ? <img className="cm-pol-pic" src={item.imagen.url} alt={item.nombre} />
-            : <div className="cm-pol-empty">{initial(item.nombre)}</div>}
-          <div className="cm-pol-cap">{item.nombre}</div>
-        </div>
+        {item.imagen?.url && (
+          <div className="cm-polaroid">
+            <span className="tape" />
+            <img className="cm-pol-pic" src={item.imagen.url} alt={item.nombre} />
+            <div className="cm-pol-cap">{item.nombre}</div>
+          </div>
+        )}
 
         <div className="cm-fic-kicker">{section.singular}</div>
         <h2 className="cm-fic-name">{item.nombre}</h2>

@@ -76,7 +76,7 @@ export default function Ficha({ section, items = [], onBackPortada, initialItemI
       <div className="stage" ref={stageRef}>
         <div className="book-scale" style={{ transform: `scale(${scale})` }}>
           {/* pestañas separadoras (estilo carpeta): saltan a cualquier otra sección.
-              A la derecha, una lengüeta más grande vuelve al landing de la cartelera. */}
+              A la derecha, una lengüeta más grande vuelve al tablero de la cartelera. */}
           <div className="cart-tabs" role="tablist" aria-label="Secciones">
             {secciones.map(s => (
               <button key={s.key} type="button" role="tab"
@@ -89,10 +89,7 @@ export default function Ficha({ section, items = [], onBackPortada, initialItemI
             ))}
             {onBackPortada && (
               <button type="button" className="cart-tab cart-tab-back" onClick={onBackPortada}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-                Cartelera
+                Tablero
               </button>
             )}
           </div>
@@ -164,13 +161,13 @@ export default function Ficha({ section, items = [], onBackPortada, initialItemI
                         Primera aparición · {getCap(current)}
                       </div>
                     </div>
-                    <div className="polaroid">
-                      <span className="tape" />
-                      {current.imagen?.url
-                        ? <img className="pol-img" src={current.imagen.url} alt={current.nombre} />
-                        : <div className="pol-empty">{initial(current.nombre)}</div>}
-                      <div className="pcap">{current.nombre}</div>
-                    </div>
+                    {current.imagen?.url && (
+                      <div className="polaroid">
+                        <span className="tape" />
+                        <img className="pol-img" src={current.imagen.url} alt={current.nombre} />
+                        <div className="pcap">{current.nombre}</div>
+                      </div>
+                    )}
                   </div>
                   <Wave color={sec} />
                   {current.entradas?.length > 1 ? (

@@ -42,6 +42,9 @@ const EMBEDS_NOFICCION = [
 
 const CENTER = { cx: 592, cy: 372, w: 236, h: 252, rot: -3 }
 
+// Alto reservado bajo la pizarra para el chip que se monta en su borde inferior
+const HINT_ROOM = 40
+
 // ── Zona LUGARES (mapa, esquina superior derecha) ─────────────────
 const MAP = { w: 300, h: 210, cx: 985, cy: 170, rot: 2.5 }
 const MAP_TOP = MAP.cy - MAP.h / 2
@@ -208,20 +211,24 @@ function hechoPinAbs(it) {
   const a = it.rot * Math.PI / 180, dy = -h / 2 + 6
   return { x: it.x - dy * Math.sin(a), y: it.y + dy * Math.cos(a) }
 }
-function useFitScale(ref, totalW, totalH) {
+// `reservaAbajo`: alto que hay que dejar libre debajo del tablero para el chip
+// que se monta sobre su borde inferior (ver .cart-board-hint). Coincide con el
+// padding inferior de .cart-landing-stage, que clientHeight sí incluye.
+function useFitScale(ref, totalW, totalH, reservaAbajo = 0) {
   const [scale, setScale] = useState(0.5)
   useEffect(() => {
     let rafId = null
     const fit = () => {
       const el = ref.current; if (!el) return
-      setScale(Math.max(0.2, Math.min(el.clientWidth / totalW, el.clientHeight / totalH) * 0.98))
+      const alto = el.clientHeight - reservaAbajo
+      setScale(Math.max(0.2, Math.min(el.clientWidth / totalW, alto / totalH) * 0.98))
     }
     const onResize = () => { if (rafId) cancelAnimationFrame(rafId); rafId = requestAnimationFrame(fit) }
     fit()
     const ro = new ResizeObserver(onResize)
     if (ref.current) ro.observe(ref.current)
     return () => { ro.disconnect(); if (rafId) cancelAnimationFrame(rafId) }
-  }, [ref, totalW, totalH])
+  }, [ref, totalW, totalH, reservaAbajo])
   return scale
 }
 
@@ -237,7 +244,7 @@ export default function CarteleraLanding({
   const stageRef = useRef(null)
   const TOTAL_W = BOARD_W + FRAME * 2
   const TOTAL_H = BOARD_H + FRAME * 2
-  const scale = useFitScale(stageRef, TOTAL_W, TOTAL_H)
+  const scale = useFitScale(stageRef, TOTAL_W, TOTAL_H, HINT_ROOM)
   const [popup, setPopup] = useState(null)       // 'lugares' | 'personajes' | null
 
   // El tutorial (paso 'investigacion') se pinta desde Cartelera.jsx, que
@@ -444,6 +451,12 @@ export default function CarteleraLanding({
               </button>
             </div>
             </>)}
+          </div>
+          {/* Se monta a caballo sobre el borde inferior del marco. Va dentro del
+              marco para seguirlo al escalar, con la escala inversa para que el
+              texto se lea siempre al mismo tamaño. */}
+          <div className="cart-board-hint" style={{ transform: `translate(-50%, 50%) scale(${1 / scale})` }}>
+            Toca una categoría para ver los detalles
           </div>
         </div>
       </div>
