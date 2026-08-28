@@ -351,7 +351,7 @@ export default function ForoChat({ foro, book, user, miNombre, onSesionChange })
             </div>
             <h3 className="sala-intro-titulo">Sala de espera</h3>
             <p className="sala-intro-desc">
-              Entrá a la sala para encontrar otros lectores de este libro y charlar en tiempo real.
+              Entra a la sala para encontrar otros lectores de este libro y charlar en tiempo real.
             </p>
             <button type="button" className="foro-btn-submit foro-btn-sala" onClick={entrarSala}>
               Entrar a la sala

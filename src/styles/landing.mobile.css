@@ -11,19 +11,26 @@
 /* Hero apilado y centrado, portal más contenido */
 .inm-mobile .inm-hero { padding: 28px 0 36px; }
 .inm-mobile .inm-hero-grid { grid-template-columns: 1fr; text-align: center; gap: 26px; }
-.inm-mobile .inm-hero-art { order: -1; margin-bottom: 6px; }
+.inm-mobile .inm-hero-art { order: -2; margin-bottom: 0; }
 .inm-mobile .inm-hero-h { font-size: clamp(2rem, 8.5vw, 2.8rem); line-height: 1.22; margin-bottom: 0.7em; }
 .inm-mobile .inm-hero-h br.inm-dbr { display: none; }
 .inm-mobile .inm-hero-lede { margin-inline: auto; margin-bottom: 1.8em; }
 .inm-mobile .inm-hero-cta { justify-content: center; }
 .inm-mobile .inm-portal-scene { max-width: min(360px, 82vw); }
 
-/* La nav móvil: solo logo + botón Crear cuenta (Iniciar sesión se oculta) */
-.inm-mobile .inm-nav-in img { height: auto; width: min(210px, 52vw); }   /* limitado por ancho: comparte fila con el botón */
+/* La nav móvil: solo logo + Iniciar sesión. «Crear cuenta» baja al hero
+   (ver .inm-hero-signup): la barra respira y el registro queda donde el
+   lector ya está leyendo, justo antes de «¿Qué es Inmersia?». */
+.inm-mobile .inm-nav-in img { height: auto; width: min(210px, 52vw); }
 .inm-mobile .inm-nav-right { gap: 12px; }
-.inm-mobile .inm-nav-right .inm-lnk { display: none; }          /* el texto no cabe; usamos el icono */
-.inm-mobile .inm-nav-right .inm-login-ico { display: inline-flex; }
-.inm-mobile .inm-nav .inm-clay-btn { font-size: 0.95rem; padding: 0.55em 1.1em; }
+.inm-mobile .inm-nav-right .inm-lnk { display: inline-flex; align-items: center; min-height: 44px; }
+.inm-mobile .inm-nav-right .inm-login-ico { display: none; }    /* ya cabe el texto */
+.inm-mobile .inm-nav .inm-clay-btn { display: none; }
+
+/* «Crear cuenta» va entre el libro-portal y el titular: el arte abre la
+   rejilla (order -2), el botón le sigue (order -1) y el bloque de texto queda
+   con el order 0 por defecto. */
+.inm-mobile .inm-hero-signup { order: -1; justify-self: center; font-size: 1.02rem; }
 
 /* Targets táctiles cómodos (≥ 44px) */
 .inm-mobile .inm-clay-btn { padding: 0.85em 1.5em; min-height: 48px; }

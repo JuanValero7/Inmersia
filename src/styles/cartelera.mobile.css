@@ -138,7 +138,7 @@
 .cm-root .cm-fic-cap-lbl{ display:inline-block; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--sec); background:rgba(213,106,82,.12); border-radius:999px; padding:2px 10px; margin-bottom:5px; }
 
 /* ── Gato-dock (otras categorías) ── */
-.cm-root .cm-cat-dock{ position:absolute; left:12px; bottom:16px; z-index:45; display:flex; align-items:flex-end; gap:9px; }
+.cm-root .cm-cat-dock{ position:absolute; left:12px; bottom:16px; z-index:45; display:flex; align-items:flex-end; gap:6px; }
 /* Ancla del gato: la burbuja "Cartelera" se posiciona relativa a ESTA (sobre el gato),
    sin que la altura de la burbuja de secciones (al lateral) la desplace. */
 .cm-root .cm-cat-anchor{ position:relative; display:flex; align-items:flex-end; flex-shrink:0; }
@@ -155,12 +155,17 @@
 }
 /* Burbuja "Cartelera": flota justo encima del gato (relativa al ancla) */
 .cm-root .cm-cat-tray-board{ position:absolute; left:0; bottom:100%; margin:0 0 8px; z-index:1; }
-/* Burbuja de secciones: al lateral del gato; rejilla que envuelve, acotada a la pantalla */
-.cm-root .cm-cat-tray-others{ max-width:calc(100vw - 84px - 30px); }
+/* Burbuja de secciones: al lateral del gato. Las 4 categorías van SIEMPRE en
+   una sola fila — la burbuja ocupa el ancho que deja el gato (12px del dock +
+   84px del gato + 6px de gap + 6px de margen derecho) y cada atajo se reparte
+   ese espacio a partes iguales. Padding y gaps van al mínimo para que quepan
+   las etiquetas largas ("Referencias" en los libros de no ficción). */
+.cm-root .cm-cat-tray-others{ width:calc(100vw - 108px); padding:8px 6px; }
 .cm-root .cm-cat-tool-board{ flex-direction:row; justify-content:flex-start; width:100%; border-radius:12px; }
-.cm-root .cm-cat-others{ display:flex; flex-wrap:wrap; gap:5px; justify-content:flex-start; }
-.cm-root .cm-cat-tool{ display:flex; flex-direction:column; align-items:center; gap:5px; width:60px;
-  background:none; border:none; cursor:pointer; font-family:inherit; padding:4px 5px; border-radius:12px;
+.cm-root .cm-cat-others{ display:flex; flex-wrap:nowrap; gap:0; justify-content:space-between; }
+.cm-root .cm-cat-tool{ display:flex; flex-direction:column; align-items:center; gap:5px;
+  flex:1 1 0; min-width:0;
+  background:none; border:none; cursor:pointer; font-family:inherit; padding:4px 1px; border-radius:12px;
   -webkit-tap-highlight-color:transparent; }
 .cm-root .cm-cat-tool:active{ background:rgba(242,121,42,0.12); }
 .cm-root .cm-cat-tile{
@@ -172,7 +177,17 @@
   background:linear-gradient(150deg, #5b3e23, #3c2814);
   color:#f3e4cb;
 }
-.cm-root .cm-cat-lbl{ font-size:10.5px; font-weight:700; color:var(--ink); }
+.cm-root .cm-cat-lbl{ font-size:9px; font-weight:700; color:var(--ink);
+  max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cm-root .cm-cat-tool-board .cm-cat-lbl{ font-size:10.5px; }
+/* Pantallas muy estrechas (≤360px): gato y texto un punto más chicos, para que
+   la fila siga entrando sin recortar las etiquetas. */
+@media (max-width:360px){
+  .cm-root .cm-cat-img{ width:72px; }
+  .cm-root .cm-cat-tray-others{ width:calc(100vw - 96px); }
+  .cm-root .cm-cat-lbl{ font-size:8px; }
+  .cm-root .cm-cat-tile{ width:34px; height:34px; font-size:15px; }
+}
 @keyframes cmTray{ from{ transform:translateX(-10px) scaleX(.86); } to{ transform:none; } }
 
 /* ── Bottom-sheet (Explorar) ── */

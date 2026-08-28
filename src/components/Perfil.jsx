@@ -201,7 +201,7 @@ export function SecSeguridad() {
 
   return (
     <div style={{ maxWidth: 480 }}>
-      <div className="pf-lead" style={{ marginBottom: 20 }}>Cambiá la contraseña con la que entrás a tu carnet.</div>
+      <div className="pf-lead" style={{ marginBottom: 20 }}>Cambia la contraseña con la que entras a tu carnet.</div>
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div><label className="pf-field-label">Nueva contraseña</label>
           <input className="pf-input" type="password" value={p1} onChange={e => setP1(e.target.value)} placeholder="mínimo 6 caracteres" autoComplete="new-password"/></div>

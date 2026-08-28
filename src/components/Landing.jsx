@@ -87,6 +87,12 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
               <img className="inm-book" src={BOOK} alt="Libro abierto" />
             </div>
           </div>
+
+          {/* En móvil el botón de registro vive aquí (la barra superior solo deja
+              el logo + iniciar sesión). Es hijo directo de la rejilla del hero:
+              el CSS móvil lo coloca por `order` justo debajo del libro-portal y
+              encima del titular. En escritorio no se renderiza. */}
+          {mobile && <a className="inm-clay-btn inm-hero-signup" href="#registro" onClick={go('registro')}>Crear cuenta</a>}
         </div>
       </section>
 

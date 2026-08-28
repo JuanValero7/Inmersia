@@ -32,6 +32,10 @@ export const CHIP_WORLDS = [
   [ { c: 'var(--inm-c-red)',  t: 'Investiga, predice, recuerda', a: 'topL' }, { c: 'var(--inm-c-gold)', t: 'Anota, subraya: tu impronta', a: 'midR' } ],
 ]
 
+// Sufijo de cache-busting de las capturas: súbelo cada vez que reemplaces
+// los .webp de public/assets/landing/ manteniendo el mismo nombre.
+const V = '?v=2'
+
 // Las vistas de Inmersia (recuadros con captura)
 export const FEATURES = [
   {
@@ -43,7 +47,7 @@ export const FEATURES = [
       'Efectos de sonido que acompañan la lectura',
       'Personalización total de tu experiencia',
     ],
-    shot: '/assets/landing/shot-01-lector.webp',
+    shot: `/assets/landing/shot-01-lector.webp${V}`,
     flip: false,
   },
   {
@@ -55,7 +59,7 @@ export const FEATURES = [
       'Subraya tus citas favoritas, anota tus pensamientos y compártelo con quien quieras',
       'Siempre a mano, en cualquier dispositivo',
     ],
-    shot: '/assets/landing/shot-02-diario.webp',
+    shot: `/assets/landing/shot-02-diario.webp${V}`,
     flip: true,
   },
   {
@@ -67,7 +71,7 @@ export const FEATURES = [
       'Tu progreso adelanta la «investigación». Cada capítulo desbloquea nueva información',
       'Si lo tuyo no es la ficción, no te preocupes. Glosario, datos, referencias y resumen toman la cartelera',
     ],
-    shot: '/assets/landing/shot-03-investigacion.webp',
+    shot: `/assets/landing/shot-03-investigacion.webp${V}`,
     flip: false,
   },
   {
@@ -78,7 +82,7 @@ export const FEATURES = [
       'Conversa en tiempo real con otros lectores',
       'Deja comentarios y discute teorías, citas e ideas',
     ],
-    shot: '/assets/landing/shot-04-foro.webp',
+    shot: `/assets/landing/shot-04-foro.webp${V}`,
     flip: true,
   },
   {
@@ -90,7 +94,7 @@ export const FEATURES = [
       'Ordénalos en colecciones, como tú quieras',
       'Visita tu perfil, tu álbum y nuestra tienda',
     ],
-    shot: '/assets/landing/shot-05-biblioteca.webp',
+    shot: `/assets/landing/shot-05-biblioteca.webp${V}`,
     flip: false,
   },
   {
@@ -101,7 +105,7 @@ export const FEATURES = [
       'Tu lugar de recompensas, sigue y guarda tus logros en Inmersia',
       'Cada libro es una página de tu álbum para coleccionar',
     ],
-    shot: '/assets/landing/shot-06-album.webp',
+    shot: `/assets/landing/shot-06-album.webp${V}`,
     flip: true,
   },
 ]
