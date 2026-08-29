@@ -34,7 +34,11 @@ export const CHIP_WORLDS = [
 
 // Sufijo de cache-busting de las capturas: súbelo cada vez que reemplaces
 // los .webp de public/assets/landing/ manteniendo el mismo nombre.
-const V = '?v=2'
+const V = '?v=3'
+
+// Cada vista tiene dos capturas: `shot` (escritorio) y `shotM` (la misma vista
+// en la app móvil, sufijo -m). Landing.jsx elige según la variante; si una
+// vista no tiene `shotM` cae a la de escritorio con su marco ancho.
 
 // Las vistas de Inmersia (recuadros con captura)
 export const FEATURES = [
@@ -48,6 +52,7 @@ export const FEATURES = [
       'Personalización total de tu experiencia',
     ],
     shot: `/assets/landing/shot-01-lector.webp${V}`,
+    shotM: `/assets/landing/shot-01-lector-m.webp${V}`,
     flip: false,
   },
   {
@@ -60,6 +65,7 @@ export const FEATURES = [
       'Siempre a mano, en cualquier dispositivo',
     ],
     shot: `/assets/landing/shot-02-diario.webp${V}`,
+    shotM: `/assets/landing/shot-02-diario-m.webp${V}`,
     flip: true,
   },
   {
@@ -72,6 +78,7 @@ export const FEATURES = [
       'Si lo tuyo no es la ficción, no te preocupes. Glosario, datos, referencias y resumen toman la cartelera',
     ],
     shot: `/assets/landing/shot-03-investigacion.webp${V}`,
+    shotM: `/assets/landing/shot-03-investigacion-m.webp${V}`,
     flip: false,
   },
   {
@@ -83,6 +90,7 @@ export const FEATURES = [
       'Deja comentarios y discute teorías, citas e ideas',
     ],
     shot: `/assets/landing/shot-04-foro.webp${V}`,
+    shotM: `/assets/landing/shot-04-foro-m.webp${V}`,
     flip: true,
   },
   {
@@ -95,6 +103,7 @@ export const FEATURES = [
       'Visita tu perfil, tu álbum y nuestra tienda',
     ],
     shot: `/assets/landing/shot-05-biblioteca.webp${V}`,
+    shotM: `/assets/landing/shot-05-biblioteca-m.webp${V}`,
     flip: false,
   },
   {
@@ -105,6 +114,9 @@ export const FEATURES = [
       'Tu lugar de recompensas, sigue y guarda tus logros en Inmersia',
       'Cada libro es una página de tu álbum para coleccionar',
     ],
+    // Sin shotM: en móvil el álbum pide girar el teléfono y en horizontal
+    // apila las dos páginas, así que no da una captura en proporción de
+    // teléfono. Se usa la de escritorio.
     shot: `/assets/landing/shot-06-album.webp${V}`,
     flip: true,
   },

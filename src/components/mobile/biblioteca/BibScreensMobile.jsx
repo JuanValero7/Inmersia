@@ -133,7 +133,7 @@ export function ManageScreen({ categories, counts, onCreate, onUpdate, onDelete,
 
       <div className="bibm-lbl" style={{ marginBottom: 11 }}>Tus categorías</div>
       {categories.length === 0
-        ? <div style={{ color: 'rgba(74,54,34,0.55)', fontSize: 14, textAlign: 'center', padding: '20px 0', fontWeight: 600 }}>Todavía no tenés categorías.</div>
+        ? <div style={{ color: 'rgba(74,54,34,0.55)', fontSize: 14, textAlign: 'center', padding: '20px 0', fontWeight: 600 }}>Todavía no tienes categorías.</div>
         : <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
             {categories.map(cat => (
               <div key={cat.id} className="bibm-cat-row">

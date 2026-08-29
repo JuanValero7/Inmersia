@@ -11,7 +11,7 @@
 /* Hero apilado y centrado, portal más contenido */
 .inm-mobile .inm-hero { padding: 28px 0 36px; }
 .inm-mobile .inm-hero-grid { grid-template-columns: 1fr; text-align: center; gap: 26px; }
-.inm-mobile .inm-hero-art { order: -2; margin-bottom: 0; }
+.inm-mobile .inm-hero-art { order: -1; margin-bottom: 6px; }
 .inm-mobile .inm-hero-h { font-size: clamp(2rem, 8.5vw, 2.8rem); line-height: 1.22; margin-bottom: 0.7em; }
 .inm-mobile .inm-hero-h br.inm-dbr { display: none; }
 .inm-mobile .inm-hero-lede { margin-inline: auto; margin-bottom: 1.8em; }
@@ -27,10 +27,8 @@
 .inm-mobile .inm-nav-right .inm-login-ico { display: none; }    /* ya cabe el texto */
 .inm-mobile .inm-nav .inm-clay-btn { display: none; }
 
-/* «Crear cuenta» va entre el libro-portal y el titular: el arte abre la
-   rejilla (order -2), el botón le sigue (order -1) y el bloque de texto queda
-   con el order 0 por defecto. */
-.inm-mobile .inm-hero-signup { order: -1; justify-self: center; font-size: 1.02rem; }
+/* «Crear cuenta» va dentro del bloque de texto, entre el titular y el párrafo */
+.inm-mobile .inm-hero-signup { font-size: 1.02rem; margin-bottom: 1.5em; }
 
 /* Targets táctiles cómodos (≥ 44px) */
 .inm-mobile .inm-clay-btn { padding: 0.85em 1.5em; min-height: 48px; }
@@ -43,7 +41,13 @@
 .inm-mobile .inm-feature .inm-ftxt { order: 0 !important; }
 .inm-mobile .inm-feature .inm-vis-wrap { order: -1; }
 .inm-mobile .inm-ftxt p { max-width: none; }
+/* Capturas móviles: el recuadro deja de leerse como una ventana de escritorio
+   (Landing.jsx no pinta la barra de puntos en esta variante) y pasa a ser un
+   teléfono — más estrecho, con las esquinas bien redondeadas. Las vistas sin
+   captura móvil conservan el marco ancho. */
 .inm-mobile .inm-shot { max-width: 100%; }
+.inm-mobile .inm-shot-phone { width: min(252px, 68vw); max-width: none;
+  border-width: 3px; border-radius: 26px; }
 
 /* Manifiesto y cierre */
 .inm-mobile .inm-q { max-width: 18ch; }

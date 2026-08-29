@@ -326,8 +326,8 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
       <div className="album-m-rotate">
         <button className="album-m-rotate-back" onClick={onGoBack} title="Volver a la biblioteca"><IBack />Biblioteca</button>
         <IRotate />
-        <h3>Girá el teléfono</h3>
-        <p>El álbum se abre como una doble página. Poné el teléfono en horizontal para verlo completo.</p>
+        <h3>Gira el teléfono</h3>
+        <p>El álbum se abre como una doble página. Pon el teléfono en horizontal para verlo completo.</p>
       </div>
 
       <div className="album-m-top">

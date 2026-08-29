@@ -92,7 +92,7 @@ function ManageCategoriasModal({ categories, onClose, onCreate, onUpdate, onDele
         {error && <div style={{ color: '#b4452e', fontSize: 13.5, fontWeight: 700, marginBottom: 12 }}>{error}</div>}
 
         {categories.length === 0
-          ? <div style={{ color: 'rgba(74,54,34,0.6)', fontSize: 14, textAlign: 'center', padding: '16px 0', fontWeight: 600 }}>Todavía no tenés categorías.</div>
+          ? <div style={{ color: 'rgba(74,54,34,0.6)', fontSize: 14, textAlign: 'center', padding: '16px 0', fontWeight: 600 }}>Todavía no tienes categorías.</div>
           : <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {categories.map(cat => (
                 <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 13px', borderRadius: 14, background: '#f4ecda', border: `2px solid ${ink}1f` }}>

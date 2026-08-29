@@ -26,6 +26,10 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
   useReveal(rootRef)
   usePortal(rootRef)
 
+  // ¿Esta vista se pinta con su captura móvil? Solo en la variante móvil y si
+  // la vista tiene una (el álbum no la tiene: ver landingData.js).
+  const telefono = (f) => mobile && !!f.shotM
+
   const go = (tab) => (e) => { e.preventDefault(); onAuth?.(tab) }
   const scrollToQue = (e) => {
     e.preventDefault()
@@ -60,6 +64,10 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
             <h1 className="inm-hero-h">
               Escapa de lo efímero y conecta con tu <em>imaginación</em>
             </h1>
+            {/* En móvil el botón de registro vive aquí (la barra superior solo
+                deja el logo + iniciar sesión), entre el titular y el párrafo.
+                En escritorio no se renderiza: allí sigue en la barra. */}
+            {mobile && <a className="inm-clay-btn inm-hero-signup" href="#registro" onClick={go('registro')}>Crear cuenta</a>}
             <p className="inm-hero-lede">
               Inmersia convierte cada libro en un mundo para habitar, no en una pantalla más para
               mirar. Con imágenes, sonido, pistas para investigar la trama y gente que lee contigo,
@@ -87,12 +95,6 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
               <img className="inm-book" src={BOOK} alt="Libro abierto" />
             </div>
           </div>
-
-          {/* En móvil el botón de registro vive aquí (la barra superior solo deja
-              el logo + iniciar sesión). Es hijo directo de la rejilla del hero:
-              el CSS móvil lo coloca por `order` justo debajo del libro-portal y
-              encima del titular. En escritorio no se renderiza. */}
-          {mobile && <a className="inm-clay-btn inm-hero-signup" href="#registro" onClick={go('registro')}>Crear cuenta</a>}
         </div>
       </section>
 
@@ -124,9 +126,11 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
                 </ul>
               </div>
               <div className="inm-vis-wrap">
-                <div className="inm-shot">
-                  <span className="inm-bar"><i /><i /><i /></span>
-                  <img src={f.shot} alt={`${f.idx} de Inmersia`} loading="lazy" />
+                {/* Con captura vertical el marco se lee como un teléfono (sin la
+                    barra de puntos, que simula una ventana de escritorio). */}
+                <div className={`inm-shot ${telefono(f) ? 'inm-shot-phone' : ''}`.trim()}>
+                  {!telefono(f) && <span className="inm-bar"><i /><i /><i /></span>}
+                  <img src={telefono(f) ? f.shotM : f.shot} alt={`${f.idx} de Inmersia`} loading="lazy" />
                 </div>
               </div>
             </div>

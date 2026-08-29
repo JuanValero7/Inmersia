@@ -120,7 +120,7 @@ export function useBiblioteca(user, lastOpenedBookIds) {
   // ── CRUD categorías ──
   async function createCategoria(nombre, color) {
     const { error } = await supabase.from('categorias_usuario').insert({ user_id: user.id, nombre, color })
-    if (error) return error.message.includes('duplicate') ? `Ya tenés una categoría llamada "${nombre}".` : error.message
+    if (error) return error.message.includes('duplicate') ? `Ya tienes una categoría llamada "${nombre}".` : error.message
     await fetchCategories()
     return null
   }
