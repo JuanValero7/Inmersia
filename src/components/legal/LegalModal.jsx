@@ -49,12 +49,25 @@ function parseMarkdown(md) {
       blocks.push({ type: 'ul', items })
       continue
     }
+    if (/^\d+\.\s+/.test(line)) {
+      const items = []
+      while (i < lines.length && /^\d+\.\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\d+\.\s+/, ''))
+        i++
+      }
+      blocks.push({ type: 'ol', items })
+      continue
+    }
     const para = []
     while (i < lines.length && lines[i].trim() && !/^-{3,}$/.test(lines[i].trim())
-      && !/^#{1,4}\s/.test(lines[i]) && !/^-\s+/.test(lines[i]) && !/^\|.*\|\s*$/.test(lines[i])) {
+      && !/^#{1,4}\s/.test(lines[i]) && !/^-\s+/.test(lines[i]) && !/^\d+\.\s+/.test(lines[i])
+      && !/^\|.*\|\s*$/.test(lines[i])) {
       para.push(lines[i]); i++
     }
-    blocks.push({ type: 'p', text: para.join(' ') })
+    // Uniendo con salto de línea (y whiteSpace:'pre-line' al pintar), la
+    // dirección postal del responsable se lee como una dirección y no
+    // como una frase corrida.
+    blocks.push({ type: 'p', text: para.join('\n') })
   }
   return blocks
 }
@@ -102,6 +115,11 @@ function Doc({ raw, onNavigate }) {
             {b.items.map((it, j) => <li key={j} style={{ marginBottom: 4 }}>{renderInline(it, onNavigate)}</li>)}
           </ul>
         )
+        if (b.type === 'ol') return (
+          <ol key={idx} style={{ margin: '6px 0 12px', paddingLeft: 22 }}>
+            {b.items.map((it, j) => <li key={j} style={{ marginBottom: 4 }}>{renderInline(it, onNavigate)}</li>)}
+          </ol>
+        )
         if (b.type === 'table') return (
           <div key={idx} style={{ overflowX: 'auto', margin: '10px 0 16px' }}>
             <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13.5 }}>
@@ -116,7 +134,7 @@ function Doc({ raw, onNavigate }) {
             </table>
           </div>
         )
-        return <p key={idx} style={{ margin: '0 0 12px' }}>{renderInline(b.text, onNavigate)}</p>
+        return <p key={idx} style={{ margin: '0 0 12px', whiteSpace: 'pre-line' }}>{renderInline(b.text, onNavigate)}</p>
       })}
     </div>
   )

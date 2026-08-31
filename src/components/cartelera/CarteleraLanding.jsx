@@ -268,6 +268,13 @@ export default function CarteleraLanding({
   const hechosLabel = esNoficcion ? 'Referencias' : 'Hechos'
   const hechosImg = data.principal?.[hechosSeccion]
 
+  // Las placas de imagen (retrato, mapa desbloqueado, fachada) son un premio de
+  // FICCIÓN: `cartelera_principal` no se cura para no ficción, así que ahí
+  // salían siempre vacías —una placa gris colgada del corcho sin nada dentro—.
+  // La de Datos/Resumen no es una imagen sino la placa de estadísticas, y esa
+  // se queda en ambos casos.
+  const hayPlacas = !esNoficcion
+
   // Embeds fantasma (centro de cada zona): sólo tejen los hilos hacia ellas
   const embedsForNotas = [
     ...(SHOW_HECHOS ? embeds : []),
@@ -356,7 +363,7 @@ export default function CarteleraLanding({
               <defs>
                 <mask id="cartThreadMask">
                   <rect x="0" y="0" width={BOARD_W} height={BOARD_H} fill="#fff" />
-                  {[PERSON_PLACA, MAP_PLACA, CENTER].map((p, i) => (
+                  {[...(hayPlacas ? [PERSON_PLACA, MAP_PLACA] : []), CENTER].map((p, i) => (
                     <rect key={i} x={p.cx - p.w / 2} y={p.cy - p.h / 2} width={p.w} height={p.h}
                       transform={`rotate(${p.rot} ${p.cx} ${p.cy})`} fill="#000" />
                   ))}
@@ -376,16 +383,18 @@ export default function CarteleraLanding({
             <button type="button" className="cart-pass-zone" aria-label="Ver personajes"
               style={{ left: PASS_AREA.x, top: PASS_AREA.y, width: PASS_AREA.w, height: PASS_AREA.h }}
               onClick={goListPerson} />
-            <div className="cart-placa-holder"
-              style={{ left: PERSON_PLACA.cx, top: PERSON_PLACA.cy, width: PERSON_PLACA.w, height: PERSON_PLACA.h }}>
-              <button type="button" className="cart-placa" style={{ width: PERSON_PLACA.w, height: PERSON_PLACA.h, '--rot': `${PERSON_PLACA.rot}deg` }}
-                onClick={() => setPopup('personajes')} aria-label="Ver el retrato desbloqueado">
-                <span className="cart-placa-pin" />
-                <div className="cart-placa-clip">
-                  <TableroPersonajes pct={pct} scale={PERSON_PLACA.w / SUB_W} imageUrl={personImg?.url} />
-                </div>
-              </button>
-            </div>
+            {hayPlacas && (
+              <div className="cart-placa-holder"
+                style={{ left: PERSON_PLACA.cx, top: PERSON_PLACA.cy, width: PERSON_PLACA.w, height: PERSON_PLACA.h }}>
+                <button type="button" className="cart-placa" style={{ width: PERSON_PLACA.w, height: PERSON_PLACA.h, '--rot': `${PERSON_PLACA.rot}deg` }}
+                  onClick={() => setPopup('personajes')} aria-label="Ver el retrato desbloqueado">
+                  <span className="cart-placa-pin" />
+                  <div className="cart-placa-clip">
+                    <TableroPersonajes pct={pct} scale={PERSON_PLACA.w / SUB_W} imageUrl={personImg?.url} />
+                  </div>
+                </button>
+              </div>
+            )}
 
             {/* ── ZONA LUGARES (mapa) ── */}
             <button type="button" className="cart-zone-tag" style={{ left: MAP.cx, top: MAP_TOP - 24, '--tag': '#7C8A4F', '--tape-rot': '2deg' }}
@@ -398,16 +407,18 @@ export default function CarteleraLanding({
               <img src="/assets/cartelera/mapa-placeholder.svg" alt="Mapa" draggable="false" />
               {visiblePins.map((p, i) => <Pin key={i} x={p.x} y={p.y} />)}
             </button>
-            <div className="cart-placa-holder"
-              style={{ left: MAP_PLACA.cx, top: MAP_PLACA.cy, width: MAP_PLACA.w, height: MAP_PLACA.h }}>
-              <button type="button" className="cart-placa" style={{ width: MAP_PLACA.w, height: MAP_PLACA.h, '--rot': `${MAP_PLACA.rot}deg` }}
-                onClick={() => setPopup('lugares')} aria-label="Ver la imagen desbloqueada">
-                <span className="cart-placa-pin" />
-                <div className="cart-placa-clip">
-                  <TableroLugares pct={pct} scale={MAP_PLACA.w / SUB_W} imageUrl={mapImg?.url} />
-                </div>
-              </button>
-            </div>
+            {hayPlacas && (
+              <div className="cart-placa-holder"
+                style={{ left: MAP_PLACA.cx, top: MAP_PLACA.cy, width: MAP_PLACA.w, height: MAP_PLACA.h }}>
+                <button type="button" className="cart-placa" style={{ width: MAP_PLACA.w, height: MAP_PLACA.h, '--rot': `${MAP_PLACA.rot}deg` }}
+                  onClick={() => setPopup('lugares')} aria-label="Ver la imagen desbloqueada">
+                  <span className="cart-placa-pin" />
+                  <div className="cart-placa-clip">
+                    <TableroLugares pct={pct} scale={MAP_PLACA.w / SUB_W} imageUrl={mapImg?.url} />
+                  </div>
+                </button>
+              </div>
+            )}
 
             {/* ── ZONA DATOS ── */}
             {SHOW_DATOS && (<>
@@ -440,16 +451,18 @@ export default function CarteleraLanding({
             <button type="button" className="cart-pass-zone" aria-label="Ver hechos"
               style={{ left: HECHOS_AREA.x, top: HECHOS_AREA.y, width: HECHOS_AREA.w, height: HECHOS_AREA.h }}
               onClick={goListHechos} />
-            <div className="cart-placa-holder"
-              style={{ left: HECHOS_PLACA.cx, top: HECHOS_PLACA.cy, width: HECHOS_PLACA.w, height: HECHOS_PLACA.h }}>
-              <button type="button" className="cart-placa" style={{ width: HECHOS_PLACA.w, height: HECHOS_PLACA.h, '--rot': `${HECHOS_PLACA.rot}deg` }}
-                onClick={() => setPopup('hechos')} aria-label="Ver la imagen desbloqueada">
-                <span className="cart-placa-pin" />
-                <div className="cart-placa-clip">
-                  <TableroHechos pct={pct} scale={HECHOS_PLACA.w / SUB_W} imageUrl={hechosImg?.url} />
-                </div>
-              </button>
-            </div>
+            {hayPlacas && (
+              <div className="cart-placa-holder"
+                style={{ left: HECHOS_PLACA.cx, top: HECHOS_PLACA.cy, width: HECHOS_PLACA.w, height: HECHOS_PLACA.h }}>
+                <button type="button" className="cart-placa" style={{ width: HECHOS_PLACA.w, height: HECHOS_PLACA.h, '--rot': `${HECHOS_PLACA.rot}deg` }}
+                  onClick={() => setPopup('hechos')} aria-label="Ver la imagen desbloqueada">
+                  <span className="cart-placa-pin" />
+                  <div className="cart-placa-clip">
+                    <TableroHechos pct={pct} scale={HECHOS_PLACA.w / SUB_W} imageUrl={hechosImg?.url} />
+                  </div>
+                </button>
+              </div>
+            )}
             </>)}
           </div>
           {/* Se monta a caballo sobre el borde inferior del marco. Va dentro del
@@ -470,14 +483,14 @@ export default function CarteleraLanding({
         <span className="hint">El corcho crece y cada sección se revela a medida que avanzas en la lectura</span>
       </div>
 
-      {popup === 'lugares' && (
+      {hayPlacas && popup === 'lugares' && (
         <ZonePopup title={`${mapLabel} · ${pct}% desbloqueado`} listLabel={`Ver lista de ${mapLabel.toLowerCase()}`}
           onOpenList={() => { setPopup(null); goListMap() }} onClose={() => setPopup(null)}
           media={<div style={{ width: 320, height: Math.round(860 * 320 / 700) }}>
             <TableroLugares pct={pct} scale={320 / SUB_W} imageUrl={mapImg?.url} videoUrl={mapImg?.videoUrl} />
           </div>} />
       )}
-      {popup === 'personajes' && (
+      {hayPlacas && popup === 'personajes' && (
         <ZonePopup title={`${personLabel} · ${pct}% desbloqueado`} listLabel={`Ver lista de ${personLabel.toLowerCase()}`}
           onOpenList={() => { setPopup(null); goListPerson() }} onClose={() => setPopup(null)}
           media={<div style={{ width: 320, height: Math.round(860 * 320 / 700) }}>
@@ -491,7 +504,7 @@ export default function CarteleraLanding({
             <TableroDatos pct={pct} scale={320 / SUB_W} stats={data.stats} />
           </div>} />
       )}
-      {SHOW_HECHOS && popup === 'hechos' && (
+      {SHOW_HECHOS && hayPlacas && popup === 'hechos' && (
         <ZonePopup title={`${hechosLabel} · ${pct}% desbloqueado`} listLabel={`Ver lista de ${hechosLabel.toLowerCase()}`}
           onOpenList={() => { setPopup(null); goListHechos() }} onClose={() => setPopup(null)}
           media={<div style={{ width: 320, height: Math.round(860 * 320 / 700) }}>

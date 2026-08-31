@@ -226,6 +226,11 @@ export default function CarteleraLandingMobile({ data, esNoficcion = false, onOp
   const hechosLabel = esNoficcion ? 'Referencias' : 'Hechos'
   const hechosImg = data.principal?.[hechosSeccion]
 
+  // Ver CarteleraLanding.jsx: las placas de imagen son un premio de ficción; en
+  // no ficción `cartelera_principal` está vacío y salían siempre en blanco. La
+  // de Datos/Resumen (estadísticas, no imagen) se queda en ambos casos.
+  const hayPlacas = !esNoficcion
+
   // Embeds fantasma: sólo posicionan el hub; corcho sin notas ni hilos propios.
   const embedsForNotas = [
     { key: personSeccion, label: personLabel, cx: PERSON.cx, cy: PERSON.cy, phantom: true },
@@ -294,7 +299,7 @@ export default function CarteleraLandingMobile({ data, esNoficcion = false, onOp
                 <defs>
                   <mask id="cmlThreadMask">
                     <rect x="0" y="0" width={BOARD_W} height={BOARD_H} fill="#fff" />
-                    {[PERSON_PLACA, MAP_PLACA, DATOS_PLACA, HECHOS_PLACA, CENTER].map((p, i) => (
+                    {[...(hayPlacas ? [PERSON_PLACA, MAP_PLACA, HECHOS_PLACA] : []), DATOS_PLACA, CENTER].map((p, i) => (
                       <rect key={i} x={p.cx - p.w / 2} y={p.cy - p.h / 2} width={p.w} height={p.h}
                         transform={`rotate(${p.rot} ${p.cx} ${p.cy})`} fill="#000" />
                     ))}
@@ -318,16 +323,18 @@ export default function CarteleraLandingMobile({ data, esNoficcion = false, onOp
               <button type="button" className="cart-pass-zone" aria-label={`Ver ${personLabel.toLowerCase()}`}
                 style={{ left: PASS_AREA.x, top: PASS_AREA.y, width: PASS_AREA.w, height: PASS_AREA.h }}
                 onClick={goPerson} />
-              <div className="cart-placa-holder"
-                style={{ left: PERSON_PLACA.cx, top: PERSON_PLACA.cy, width: PERSON_PLACA.w, height: PERSON_PLACA.h }}>
-                <button type="button" className="cart-placa" style={{ width: PERSON_PLACA.w, height: PERSON_PLACA.h, '--rot': `${PERSON_PLACA.rot}deg` }}
-                  onClick={() => setPopup('personajes')} aria-label="Ver el retrato desbloqueado">
-                  <span className="cart-placa-pin" />
-                  <div className="cart-placa-clip">
-                    <TableroPersonajes pct={pct} scale={PERSON_PLACA.w / SUB_W} imageUrl={personImg?.url} />
-                  </div>
-                </button>
-              </div>
+              {hayPlacas && (
+                <div className="cart-placa-holder"
+                  style={{ left: PERSON_PLACA.cx, top: PERSON_PLACA.cy, width: PERSON_PLACA.w, height: PERSON_PLACA.h }}>
+                  <button type="button" className="cart-placa" style={{ width: PERSON_PLACA.w, height: PERSON_PLACA.h, '--rot': `${PERSON_PLACA.rot}deg` }}
+                    onClick={() => setPopup('personajes')} aria-label="Ver el retrato desbloqueado">
+                    <span className="cart-placa-pin" />
+                    <div className="cart-placa-clip">
+                      <TableroPersonajes pct={pct} scale={PERSON_PLACA.w / SUB_W} imageUrl={personImg?.url} />
+                    </div>
+                  </button>
+                </div>
+              )}
 
               {/* ── ZONA LUGARES (mapa) ── */}
               <button type="button" className="cart-zone-tag" style={{ left: MAP.cx, top: MAP_TOP - 24, '--tag': '#7C8A4F', '--tape-rot': '2deg' }}
@@ -340,16 +347,18 @@ export default function CarteleraLandingMobile({ data, esNoficcion = false, onOp
                 <img src="/assets/cartelera/mapa-placeholder.svg" alt="Mapa" draggable="false" />
                 {visiblePins.map((p, i) => <Pin key={i} x={p.x} y={p.y} />)}
               </button>
-              <div className="cart-placa-holder"
-                style={{ left: MAP_PLACA.cx, top: MAP_PLACA.cy, width: MAP_PLACA.w, height: MAP_PLACA.h }}>
-                <button type="button" className="cart-placa" style={{ width: MAP_PLACA.w, height: MAP_PLACA.h, '--rot': `${MAP_PLACA.rot}deg` }}
-                  onClick={() => setPopup('lugares')} aria-label="Ver la imagen desbloqueada">
-                  <span className="cart-placa-pin" />
-                  <div className="cart-placa-clip">
-                    <TableroLugares pct={pct} scale={MAP_PLACA.w / SUB_W} imageUrl={mapImg?.url} />
-                  </div>
-                </button>
-              </div>
+              {hayPlacas && (
+                <div className="cart-placa-holder"
+                  style={{ left: MAP_PLACA.cx, top: MAP_PLACA.cy, width: MAP_PLACA.w, height: MAP_PLACA.h }}>
+                  <button type="button" className="cart-placa" style={{ width: MAP_PLACA.w, height: MAP_PLACA.h, '--rot': `${MAP_PLACA.rot}deg` }}
+                    onClick={() => setPopup('lugares')} aria-label="Ver la imagen desbloqueada">
+                    <span className="cart-placa-pin" />
+                    <div className="cart-placa-clip">
+                      <TableroLugares pct={pct} scale={MAP_PLACA.w / SUB_W} imageUrl={mapImg?.url} />
+                    </div>
+                  </button>
+                </div>
+              )}
 
               {/* ── ZONA DATOS ── */}
               <button type="button" className="cart-zone-tag" style={{ left: DATOS_CHIP.x, top: DATOS_CHIP.y, '--tag': '#2F4A6B', '--tape-rot': '-1.5deg' }}
@@ -379,16 +388,18 @@ export default function CarteleraLandingMobile({ data, esNoficcion = false, onOp
               <button type="button" className="cart-pass-zone" aria-label={`Ver ${hechosLabel.toLowerCase()}`}
                 style={{ left: HECHOS_AREA.x, top: HECHOS_AREA.y, width: HECHOS_AREA.w, height: HECHOS_AREA.h }}
                 onClick={goHechos} />
-              <div className="cart-placa-holder"
-                style={{ left: HECHOS_PLACA.cx, top: HECHOS_PLACA.cy, width: HECHOS_PLACA.w, height: HECHOS_PLACA.h }}>
-                <button type="button" className="cart-placa" style={{ width: HECHOS_PLACA.w, height: HECHOS_PLACA.h, '--rot': `${HECHOS_PLACA.rot}deg` }}
-                  onClick={() => setPopup('hechos')} aria-label="Ver la imagen desbloqueada">
-                  <span className="cart-placa-pin" />
-                  <div className="cart-placa-clip">
-                    <TableroHechos pct={pct} scale={HECHOS_PLACA.w / SUB_W} imageUrl={hechosImg?.url} />
-                  </div>
-                </button>
-              </div>
+              {hayPlacas && (
+                <div className="cart-placa-holder"
+                  style={{ left: HECHOS_PLACA.cx, top: HECHOS_PLACA.cy, width: HECHOS_PLACA.w, height: HECHOS_PLACA.h }}>
+                  <button type="button" className="cart-placa" style={{ width: HECHOS_PLACA.w, height: HECHOS_PLACA.h, '--rot': `${HECHOS_PLACA.rot}deg` }}
+                    onClick={() => setPopup('hechos')} aria-label="Ver la imagen desbloqueada">
+                    <span className="cart-placa-pin" />
+                    <div className="cart-placa-clip">
+                      <TableroHechos pct={pct} scale={HECHOS_PLACA.w / SUB_W} imageUrl={hechosImg?.url} />
+                    </div>
+                  </button>
+                </div>
+              )}
             </div>
             {/* A caballo sobre el borde inferior del marco, con la escala
                 inversa para que el texto no encoja con el tablero. */}
@@ -405,14 +416,14 @@ export default function CarteleraLandingMobile({ data, esNoficcion = false, onOp
         <span className="cml-avance-pct">{pct}%</span>
       </div>
 
-      {popup === 'lugares' && (
+      {hayPlacas && popup === 'lugares' && (
         <ZonePopup title={`${mapLabel} · ${pct}% desbloqueado`} listLabel={`Ver lista de ${mapLabel.toLowerCase()}`}
           onOpenList={() => { setPopup(null); goMap() }} onClose={() => setPopup(null)}
           media={<div style={{ width: 280, height: Math.round(860 * 280 / 700) }}>
             <TableroLugares pct={pct} scale={280 / SUB_W} imageUrl={mapImg?.url} videoUrl={mapImg?.videoUrl} />
           </div>} />
       )}
-      {popup === 'personajes' && (
+      {hayPlacas && popup === 'personajes' && (
         <ZonePopup title={`${personLabel} · ${pct}% desbloqueado`} listLabel={`Ver lista de ${personLabel.toLowerCase()}`}
           onOpenList={() => { setPopup(null); goPerson() }} onClose={() => setPopup(null)}
           media={<div style={{ width: 280, height: Math.round(860 * 280 / 700) }}>
@@ -426,7 +437,7 @@ export default function CarteleraLandingMobile({ data, esNoficcion = false, onOp
             <TableroDatos pct={pct} scale={280 / SUB_W} stats={data.stats} />
           </div>} />
       )}
-      {popup === 'hechos' && (
+      {hayPlacas && popup === 'hechos' && (
         <ZonePopup title={`${hechosLabel} · ${pct}% desbloqueado`} listLabel={`Ver lista de ${hechosLabel.toLowerCase()}`}
           onOpenList={() => { setPopup(null); goHechos() }} onClose={() => setPopup(null)}
           media={<div style={{ width: 280, height: Math.round(860 * 280 / 700) }}>

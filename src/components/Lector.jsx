@@ -11,6 +11,7 @@ import { useWhiteNoise } from '../hooks/useWhiteNoise.js'
 import { useXrayItems } from '../hooks/useXrayItems.js'
 import { useSesionLectura } from '../hooks/useSesionLectura.js'
 import { useOnboarding } from '../context/onboarding.jsx'
+import { anotarMuestra } from '../lib/progresoInvitado.js'
 import '../styles/lector.css'
 
 import { paginarParrafosDesktopDOM } from '../utils/lectorPagination.js'
@@ -27,15 +28,33 @@ const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
 // render invalidaría el memo de las páginas del libro.
 const EMPTY_SUBRAYADOS = []
 
-// Geometría de página: el libro llena la pantalla.
+// Geometría de página.
+// <PolaroidStack> mide 160 de ancho y se mete 110 por encima del canto del
+// libro (ver el translateX de su contenedor, más abajo), así que necesita
+// asomar 50px por fuera.
+const POLAROID_W = 160
+const POLAROID_SOLAPE = 110
+const POLAROID_ASOMA = POLAROID_W - POLAROID_SOLAPE
+
+// El `- 64` de siempre dejaba 32px de margen a cada lado: menos de los 50 que
+// piden las polaroids, así que se salían de la pantalla y `overflow-x: hidden`
+// las dejaba recortadas e inalcanzables. No era cosa de la franja de tablet:
+// con el ancho mandando el margen es 32 SIEMPRE, también en 1440x1080. Se sube
+// el margen a 56 (50 + 6 de holgura); cuesta 24px de página por lado.
+const MARGEN_LATERAL = 56
+
 function computeGeom(doubleView) {
   const pageH = Math.min(760, Math.max(360, window.innerHeight - 230))
-  const availW = window.innerWidth - 64
+  const availW = window.innerWidth - 2 * MARGEN_LATERAL
   let pageW = doubleView
     ? Math.min(Math.round(pageH * 0.92), Math.floor((availW - 34) / 2))
     : Math.min(Math.round(pageH * 1.6), availW)
   pageW = Math.max(300, pageW)
-  return { pageW, pageH }
+  const halfBook = (doubleView ? (2 * pageW + 20 + 14) : (pageW + 7)) / 2
+  // Red de seguridad para cuando muerde el suelo de 300px (ventanas muy
+  // angostas): ahí la reserva no alcanza y es mejor no dibujarlas.
+  const huecoLateral = window.innerWidth / 2 - halfBook
+  return { pageW, pageH, halfBook, huecoLateral }
 }
 
 function NavButton({ onClick, title, icon, label, id }) {
@@ -60,7 +79,7 @@ function EstrellaLector({ valor, onChange }) {
   )
 }
 
-export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, onRequestAuth, gatoColor = 'negro' }) {
+export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, muestraMotivo = 'invitado', onRequestAuth, onGoTienda, gatoColor = 'negro' }) {
   const [chapterIndex,   setChapterIndex]   = useState(0)
   const [pageIndex,      setPageIndex]      = useState(0)
   const [goToLastPage,   setGoToLastPage]   = useState(false)
@@ -77,10 +96,16 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     isLeido, setIsLeido, subrayadosPorCap, olvidarSubrayado,
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
-    fetchChapter, playSfx, persistChapterAdvance, subrayar,
+    fetchChapter, peekChapter, playSfx, persistChapterAdvance, subrayar,
     quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
     miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
-  } = useLectorData(book, setChapterIndex, setPageIndex)
+  } = useLectorData(book, setChapterIndex, setPageIndex, guestMode)
+
+  // Modo muestra: se anota cuánto lleva leído el invitado para que la
+  // adquisición lo rescate al registrarse (ver lib/progresoInvitado.js).
+  useEffect(() => {
+    if (guestMode) anotarMuestra(book?.libro_id, chapterIndex)
+  }, [guestMode, chapterIndex, book?.libro_id])
 
   // Paywall: cerrar con Escape. Y si el invitado se autentica (guestMode pasa a
   // false) lo ocultamos para que no quede atascado encima del lector desbloqueado.
@@ -153,7 +178,11 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     ;(async () => {
       setError(null)
       try {
-        let entry = chapterCache[cap.id]
+        // peekChapter mira el caché sin pedir nada, para no encender el
+        // spinner en un capítulo ya cargado. Es estable, igual que
+        // fetchChapter (ver el espejo en ref de useLectorData), así que este
+        // efecto solo corre cuando cambia de verdad el capítulo.
+        let entry = peekChapter(cap.id)
         if (!entry) { setLoadingCap(true); entry = await fetchChapter(cap) }
         if (cancelled || !entry) return
       } catch (err) {
@@ -163,7 +192,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       }
     })()
     return () => { cancelled = true }
-  }, [chapterIndex, capitulos])
+  }, [chapterIndex, capitulos, fetchChapter, peekChapter])
 
   const currentChapter  = capitulos[chapterIndex] || null
   const currentChapData = currentChapter ? chapterCache[currentChapter.id] : null
@@ -335,19 +364,20 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     if (next < currentPaginas.length) {
       setPageIndex(next)
     } else if (guestMode && chapterIndex >= capitulos.length - 1) {
+      anotarMuestra(book?.libro_id, chapterIndex + 1)   // terminó la muestra
       setShowPaywall(true)
     }
-  }, [doubleView, pageIndex, currentPaginas.length, guestMode, chapterIndex, capitulos.length])
+  }, [doubleView, pageIndex, currentPaginas.length, guestMode, chapterIndex, capitulos.length, book?.libro_id])
   const handleNextChapter = useCallback(() => {
     if (polaroidRef.current?.interceptForward()) return
     const next = chapterIndex + 1
     if (next >= capitulos.length) {
-      if (guestMode) setShowPaywall(true)
+      if (guestMode) { anotarMuestra(book?.libro_id, next); setShowPaywall(true) }
       return
     }
     if (guestMode) { setChapterIndex(next); setPageIndex(0); return }
     setPendingChapter(next); setNotebookOpen(true)
-  }, [chapterIndex, capitulos.length, guestMode])
+  }, [chapterIndex, capitulos.length, guestMode, book?.libro_id])
 
   // ── Teclado: flechas para paginar, espacio para SFX ─────────
   const sfxIndexRef = useRef(0)
@@ -424,7 +454,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   }
 
   const msgStyle = { color: theme.subText, fontFamily: "'Playfair Display',serif", fontSize: 14, textAlign: 'center', padding: 60 }
-  const halfBook = (doubleView ? (2 * geom.pageW + 20 + 14) : (geom.pageW + 7)) / 2
+  const halfBook = geom.halfBook
+  const cabenPolaroids = geom.huecoLateral >= POLAROID_ASOMA
 
   return (
     <div className="desk" style={{ position: 'relative', minHeight: '100vh', display: 'flex', flexDirection: 'column', background: pal.deskBg, fontFamily: "'Baloo 2', sans-serif" }}>
@@ -554,8 +585,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
         </div>
 
         {/* polaroids: detrás del libro; la recién revelada se destaca por encima (ver PolaroidStack) */}
-        {!loading && !error && book?.libro_id && (
-          <div style={{ position: 'absolute', top: '50%', left: `calc(50% + ${halfBook}px)`, transform: 'translateY(-50%) translateX(-110px)', zIndex: 1 }}>
+        {!loading && !error && book?.libro_id && cabenPolaroids && (
+          <div style={{ position: 'absolute', top: '50%', left: `calc(50% + ${halfBook}px)`, transform: `translateY(-50%) translateX(-${POLAROID_SOLAPE}px)`, zIndex: 1 }}>
             <PolaroidStack ref={polaroidRef} images={visibleImages} esNoficcion={esNoficcion} />
           </div>
         )}
@@ -627,21 +658,39 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
               style={{ position: 'absolute', top: 12, right: 14, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1.5px solid rgba(74,54,34,0.3)', color: '#9a6a4a', borderRadius: '50%', cursor: 'pointer', fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1 }}>×</button>
             <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ display: 'block', height: 46, width: 'auto', margin: '0 auto 18px' }} />
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: '#2c1a0e', margin: '0 0 12px' }}>
-              Sigue leyendo en Inmersia
+              {muestraMotivo === 'sin-adquirir' ? 'Suma este libro a tu biblioteca' : 'Sigue leyendo en Inmersia'}
             </h2>
             <p style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 15, color: '#6b4c34', lineHeight: 1.55, margin: '0 0 28px' }}>
-              Ya leíste los dos capítulos de muestra.<br />
-              Crea tu cuenta gratis para continuar.
+              {muestraMotivo === 'sin-adquirir' ? (
+                <>Ya leíste los dos capítulos de muestra.<br />Agrégalo desde la Tienda para continuar.</>
+              ) : (
+                <>Ya leíste los dos capítulos de muestra.<br />Crea tu cuenta gratis para continuar.</>
+              )}
             </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button type="button" onClick={() => onRequestAuth?.('registro')}
-                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
-                Crear cuenta
-              </button>
-              <button type="button" onClick={() => onRequestAuth?.('login')}
-                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#ffffff', color: '#000', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
-                Iniciar sesión
-              </button>
+              {muestraMotivo === 'sin-adquirir' ? (
+                <>
+                  <button type="button" onClick={() => onGoTienda?.()}
+                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
+                    Ir a la Tienda
+                  </button>
+                  <button type="button" onClick={() => onGoBack?.()}
+                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#ffffff', color: '#000', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
+                    Volver a mi biblioteca
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="button" onClick={() => onRequestAuth?.('registro')}
+                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
+                    Crear cuenta
+                  </button>
+                  <button type="button" onClick={() => onRequestAuth?.('login')}
+                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#ffffff', color: '#000', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
+                    Iniciar sesión
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

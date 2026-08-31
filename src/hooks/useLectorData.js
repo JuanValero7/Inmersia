@@ -23,6 +23,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
+import { CAPITULOS_MUESTRA } from '../lib/constants.js'
 
 // Filas de subrayados_usuario → { [capitulo_num]: [{ id, texto }, ...] }
 function agruparSubrayados(filas) {
@@ -39,9 +40,19 @@ function agruparSubrayados(filas) {
 // `setChapterIndex` y `setPageIndex` son los setters de UI de cada componente:
 // la carga de la lista de capítulos los usa para reposicionar al restaurar
 // progreso. Son setters de useState (estables), por eso no van en deps.
-export function useLectorData(book, setChapterIndex, setPageIndex) {
+// `muestra` = el lector está en modo muestra (invitado, o usuario autenticado que
+// no adquirió el libro). Recorta la lista de capítulos a CAPITULOS_MUESTRA: para el
+// rol `anon` la RLS ya devuelve solo esos dos, pero para `authenticated` no, así que
+// sin este tope un usuario logueado leía el libro entero abriéndolo por URL.
+export function useLectorData(book, setChapterIndex, setPageIndex, muestra = false) {
   const [capitulos, setCapitulos] = useState([])
+  // El caché es estado porque el render lo lee (currentChapData), pero
+  // fetchChapter NO puede depender de él: cambiaría de identidad en cada
+  // capítulo y obligaría a los efectos que lo consumen a excluirlo con un
+  // eslint-disable. De ahí el espejo en un ref, que es lo que consultan
+  // fetchChapter y peekChapter para poder quedarse con deps vacías.
   const [chapterCache, setChapterCache] = useState({})
+  const chapterCacheRef = useRef({})
   const [userId, setUserId] = useState(null)
   const [userReady, setUserReady] = useState(false)  // ya resolvimos quién es el usuario (o anónimo)
   const [loading, setLoading] = useState(true)
@@ -122,7 +133,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
     if (!book?.libro_id) { setLoading(false); return }
     let cancelled = false
     ;(async () => {
-      setLoading(true); setError(null); setChapterCache({})
+      setLoading(true); setError(null); actualizarCache(() => ({}))
       restoredRef.current = false; setPendingRestore(null)
       try {
         // capitulos y progreso_lectura son independientes (progreso solo
@@ -130,7 +141,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
         // El embed parrafos!ultimo_parrafo_id trae el capitulo_id del párrafo
         // de progreso en la misma respuesta (FK ultimo_parrafo_id → parrafos.id),
         // evitando un viaje extra secuencial a `parrafos`.
-        const [{ data: caps, error: e }, { data: prog }] = await Promise.all([
+        const [{ data: capsTodos, error: e }, { data: prog }] = await Promise.all([
           supabase.from('capitulos').select('id, numero, titulo')
             .eq('libro_id', book.libro_id).order('numero'),
           userId
@@ -140,7 +151,11 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
             : Promise.resolve({ data: null }),
         ])
         if (e) throw e
-        if (!caps || caps.length === 0) throw new Error('Este libro no tiene capítulos cargados.')
+        if (!capsTodos || capsTodos.length === 0) throw new Error('Este libro no tiene capítulos cargados.')
+        // Modo muestra → solo los primeros capítulos. `caps` es de acá en adelante
+        // la lista VISIBLE: el índice de restauración de progreso y el tope que
+        // dispara el paywall se calculan sobre ella.
+        const caps = muestra ? capsTodos.slice(0, CAPITULOS_MUESTRA) : capsTodos
 
         // pendingRestore = { parrafoId, offset }: el offset (caracteres dentro
         // del párrafo) afina la restauración cuando el párrafo es largo y está
@@ -164,12 +179,21 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
       }
     })()
     return () => { cancelled = true }
-  }, [book?.libro_id, userReady])
+  }, [book?.libro_id, userReady, muestra])
+
+  // TODA escritura del caché pasa por aquí. El ref es lo que se consulta y el
+  // estado es lo que se pinta: si se tocan por separado se desincronizan, y un
+  // párrafo borrado por el superusuario reaparecería al volver al capítulo.
+  const actualizarCache = useCallback((fn) => {
+    chapterCacheRef.current = fn(chapterCacheRef.current)
+    setChapterCache(chapterCacheRef.current)
+  }, [])
 
   // Traer un capítulo (párrafos + media + ambiente), con caché
   const fetchChapter = useCallback(async (cap) => {
     if (!cap) return null
-    if (chapterCache[cap.id]) return chapterCache[cap.id]
+    const cacheado = chapterCacheRef.current[cap.id]
+    if (cacheado) return cacheado
     const [{ data: parrafos, error: e1 }, { data: mediaRows, error: e2 }] = await Promise.all([
       supabase.from('parrafos')
         .select('id, capitulo_id, numero, contenido, tipo, escena_tags, tiene_interactivo')
@@ -191,9 +215,13 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
       }
     }
     const entry = { parrafos: parrafos || [], mediaByParrafo, ambient: ambients[0] || null }
-    setChapterCache(prev => ({ ...prev, [cap.id]: entry }))
+    actualizarCache(prev => ({ ...prev, [cap.id]: entry }))
     return entry
-  }, [chapterCache])
+  }, [actualizarCache])
+
+  // Mirar el caché sin disparar la petición. Estable, para que los efectos que
+  // cargan el capítulo actual solo se reejecuten cuando cambia el capítulo.
+  const peekChapter = useCallback((capId) => chapterCacheRef.current[capId] || null, [])
 
   // SFX puntual (botón ♪ en párrafo)
   const playSfx = useCallback((media) => {
@@ -225,17 +253,25 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
     const cap = capitulos[chapterIndex]
     const capNum = cap?.numero ?? chapterIndex + 1
     const texto = text.slice(0, 1000)
-    const { data } = await supabase.from('subrayados_usuario').insert({
+    const { data, error } = await supabase.from('subrayados_usuario').insert({
       user_id: userId, libro_id: book.libro_id,
       capitulo_num: capNum,
       texto_original: texto,
       parrafo_id: parrafoId || null,
     }).select('id').single()
+    // Si el insert falla no se pinta nada. Antes se pintaba la marca amarilla
+    // con id: null sobre un subrayado que no existía en la base: el Cuaderno
+    // salía sin él y esa marca no se podía borrar (el Cuaderno borra por id).
+    if (error || !data?.id) {
+      console.error('subrayar:', error?.message || 'el insert no devolvió id')
+      return false
+    }
     // Sin recargar: la marca amarilla aparece en cuanto se guarda.
     setSubrayadosPorCap(prev => ({
       ...prev,
-      [capNum]: [...(prev[capNum] || []), { id: data?.id ?? null, texto }],
+      [capNum]: [...(prev[capNum] || []), { id: data.id, texto }],
     }))
+    return true
   }
 
   // El Cuaderno es quien borra en Supabase; acá solo se retira la marca del
@@ -259,7 +295,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
       .eq('parrafo_id', parrafoId)
       .eq('media_id', mediaId)
     if (error) { console.error('quitarMedia:', error.message); return false }
-    setChapterCache(prev => {
+    actualizarCache(prev => {
       const entry = prev[capituloId]
       if (!entry) return prev
       const updated = { ...entry.mediaByParrafo }
@@ -297,7 +333,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
       .eq('id', mediaId)
       .single()
     if (m) {
-      setChapterCache(prev => {
+      actualizarCache(prev => {
         const entry = prev[capituloId]
         if (!entry) return prev
         const updated = { ...entry.mediaByParrafo }
@@ -315,7 +351,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
   async function borrarParrafo(parrafoId, capituloId) {
     const { error } = await supabase.rpc('delete_parrafo_superuser', { p_id: parrafoId })
     if (error) { console.error('borrarParrafo:', error.message); return false }
-    setChapterCache(prev => {
+    actualizarCache(prev => {
       const entry = prev[capituloId]
       if (!entry) return prev
       const parrafos = entry.parrafos.filter(p => p.id !== parrafoId)
@@ -333,7 +369,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex) {
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
     // operaciones
-    fetchChapter, playSfx, persistChapterAdvance, subrayar,
+    fetchChapter, peekChapter, playSfx, persistChapterAdvance, subrayar,
     // superusuario
     quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
     // reseña

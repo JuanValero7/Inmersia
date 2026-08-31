@@ -14,7 +14,7 @@ const PAGE_SIZE = 15
 // `readOnly`: el foro se muestra pero no se puede comentar ni responder
 // (usado en el Manual del Explorador para lectores normales; los superusuarios
 // sí pueden, para poder dejar el comentario "oficial" del gato).
-export default function ForoComentarios({ foro, user, onCountChange, readOnly = false }) {
+export default function ForoComentarios({ foro, user, onCountChange, readOnly = false, isSuperuser = false }) {
   const [comentarios,     setComentarios]     = useState([])
   const [repliesByParent, setRepliesByParent] = useState({})
   const [perfilesMap,     setPerfilesMap]     = useState({})
@@ -33,6 +33,7 @@ export default function ForoComentarios({ foro, user, onCountChange, readOnly = 
   const [nuevoEsSpoiler,  setNuevoEsSpoiler]  = useState(false)
   const [replyEsSpoiler,  setReplyEsSpoiler]  = useState(false)
   const [submitting,      setSubmitting]      = useState(false)
+  const [envioError,      setEnvioError]      = useState('')
   const [revealedSpoilers, setRevealedSpoilers] = useState(new Set())
 
   const fetchPage = useCallback(async (pageOffset, tag, reset) => {
@@ -74,7 +75,7 @@ export default function ForoComentarios({ foro, user, onCountChange, readOnly = 
     const authorIds = [...new Set(allItems.map(c => c.autor_id))]
     if (authorIds.length > 0) {
       const { data: perfiles } = await supabase
-        .from('perfiles').select('id, nombre, apellido').in('id', authorIds)
+        .from('perfiles_publicos').select('id, nombre, apellido').in('id', authorIds)
       const newMap = {}
       ;(perfiles || []).forEach(p => { newMap[p.id] = p })
       setPerfilesMap(prev => reset ? newMap : { ...prev, ...newMap })
@@ -146,13 +147,17 @@ export default function ForoComentarios({ foro, user, onCountChange, readOnly = 
     if (!nuevoContenido.trim() || submitting) return
     if (nuevoContenido.trim().length > 2000) return
     setSubmitting(true)
-    await supabase.from('foros_comentarios').insert({
+    // Si falla NO se vacía el cuadro de texto: la BD tiene topes propios
+    // (migración 039) y sin esto el usuario perdía lo escrito sin explicación.
+    const { error } = await supabase.from('foros_comentarios').insert({
       foro_id: foro.id, autor_id: user.id,
       contenido: nuevoContenido.trim(), tags: nuevoTags,
       es_spoiler: nuevoEsSpoiler,
     })
-    setNuevoContenido(''); setNuevoTags([]); setNuevoEsSpoiler(false); setShowModal(false)
     setSubmitting(false)
+    if (error) { console.error('submitComentario:', error.message); setEnvioError('No se pudo publicar tu comentario. Inténtalo de nuevo.'); return }
+    setEnvioError('')
+    setNuevoContenido(''); setNuevoTags([]); setNuevoEsSpoiler(false); setShowModal(false)
     setOffset(0)
     fetchPage(0, activeTag, true)
     refreshCount()
@@ -162,19 +167,27 @@ export default function ForoComentarios({ foro, user, onCountChange, readOnly = 
     if (!replyText.trim() || submitting) return
     if (replyText.trim().length > 2000) return
     setSubmitting(true)
-    await supabase.from('foros_comentarios').insert({
+    const { error } = await supabase.from('foros_comentarios').insert({
       foro_id: foro.id, autor_id: user.id,
       contenido: replyText.trim(), tags: [], parent_id: parentId,
       es_spoiler: replyEsSpoiler,
     })
-    setReplyText(''); setReplyEsSpoiler(false); setReplyOpenFor(null); setSubmitting(false)
+    setSubmitting(false)
+    if (error) { console.error('submitReply:', error.message); setEnvioError('No se pudo publicar tu respuesta. Inténtalo de nuevo.'); return }
+    setEnvioError('')
+    setReplyText(''); setReplyEsSpoiler(false); setReplyOpenFor(null)
     setOffset(0)
     fetchPage(0, activeTag, true)
     setExpandedReplies(prev => new Set([...prev, parentId]))
   }
 
-  async function eliminarComentario(id) {
-    await supabase.from('foros_comentarios').delete().eq('id', id)
+  // `ajeno` = lo está borrando un superusuario moderando, no su autor. Borrar
+  // lo propio sigue siendo inmediato; moderar pide confirmación porque destruye
+  // contenido de otra persona y no hay deshacer.
+  async function eliminarComentario(id, ajeno = false) {
+    if (ajeno && !window.confirm('¿Eliminar este comentario de otro lector? No se puede deshacer.')) return
+    const { error } = await supabase.from('foros_comentarios').delete().eq('id', id)
+    if (error) { console.error('eliminarComentario:', error.message); return }
     const isRoot = comentarios.some(c => c.id === id)
     if (isRoot) {
       setComentarios(prev => prev.filter(c => c.id !== id))
@@ -305,9 +318,10 @@ export default function ForoComentarios({ foro, user, onCountChange, readOnly = 
                           }
                         </button>
                       )}
-                      {c.autor_id === user.id && (
-                        <button type="button" className="foro-accion-btn eliminar" onClick={() => eliminarComentario(c.id)}>
-                          Eliminar
+                      {(c.autor_id === user.id || isSuperuser) && (
+                        <button type="button" className="foro-accion-btn eliminar"
+                          onClick={() => eliminarComentario(c.id, c.autor_id !== user.id)}>
+                          {c.autor_id === user.id ? 'Eliminar' : 'Eliminar (moderar)'}
                         </button>
                       )}
                     </div>
@@ -363,10 +377,11 @@ export default function ForoComentarios({ foro, user, onCountChange, readOnly = 
                               ) : (
                                 <p className="foro-contenido">{r.contenido}</p>
                               )}
-                              {r.autor_id === user.id && (
+                              {(r.autor_id === user.id || isSuperuser) && (
                                 <div className="foro-acciones">
-                                  <button type="button" className="foro-accion-btn eliminar" onClick={() => eliminarComentario(r.id)}>
-                                    Eliminar
+                                  <button type="button" className="foro-accion-btn eliminar"
+                                    onClick={() => eliminarComentario(r.id, r.autor_id !== user.id)}>
+                                    {r.autor_id === user.id ? 'Eliminar' : 'Eliminar (moderar)'}
                                   </button>
                                 </div>
                               )}
@@ -408,7 +423,7 @@ export default function ForoComentarios({ foro, user, onCountChange, readOnly = 
 
       {/* ── Modal nuevo comentario ── */}
       {showModal && (
-        <div className="foro-modal-backdrop" onClick={() => setShowModal(false)}>
+        <div className="foro-modal-backdrop" onClick={() => { setEnvioError(''); setShowModal(false) }}>
           <div className="foro-modal" onClick={e => e.stopPropagation()}>
             <div className="foro-modal-header">
               <h2 className="foro-modal-titulo">Nuevo comentario</h2>
@@ -419,6 +434,12 @@ export default function ForoComentarios({ foro, user, onCountChange, readOnly = 
               </button>
             </div>
             <div className="foro-modal-body">
+              {envioError && (
+                <div style={{ background: '#fdeceb', border: '1.5px solid #c0392b', color: '#8e2b20',
+                  borderRadius: 10, padding: '10px 13px', marginBottom: 12, fontSize: 14, lineHeight: 1.45 }}>
+                  {envioError}
+                </div>
+              )}
               <textarea
                 className="foro-textarea"
                 placeholder="Comparte tus pensamientos sobre el libro…"

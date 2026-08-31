@@ -8,23 +8,48 @@
 // Todas las clases van prefijadas con `inm-` y el CSS está scopeado
 // bajo `.inm-landing`, así no colisiona con el resto de la app.
 // ─────────────────────────────────────────────────────────────
-import { useRef } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { FEATURES, WORLDS_IMG } from './landing/landingData.js'
 import { useReveal, usePortal } from './landing/useLandingScene.js'
+import LegalModal from './legal/LegalModal.jsx'
 import '../styles/landing.css'
 
 // El sufijo ?v= fuerza al navegador a descargar la versión nueva del logo
 // cuando reemplazamos el archivo manteniendo el mismo nombre (cache-busting).
 // Súbelo (v3 → v4 …) cada vez que cambies las imágenes.
-const LOGO = '/assets/inmersia-logo.png?v=3'
+const LOGO = '/assets/inmersia-logo.png?v=4'
 const BOOK = '/assets/landing/libro2-cutout.webp?v=3'
 const GATO = '/assets/cartelera/gato-blanco-2.webp'
 
 export default function Landing({ onAuth, onGoTienda, mobile = false }) {
+  const [legalDoc, setLegalDoc] = useState(null) // null | 'terminos' | 'privacidad'
   const rootRef = useRef(null)
   const queRef = useRef(null)
   useReveal(rootRef)
   usePortal(rootRef)
+
+  // Los mundos del portal rotan cada 5,2 s (ver usePortal), así que solo el
+  // primero hace falta para el primer pintado. Descargarlos los cinco de golpe
+  // costaba ~1,1 MB antes de que se viera nada — caro con datos móviles, que es
+  // como va a llegar casi todo el mundo desde Instagram. Los otros cuatro se
+  // piden en cuanto el navegador está ocioso, mucho antes del primer cambio.
+  //
+  // Se asigna el `src` por DOM y no por estado a propósito: usePortal gobierna
+  // la clase `active` de estos mismos <img> de forma imperativa, así que un
+  // re-render de React volvería a escribir className y se llevaría por delante
+  // la rotación en curso. Mismo criterio que useLandingScene.
+  useEffect(() => {
+    const cargar = () => {
+      rootRef.current?.querySelectorAll('.inm-world[data-src]:not([src])')
+        .forEach((el) => { el.src = el.dataset.src })
+    }
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(cargar, { timeout: 2500 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const t = setTimeout(cargar, 1200)
+    return () => clearTimeout(t)
+  }, [])
 
   // ¿Esta vista se pinta con su captura móvil? Solo en la variante móvil y si
   // la vista tiene una (el álbum no la tiene: ver landingData.js).
@@ -83,7 +108,14 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
               <div className="inm-portal-wrap">
                 <div className="inm-portal">
                   {WORLDS_IMG.map((w, i) => (
-                    <img key={w.src} className={`inm-world ${i === 0 ? 'active' : ''} ${w.cls}`.trim()} src={w.src} alt="" />
+                    <img
+                      key={w.src}
+                      className={`inm-world ${i === 0 ? 'active' : ''} ${w.cls}`.trim()}
+                      src={i === 0 ? w.src : undefined}
+                      data-src={w.src}
+                      decoding="async"
+                      alt=""
+                    />
                   ))}
                   <div className="inm-portal-shine" />
                 </div>
@@ -157,8 +189,17 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
         <div className="inm-wrap inm-foot-in">
           <img src={LOGO} alt="Inmersia" />
           <p>© 2026 Inmersia</p>
+          {/* Los documentos legales tienen que ser accesibles SIN cuenta: hasta
+              ahora solo se abrían desde el registro y desde el perfil. */}
+          <nav className="inm-foot-legal">
+            <button type="button" onClick={() => setLegalDoc('terminos')}>Términos y Condiciones</button>
+            <span aria-hidden="true">·</span>
+            <button type="button" onClick={() => setLegalDoc('privacidad')}>Política de Privacidad</button>
+          </nav>
         </div>
       </footer>
+
+      {legalDoc && <LegalModal initialDoc={legalDoc} onClose={() => setLegalDoc(null)} />}
     </div>
   )
 }

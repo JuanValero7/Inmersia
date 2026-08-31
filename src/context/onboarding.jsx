@@ -11,12 +11,18 @@
 //
 // Máquina de estados (lineal). Cada superficie lee `step` y restringe la
 // navegación a un único destino permitido:
-//   bienvenida → manual → investigacion → foro → album → tienda_final → done
+//   bienvenida → manual → investigacion → foro → album → tienda_final → tienda → done
 // ─────────────────────────────────────────────────────────────
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { ensureProfile } from '../lib/ensureProfile.js'
 
-export const ONBOARDING_STEPS = ['bienvenida', 'manual', 'investigacion', 'foro', 'album', 'tienda_final', 'done']
+// 'tienda_final' = el hint "Ve a la Tienda" que vive en la Biblioteca.
+// 'tienda'       = el aviso del límite de lecturas pendientes, en la FACHADA de
+//                  la Tienda. Es el último: si el usuario nunca cruza la puerta
+//                  el paso se queda ahí, pero el flag de la DB ya está en true,
+//                  así que no reaparece en otra sesión.
+export const ONBOARDING_STEPS = ['bienvenida', 'manual', 'investigacion', 'foro', 'album', 'tienda_final', 'tienda', 'done']
 
 const OnboardingContext = createContext(null)
 
@@ -31,7 +37,14 @@ export function useOnboardingController(user, navigate) {
     let cancelled = false
     if (!user?.id) { setStep(null); setReady(true); startedRef.current = false; return }
     setReady(false)
-    supabase.from('perfiles').select('onboarding_completado').eq('id', user.id).maybeSingle()
+    // Esperar a ensureProfile ANTES de leer el flag. En un registro nuevo la fila
+    // de `perfiles` todavía no existe: esta consulta necesita 1 viaje de red y
+    // ensureProfile 2 (SELECT + INSERT), así que sin esperar ganábamos la carrera,
+    // maybeSingle() devolvía null, `=== false` era falso y el usuario recién
+    // registrado se quedaba SIN tutorial. ensureProfile está memoizado por user.id
+    // (ver lib/ensureProfile.js), así que esto no duplica trabajo con App.jsx.
+    ensureProfile(user)
+      .then(() => supabase.from('perfiles').select('onboarding_completado').eq('id', user.id).maybeSingle())
       .then(({ data }) => {
         if (cancelled) return
         // === false explícito: usuario nuevo. (Si la columna no existe todavía

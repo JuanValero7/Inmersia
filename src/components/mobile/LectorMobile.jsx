@@ -29,6 +29,7 @@ import { useLectorData } from '../../hooks/useLectorData.js'
 import { useXrayItems } from '../../hooks/useXrayItems.js'
 import { useSesionLectura } from '../../hooks/useSesionLectura.js'
 import { useOnboarding } from '../../context/onboarding.jsx'
+import { anotarMuestra } from '../../lib/progresoInvitado.js'
 import { paginarParrafosMobileDOM } from '../../utils/lectorPaginationMobile.js'
 import { offsetDeAnclaje, paginaDeAnclaje } from '../../utils/readerHelpers.js'
 import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTILIZADO (igual al de PC)
@@ -38,7 +39,7 @@ import { useAmbientPlayer } from '../../hooks/useAmbientPlayer.js'
 import { useWhiteNoise } from '../../hooks/useWhiteNoise.js'
 import { AMBIENTE_FICCION_ACTIVO } from '../lector/readerConstants.js'
 import MobileBookPage from './lector/MobileBookPage.jsx'
-import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
+import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, FotoAsomada, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
 import '../../styles/lector.mobile.css'
 
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
@@ -117,7 +118,7 @@ function HighlighterIcon({ active }) {
 // ═══════════════════════════════════════════════════════════════
 //  COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════════
-export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, onRequestAuth, gatoColor = 'negro' }) {
+export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, muestraMotivo = 'invitado', onRequestAuth, onGoTienda, gatoColor = 'negro' }) {
   // ── Estado de navegación de lectura (UI) ──
   const [chapterIndex, setChapterIndex] = useState(0)
   const [pageIndex,    setPageIndex]    = useState(0)
@@ -143,10 +144,16 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     isLeido, setIsLeido, subrayadosPorCap, olvidarSubrayado,
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
-    fetchChapter, playSfx, persistChapterAdvance, subrayar,
+    fetchChapter, peekChapter, playSfx, persistChapterAdvance, subrayar,
     quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
     miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
-  } = useLectorData(book, setChapterIndex, setPageIndex)
+  } = useLectorData(book, setChapterIndex, setPageIndex, guestMode)
+
+  // Modo muestra: se anota cuánto lleva leído el invitado para que la
+  // adquisición lo rescate al registrarse (ver lib/progresoInvitado.js).
+  useEffect(() => {
+    if (guestMode) anotarMuestra(book?.libro_id, chapterIndex)
+  }, [guestMode, chapterIndex, book?.libro_id])
 
   useSesionLectura(userId, book, guestMode)
   const invalidateBiblioteca = useInvalidateBibliotecaUsuario(userId)
@@ -179,7 +186,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const [fontSize,    setFontSize]    = useLocalStorage('inm_lector_fontSize', 16)
   const [readingFont, setReadingFont] = useLocalStorage('inm_lector_font', READING_FONT_DEFAULT)
   const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
-  const [autoImages,  setAutoImages]  = useLocalStorage('inm_auto_img', true)
 
   // ── Estado de UI no compartido ──
   const [modoSubrayado,  setModoSubrayado]  = useState(false)
@@ -206,7 +212,11 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     ;(async () => {
       setError(null)
       try {
-        let entry = chapterCache[cap.id]
+        // peekChapter mira el caché sin pedir nada, para no encender el
+        // spinner en un capítulo ya cargado. Es estable, igual que
+        // fetchChapter (ver el espejo en ref de useLectorData), así que este
+        // efecto solo corre cuando cambia de verdad el capítulo.
+        let entry = peekChapter(cap.id)
         if (!entry) { setLoadingCap(true); entry = await fetchChapter(cap) }
         if (cancelled || !entry) return
       } catch (err) {
@@ -216,7 +226,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       }
     })()
     return () => { cancelled = true }
-  }, [chapterIndex, capitulos])
+  }, [chapterIndex, capitulos, fetchChapter, peekChapter])
 
   const currentChapter  = capitulos[chapterIndex] || null
   const esNoficcion = book?.es_ficcion === false
@@ -454,25 +464,10 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     return imgs
   }, [currentChapData, paginas, pageIndex])
 
-  // ── Imágenes de la página exacta actual (para auto-mostrar) ──
-  const currentPageNewImages = useMemo(() => {
-    if (!currentChapData) return []
-    const parrToPage = {}
-    paginas.forEach((page, idx) => page.forEach(p => { parrToPage[p.id] = idx }))
-    const seen = new Set(); const imgs = []
-    for (const p of currentChapData.parrafos) {
-      if (parrToPage[p.id] !== pageIndex) continue
-      for (const m of (currentChapData.mediaByParrafo[p.id] || [])) {
-        if (m.tipo === 'imagen' && m.origen === 'explicito' && !seen.has(m.media_id)) { seen.add(m.media_id); imgs.push(m) }
-      }
-    }
-    return imgs
-  }, [currentChapData, paginas, pageIndex])
-
-  // Auto-abrir imagen invasiva al llegar a una página con imagen
-  useEffect(() => {
-    if (autoImages && currentPageNewImages.length > 0) setImageOpen(true)
-  }, [pageIndex, chapterIndex, autoImages])
+  // La imagen NO se abre sola: espera en <FotoAsomada>, abajo, hasta que la
+  // toquen. Antes irrumpía a pantalla completa al llegar a su página —cortando
+  // la lectura justo donde el lector estaba metido— y hubo que darle una
+  // preferencia para apagarla; quitado el automatismo, la preferencia sobra.
 
   // ── Navegación de páginas ──
   const total = paginas.length
@@ -513,7 +508,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       setPendingChapter(chapterIndex + 1); setNotebookOpen(true)
       return
     }
-    if (guestMode) setShowPaywall(true)
+    if (guestMode) { anotarMuestra(book?.libro_id, chapterIndex + 1); setShowPaywall(true) }
   }
   function pickChapter(i) { setChapterIndex(i); setPageIndex(0); setSheet(null); setGoToLastPage(false) }
 
@@ -665,6 +660,15 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
                 ))}
               </div>
             )}
+            {/* Al final del dock y solo con la bandeja CERRADA: las herramientas
+                se abren hacia la derecha y ocupan esta misma franja, así que la
+                foto se retira mientras dure y vuelve al cerrarla — la bandeja no
+                pierde ancho y los botones no se aprietan.
+                Se muestra la última imagen revelada; si hay varias, el visor las
+                lista todas en sus miniaturas. */}
+            {!catOpen && (
+              <FotoAsomada image={visibleImages[visibleImages.length - 1]} onOpen={() => setImageOpen(true)} />
+            )}
           </div>
         )}
 
@@ -705,7 +709,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       {sheet==='nav' && <NavSheet onGoForo={onGoForo} onGoCartelera={irCartelera} onGoBiblioteca={onGoBack} onClose={()=>setSheet(null)} soloInvestigacion={tutorialManual} />}
 
       {/* Overlay imagen */}
-      {imageOpen && <ImageOverlay images={visibleImages} chapter={currentChapter} chapterIndex={chapterIndex} onClose={()=>setImageOpen(false)} autoImages={autoImages} onToggleAutoImages={() => setAutoImages(v => !v)} esNoficcion={esNoficcion} />}
+      {imageOpen && <ImageOverlay images={visibleImages} chapter={currentChapter} chapterIndex={chapterIndex} onClose={()=>setImageOpen(false)} esNoficcion={esNoficcion} />}
 
       {/* Reseña (aparece al terminar el libro) */}
       {resenaOpen && <ResenaSheet form={resenaForm} setForm={setResenaForm} enviando={resenaEnviando} miResena={miResena} onSubmit={handleSubmitResena} onClose={()=>setResenaOpen(false)} />}
@@ -730,21 +734,39 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
               style={{ position: 'absolute', top: 10, right: 12, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1.5px solid rgba(74,54,34,0.3)', color: '#9a6a4a', borderRadius: '50%', cursor: 'pointer', fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1 }}>×</button>
             <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ display: 'block', height: 40, width: 'auto', margin: '0 auto 16px' }} />
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: '#2c1a0e', margin: '0 0 10px' }}>
-              Sigue leyendo en Inmersia
+              {muestraMotivo === 'sin-adquirir' ? 'Suma este libro a tu biblioteca' : 'Sigue leyendo en Inmersia'}
             </h2>
             <p style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 14, color: '#6b4c34', lineHeight: 1.55, margin: '0 0 24px' }}>
-              Ya leíste los dos capítulos de muestra.<br />
-              Crea tu cuenta gratis para continuar.
+              {muestraMotivo === 'sin-adquirir' ? (
+                <>Ya leíste los dos capítulos de muestra.<br />Agrégalo desde la Tienda para continuar.</>
+              ) : (
+                <>Ya leíste los dos capítulos de muestra.<br />Crea tu cuenta gratis para continuar.</>
+              )}
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button type="button" onClick={() => onRequestAuth?.('registro')}
-                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
-                Crear cuenta
-              </button>
-              <button type="button" onClick={() => onRequestAuth?.('login')}
-                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#ffffff', color: '#000', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
-                Iniciar sesión
-              </button>
+              {muestraMotivo === 'sin-adquirir' ? (
+                <>
+                  <button type="button" onClick={() => onGoTienda?.()}
+                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
+                    Ir a la Tienda
+                  </button>
+                  <button type="button" onClick={() => onGoBack?.()}
+                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#ffffff', color: '#000', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
+                    Volver a mi biblioteca
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="button" onClick={() => onRequestAuth?.('registro')}
+                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
+                    Crear cuenta
+                  </button>
+                  <button type="button" onClick={() => onRequestAuth?.('login')}
+                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#ffffff', color: '#000', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.25)' }}>
+                    Iniciar sesión
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 import { supabase } from '../lib/supabase.js'
+import { EDAD_MINIMA, edadEnAnios } from '../lib/edad.js'
+import { LEGAL_VERSION } from '../lib/constants.js'
 import LegalModal from './legal/LegalModal.jsx'
 import '../styles/auth.css'
 
@@ -67,6 +69,7 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
   const [success,     setSuccess]     = useState('')
   const [loginForm,   setLoginForm]   = useState({ email: '', password: '' })
   const [regForm,     setRegForm]     = useState({ nombre: '', apellido: '', fechaNacimiento: '', genero: '', email: '', password: '', confirmPassword: '' })
+  const [aceptaLegal, setAceptaLegal] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
   const [legalDoc,    setLegalDoc]    = useState(null) // null | 'terminos' | 'privacidad'
 
@@ -99,6 +102,13 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
     e.preventDefault(); clear()
     if (regForm.password !== regForm.confirmPassword) { setError('Las contraseñas no coinciden.'); return }
     if (regForm.password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); return }
+    // Edad mínima declarada en los Términos (3.1). Hasta ahora se pedía la fecha
+    // y no se comprobaba nada: el documento prometía un límite que el formulario
+    // no aplicaba.
+    const edad = edadEnAnios(regForm.fechaNacimiento)
+    if (edad === null) { setError('Revisa la fecha de nacimiento.'); return }
+    if (edad < EDAD_MINIMA) { setError(`Para crear una cuenta en Inmersia tienes que tener al menos ${EDAD_MINIMA} años.`); return }
+    if (!aceptaLegal) { setError('Tienes que aceptar los Términos y Condiciones y la Política de Privacidad.'); return }
     setLoading(true)
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: regForm.email.trim(), password: regForm.password,
@@ -107,6 +117,10 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
         apellido: regForm.apellido.trim(),
         fecha_nacimiento: regForm.fechaNacimiento || null,
         genero: regForm.genero || null,
+        // Prueba de la aceptación: qué versión de los documentos aceptó y
+        // cuándo. Sin esto, "aceptaste los Términos" no se puede sostener.
+        legal_aceptado_version: LEGAL_VERSION,
+        legal_aceptado_at: new Date().toISOString(),
       } },
     })
     // El perfil y el Manual del Explorador se crean en App.jsx (ensureProfile) al
@@ -231,7 +245,19 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
                 <div><label className="field-label">Contraseña *</label><PasswordInput placeholder="6+ caracteres" autoComplete="new-password" value={regForm.password} onChange={e => setR('password', e.target.value)} /></div>
                 <div><label className="field-label">Confirmar *</label><PasswordInput placeholder="Repite" autoComplete="new-password" value={regForm.confirmPassword} onChange={e => setR('confirmPassword', e.target.value)} /></div>
               </div>
-              <button type="submit" className="btn-stamp" disabled={loading}>
+              {/* Aceptación explícita: casilla obligatoria, no un "al continuar
+                  aceptas" al pie. La versión aceptada y la fecha se guardan en el
+                  metadata del usuario (ver handleRegister). */}
+              <label className="auth-legal-check">
+                <input type="checkbox" checked={aceptaLegal} onChange={e => setAceptaLegal(e.target.checked)} />
+                <span>
+                  He leído y acepto los{' '}
+                  <button type="button" onClick={() => setLegalDoc('terminos')}>Términos y Condiciones</button>
+                  {' '}y la{' '}
+                  <button type="button" onClick={() => setLegalDoc('privacidad')}>Política de Privacidad</button>.
+                </span>
+              </label>
+              <button type="submit" className="btn-stamp" disabled={loading || !aceptaLegal}>
                 {loading
                   ? <span className="flex items-center justify-center gap-2"><span className="spinner" />Creando carnet…</span>
                   : 'Crear mi carnet de biblioteca'}
@@ -239,12 +265,16 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
             </form>
           )}
 
-          <p className="auth-foot" style={{ marginTop: 18, fontSize: 12 }}>
-            Al continuar, aceptás los{' '}
-            <button type="button" onClick={() => setLegalDoc('terminos')}>Términos y Condiciones</button>
-            {' '}y la{' '}
-            <button type="button" onClick={() => setLegalDoc('privacidad')}>Política de Privacidad</button>.
-          </p>
+          {/* En "registro" la aceptación va en la casilla del formulario; acá
+              sobraría. En las demás pestañas los documentos siguen a un clic. */}
+          {tab !== 'registro' && (
+            <p className="auth-foot" style={{ marginTop: 18, fontSize: 12 }}>
+              Puedes consultar los{' '}
+              <button type="button" onClick={() => setLegalDoc('terminos')}>Términos y Condiciones</button>
+              {' '}y la{' '}
+              <button type="button" onClick={() => setLegalDoc('privacidad')}>Política de Privacidad</button>.
+            </p>
+          )}
         </div>
       </div>
 

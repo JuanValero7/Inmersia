@@ -138,6 +138,7 @@ export default function VistaForo({ book: bookProp, user, onGoBack, onGoLectura,
           user={user}
           onCountChange={setComentariosCount}
           readOnly={readOnly}
+          isSuperuser={isSuperuser}
         />
       ) : (
         <ForoChat

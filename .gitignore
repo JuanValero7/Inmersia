@@ -22,3 +22,9 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Respaldo de imágenes originales antes de recomprimir (no se publica)
+_originales/
+
+# Capturas del barrido de adaptabilidad (no se publican)
+capturas-revision/

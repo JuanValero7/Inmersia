@@ -15,6 +15,7 @@
 // ═══════════════════════════════════════════════════════════
 import React from 'react'
 import { INK, BookCover } from './helpers.jsx'
+import { imgUrl } from '../../../lib/img.js'
 
 function UltimosAbiertos({ books, onOpen }) {
   const ink = INK
@@ -34,7 +35,7 @@ function UltimosAbiertos({ books, onOpen }) {
             {b.heroUrl && (
               <>
                 {/* Fondo alegórico del libro (acuarela IA), a sangre dentro de la ficha. */}
-                <img src={b.heroUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none' }} />
+                <img src={imgUrl(b.heroUrl, { width: 520 })} alt="" loading="lazy" decoding="async" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none' }} />
                 {/* Velo crema: más denso hacia la derecha, donde va el texto. */}
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(241,232,212,0.55) 0%, rgba(241,232,212,0.82) 55%, rgba(241,232,212,0.9) 100%)', zIndex: 0, pointerEvents: 'none' }} />
               </>

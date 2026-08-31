@@ -19,6 +19,7 @@ import React, { useState, useMemo } from 'react'
 import clsx from 'clsx'
 import { supabase } from '../lib/supabase.js'
 import { usePerfilData } from '../hooks/usePerfilData.js'
+import { descargarMisDatos } from '../lib/misDatos.js'
 import { useOnboarding } from '../context/onboarding.jsx'
 import LegalModal from './legal/LegalModal.jsx'
 import '../styles/perfil.css'
@@ -293,15 +294,96 @@ export function SecHistorial() {
 }
 
 // ════════════════════ Sección: Legal ═════════════════════════
-export function SecLegal() {
-  const [open, setOpen] = useState(null) // null | 'terminos' | 'privacidad'
+// Además de los dos documentos, es el sitio donde se ejercen los dos
+// derechos que la app puede resolver sola: portabilidad (descargar) y
+// supresión (eliminar). Ver Política de Privacidad, sección 7.
+export function SecLegal({ user, onSignOut }) {
+  const [open, setOpen] = useState(null)        // null | 'terminos' | 'privacidad'
+  const [bajando, setBajando] = useState(false)
+  const [fb, setFb] = useState(null)
+  const [confirmando, setConfirmando] = useState(false)
+  const [textoConfirm, setTextoConfirm] = useState('')
+  const [borrando, setBorrando] = useState(false)
+
+  async function bajarDatos() {
+    setBajando(true); setFb(null)
+    const err = await descargarMisDatos(user)
+    setBajando(false)
+    setFb(err
+      ? { t: 'err', m: 'No se pudo generar la descarga: ' + err }
+      : { t: 'ok', m: 'Descarga lista ✓' })
+    setTimeout(() => setFb(null), 4000)
+  }
+
+  async function eliminarCuenta() {
+    setBorrando(true); setFb(null)
+    // La función SQL borra de auth.users con auth.uid(); el CASCADE se lleva
+    // el resto. Ver migración 043.
+    const { error } = await supabase.rpc('eliminar_mi_cuenta')
+    if (error) {
+      setBorrando(false)
+      setFb({ t: 'err', m: 'No se pudo eliminar la cuenta: ' + error.message + '. Escríbenos a legal@inmersia.io.' })
+      return
+    }
+    // La sesión ya apunta a un usuario que no existe: cerrarla y salir.
+    await supabase.auth.signOut()
+    onSignOut?.()
+  }
+
   return (
-    <div style={{ maxWidth: 480 }}>
-      <div className="pf-lead" style={{ marginBottom: 20 }}>Revisá los documentos legales de Inmersia.</div>
+    <div style={{ maxWidth: 520 }}>
+      <div className="pf-lead" style={{ marginBottom: 20 }}>Revisa los documentos legales de Inmersia.</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <button type="button" className="pf-btn pf-btn-ghost" style={{ justifyContent: 'flex-start' }} onClick={() => setOpen('terminos')}>Términos y Condiciones</button>
         <button type="button" className="pf-btn pf-btn-ghost" style={{ justifyContent: 'flex-start' }} onClick={() => setOpen('privacidad')}>Política de Privacidad</button>
       </div>
+
+      <div className="pf-legal-sep" />
+
+      <div className="pf-lead" style={{ marginBottom: 14 }}>Tus datos</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <button type="button" className="pf-btn pf-btn-ghost" style={{ justifyContent: 'flex-start' }}
+          onClick={bajarDatos} disabled={bajando}>
+          {bajando ? 'Preparando…' : 'Descargar mis datos'}
+        </button>
+        <div className="pf-legal-note">
+          Un archivo JSON con tu perfil, tu biblioteca, tu progreso, tus notas,
+          tus subrayados, tus reseñas y tus comentarios.
+        </div>
+
+        {!confirmando && (
+          <button type="button" className="pf-btn pf-btn-danger" style={{ justifyContent: 'flex-start' }}
+            onClick={() => { setConfirmando(true); setTextoConfirm(''); setFb(null) }}>
+            Eliminar mi cuenta
+          </button>
+        )}
+
+        {confirmando && (
+          <div className="pf-danger-box">
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>Esto no se puede deshacer.</div>
+            <div style={{ marginBottom: 12 }}>
+              Se borran tu perfil, tu biblioteca, tu progreso de lectura, tus notas,
+              tus subrayados, tus reseñas, tus comentarios del foro, tus chats y tu álbum.
+              Si quieres conservar algo, descarga tus datos antes.
+            </div>
+            <label className="pf-field-label">Escribe <strong>ELIMINAR</strong> para confirmar</label>
+            <input className="pf-input" value={textoConfirm} autoFocus
+              onChange={e => setTextoConfirm(e.target.value)} placeholder="ELIMINAR" />
+            <div style={{ display: 'flex', gap: 12, marginTop: 14 }}>
+              <button type="button" className="pf-btn pf-btn-danger"
+                disabled={textoConfirm.trim().toUpperCase() !== 'ELIMINAR' || borrando}
+                onClick={eliminarCuenta}>
+                {borrando ? 'Eliminando…' : 'Eliminar definitivamente'}
+              </button>
+              <button type="button" className="pf-btn pf-btn-ghost" disabled={borrando}
+                onClick={() => setConfirmando(false)}>Cancelar</button>
+            </div>
+          </div>
+        )}
+
+        {fb && <div className={fb.t === 'ok' ? 'pf-ok' : 'pf-err'}>{fb.m}</div>}
+      </div>
+
       {open && <LegalModal initialDoc={open} onClose={() => setOpen(null)} />}
     </div>
   )
@@ -382,7 +464,7 @@ export default function Perfil({ user, gatoColor, onChangeGatoColor, onGoBack, o
             {sec === 'seguridad' && <SecSeguridad/>}
             {sec === 'transac' && <SecTransac/>}
             {sec === 'historial' && <SecHistorial/>}
-            {sec === 'legal' && <SecLegal/>}
+            {sec === 'legal' && <SecLegal user={user} onSignOut={onSignOut}/>}
           </div>
         </section>
       </div>

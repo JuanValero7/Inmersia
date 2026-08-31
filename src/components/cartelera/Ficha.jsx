@@ -61,7 +61,6 @@ export default function Ficha({ section, items = [], onBackPortada, initialItemI
 
   return (
     <div className="cart-scene" style={rootStyle}>
-      <Signpost gatoColor={gatoColor} />
       <div className="topbar">
         <div className="ttl">
           <h1>{section.label}</h1>
@@ -96,6 +95,11 @@ export default function Ficha({ section, items = [], onBackPortada, initialItemI
           <div className="book">
             {/* índice */}
             <div className="page left">
+              {/* El gato va DENTRO de la página, no suelto en la escena: así se
+                  escala con el cuaderno (.book-scale) y su sitio es siempre el
+                  mismo en coordenadas de libro. Suelto estaba anclado al
+                  viewport y tapaba nombres del índice a cualquier ancho. */}
+              <Signpost gatoColor={gatoColor} />
               <div className="idx-head">
                 <div className="idx-kicker">Índice</div>
                 <div className="idx-title"><b>{section.label}</b><span>{total}</span></div>

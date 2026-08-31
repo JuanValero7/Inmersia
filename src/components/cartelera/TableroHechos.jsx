@@ -72,6 +72,19 @@ export default function TableroHechos({ pct = 0, scale = 1, imageUrl, videoUrl, 
     )
   }
 
+  // Libro terminado y sin video: se cae el edificio. Con las 20 persianas
+  // abiertas la imagen ya se veía completa, pero repartida entre los vidrios y
+  // teñida por el `glow` de cada ventana, con los marcos, dinteles y repisas
+  // encima. Sin las ventanas queda el dibujo limpio; `cart-building` se queda
+  // solo por el marco redondeado y la sombra, igual que la rama del video.
+  if (pct >= 100 && imageUrl) {
+    return (
+      <div className="cart-canvas cart-building" style={containerStyle} onClick={onOpenList} title={onOpenList ? 'Ver la lista' : undefined}>
+        <div className="cart-foto"><img src={imageUrl} alt="" /></div>
+      </div>
+    )
+  }
+
   return (
     <div className="cart-canvas cart-building" style={containerStyle} onClick={onOpenList} title={onOpenList ? 'Ver la lista' : undefined}>
       {items.map((it, i) => <Window key={i} it={it} open={rank[i] < openCount} imageUrl={imageUrl} />)}

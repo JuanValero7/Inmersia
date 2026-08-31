@@ -6,6 +6,7 @@ import { ensureProfile } from './lib/ensureProfile.js'
 import { MANUAL_LIBRO_ID } from './lib/constants.js'
 import { queryKeys } from './lib/queries.js'
 import { LIMITE_PENDIENTES } from './hooks/useCompraLibro.js'
+import { tomarMuestra } from './lib/progresoInvitado.js'
 import useIsMobile from './hooks/useIsMobile.js'
 import { useSuperuser } from './hooks/useSuperuser.js'
 import { useGatoColor } from './hooks/useGatoColor.js'
@@ -14,6 +15,7 @@ import { AuthModalProvider } from './context/authModal.jsx'
 import { useOnboardingController, OnboardingProvider } from './context/onboarding.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
 import { LectorRoute } from './components/LectorRoute.jsx'
+import AvisoRed from './components/AvisoRed.jsx'
 
 const VistaBiblioteca       = lazy(() => import('./components/Biblioteca.jsx'))
 const VistaLectura          = lazy(() => import('./components/Lector.jsx'))
@@ -52,6 +54,38 @@ function AuthRedirect({ openAuth }) {
   const location = useLocation()
   useEffect(() => { openAuth(location.state?.tab ?? 'login') }, [openAuth, location.state])
   return <Navigate to="/" replace />
+}
+
+// Rescata la lectura de muestra de un invitado que acaba de registrarse: traduce
+// los capítulos que alcanzó a leer (anotados en lib/progresoInvitado.js) a
+// porcentaje, y ancla el progreso en el primer párrafo del capítulo donde iba
+// para que el lector lo devuelva ahí — useLectorData restaura la posición por
+// `ultimo_parrafo_id`, no por el porcentaje.
+//
+// Se llama justo después de dar de alta el libro en la biblioteca, así que la
+// fila de progreso todavía no existe: por eso upsert y no update. Los índices de
+// capítulo del modo muestra sirven tal cual, porque la lista recortada son los
+// primeros capítulos del libro en el mismo orden.
+async function rescatarMuestra(userId, libroId) {
+  const caps = tomarMuestra(libroId)
+  if (!caps) return
+
+  const { data: capitulos } = await supabase.from('capitulos')
+    .select('id').eq('libro_id', libroId).order('numero')
+  const total = capitulos?.length ?? 0
+  if (!total) return
+
+  const { data: parrafo } = await supabase.from('parrafos')
+    .select('id').eq('capitulo_id', capitulos[Math.min(caps, total - 1)].id)
+    .order('numero').limit(1).maybeSingle()
+
+  const { error } = await supabase.from('progreso_lectura').upsert({
+    user_id: userId, libro_id: libroId,
+    porcentaje: Math.min(100, Math.round((caps / total) * 100)),
+    ultimo_parrafo_id: parrafo?.id ?? null,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'user_id,libro_id' })
+  if (error) console.error('No se pudo rescatar la lectura de muestra:', error.message)
 }
 
 export default function App() {
@@ -122,7 +156,14 @@ export default function App() {
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
-      if (event === 'SIGNED_IN' && session?.user) ensureProfile(session.user)
+      // ensureProfile va en un setTimeout(0) a propósito: este callback corre
+      // DENTRO del lock exclusivo de auth de supabase-js, y cualquier llamada al
+      // cliente desde acá vuelve a pedir ese mismo lock → deadlock (la app se
+      // queda colgada en "Abriendo la biblioteca…"). Es el patrón que recomienda
+      // la propia librería (ver el doc de onAuthStateChange en @supabase/auth-js).
+      if (event === 'SIGNED_IN' && session?.user) {
+        setTimeout(() => ensureProfile(session.user), 0)
+      }
       if (event === 'PASSWORD_RECOVERY') { navigate('/reset-password'); return }
       if (event === 'SIGNED_OUT') {
         setLastOpenedBookIds([])
@@ -187,6 +228,7 @@ export default function App() {
   // lecturas pendientes. Cuenta nueva o usuario bajo el límite → se adquiere y
   // sigue leyendo. Usuario existente que ya llegó al límite → no se adquiere y
   // se lo expulsa a su Biblioteca con un aviso (misma regla que la Tienda).
+  // Al adquirirlo se rescata además lo que leyó como invitado (rescatarMuestra).
   const acquireBookAfterAuth = useCallback(async (u) => {
     if (!u?.id || !location.pathname.startsWith('/libro/')) return
     const slug = location.pathname.split('/')[2]
@@ -220,6 +262,7 @@ export default function App() {
       .from('bibliotecas_usuarios')
       .insert({ user_id: u.id, libro_id: libroId, leido: false })
     if (error) { console.error('No se pudo agregar el libro tras autenticarse:', error.message); return }
+    await rescatarMuestra(u.id, libroId)
     queryClient.invalidateQueries({ queryKey: queryKeys.bibliotecaUsuario(u.id) })
     // Permanece en el lector; el efecto de guestMode oculta el paywall al dejar de ser invitado.
   }, [location.pathname, currentBook, navigate, queryClient])
@@ -416,14 +459,21 @@ export default function App() {
         <AuthModal
           initialTab={authTab}
           onClose={() => setAuthTab(null)}
-          onAuthSuccess={(u, opts) => {
+          onAuthSuccess={(u) => {
             setUser(u); loadLastBooks(u); setAuthTab(null)
-            // Cuenta nueva: el tutorial la lleva a Biblioteca; no se adquiere la
-            // muestra que estaba leyendo. Usuario existente: lógica de siempre.
-            if (!opts?.isNewAccount) acquireBookAfterAuth(u)
+            // También en cuenta nueva. Antes se saltaba, porque el tutorial se
+            // lleva al usuario a la Biblioteca de todos modos; el efecto era que
+            // el libro de muestra se perdía —sin él en la biblioteca el lector
+            // seguía en modo muestra: sin subrayado, sin cuaderno y sin progreso.
+            // Ahora queda adquirido, con los capítulos que alcanzó a leer.
+            acquireBookAfterAuth(u)
           }}
         />
       )}
+
+      {/* Aviso global de red: cubre Biblioteca, Tienda, Álbum y Perfil de una vez
+          (todas comen de las queries compartidas de src/lib/queries.js). */}
+      <AvisoRed />
 
       {/* Aviso: llegó al límite de lecturas pendientes al intentar sumar un libro. */}
       {limiteAviso && (

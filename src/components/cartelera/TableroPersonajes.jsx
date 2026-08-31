@@ -71,6 +71,18 @@ export default function TableroPersonajes({ pct = 0, scale = 1, imageUrl, videoU
     )
   }
 
+  // Libro terminado y sin video: el premio es la imagen, limpia. Al 100% el clip
+  // ya destapaba las 30 celdas, pero los marcos y las cintas de las polaroids
+  // seguían pintados ENCIMA y la partían en un mosaico. Acá se caen: el retrato
+  // se ve entero, que es justo lo que el usuario se ganó al terminar.
+  if (pct >= 100 && imageUrl) {
+    return (
+      <div className="cart-canvas" style={containerStyle} onClick={onOpenList} title={onOpenList ? 'Ver la lista' : undefined}>
+        <div className="cart-foto"><img src={imageUrl} alt="" /></div>
+      </div>
+    )
+  }
+
   return (
     <div className="cart-canvas" style={containerStyle} onClick={onOpenList} title={onOpenList ? 'Ver la lista' : undefined}>
       <div className="cart-foto" style={{ clipPath: clip, WebkitClipPath: clip }}>

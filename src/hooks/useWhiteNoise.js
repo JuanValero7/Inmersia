@@ -81,17 +81,19 @@ export function useWhiteNoise() {
   // Solo el volumen persiste entre sesiones: tipo/ambiente siempre arrancan
   // apagados (ver comentario arriba) para que el sonido no arranque solo.
   useEffect(() => {
-    localStorage.setItem(PREF_KEY, JSON.stringify({ volNoise, volAmb }))
+    // loadPref() ya está protegido; el guardado también debe estarlo (WebView
+    // con almacenamiento bloqueado → setItem lanza y tumba el lector).
+    try { localStorage.setItem(PREF_KEY, JSON.stringify({ volNoise, volAmb })) }
+    catch { /* almacenamiento no disponible */ }
   }, [volNoise, volAmb])
 
   // ── Capa 1: ruido generativo ───────────────────────────────────
+  // El cleanup de abajo es el ÚNICO sitio que desmonta esta capa. React lo
+  // ejecuta antes de volver a entrar aquí y también al desmontar, así que
+  // desmontar además al ENTRAR (como se hacía antes) cerraba dos veces el
+  // mismo AudioContext: el segundo close() devuelve una promesa rechazada
+  // que nadie recogía, y salía un unhandled rejection por cada cambio de tipo.
   useEffect(() => {
-    // Detener contexto anterior si existe
-    srcRef.current?.stop()
-    srcRef.current = null
-    ctxRef.current?.close()
-    ctxRef.current = null
-
     if (tipo === 'off') return
 
     const ctx = new window.AudioContext()
@@ -105,13 +107,22 @@ export function useWhiteNoise() {
     src.connect(gain)
     src.start()
 
+    // En iOS el contexto puede nacer 'suspended' aunque lo dispare un gesto
+    // del usuario, porque el efecto corre después del render y ya fuera de la
+    // ventana del gesto. Sin esto el ruido no suena y no hay ningún error que
+    // lo explique.
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {})
+
     ctxRef.current  = ctx
     gainRef.current = gain
     srcRef.current  = src
 
     return () => {
-      src.stop()
-      ctx.close()
+      try { src.stop() } catch { /* ya detenido */ }
+      if (ctx.state !== 'closed') ctx.close().catch(() => {})
+      srcRef.current  = null
+      gainRef.current = null
+      ctxRef.current  = null
     }
   }, [tipo])   // solo reconstruir buffer cuando cambia el tipo
 
@@ -150,14 +161,11 @@ export function useWhiteNoise() {
     if (audioRef.current) audioRef.current.volume = volAmb
   }, [volAmb])
 
-  // ── Limpieza al desmontar ──────────────────────────────────────
-  useEffect(() => {
-    return () => {
-      srcRef.current?.stop()
-      ctxRef.current?.close()
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = '' }
-    }
-  }, [])
+  // Sin efecto de limpieza al desmontar: era el TERCER sitio que cerraba el
+  // AudioContext y volvía a rechazar la promesa (los refs de la capa 1 no se
+  // anulaban, así que al desmontar cerraba un contexto ya cerrado). Cada capa
+  // se limpia sola en su propio cleanup: la 1 arriba, el <audio> en el efecto
+  // que lo crea.
 
   return { tipo, setTipo, volNoise, setVolNoise, ambiente, setAmbiente, volAmb, setVolAmb }
 }

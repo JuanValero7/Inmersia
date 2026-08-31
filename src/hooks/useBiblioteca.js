@@ -175,15 +175,22 @@ export function useBiblioteca(user, lastOpenedBookIds) {
   const inicial = displayName.charAt(0).toUpperCase()
 
   // Novedades / Recomendaciones: libros de la Tienda que el usuario NO tiene
-  // todavía. "Novedades" ya viene ordenado por created_at desc (ver fetch del
-  // catálogo); "Recomendaciones" usa un shuffle con seed del día + user.id,
-  // así no cambia en cada render pero sí de un día a otro.
+  // todavía. "Novedades" ordena por created_at desc ACÁ: el catálogo ya no viene
+  // por fecha sino en el orden curado del autor (libros.orden, migración 047), y
+  // quedarse con los primeros de esa lista mostraba los destacados de siempre
+  // bajo el título "Novedades". "Recomendaciones" usa un shuffle con seed del
+  // día + user.id, así no cambia en cada render pero sí de un día a otro.
   const elegiblesTienda = useMemo(() => {
     const ownedIds = new Set(rawBooks.map(b => b.id))
     return catalogo.filter(l => !ownedIds.has(l.id))
   }, [catalogo, rawBooks])
 
-  const novedades = useMemo(() => elegiblesTienda.slice(0, NOVEDADES_COUNT), [elegiblesTienda])
+  const novedades = useMemo(
+    () => [...elegiblesTienda]
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+      .slice(0, NOVEDADES_COUNT),
+    [elegiblesTienda]
+  )
 
   const recomendaciones = useMemo(() => {
     const hoy = new Date().toISOString().slice(0, 10)

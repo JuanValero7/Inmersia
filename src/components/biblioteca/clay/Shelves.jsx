@@ -8,18 +8,9 @@ import { inmTint, hashOf, spineColor, spineW, spineH } from './helpers.jsx'
 // de fondo que crea el nicho. 3 categorías por fila.
 //   <FlatShelves groups activeCat onOpen />   groups: [{cat, books}]
 // Exporta: FlatShelves, ShSpine, CartoonPlank
+// Las reglas .inm-bk / .inm-bk-ttl se inyectaban aquí en un <style>;
+// viven en styles/biblioteca.css desde que hay CSP (ver vercel.json).
 // =============================================================
-
-if (typeof document !== 'undefined' && !document.getElementById('inm-shelf-css')) {
-  const s = document.createElement('style');
-  s.id = 'inm-shelf-css';
-  s.textContent =
-    '.inm-bk{transition:transform .2s cubic-bezier(.34,1.45,.5,1),filter .18s;will-change:transform;cursor:pointer;}' +
-    '.inm-bk:hover{transform:translateY(-14px) scale(1.035);z-index:40;filter:brightness(1.04) saturate(1.05);}' +
-    '.inm-bk-ttl{writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);white-space:nowrap;' +
-    'overflow:hidden;text-overflow:ellipsis;padding:6px 0;max-height:100%;}';
-  document.head.appendChild(s);
-}
 
 const ACUA = {
   ink: '#4a3622',

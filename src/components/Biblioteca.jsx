@@ -265,7 +265,7 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
           title={TEXTO_TIENDA_FINAL.title}
           body={TEXTO_TIENDA_FINAL.body}
           buttonLabel={TEXTO_TIENDA_FINAL.buttonLabel}
-          onClose={() => onboarding.advance('tienda_final')}   // tienda_final → done
+          onClose={() => onboarding.advance('tienda_final')}   // tienda_final → tienda
         />
       )}
     </div>

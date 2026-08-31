@@ -69,28 +69,19 @@
 .inm-bar { height: 10px; border-radius: 8px; background: rgba(74,54,34,0.15); overflow: hidden; }
 .inm-bar > div { height: 100%; border-radius: 8px; background: linear-gradient(90deg, #F2792A, #f59455); }
 
-/* ── Hero "Seguir leyendo" desktop: hojas de otoño (ver clay/HojasOtono.jsx) ── */
-.hero-leaf {
-  position: absolute; top: -44px; opacity: 0; z-index: 0; overflow: visible; pointer-events: none;
-  will-change: transform, opacity;
-  filter: drop-shadow(1px 2px 1.5px rgba(74,54,34,0.18));
-  animation-name: hero-leaf-fall; animation-timing-function: cubic-bezier(.5,.05,.5,.95); animation-iteration-count: infinite;
+/* Lomos de libro: hover y título vertical. Estaban inyectadas en un <style>
+   desde clay/Shelves.jsx; movidas aquí para que la CSP de vercel.json pueda
+   prohibir el estilo en línea. Las usa CategoriasHome (y UltimosAbiertos). */
+.inm-bk{
+  transition:transform .2s cubic-bezier(.34,1.45,.5,1),filter .18s;
+  will-change:transform; cursor:pointer;
 }
-@keyframes hero-leaf-fall {
-  0%   { transform: translate(0, -10px) rotate(0deg); opacity: 0; }
-  7%   { opacity: .88; }
-  25%  { transform: translate(var(--sway,22px), 90px) rotate(70deg); }
-  50%  { transform: translate(0, 185px) rotate(150deg); }
-  75%  { transform: translate(calc(-1 * var(--sway,22px)), 280px) rotate(235deg); }
-  92%  { opacity: .85; }
-  100% { transform: translate(var(--drift,24px), 372px) rotate(var(--spin,300deg)); opacity: 0; }
+.inm-bk:hover{
+  transform:translateY(-14px) scale(1.035); z-index:40;
+  filter:brightness(1.04) saturate(1.05);
 }
-.hero-leaf-bed { position: absolute; left: -6px; right: -6px; bottom: -8px; height: 78px; z-index: 0; pointer-events: none; }
-.hero-leaf-bed::before {
-  content: ""; position: absolute; left: 6%; right: 6%; bottom: 0; height: 46px;
-  background: linear-gradient(0deg, rgba(156,74,40,0.22), rgba(156,74,40,0)); border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-}
-.hero-leaf-bed svg { position: absolute; overflow: visible; }
-@media (prefers-reduced-motion: reduce) {
-  .hero-leaf { animation: none !important; opacity: 0 !important; }
+.inm-bk-ttl{
+  writing-mode:vertical-rl; text-orientation:mixed; transform:rotate(180deg);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  padding:6px 0; max-height:100%;
 }

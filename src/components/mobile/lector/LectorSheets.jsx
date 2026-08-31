@@ -235,7 +235,34 @@ export function NavSheet({ onGoForo, onGoCartelera, onGoBiblioteca, onClose, sol
   )
 }
 
-export function ImageOverlay({ images, chapter, chapterIndex, onClose, autoImages, onToggleAutoImages, esNoficcion = false }) {
+// Foto del capítulo, apoyada en la esquina inferior DERECHA de la franja del
+// gato: la mascota a la izquierda, la foto a la derecha, cada una en su esquina.
+// Antes la imagen se abría sola a pantalla completa al llegar a su página, lo que
+// interrumpía la lectura en el momento justo en que el usuario estaba metido en
+// ella. Ahora espera acá, callada, y solo se despliega si la tocan — el mismo
+// papel que cumple <PolaroidStack> en escritorio, donde las imágenes se apilan al
+// costado del libro en vez de taparlo.
+// Esa franja baja es la única zona de la pantalla que no es texto: puesta encima
+// del gato (primer intento) o en cualquier otro sitio, la foto tapaba la última
+// línea de la página.
+// Asoma INCOMPLETA e inclinada, recortada por el borde inferior (ver
+// .lm-foto-peek): basta con insinuar que hay una polaroid para abrir; enseñarla
+// entera acá competiría con la lectura y volvería innecesario el visor.
+// El botón es la ventana que recorta y el <span> interior es la tarjeta girada;
+// van separados para que el recorte quede recto aunque la polaroid esté torcida.
+export function FotoAsomada({ image, onOpen }) {
+  if (!image?.url) return null
+  return (
+    <button type="button" className="lm-foto-peek" onClick={onOpen}
+      aria-label={image.titulo ? `Ver la imagen: ${image.titulo}` : 'Ver la imagen del capítulo'}>
+      <span className="lm-foto-peek-card">
+        <img src={image.url} alt="" />
+      </span>
+    </button>
+  )
+}
+
+export function ImageOverlay({ images, chapter, chapterIndex, onClose, esNoficcion = false }) {
   const [idx, setIdx] = useState(0)
   const cur = images[idx] || null
   return (
@@ -266,10 +293,6 @@ export function ImageOverlay({ images, chapter, chapterIndex, onClose, autoImage
       )}
       <div className="lm-img-meta">Capítulo {chapter?.numero ?? chapterIndex + 1}{chapter?.titulo ? ` · ${chapter.titulo}` : ''}</div>
       <div className="lm-img-bottom" onClick={e=>e.stopPropagation()}>
-        <button className={`lm-img-autotoggle${autoImages ? ' on' : ''}`} onClick={onToggleAutoImages}>
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4"/></svg>
-          Aparecer automático
-        </button>
         <button className="lm-img-close" onClick={onClose}>Cerrar</button>
       </div>
     </div>

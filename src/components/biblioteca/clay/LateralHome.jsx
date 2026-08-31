@@ -1,5 +1,6 @@
 import React from 'react'
 import { INK, BookCover, CornerMounts } from './helpers.jsx'
+import { imgUrl } from '../../../lib/img.js'
 
 // =============================================================
 // ACUARELA · Lateral del home de Biblioteca (desktop).
@@ -30,7 +31,7 @@ function CoverCard({ book, onOpen }) {
     }}>
       {book.heroUrl && (
         <>
-          <img src={book.heroUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none' }} />
+          <img src={imgUrl(book.heroUrl, { width: 640 })} alt="" loading="lazy" decoding="async" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(241,232,212,0.5) 0%, rgba(241,232,212,0.82) 48%, rgba(241,232,212,0.92) 100%)', zIndex: 0, pointerEvents: 'none' }} />
         </>
       )}

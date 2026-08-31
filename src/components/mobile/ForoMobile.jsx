@@ -94,7 +94,7 @@ export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura
       ) : !foro ? (
         <div className="foro-state-msg" style={{ padding: '72px 0' }}>No se encontró el foro.</div>
       ) : activeTab === 'comentarios' ? (
-        <ForoComentarios foro={foro} user={user} onCountChange={setComentariosCount} readOnly={readOnly} />
+        <ForoComentarios foro={foro} user={user} onCountChange={setComentariosCount} readOnly={readOnly} isSuperuser={isSuperuser} />
       ) : (
         <ForoChat foro={foro} book={book} user={user} miNombre={miNombre} onSesionChange={setHasSesion} />
       )}

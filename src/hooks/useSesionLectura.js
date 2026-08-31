@@ -13,6 +13,16 @@ import { supabase } from '../lib/supabase.js'
 const SESSION_KEY  = 'inm_sesion_lect'
 const TIMEOUT_MS   = 30 * 60 * 1000   // 30 minutos
 
+// Guardar la sesión NUNCA debe poder tumbar el lector: con el almacenamiento
+// bloqueado (WebView in-app de Instagram, modo privado) setItem lanza. La
+// escritura de abajo vive en la limpieza del efecto, así que una excepción ahí
+// se propaga al desmontar y revienta React al salir del libro. Sin
+// almacenamiento solo se pierde la reanudación de sesión, que es cosmético.
+function guardarSesion(datos) {
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(datos)) }
+  catch { /* almacenamiento no disponible */ }
+}
+
 export function useSesionLectura(userId, book, guestMode) {
   const sessionIdRef = useRef(null)
 
@@ -47,9 +57,7 @@ export function useSesionLectura(userId, book, guestMode) {
         .then(({ data }) => {
           if (cancelled || !data) return
           sessionIdRef.current = data.id
-          sessionStorage.setItem(SESSION_KEY, JSON.stringify({
-            sessionId: data.id, bookId: libroId, userId, lastActivity: Date.now(),
-          }))
+          guardarSesion({ sessionId: data.id, bookId: libroId, userId, lastActivity: Date.now() })
         })
     }
 
@@ -65,9 +73,7 @@ export function useSesionLectura(userId, book, guestMode) {
         .then()
 
       // Actualizar timestamp para posible reanudación
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify({
-        sessionId: sid, bookId: libroId, userId, lastActivity: Date.now(),
-      }))
+      guardarSesion({ sessionId: sid, bookId: libroId, userId, lastActivity: Date.now() })
     }
   }, [userId, book?.libro_id, guestMode])
 }

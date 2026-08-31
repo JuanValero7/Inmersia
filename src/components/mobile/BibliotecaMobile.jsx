@@ -346,7 +346,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
           title={TEXTO_TIENDA_FINAL.title}
           body={TEXTO_TIENDA_FINAL.body}
           buttonLabel={TEXTO_TIENDA_FINAL.buttonLabel}
-          onClose={() => onboarding.advance('tienda_final')}   // tienda_final → done
+          onClose={() => onboarding.advance('tienda_final')}   // tienda_final → tienda
         />
       )}
     </div>

@@ -213,6 +213,67 @@
   background: none; border: none; padding: 0; cursor: pointer; flex-shrink: 0;
   -webkit-tap-highlight-color: transparent; line-height: 0;
 }
+/* Foto del capítulo (ver <FotoAsomada>): ocupa toda la franja baja a la derecha
+   del gato — él en una esquina, ella en la otra, sin pisarse ni pisar el texto.
+   Se ve INCOMPLETA a propósito: la tarjeta es más alta que su caja y el
+   `overflow:hidden` la recorta, así que solo asoma su parte de arriba, como una
+   polaroid metida por debajo del borde de la pantalla. Eso comunica que hay algo
+   que abrir sin gastar media pantalla en enseñarlo.
+   El `margin-bottom` negativo cancela el `bottom:16px` del dock para que llegue
+   pegada al canto inferior; sin él flotaba y parecía una tarjeta suelta cortada.
+   `flex:1` la estira hasta el borde derecho cuando la bandeja del gato está
+   cerrada; al abrirse, la foto no se renderiza (ver LectorMobile) y la bandeja
+   conserva todo su ancho. */
+.lm-foto-peek {
+  flex: 1; min-width: 0; height: 150px; margin-bottom: -16px; margin-right: -12px;
+  position: relative; overflow: hidden;
+  padding: 0; background: none; border: none;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; line-height: 0;
+  animation: lmFotoAsoma .42s cubic-bezier(.34,1.4,.64,1);
+  /* La ventana es alta y no captura toques: solo lo hace la tarjeta (abajo). Si
+     no, este rectángulo invisible se comería la franja de "pasar página"
+     (.lm-turn, 60px a toda la altura contra el borde) en su tramo inferior.
+     El click igual llega al <button> porque burbujea desde la tarjeta.
+     El `margin-right` negativo cancela el `right:12px` del dock para que la
+     ventana alcance el canto derecho de la pantalla y no quede aire ahí. */
+  pointer-events: none;
+}
+/* Dos capas: el botón es la VENTANA que recorta y la tarjeta va dentro, girada.
+   Girar el botón entero no servía: al estar pegado al canto inferior y ocupar
+   toda la franja, la inclinación levantaba un extremo y dejaba una cuña de fondo
+   debajo. Así el recorte es siempre horizontal —la polaroid se mete recta bajo
+   el borde de la pantalla— y lo único que se inclina es la tarjeta.
+   Anclada a la DERECHA y algo más ancha que la ventana por ese lado: su esquina
+   superior derecha se sale por el canto, así que no queda aire entre la foto y
+   el borde de la pantalla. La superior IZQUIERDA sí queda dentro, y con ella el
+   borde de arriba inclinado — que es lo que la hace legible como polaroid y no
+   como un recorte en diagonal. El `bottom` negativo hunde el resto bajo el canto
+   inferior.
+   El `max-width` es el tope: sin él la tarjeta crece con la franja y, como el
+   giro sube su esquina derecha proporcionalmente al ancho, en pantallas grandes
+   se saldría de la ventana por ARRIBA y volvería a verse cortada. Con el tope,
+   el sobrante cae del lado del gato, que es donde no molesta.
+   Comprobado de 320 a 640px: esquina izquierda siempre visible, derecha siempre
+   pasada del canto, nada recortado arriba y las de abajo siempre bajo el borde. */
+.lm-foto-peek-card {
+  position: absolute; right: -34px; width: 92%; max-width: 330px; bottom: -104px; height: 168px;
+  transform: rotate(-15deg); pointer-events: auto;
+  padding: 7px 7px 0; background: #f7f4ec;
+  border: 2px solid var(--ink); border-radius: 7px;
+  box-shadow: 2px 3px 0 rgba(74,54,34,0.16), 0 -6px 18px rgba(0,0,0,0.22);
+}
+.lm-foto-peek-card img {
+  display: block; width: 100%; height: 145px; object-fit: cover; object-position: 50% 25%;
+  border: 1.5px solid rgba(74,54,34,0.45); background: #e7decb;
+}
+.lm-foto-peek:active .lm-foto-peek-card { transform: rotate(-15deg) translateY(3px); }
+@keyframes lmFotoAsoma {
+  from { transform: translateY(60px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lm-foto-peek { animation: none; }
+}
 .lm-cat-img {
   width: 98px; display: block;
   filter: drop-shadow(2px 4px 3px rgba(60,40,18,0.32));
@@ -477,15 +538,6 @@ input.lm-range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%
   background: var(--cream); border: 2px solid var(--ink); border-radius: 999px;
   padding: 9px 22px; font-size: 13.5px; font-weight: 700; color: #000; cursor: pointer;
   box-shadow: 2px 3px 0 rgba(74,54,34,0.22); font-family: inherit;
-}
-.lm-img-autotoggle {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.4); border-radius: 999px;
-  padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,0.85); cursor: pointer; font-family: inherit;
-}
-.lm-img-autotoggle.on {
-  background: var(--accent); border-color: var(--ink); color: #fff;
-  box-shadow: 1.5px 2px 0 rgba(74,54,34,0.3);
 }
 
 @keyframes lm-up { from { transform: translateY(100%); } to { transform: translateY(0); } }

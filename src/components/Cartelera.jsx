@@ -13,9 +13,9 @@ import { getSecciones } from './cartelera/carteleraHelpers.js'
 import CarteleraLanding from './cartelera/CarteleraLanding.jsx'
 import Ficha from './cartelera/Ficha.jsx'
 import { useOnboarding } from '../context/onboarding.jsx'
-import { TEXTO_INTRO_CARTELERA, PISTA_HECHOS } from './onboarding/textos.js'
+import { TEXTO_INTRO_CARTELERA, CARTEL_HECHOS } from './onboarding/textos.js'
 import TutorialHint from './onboarding/TutorialHint.jsx'
-import TutorialToast from './onboarding/TutorialToast.jsx'
+import TutorialCartel from './onboarding/TutorialCartel.jsx'
 import '../styles/cartelera.css'
 
 function Filters() {
@@ -49,16 +49,21 @@ export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, 
   // abrir una sección, así que un estado local haría reaparecer la bienvenida
   // cada vez que el usuario vuelve al tablero.
   //   1. bienvenida bloqueante → al cerrarla el tablero queda libre;
-  //   2. pista no invasiva que recuerda ir a Hechos, hasta que entre ahí.
+  //   2. cartel no invasivo que recuerda ir a Hechos, SOLO dentro de una ficha.
+  // El cartel no se pinta en el tablero a propósito: ahí la instrucción es
+  // "toca una categoría" (ya la dan el pop-up y la pista del marco), y el "ve a
+  // Hechos" se leía como una orden que competía con ella. Recién cuando el
+  // usuario está viendo los detalles de una sección tiene sentido decirle cuál
+  // es la próxima parada.
+  // No se descarta ni se apaga al llegar a Hechos: acompaña TODO el paso y solo
+  // desaparece cuando el usuario sale al Foro — ahí avanza el step y esta vista
+  // se desmonta. Antes se apagaba al entrar a Hechos y el que no leía la ficha
+  // se quedaba sin ninguna instrucción a la vista.
   const onboarding = useOnboarding()
   const tutorialInv = onboarding.active && onboarding.step === 'investigacion'
   const [introVista, setIntroVista] = useState(false)
-  const [pistaCerrada, setPistaCerrada] = useState(false)
-  const hechosKey = esNoficcion ? 'referencias' : 'hechos'
-  const enHechos = view.kind === 'ficha' && view.key === hechosKey
-  useEffect(() => { if (enHechos) setPistaCerrada(true) }, [enHechos])
   const showIntro = tutorialInv && !introVista
-  const showPista = tutorialInv && introVista && !pistaCerrada
+  const showCartel = tutorialInv && introVista && view.kind === 'ficha'
 
   useEffect(() => {
     if (!jumpToItemId || bookLoading) return
@@ -105,7 +110,13 @@ export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, 
           onClose={() => setIntroVista(true)}
         />
       )}
-      {showPista && <TutorialToast text={PISTA_HECHOS} onClose={() => setPistaCerrada(true)} />}
+      {showCartel && (
+        <TutorialCartel
+          emoji={CARTEL_HECHOS.emoji}
+          title={CARTEL_HECHOS.title}
+          body={CARTEL_HECHOS.body}
+        />
+      )}
     </div>
   )
 }

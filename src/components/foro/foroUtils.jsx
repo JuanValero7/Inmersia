@@ -20,6 +20,6 @@ export function Avatar({ name, small = false }) {
 
 export async function fetchNombre(userId) {
   const { data } = await supabase
-    .from('perfiles').select('nombre, apellido').eq('id', userId).maybeSingle()
+    .from('perfiles_publicos').select('nombre, apellido').eq('id', userId).maybeSingle()
   return data?.nombre ? `${data.nombre} ${data.apellido || ''}`.trim() : 'Lector'
 }

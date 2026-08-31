@@ -2,7 +2,10 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover: sin esto, `env(safe-area-inset-*)` vale 0 en iPhone
+         y las 17 reglas que lo usan (6 hojas móviles) no hacen nada. Con esto la
+         página va a sangre bajo el notch y esas reglas empiezan a trabajar. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Inmersia — Lee, investiga y colecciona</title>
     <meta name="description" content="Inmersia convierte cada libro en un mundo para habitar: imágenes, sonido, pistas para investigar la trama y una comunidad que lee contigo." />
     <meta name="theme-color" content="#f5efe2" />

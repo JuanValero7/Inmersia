@@ -10,13 +10,26 @@ import { useCompraLibro, LIMITE_PENDIENTES } from './useCompraLibro.js'
 
 const NUEVOS = 5   // cuántos libros recientes llevan el listón "Nuevo"
 
+// Los N libros de alta más reciente. Antes era `libros.slice(0, NUEVOS)`, que
+// solo funcionaba porque el catálogo venía ordenado por fecha: desde que manda
+// el orden curado (libros.orden, migración 047) esa versión marcaba como
+// "Nuevo" a los cinco primeros del estante — hoy El Principito y compañía.
+function idsMasNuevos(libros, n) {
+  return new Set(
+    [...libros]
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+      .slice(0, n)
+      .map(l => l.id)
+  )
+}
+
 export function useTiendaData(user, isSuperuser, onOpenBook) {
   const catalogoQuery = useCatalogoLibrosQuery()
   const bibliotecaQuery = useBibliotecaUsuarioQuery(user?.id)
 
   const catalogo = useMemo(() => {
     const libros = catalogoQuery.data || []
-    const nuevosIds = new Set(libros.slice(0, NUEVOS).map(l => l.id))
+    const nuevosIds = idsMasNuevos(libros, NUEVOS)
     return libros.map(l => ({ ...l, _nuevo: nuevosIds.has(l.id) }))
   }, [catalogoQuery.data])
 

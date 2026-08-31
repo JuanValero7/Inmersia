@@ -71,7 +71,10 @@
 .inm-landing button:focus-visible { outline: 3px solid var(--inm-accent); outline-offset: 3px; border-radius: 8px; }
 
 /* ── NAV ── */
+/* El fondo llega hasta el borde (va a sangre bajo el notch) pero el contenido
+   baja lo que haga falta — ver viewport-fit=cover en index.html. */
 .inm-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--inm-bg);
+  padding-top: env(safe-area-inset-top);
   border-bottom: 1px solid var(--inm-ink-faint); }
 .inm-nav-in { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
 .inm-nav-in img { height: 60px; }
@@ -188,6 +191,11 @@
 .inm-foot-in { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
 .inm-foot-in img { height: 52px; }
 .inm-foot-in p { margin: 0; font-family: var(--inm-font-ui); font-size: 0.86rem; }
+.inm-foot-legal { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-family: var(--inm-font-ui); font-size: 0.86rem; }
+.inm-foot-legal button { background: none; border: none; padding: 0; cursor: pointer;
+  color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.inm-foot-legal button:hover { color: var(--inm-accent, #F2792A); }
 
 /* reveal-on-scroll */
 .inm-landing [data-reveal] { opacity: 0; transform: translateY(24px);

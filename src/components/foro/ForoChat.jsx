@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { supabase } from '../../lib/supabase.js'
 import { Avatar, timeAgo, fetchNombre } from './foroUtils.jsx'
+import { puedeUsarChat, EDAD_MINIMA_CHAT } from '../../lib/edad.js'
 
 export default function ForoChat({ foro, book, user, miNombre, onSesionChange }) {
   const [enSala,       setEnSala]       = useState(false)
@@ -13,9 +14,16 @@ export default function ForoChat({ foro, book, user, miNombre, onSesionChange })
   const [chatPartner,  setChatPartner]  = useState(null)
   const [historial,    setHistorial]    = useState([])
 
+  const [salaError,    setSalaError]    = useState(null)
+
+  // Edad declarada en el registro. Sin sala no hay presencia, y sin presencia
+  // nadie puede invitar a este usuario: basta con cerrar esta puerta.
+  const puedeChatear = puedeUsarChat(user?.user_metadata?.fecha_nacimiento)
+
   const salaChannelRef = useRef(null)
   const chatChannelRef = useRef(null)
   const mensajesEndRef = useRef(null)
+  const nombresRef     = useRef({})   // user_id → nombre ya resuelto
 
   // ─── Sesión activa al montar ────────────────────────────
   useEffect(() => {
@@ -87,33 +95,27 @@ export default function ForoChat({ foro, book, user, miNombre, onSesionChange })
 
   // ─── Historial ───────────────────────────────────────────
   async function loadHistorial() {
+    // Sin deduplicar en el cliente: desde la 042 la tabla tiene una fila por
+    // pareja, así que estas 5 ya son 5 personas distintas. Antes se pedían 25
+    // filas para filtrar a 5, y hablar muchas veces con la misma persona
+    // llenaba la ventana y escondía al resto del historial.
     const { data } = await supabase
       .from('chat_historial')
       .select('partner_id, created_at')
       .eq('user_id', user.id)
       .eq('foro_id', foro.id)
       .order('created_at', { ascending: false })
-      .limit(25)
+      .limit(5)
 
     if (!data?.length) return
 
-    const seen = new Set()
-    const unique = []
-    for (const row of data) {
-      if (!seen.has(row.partner_id)) {
-        seen.add(row.partner_id)
-        unique.push(row)
-        if (unique.length === 5) break
-      }
-    }
-
-    const partnerIds = unique.map(r => r.partner_id)
+    const partnerIds = data.map(r => r.partner_id)
     const { data: perfiles } = await supabase
-      .from('perfiles').select('id, nombre, apellido').in('id', partnerIds)
+      .from('perfiles_publicos').select('id, nombre, apellido').in('id', partnerIds)
     const perfilMap = {}
     ;(perfiles || []).forEach(p => { perfilMap[p.id] = p })
 
-    const withNames = unique.map(row => {
+    const withNames = data.map(row => {
       const p = perfilMap[row.partner_id]
       const nombre = p?.nombre ? `${p.nombre} ${p.apellido || ''}`.trim() : 'Lector'
       return { partner_id: row.partner_id, nombre, created_at: row.created_at }
@@ -122,11 +124,17 @@ export default function ForoChat({ foro, book, user, miNombre, onSesionChange })
   }
 
   async function writeHistorial(partnerId) {
-    await supabase.from('chat_historial').insert({
-      user_id: user.id,
-      foro_id: foro.id,
-      partner_id: partnerId,
-    })
+    // upsert, no insert: una fila por pareja (migración 042). Antes se añadía
+    // una fila por conversación y la tabla crecía sin techo.
+    await supabase.from('chat_historial').upsert(
+      {
+        user_id: user.id,
+        foro_id: foro.id,
+        partner_id: partnerId,
+        created_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,foro_id,partner_id' }
+    )
     loadHistorial()
   }
 
@@ -168,23 +176,52 @@ export default function ForoChat({ foro, book, user, miNombre, onSesionChange })
     }
     setEnSala(false)
     setUsersInSala([])
+    setSalaError(null)
+  }
+
+  // El payload de presencia lo escribe quien se anuncia, así que no se puede
+  // creer: antes viajaba el nombre dentro y cualquiera podía aparecer en la
+  // sala firmando como otro. Solo viaja el user_id, y el nombre sale de
+  // perfiles_publicos (migración 041).
+  async function resolverNombres(ids) {
+    const faltan = ids.filter(id => !(id in nombresRef.current))
+    if (faltan.length > 0) {
+      const { data } = await supabase
+        .from('perfiles_publicos').select('id, nombre, apellido').in('id', faltan)
+      ;(data || []).forEach(p => {
+        nombresRef.current[p.id] = p.nombre ? `${p.nombre} ${p.apellido || ''}`.trim() : 'Lector'
+      })
+      // Un id que no devuelve perfil no debe reintentarse en cada sync.
+      faltan.forEach(id => { if (!(id in nombresRef.current)) nombresRef.current[id] = 'Lector' })
+    }
+    return ids.map(id => ({ user_id: id, nombre: nombresRef.current[id] }))
   }
 
   async function entrarSala() {
-    if (!foro || enSala) return
+    if (!foro || enSala || !puedeChatear) return
+    setSalaError(null)
+    // private: true → la sala pasa por la RLS de realtime.messages, así que
+    // la anon key sola ya no basta para asomarse (migración 041).
     const channel = supabase.channel(`foro-sala:${foro.id}`, {
-      config: { presence: { key: user.id } },
+      config: { private: true, presence: { key: user.id } },
     })
     channel
-      .on('presence', { event: 'sync' }, () => {
+      .on('presence', { event: 'sync' }, async () => {
         const state = channel.presenceState()
-        const others = Object.values(state).flat().filter(u => u.user_id !== user.id)
-        setUsersInSala(others)
+        const ids = [...new Set(
+          Object.values(state).flat().map(u => u.user_id).filter(id => id && id !== user.id)
+        )]
+        setUsersInSala(await resolverNombres(ids))
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await channel.track({ user_id: user.id, nombre: miNombre })
+          await channel.track({ user_id: user.id })
           setEnSala(true)
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          // Sin esto el botón no hace nada y no hay forma de saber por qué.
+          setSalaError('No pudimos abrir la sala. Revisa tu conexión e inténtalo de nuevo.')
+          await supabase.removeChannel(channel)
+          salaChannelRef.current = null
         }
       })
     salaChannelRef.current = channel
@@ -353,9 +390,20 @@ export default function ForoChat({ foro, book, user, miNombre, onSesionChange })
             <p className="sala-intro-desc">
               Entra a la sala para encontrar otros lectores de este libro y charlar en tiempo real.
             </p>
-            <button type="button" className="foro-btn-submit foro-btn-sala" onClick={entrarSala}>
-              Entrar a la sala
-            </button>
+            {puedeChatear ? (
+              <button type="button" className="foro-btn-submit foro-btn-sala" onClick={entrarSala}>
+                Entrar a la sala
+              </button>
+            ) : (
+              /* Límite de edad del chat privado: Términos 3.1. El foro público
+                 de al lado sigue abierto — lo que se cierra es la conversación
+                 uno a uno, que nadie modera. */
+              <p className="sala-error" role="note">
+                El chat privado es para lectores de {EDAD_MINIMA_CHAT} años o más.
+                El foro del libro sigue abierto para ti.
+              </p>
+            )}
+            {salaError && <p className="sala-error" role="alert">{salaError}</p>}
             <p className="chat-aviso-temporal">
               Las conversaciones son temporales y se borran cuando cualquiera de los dos cierra el chat.
             </p>

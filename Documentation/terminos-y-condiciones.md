@@ -1,143 +1,163 @@
 # Términos y Condiciones de Inmersia
 
-**Última actualización:** 13 de julio de 2026
+**Última actualización:** 31 de agosto de 2026
 
 ---
 
-## 1. Aceptación de los términos
+## 1. Quién presta el servicio y aceptación de los términos
 
-Al crear una cuenta o utilizar Inmersia (en adelante, "la Plataforma"), aceptas quedar vinculado por estos Términos y Condiciones ("Términos") y nuestra [Política de Privacidad](./politica-de-privacidad.md).
+Inmersia (en adelante, "la Plataforma") es un proyecto operado por una persona física mientras no exista una sociedad constituida:
+
+**Juan Alejandro Valero Zambrano**
+Lehrter Straße 24B
+10557 Berlín, Alemania
+Contacto: **legal@inmersia.io**
+
+Al crear una cuenta o utilizar la Plataforma aceptas quedar vinculado por estos Términos y Condiciones ("Términos") y por la [Política de Privacidad](./politica-de-privacidad.md), que también puedes consultar en el pie de la página de inicio y en *Perfil → Legal*.
 
 Si no estás de acuerdo con alguno de estos Términos, no debes utilizar la Plataforma.
 
 ---
 
-## 2. Descripción del servicio
+## 2. Qué es Inmersia y qué incluye hoy
 
-Inmersia es una plataforma de lectura inmersiva que ofrece:
+Inmersia es una plataforma de lectura inmersiva. **Hoy todas sus funciones son gratuitas** para cualquier usuario registrado:
 
-### Plan Gratuito (siempre disponible)
+- **Lector** — lectura de los libros de tu biblioteca, con ambientación sonora e ilustraciones.
+- **Biblioteca personal** — los libros que has añadido, con tu progreso de lectura.
+- **Tienda** — catálogo de libros disponibles para añadir a tu biblioteca.
+- **Cuaderno** — notas y frases subrayadas durante la lectura.
+- **Álbum y predicciones** — barajitas coleccionables y predicciones sobre cada libro.
+- **Cartelera de investigación** — contenido curado y análisis literario de cada obra.
+- **Foro de la comunidad** — comentarios públicos por libro.
+- **Chat privado** — conversaciones uno a uno entre lectores del mismo libro, **reservado a usuarios de 16 años o más** (ver 3.1).
+- **Manual del Explorador** — guía de uso de la Plataforma.
 
-- Acceso a la **Biblioteca personal** del usuario
-- Acceso al **Lector** (lectura de libros disponibles en tu biblioteca)
+Sin cuenta puedes leer una **muestra de dos capítulos** de los libros del catálogo.
 
-### Plan Premium (suscripción mensual)
+**Límite de lecturas pendientes.** Puedes tener hasta **5 libros sin terminar** en tu biblioteca a la vez. Es una regla deliberada, para que la biblioteca sea una lista de lectura y no un almacén.
 
-- **Tienda** — acceso al catálogo de libros disponibles para adquirir
-- **Cartelera de investigación** — contenido curado y análisis literario
-- **Foro de la comunidad** — participación en discusiones y comentarios
-- **Nuevas funcionalidades** — todas las funciones adicionales que se publiquen en el futuro
+### 2.1 Funciones de pago (aún no existen)
 
-Los precios, condiciones y método de pago de la suscripción Premium serán informados en la Plataforma antes de que el usuario la active.
+Inmersia se reserva el derecho de convertir en **de pago** funciones o contenidos concretos en el futuro —por ejemplo, libros determinados, secciones de la Cartelera o funciones nuevas—, así como de ofrecer suscripciones.
 
-### Funcionalidades basadas en inteligencia artificial (futuras)
+Si eso ocurre:
 
-Inmersia podrá incorporar en el futuro funcionalidades que utilicen inteligencia artificial (por ejemplo, recomendaciones más avanzadas u otras herramientas de asistencia). El contenido o las sugerencias generadas por IA pueden contener errores o imprecisiones; estas funcionalidades se ofrecen "tal cual", no sustituyen el criterio propio del usuario, y no garantizamos la exactitud de sus resultados. Consulta la [Política de Privacidad](./politica-de-privacidad.md) para más información sobre cómo se tratarán tus datos si se activan estas funcionalidades.
+- Te lo comunicaremos **con al menos 30 días de antelación** por correo electrónico o mediante aviso en la Plataforma.
+- **Lo que ya tengas en tu biblioteca seguirá siendo accesible sin coste.** No cobraremos retroactivamente por algo que ya obtuviste gratis.
+- Los precios y condiciones se mostrarán con claridad antes de que puedas contratar nada, y la sección 4 pasará a aplicarse.
+
+### 2.2 Funcionalidades basadas en inteligencia artificial (futuras)
+
+Inmersia podrá incorporar funcionalidades que utilicen inteligencia artificial. El contenido o las sugerencias generadas por IA pueden contener errores; estas funcionalidades se ofrecerán "tal cual", no sustituyen tu criterio y no garantizamos la exactitud de sus resultados. La Política de Privacidad detallará el tratamiento de datos correspondiente antes de que se activen.
 
 ---
 
 ## 3. Registro y cuenta de usuario
 
-### 3.1 Requisitos
+### 3.1 Requisitos de edad
 
-Para crear una cuenta debes:
+Para crear una cuenta debes tener al menos **14 años**.
 
-- Tener al menos **16 años** de edad.
-- Proporcionar un correo electrónico válido y una contraseña.
-- Aceptar estos Términos y la Política de Privacidad.
+El **chat privado uno a uno** está reservado a usuarios de **16 años o más**, por tratarse de una conversación no supervisada entre dos personas. El resto de la Plataforma, incluido el foro público —que sí está moderado—, es accesible desde los 14.
 
-### 3.2 Responsabilidad de la cuenta
+La edad se determina por la fecha de nacimiento que declaras al registrarte. Si declaras una edad falsa, podemos suspender o cancelar la cuenta.
 
-Eres responsable de:
+### 3.2 Datos del registro
 
-- Mantener la confidencialidad de tu contraseña.
-- Todas las actividades que ocurran bajo tu cuenta.
-- Notificarnos de inmediato en **javzvalero@gmail.com** si sospechas de acceso no autorizado.
+Debes proporcionar un correo electrónico válido, una contraseña, tu nombre y apellido reales, tu fecha de nacimiento y tu género, y aceptar estos Términos y la Política de Privacidad.
 
-No debes compartir tu cuenta con terceros.
+**Tu nombre y apellido serán visibles** para el resto de usuarios registrados: firman tus comentarios, tus reseñas y tu presencia en la sala de chat. Si no quieres que tu nombre real aparezca en la comunidad, no publiques en ella.
 
-### 3.3 Exactitud de los datos
+La información que aportes debe ser veraz y estar actualizada. Podemos suspender cuentas con información falsa o engañosa.
 
-Debes proporcionar información veraz y mantenerla actualizada. Inmersia puede suspender cuentas con información falsa o engañosa.
+### 3.3 Responsabilidad de la cuenta
+
+Eres responsable de mantener la confidencialidad de tu contraseña y de la actividad que ocurra bajo tu cuenta. Avísanos de inmediato en **legal@inmersia.io** si sospechas de un acceso no autorizado. No debes compartir tu cuenta con terceros.
 
 ---
 
-## 4. Suscripción Premium y pagos
+## 4. Pagos (sección en reserva)
 
-*(Esta sección entrará en vigor cuando se implemente el sistema de pagos.)*
+*Inmersia es gratuita en este momento. Esta sección solo entrará en vigor cuando se habiliten funciones de pago, y se te comunicará antes conforme a la sección 2.1.*
 
-### 4.1 Cobros
+### 4.1 Cobros y renovación
 
-La suscripción Premium se factura de forma **mensual** mediante el método de pago que hayas registrado. El importe y la fecha de renovación se mostrarán claramente en tu perfil.
+Cuando existan suscripciones, se facturarán por el período indicado mediante el método de pago que registres, y el importe y la fecha de renovación se mostrarán en tu perfil. Podrás cancelar en cualquier momento desde tu perfil; la cancelación será efectiva al final del período ya pagado.
 
-### 4.2 Renovación automática
+### 4.2 Cambios de precio
 
-La suscripción se renueva automáticamente al final de cada período. Puedes cancelarla en cualquier momento desde tu perfil; la cancelación será efectiva al final del período ya pagado, sin reembolsos parciales.
+Te notificaremos con al menos **30 días de antelación** cualquier cambio de precio. Si no lo aceptas, podrás cancelar antes de que entre en vigor.
 
-### 4.3 Cambios de precio
+### 4.3 Derecho de desistimiento
 
-Te notificaremos con al menos **30 días de antelación** cualquier cambio en el precio de la suscripción. Si no aceptas el nuevo precio, podrás cancelar antes de que entre en vigor.
+Como consumidor en la Unión Europea dispones de **14 días** para desistir de un contrato celebrado a distancia. Si pides que el servicio empiece a prestarse de inmediato y lo consumes por completo dentro de ese plazo, el derecho de desistimiento se extingue conforme a la normativa aplicable; en los demás casos te reembolsaremos la parte proporcional.
 
-### 4.4 Reembolsos
+### 4.4 Pagos realizados por menores
 
-No ofrecemos reembolsos por períodos ya facturados, excepto cuando lo exija la legislación aplicable (por ejemplo, el derecho de desistimiento de 14 días en la UE para contratos celebrados a distancia, aplicable únicamente si no has hecho uso del servicio Premium).
+Si un pago se realiza desde la cuenta de un menor sin la autorización de su madre, padre o tutor, **devolveremos el importe íntegro** a quien lo reclame acreditando esa relación. Podremos suspender la cuenta implicada.
+
+### 4.5 Reembolsos
+
+Fuera de los casos anteriores, no ofrecemos reembolsos por períodos ya facturados, salvo cuando la ley aplicable lo exija.
 
 ---
 
-## 5. Contenido generado por el usuario
+## 5. Contenido que publicas
 
-### 5.1 Tus notas
+### 5.1 Tus notas y subrayados
 
-Las notas que escribes en el cuaderno son **exclusivamente tuyas**. Inmersia solo las almacena para prestarte el servicio y no las usa para otros fines. Puedes exportarlas o eliminarlas en cualquier momento.
+Las notas de tu cuaderno y tus frases subrayadas son **tuyas y privadas**. Inmersia solo las almacena para prestarte el servicio. Puedes eliminarlas desde el cuaderno y descargarlas desde *Perfil → Legal → Descargar mis datos*.
 
-### 5.2 Comentarios en el foro
+Tus subrayados sí se utilizan de forma **agregada y anónima** para mostrar en la ficha de cada libro las frases más subrayadas por el conjunto de lectores. Ese recuento no revela quién subrayó qué.
 
-Los comentarios que publicas en el foro son visibles para otros usuarios de la Plataforma. Al publicar un comentario:
+### 5.2 Reseñas y comentarios del foro
 
-- Afirmas que tienes el derecho a compartir ese contenido.
-- Otorgas a Inmersia una licencia no exclusiva, mundial y gratuita para mostrar ese contenido dentro de la Plataforma.
+Tus reseñas de libros y tus comentarios del foro son **visibles para los demás usuarios** y aparecen firmados con tu nombre y apellido. Al publicarlos:
+
+- Afirmas que tienes derecho a compartir ese contenido.
+- Otorgas a Inmersia una licencia no exclusiva, mundial y gratuita para mostrarlo dentro de la Plataforma.
 - Aceptas que otros usuarios puedan leerlo.
 
-### 5.3 Contenido prohibido en el foro
+Conservas la propiedad de lo que escribes y puedes pedir que lo eliminemos.
 
-Queda prohibido publicar contenido que:
+### 5.3 Contenido prohibido
+
+Queda prohibido publicar —en el foro, en las reseñas o en el chat— contenido que:
 
 - Sea ilegal, difamatorio, acosador, amenazante u obsceno.
 - Infrinja derechos de propiedad intelectual de terceros.
-- Contenga spam, publicidad no autorizada o malware.
+- Contenga spam, publicidad no autorizada o software malicioso.
 - Revele información personal de terceros sin su consentimiento.
+- Resulte inapropiado para una comunidad en la que hay menores de edad.
 
-Inmersia se reserva el derecho de eliminar contenido que infrinja estas normas y de suspender o cancelar la cuenta del infractor.
+Inmersia puede eliminar el contenido que infrinja estas normas y suspender o cancelar la cuenta del infractor.
 
-### 5.4 Responsabilidad sobre el contenido de terceros
+### 5.4 Responsabilidad sobre el contenido de otros usuarios
 
-Inmersia actúa como intermediario que aloja el contenido generado por los usuarios (comentarios del foro y, en su caso, cualquier otro contenido que se permita publicar en el futuro). No revisamos ni supervisamos ese contenido antes de su publicación.
+Inmersia aloja el contenido que publican sus usuarios y no lo revisa antes de su publicación. En consecuencia:
 
-En consecuencia:
+- No garantizamos su exactitud, legalidad ni calidad, ni lo respaldamos ni lo hacemos nuestro.
+- Cada usuario es el único responsable de lo que publica y de contar con los derechos necesarios para hacerlo.
+- Inmersia no responde frente a otros usuarios ni frente a terceros por el contenido publicado por un usuario, sin perjuicio de nuestra obligación de retirarlo cuando tengamos conocimiento efectivo de que es ilícito.
 
-- Inmersia no garantiza la exactitud, legalidad, calidad o idoneidad del contenido publicado por los usuarios, ni lo respalda ni lo hace suyo.
-- Cada usuario es el único responsable del contenido que publica y de contar con los derechos y autorizaciones necesarios para hacerlo.
-- Inmersia no será responsable frente a ningún usuario ni tercero por el contenido publicado por otros usuarios.
-
-Si tienes conocimiento de contenido que consideres ilegal, infractor de derechos de terceros o contrario a estos Términos, puedes reportarlo a **javzvalero@gmail.com**.
+Si ves contenido que consideras ilegal o contrario a estos Términos, repórtalo a **legal@inmersia.io**.
 
 ### 5.5 Notificación de infracción de derechos de autor
 
-Si eres titular de derechos de autor u otros derechos de propiedad intelectual (o representas a su titular) y consideras que un contenido publicado por un usuario en Inmersia infringe tus derechos, notifícanoslo por correo a **javzvalero@gmail.com** con el asunto *"Notificación de infracción de derechos de autor"*, incluyendo:
+Si eres titular de derechos de propiedad intelectual (o representas a su titular) y consideras que un contenido publicado en Inmersia los infringe, escríbenos a **legal@inmersia.io** con el asunto *"Notificación de infracción de derechos de autor"*, indicando:
 
-1. Identificación de la obra protegida cuyos derechos consideras infringidos.
-2. La ubicación exacta del contenido denunciado dentro de la Plataforma (enlace, sección o cualquier dato que permita localizarlo).
-3. Tus datos de contacto (nombre, correo electrónico y, si procede, tu relación con el titular de los derechos).
-4. Una declaración de que el uso denunciado no está autorizado por el titular de los derechos, su representante o la ley.
-5. Una declaración, realizada de buena fe y bajo tu responsabilidad, de que la información proporcionada es exacta y de que eres el titular de los derechos o estás autorizado a actuar en su nombre.
+1. La obra protegida cuyos derechos consideras infringidos.
+2. La ubicación exacta del contenido denunciado en la Plataforma.
+3. Tus datos de contacto y, si procede, tu relación con el titular.
+4. Una declaración de que el uso denunciado no está autorizado por el titular ni por la ley.
+5. Una declaración, de buena fe y bajo tu responsabilidad, de que la información es exacta y de que estás legitimado para actuar.
 
-Al recibir una notificación que cumpla estos requisitos, Inmersia retirará o bloqueará el acceso al contenido denunciado con la mayor celeridad razonablemente posible, sin necesidad de resolución judicial previa, y sin perjuicio de las acciones legales que puedan corresponder al titular de los derechos o al usuario que publicó el contenido.
-
-Inmersia se reserva el derecho de suspender o cancelar la cuenta de los usuarios que sean objeto de notificaciones reiteradas de infracción.
+Al recibir una notificación que cumpla estos requisitos retiraremos o bloquearemos el acceso al contenido con la mayor celeridad razonable, sin perjuicio de las acciones legales que correspondan. Podemos cancelar la cuenta de usuarios objeto de notificaciones reiteradas.
 
 ### 5.6 Indemnización
 
-Aceptas indemnizar y mantener indemne a Inmersia frente a cualquier reclamación, daño, pérdida o gasto (incluyendo honorarios legales razonables) que derive de: (i) el contenido que publiques en la Plataforma, (ii) el incumplimiento de estos Términos, o (iii) la infracción de derechos de terceros por tu causa.
+Nos mantendrás indemnes frente a reclamaciones, daños o gastos razonables que se deriven de (i) el contenido que publiques, (ii) tu incumplimiento de estos Términos o (iii) la infracción de derechos de terceros por tu causa. Esta obligación no se aplica en la medida en que el daño no te sea imputable.
 
 ---
 
@@ -145,15 +165,15 @@ Aceptas indemnizar y mantener indemne a Inmersia frente a cualquier reclamación
 
 ### 6.1 Contenido de Inmersia
 
-Todo el contenido de la Plataforma propiedad de Inmersia (diseño, código, textos, imágenes, marca y logotipo) está protegido por derechos de propiedad intelectual. No puedes copiar, reproducir, distribuir ni crear obras derivadas sin autorización expresa por escrito.
+El diseño, el código, los textos, las imágenes, la marca y el logotipo de la Plataforma están protegidos por derechos de propiedad intelectual. No puedes copiarlos, reproducirlos, distribuirlos ni crear obras derivadas sin autorización expresa por escrito.
 
 ### 6.2 Libros y contenido editorial
 
-Los libros disponibles en la Plataforma están sujetos a los derechos de autor de sus respectivos autores y/o titulares. El acceso a un libro a través de Inmersia te otorga una licencia de uso personal, no transferible y no exclusiva. No puedes descargar, copiar, imprimir ni distribuir el contenido fuera de la Plataforma sin autorización expresa.
+Los libros disponibles están sujetos a los derechos de sus autores y titulares. El acceso a un libro a través de Inmersia te otorga una licencia de uso **personal, no transferible y no exclusiva**. No puedes descargar, copiar, imprimir ni distribuir su contenido fuera de la Plataforma sin autorización expresa.
 
-### 6.3 Tus datos y creaciones
+### 6.3 Tus creaciones
 
-No reclamamos propiedad sobre tus notas personales ni sobre los comentarios que publicas. Consulta la sección 5 para más detalles.
+No reclamamos la propiedad de tus notas, subrayados, reseñas ni comentarios. Ver sección 5.
 
 ---
 
@@ -161,10 +181,10 @@ No reclamamos propiedad sobre tus notas personales ni sobre los comentarios que 
 
 Queda prohibido usar Inmersia para:
 
-- Realizar ingeniería inversa, descompilar o intentar obtener el código fuente de la Plataforma.
-- Compartir o revender el acceso a tu cuenta Premium.
-- Usar scripts, bots o medios automatizados para acceder o scrappear la Plataforma.
-- Interferir con la seguridad o disponibilidad de los servidores.
+- Realizar ingeniería inversa, descompilar u obtener el código fuente de la Plataforma.
+- Compartir o revender el acceso a tu cuenta.
+- Usar scripts, bots o medios automatizados para acceder a la Plataforma o extraer su contenido.
+- Interferir con la seguridad o la disponibilidad de los servidores.
 - Hacerse pasar por otra persona o entidad.
 - Cualquier actividad ilegal o que perjudique a otros usuarios.
 
@@ -172,76 +192,64 @@ Queda prohibido usar Inmersia para:
 
 ## 8. Disponibilidad del servicio
 
-Inmersia se presta "tal cual" y "según disponibilidad". No garantizamos disponibilidad ininterrumpida. Podemos suspender el servicio temporalmente por mantenimiento, actualizaciones o causas de fuerza mayor.
+Inmersia se presta "tal cual" y "según disponibilidad". Al tratarse hoy de un servicio gratuito, no garantizamos una disponibilidad ininterrumpida y podemos suspenderlo temporalmente por mantenimiento, actualizaciones o causas de fuerza mayor.
 
-Para usuarios Premium, en caso de interrupciones significativas no planificadas, evaluaremos compensaciones proporcionales (como extensión del período de suscripción).
-
----
-
-## 9. Limitación de responsabilidad
-
-En la máxima medida permitida por la ley aplicable:
-
-- Inmersia no será responsable de daños indirectos, incidentales, especiales o consecuentes derivados del uso o la imposibilidad de uso de la Plataforma.
-- La responsabilidad total de Inmersia frente a un usuario no superará el importe pagado por dicho usuario en los últimos **3 meses** anteriores al hecho que origine la reclamación.
-
-Nada en estos Términos limita la responsabilidad por dolo, negligencia grave o derechos irrenunciables del consumidor reconocidos por la legislación aplicable.
+Si en el futuro existen funciones de pago y se producen interrupciones significativas no planificadas, compensaremos proporcionalmente a los usuarios afectados, por ejemplo extendiendo el período contratado.
 
 ---
 
-## 10. Modificaciones del servicio y los Términos
+## 9. Responsabilidad
 
-Inmersia puede modificar, suspender o discontinuar funcionalidades de la Plataforma en cualquier momento. También podemos actualizar estos Términos. Cuando los cambios sean significativos, te lo notificaremos con al menos **15 días de antelación** por correo electrónico o mediante aviso en la Plataforma.
+Respondemos sin limitación en caso de **dolo y culpa grave**, así como por daños a la vida, la integridad física o la salud, y en todo caso en que la ley imponga una responsabilidad inderogable.
 
-El uso continuado de Inmersia tras la entrada en vigor de los nuevos Términos implica su aceptación. Si no los aceptas, puedes cancelar tu cuenta antes de que entren en vigor.
+En caso de **culpa leve**, respondemos únicamente por el incumplimiento de obligaciones esenciales del contrato —aquellas cuyo cumplimiento hace posible la prestación del servicio y en cuyo respeto puedes confiar razonablemente—, y en tal caso la responsabilidad se limita a los daños previsibles y típicos de este tipo de contrato.
+
+Queda excluida cualquier otra responsabilidad por culpa leve, en particular por daños indirectos, lucro cesante o pérdida de datos que hubieras podido evitar con copias de seguridad razonables.
+
+Estas limitaciones se aplican también a la responsabilidad personal de colaboradores y auxiliares de Inmersia.
+
+---
+
+## 10. Modificaciones del servicio y de los Términos
+
+Podemos modificar, suspender o discontinuar funcionalidades de la Plataforma, y actualizar estos Términos. Cuando los cambios sean significativos te lo notificaremos con al menos **15 días de antelación** por correo electrónico o mediante aviso en la Plataforma.
+
+El uso continuado tras la entrada en vigor implica su aceptación. Si no los aceptas, puedes eliminar tu cuenta antes de esa fecha.
 
 ---
 
 ## 11. Terminación
 
-### 11.1 Por parte del usuario
+### 11.1 Por tu parte
 
-Puedes eliminar tu cuenta en cualquier momento desde la configuración de tu perfil. Al hacerlo, tus datos personales se eliminarán en un plazo máximo de 30 días, salvo que la ley exija su conservación.
+Puedes eliminar tu cuenta cuando quieras desde **Perfil → Legal → Eliminar mi cuenta**. El borrado es inmediato e irreversible: se eliminan tu perfil, tu biblioteca, tu progreso, tus notas, tus subrayados, tus reseñas, tus comentarios, tus chats y tu álbum. Las copias de seguridad de nuestros proveedores se sobrescriben en un plazo máximo de 30 días.
+
+Antes de borrar, puedes descargar tus datos desde el mismo lugar.
 
 ### 11.2 Por parte de Inmersia
 
-Podemos suspender o cancelar tu cuenta si:
-
-- Incumples estos Términos.
-- Realizas actividades fraudulentas o ilegales.
-- Tu cuenta lleva más de **2 años** inactiva (te avisaremos antes).
-
-En caso de cancelación por incumplimiento, no tendrás derecho a reembolso por el período no disfrutado.
+Podemos suspender o cancelar tu cuenta si incumples estos Términos, si realizas actividades fraudulentas o ilegales, o si tu cuenta lleva más de **2 años** inactiva, avisándote antes. En caso de cancelación por incumplimiento y si existieran importes pagados, no habrá reembolso del período no disfrutado.
 
 ---
 
 ## 12. Ley aplicable y resolución de conflictos
 
-Estos Términos se rigen por la legislación de la **República de Estonia** y, en lo que resulte aplicable, por el derecho de la Unión Europea.
+Estos Términos se rigen por la **legislación de la República Federal de Alemania**, con exclusión de la Convención de las Naciones Unidas sobre Contratos de Compraventa Internacional de Mercaderías, y sin perjuicio del derecho de la Unión Europea.
 
-Para cualquier disputa, las partes intentarán primero resolverla de forma amistosa. Si no fuera posible, la disputa se someterá a los tribunales competentes de Estonia, sin perjuicio de los derechos que como consumidor puedas tener en tu país de residencia conforme a la normativa de la UE.
+Si eres consumidor, esta elección de ley no te priva de la protección que te otorguen las disposiciones imperativas de la ley de tu país de residencia habitual, y conservas el derecho a demandar y ser demandado ante los tribunales de ese país.
 
-Los usuarios de la UE también pueden acceder a la plataforma de resolución de litigios en línea de la Comisión Europea: [ec.europa.eu/consumers/odr](https://ec.europa.eu/consumers/odr).
+Antes de iniciar cualquier procedimiento judicial, ambas partes se comprometen a comunicar por escrito a la otra la disputa concreta y a intentar resolverla de buena fe durante un plazo mínimo de **30 días**.
 
-### 12.1 Resolución individual de disputas
+Los consumidores de la UE pueden acudir además a la plataforma de resolución de litigios en línea de la Comisión Europea: [ec.europa.eu/consumers/odr](https://ec.europa.eu/consumers/odr). No estamos obligados ni dispuestos a participar en un procedimiento de resolución de litigios ante un organismo de arbitraje de consumo.
 
-En la máxima medida permitida por la legislación aplicable, cualquier disputa entre tú e Inmersia se resolverá de forma individual. No podrás presentar ni participar, ni nosotros aceptaremos, una demanda colectiva, acción de clase, procedimiento consolidado o representación de terceros contra Inmersia, salvo que la normativa de protección de consumidores de tu país de residencia disponga expresamente lo contrario, en cuyo caso esa normativa prevalecerá.
-
-Antes de iniciar cualquier procedimiento judicial, ambas partes se comprometen a notificar por escrito a la otra parte la disputa concreta y a intentar resolverla de buena fe mediante negociación directa durante un plazo mínimo de **30 días**.
-
-Nada en esta cláusula pretende privarte de los derechos irrenunciables que te reconozca la legislación de protección de consumidores aplicable en tu país de residencia dentro de la Unión Europea, incluido tu derecho a acudir a los tribunales competentes de dicho país.
+*Nota: cuando Inmersia se constituya como sociedad en Estonia, esta sección y la sección 1 se actualizarán y te avisaremos del cambio conforme a la sección 10.*
 
 ---
 
 ## 13. Contacto
 
-Para cualquier consulta sobre estos Términos:
-
-**Inmersia**
-javzvalero@gmail.com
+**Inmersia** — Juan Alejandro Valero Zambrano
+Lehrter Straße 24B, 10557 Berlín, Alemania
+**legal@inmersia.io**
 
 Indica en el asunto: *Términos y Condiciones - [tu consulta]*.
-
----
-
-> **Aviso:** Este documento ha sido redactado como punto de partida. Antes de publicar Inmersia al público general o de implementar pagos, se recomienda revisarlo con un abogado especializado en derecho digital y protección de datos, especialmente dado el contexto de registro en Estonia y la normativa RGPD.

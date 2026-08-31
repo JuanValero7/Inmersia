@@ -83,19 +83,21 @@ export default function PanelLibro({ libro, user, gatoColor = 'negro', yaAdquiri
 
   const fetchDatos = useCallback(async () => {
     setLoading(true)
-    const [{ data: res }, { data: subs }] = await Promise.all([
+    const [{ data: res }, { data: tops }] = await Promise.all([
       supabase
         .from('resenas_libros')
         .select('id, user_id, rating, texto, created_at')
         .eq('libro_id', libro.id)
         .order('created_at', { ascending: false })
         .limit(50),
+      // Agregado anónimo: la tabla subrayados_usuario es privada por fila
+      // (migración 040). La vista cuenta personas distintas por párrafo.
       supabase
-        .from('subrayados_usuario')
-        .select('parrafo_id, texto_original')
+        .from('subrayados_populares')
+        .select('texto, total')
         .eq('libro_id', libro.id)
-        .not('parrafo_id', 'is', null)
-        .limit(500),
+        .order('total', { ascending: false })
+        .limit(3),
     ])
 
     // Nombres por separado — no hay FK directo resenas→perfiles en PostgREST
@@ -104,7 +106,7 @@ export default function PanelLibro({ libro, user, gatoColor = 'negro', yaAdquiri
     if (resList.length > 0) {
       const uids = [...new Set(resList.map(r => r.user_id))]
       const { data: perfs } = await supabase
-        .from('perfiles').select('id, nombre').in('id', uids)
+        .from('perfiles_publicos').select('id, nombre').in('id', uids)
       nombresMap = Object.fromEntries((perfs || []).map(p => [p.id, p.nombre]))
     }
     const resenasConNombre = resList.map(r => ({
@@ -117,12 +119,7 @@ export default function PanelLibro({ libro, user, gatoColor = 'negro', yaAdquiri
     setMiResena(mine)
     if (mine) setForm({ rating: mine.rating, texto: mine.texto || '' })
 
-    const counts = {}
-    ;(subs || []).forEach(s => {
-      if (!counts[s.parrafo_id]) counts[s.parrafo_id] = { texto: s.texto_original, count: 0 }
-      counts[s.parrafo_id].count++
-    })
-    setTopQuotes(Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 3))
+    setTopQuotes((tops || []).map(t => ({ texto: t.texto, count: t.total })))
     setLoading(false)
   }, [libro.id, user?.id])
 

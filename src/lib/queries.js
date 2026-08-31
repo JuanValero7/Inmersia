@@ -40,10 +40,17 @@ export function usePerfilQuery(userId) {
   })
 }
 
-// libros visible=true, ordenados por fecha — Tienda (catálogo completo)
-// y Biblioteca (Novedades/Recomendaciones, un subconjunto del mismo dato).
+// libros visible=true, en el ORDEN CURADO por el autor (`libros.orden`, ver
+// migración 047) — Tienda (catálogo completo) y Biblioteca (Novedades/
+// Recomendaciones, un subconjunto del mismo dato).
+//
+// `orden` va NULLS LAST: un libro recién cargado, todavía sin puesto asignado,
+// cae al final en vez de colarse arriba, y entre los que no tienen puesto manda
+// el más reciente. `created_at` sigue viniendo porque de él —y no de la posición
+// en esta lista— salen el listón "Nuevo" de la Tienda y las Novedades de la
+// Biblioteca.
 const CATALOGO_LIBROS_COLS =
-  'id, slug, titulo, autor, paginas, descripcion, color, portada_url, metadata, anio, categorias, moods, es_ficcion, visible, created_at'
+  'id, slug, titulo, autor, paginas, descripcion, color, portada_url, metadata, anio, categorias, moods, es_ficcion, visible, created_at, orden'
 
 export function useCatalogoLibrosQuery() {
   return useQuery({
@@ -52,6 +59,7 @@ export function useCatalogoLibrosQuery() {
       const { data, error } = await supabase
         .from('libros').select(CATALOGO_LIBROS_COLS)
         .eq('visible', true)
+        .order('orden', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false })
         .limit(200)
       if (error) throw error

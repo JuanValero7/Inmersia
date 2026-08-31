@@ -21,8 +21,8 @@ import CarteleraLandingMobile from './CarteleraLandingMobile.jsx'
 import CarteleraMobileFicha, { CarteleraMobileLista } from './CarteleraMobileFicha.jsx'
 import { useOnboarding } from '../../context/onboarding.jsx'
 import TutorialHint from '../onboarding/TutorialHint.jsx'
-import TutorialToast from '../onboarding/TutorialToast.jsx'
-import { TEXTO_INTRO_CARTELERA, PISTA_HECHOS } from '../onboarding/textos.js'
+import TutorialCartel from '../onboarding/TutorialCartel.jsx'
+import { TEXTO_INTRO_CARTELERA, CARTEL_HECHOS } from '../onboarding/textos.js'
 import '../../styles/cartelera.css'
 import '../../styles/cartelera.mobile.css'
 
@@ -134,7 +134,7 @@ function ExploreSheet({ onClose, onGoLectura, onGoForo, onGoBiblioteca }) {
 }
 
 // ── Vista de sección: lista → ficha ──
-function SectionView({ sectionKey, data, onGoBack, onGoLanding, onJump, onExplore, initialItemId, secciones = SECCIONES, gatoColor = 'negro' }) {
+function SectionView({ sectionKey, data, onGoBack, onGoLanding, onJump, onExplore, initialItemId, secciones = SECCIONES, gatoColor = 'negro', cartel = null }) {
   const meta = secciones.find(s => s.key === sectionKey)
   const [tab, setTab] = useState('lista')      // lista | ficha
   const [selId, setSelId] = useState(null)
@@ -166,6 +166,11 @@ function SectionView({ sectionKey, data, onGoBack, onGoLanding, onJump, onExplor
           <h2>{meta.label}</h2>
         </div>
       </div>
+
+      {/* Cartel del tutorial: va acá, EN el flujo, y no flotando abajo. Ver
+          TutorialCartel (`inline`): abajo tapaba al gato, que es la única
+          navegación entre secciones que hay en móvil. */}
+      {cartel && <div style={{ padding: '0 14px' }}>{cartel}</div>}
 
       {tab === 'lista' && (
         <CarteleraMobileLista section={meta} items={items} onPick={pick}
@@ -214,14 +219,16 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
 
   // Tutorial (paso 'investigacion'): la única salida es el Foro y el "atrás" del
   // header se oculta. Primero la bienvenida bloqueante; al cerrarla el tablero
-  // queda libre y sólo queda una pista no invasiva que recuerda ir a Hechos.
+  // queda libre y, YA DENTRO de una sección, un cartel recuerda ir a Hechos
+  // (mismo criterio que el desktop: en el tablero la instrucción es tocar una
+  // categoría, no ir a Hechos). No se descarta ni se apaga en Hechos: se queda
+  // hasta que el usuario sale al Foro.
+  // A diferencia del desktop, acá se pinta EN EL FLUJO (se le pasa a SectionView,
+  // que lo mete bajo el nombre de la sección) y no flotando abajo: ahí se sentaba
+  // encima del gato, la única navegación entre secciones que hay en móvil.
   const onboarding = useOnboarding()
   const tutorialInvestigacion = onboarding.active && onboarding.step === 'investigacion'
   const [introVista, setIntroVista] = useState(false)
-  const [pistaCerrada, setPistaCerrada] = useState(false)
-  const hechosKey = esNoficcion ? 'referencias' : 'hechos'
-  const enHechos = view.kind === 'board' && view.key === hechosKey
-  useEffect(() => { if (enHechos) setPistaCerrada(true) }, [enHechos])
   const goForo = () => { if (tutorialInvestigacion) onboarding.advance('investigacion'); onGoForo() }
 
   if (bookLoading) return (
@@ -256,6 +263,14 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
           initialItemId={fichaInitItemId}
           secciones={secciones}
           gatoColor={gatoColor}
+          cartel={tutorialInvestigacion && introVista ? (
+            <TutorialCartel
+              inline
+              emoji={CARTEL_HECHOS.emoji}
+              title={CARTEL_HECHOS.title}
+              body={CARTEL_HECHOS.body}
+            />
+          ) : null}
         />
       )}
       {explore && <ExploreSheet {...exploreProps} />}
@@ -264,13 +279,10 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
         <TutorialHint
           logo
           title={TEXTO_INTRO_CARTELERA.title}
-          body={`${TEXTO_INTRO_CARTELERA.body} ${TEXTO_INTRO_CARTELERA.extraMovil}`}
+          body={TEXTO_INTRO_CARTELERA.body}
           buttonLabel={TEXTO_INTRO_CARTELERA.buttonLabel}
           onClose={() => setIntroVista(true)}
         />
-      )}
-      {tutorialInvestigacion && introVista && !pistaCerrada && (
-        <TutorialToast text={PISTA_HECHOS} onClose={() => setPistaCerrada(true)} />
       )}
     </div>
   )

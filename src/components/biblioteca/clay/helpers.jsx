@@ -70,4 +70,26 @@ function CornerMounts({ size = 46 }) {
   );
 }
 
-export { inmTint, hashOf, spineColor, spineW, spineH, BookCover, CornerMounts, INK };
+
+// ── Ancho del contenedor ────────────────────────────────────
+// Los spotlights del Swimlane viven en una columna cuyo ancho NO es
+// el del viewport (es `flex:3` de la fila superior, ~60%), así que una
+// media query no sirve: hay que medir la caja real. Devuelve [ref, w];
+// w vale 0 hasta el primer layout, y los consumidores tratan ese 0
+// como "todavía no sé" quedándose con la variante completa.
+function useAnchoContenedor() {
+  const ref = React.useRef(null)
+  const [ancho, setAncho] = React.useState(0)
+  React.useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const medir = () => setAncho(el.clientWidth)
+    medir()
+    const ro = new ResizeObserver(medir)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  return [ref, ancho]
+}
+
+export { inmTint, hashOf, spineColor, spineW, spineH, BookCover, CornerMounts, useAnchoContenedor, INK };

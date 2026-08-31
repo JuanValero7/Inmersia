@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useAlbum, formatSeg } from '../../hooks/useAlbum.js'
 import { useOnboarding } from '../../context/onboarding.jsx'
 import TutorialHint from '../onboarding/TutorialHint.jsx'
-import { TEXTO_ALBUM } from '../onboarding/textos.js'
+import TutorialCartel from '../onboarding/TutorialCartel.jsx'
+import { TEXTO_ALBUM, CARTEL_BIBLIOTECA } from '../onboarding/textos.js'
 import '../../styles/album.css'
 import '../../styles/album.mobile.css'
 
@@ -225,7 +226,10 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
 
   useEffect(() => {
     if (!items.length) return
-    const saved = parseInt(localStorage.getItem(KEY), 10)
+    // getItem puede lanzar con el almacenamiento bloqueado; el go() de abajo ya
+    // protegía la escritura, faltaba la lectura.
+    let saved = NaN
+    try { saved = parseInt(localStorage.getItem(KEY), 10) } catch { /* no disponible */ }
     if (!isNaN(saved) && saved >= 0 && saved < items.length) setIdx(saved)
   }, [items.length])
 
@@ -253,6 +257,10 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
   const onboarding = useOnboarding()
   const tutorialAlbum = onboarding.active && onboarding.step === 'album'
   const [showAlbumIntro, setShowAlbumIntro] = useState(false)
+  // Al cerrar la bienvenida el paso ya está en 'tienda_final', y ese hint vive
+  // en la Biblioteca: sin este cartel el usuario se queda acá sin saber que
+  // tiene que volver. Mismo tratamiento que el "ve a Hechos" de la Cartelera.
+  const [cartelBiblioteca, setCartelBiblioteca] = useState(false)
   const introLanzadaRef = useRef(false)
   useEffect(() => {
     if (!tutorialAlbum || loading || introLanzadaRef.current) return
@@ -413,7 +421,16 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
           title={TEXTO_ALBUM.title}
           body={TEXTO_ALBUM.body}
           buttonLabel={TEXTO_ALBUM.buttonLabel}
-          onClose={() => setShowAlbumIntro(false)}
+          onClose={() => { setShowAlbumIntro(false); setCartelBiblioteca(true) }}
+        />
+      )}
+
+      {cartelBiblioteca && (
+        <TutorialCartel
+          emoji={CARTEL_BIBLIOTECA.emoji}
+          title={CARTEL_BIBLIOTECA.title}
+          body={CARTEL_BIBLIOTECA.body}
+          onClose={() => setCartelBiblioteca(false)}
         />
       )}
     </div>

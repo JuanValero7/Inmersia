@@ -99,7 +99,7 @@ export default function PerfilMobile({ user, gatoColor, onChangeGatoColor, onGoB
           {sec === 'seguridad' && <SecSeguridad />}
           {sec === 'transac'   && <SecTransac />}
           {sec === 'historial' && <SecHistorial />}
-          {sec === 'legal'     && <SecLegal />}
+          {sec === 'legal'     && <SecLegal user={user} onSignOut={onSignOut} />}
 
           <button type="button" className="pm-logout" style={{ marginTop: 24 }} onClick={onboarding.restart}>{I.datos} Repetir tutorial</button>
           <button type="button" className="pm-logout" style={{ marginTop: 12 }} onClick={onSignOut}>{I.logout} Cerrar sesión</button>

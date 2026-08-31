@@ -8,7 +8,8 @@ import RightPage from './album/RightPage.jsx'
 import BookTabs  from './album/BookTabs.jsx'
 import Bandeja   from './album/Bandeja.jsx'
 import TutorialHint from './onboarding/TutorialHint.jsx'
-import { TEXTO_ALBUM } from './onboarding/textos.js'
+import TutorialCartel from './onboarding/TutorialCartel.jsx'
+import { TEXTO_ALBUM, CARTEL_BIBLIOTECA } from './onboarding/textos.js'
 import '../styles/album.css'
 
 function LoadingScreen() {
@@ -90,6 +91,10 @@ export default function Album({ user, gatoColor = 'negro', onOpenBook, onGoBack,
   const onboarding = useOnboarding()
   const tutorialAlbum = onboarding.active && onboarding.step === 'album'
   const [showAlbumIntro, setShowAlbumIntro] = useState(false)
+  // Al cerrar la bienvenida el paso ya está en 'tienda_final', y ese hint vive
+  // en la Biblioteca: sin este cartel el usuario se queda acá sin saber que
+  // tiene que volver. Mismo tratamiento que el "ve a Hechos" de la Cartelera.
+  const [cartelBiblioteca, setCartelBiblioteca] = useState(false)
   const introLanzadaRef = useRef(false)
   useEffect(() => {
     if (!tutorialAlbum || loading || introLanzadaRef.current) return
@@ -141,7 +146,16 @@ export default function Album({ user, gatoColor = 'negro', onOpenBook, onGoBack,
           title={TEXTO_ALBUM.title}
           body={TEXTO_ALBUM.body}
           buttonLabel={TEXTO_ALBUM.buttonLabel}
-          onClose={() => setShowAlbumIntro(false)}
+          onClose={() => { setShowAlbumIntro(false); setCartelBiblioteca(true) }}
+        />
+      )}
+
+      {cartelBiblioteca && (
+        <TutorialCartel
+          emoji={CARTEL_BIBLIOTECA.emoji}
+          title={CARTEL_BIBLIOTECA.title}
+          body={CARTEL_BIBLIOTECA.body}
+          onClose={() => setCartelBiblioteca(false)}
         />
       )}
     </div>

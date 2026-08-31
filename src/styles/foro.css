@@ -789,6 +789,18 @@
   padding: 16px 0;
 }
 
+/* Mismo idioma que .pf-err de perfil.css */
+.sala-error {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #c0392b;
+  background: rgba(192,57,43,0.10);
+  border-radius: 10px;
+  padding: 9px 14px;
+  margin: 10px 0 0;
+  text-align: center;
+}
+
 .sala-otros-label {
   font-size: 11px;
   font-weight: 800;
