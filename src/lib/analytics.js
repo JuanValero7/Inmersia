@@ -20,6 +20,12 @@
 // IMPORTANTE: además de esto hay que activar "Cookieless server hash mode" en
 // PostHog → Project Settings → Web analytics. Si no está activado, PostHog
 // descarta todos los eventos en ingestión y aquí no se ve ningún error.
+//
+// Si alguna vez pruebas esto con Playwright/Puppeteer y "no llega nada": no es
+// un fallo. PostHog filtra el tráfico de bots y un navegador automatizado cae
+// en ese filtro; descarta los eventos en el cliente, sin log ni error. Para
+// verificar de verdad hace falta `opt_out_useragent_filter: true` en la prueba
+// (nunca aquí: en producción ese filtro es lo que mantiene limpias las cifras).
 const KEY  = import.meta.env.VITE_POSTHOG_KEY
 const HOST = import.meta.env.VITE_POSTHOG_HOST || 'https://eu.i.posthog.com'
 
@@ -61,16 +67,23 @@ function arrancar() {
         // PostHog. Medimos con eventos explícitos (ver `evento()` abajo).
         autocapture: false,
 
+        // En dev, log de cada llamada en consola. Ojo: activar debug (por
+        // config o con posthog.debug()) guarda `ph_debug` en localStorage. Es
+        // la única cosa que este modo llega a escribir, y solo en desarrollo.
+        debug: import.meta.env.DEV,
+
         // Un evento de `npm run dev` es indistinguible de uno de producción
         // una vez en el panel. Esta propiedad viaja en todos y permite
         // filtrarlos: en PostHog, filtro `entorno = produccion`.
         loaded: (instancia) => {
           instancia.register({ entorno: import.meta.env.PROD ? 'produccion' : 'desarrollo' })
-          if (import.meta.env.DEV) instancia.debug()
         },
       })
 
       ph = posthog
+      // Solo en dev: permite inspeccionar la instancia desde la consola del
+      // navegador (posthog.is_capturing(), posthog.config, …).
+      if (import.meta.env.DEV) window.posthog = posthog
       cola.splice(0).forEach(([nombre, props]) => ph.capture(nombre, props))
     })
     .catch((e) => {
