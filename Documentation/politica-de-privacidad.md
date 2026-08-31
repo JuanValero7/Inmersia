@@ -71,9 +71,20 @@ Ni tu correo, ni tu fecha de nacimiento, ni tu género son visibles para otros u
 
 ### 2.6 Datos analíticos (analytics)
 
-Actualmente no utilizamos herramientas de analítica de terceros. Tenemos previsto incorporar **PostHog** (analítica de producto) y **Sentry** (registro de errores) para entender cómo se usa la Plataforma y detectar fallos.
+Usamos **PostHog** para entender cómo se usa la Plataforma: qué pantallas se visitan, qué libros se abren, en qué punto la gente abandona. Lo tenemos configurado **en modo sin cookies**, que es la versión más restrictiva que ofrece:
 
-Antes de activarlas actualizaremos esta política para detallar qué recogen y, cuando la normativa de cookies (RGPD/ePrivacy) lo exija, te pediremos tu consentimiento previo.
+- **No escribe ninguna cookie** ni guarda nada en el almacenamiento de tu navegador.
+- **No creamos perfiles de usuario.** La analítica no se vincula con tu cuenta, tu correo ni tu nombre. No podemos consultar qué hizo una persona concreta, ni siquiera nosotros.
+- Tu identificación es un **código seudónimo que PostHog calcula en sus servidores y que cambia todos los días**. No permite reconocerte de un día para otro.
+- Los datos se alojan en la **nube europea de PostHog, en Frankfurt (Alemania)**.
+
+Qué se registra: la página visitada, unos pocos eventos de producto (por ejemplo, abrir un libro o terminar un capítulo) y los datos técnicos de la petición (navegador, idioma, país aproximado, página de procedencia).
+
+Qué **no** se registra: el contenido de tus notas, subrayados, reseñas, comentarios ni mensajes, y tampoco el texto de los elementos que pulsas dentro del lector.
+
+Como no se almacena nada en tu dispositivo, la normativa de cookies no nos obliga a pedirte consentimiento previo; la base legal es el interés legítimo (sección 3). Si algún día activamos una analítica que sí requiera almacenamiento, te lo pediremos antes.
+
+Tenemos previsto incorporar además **Sentry** (registro de errores) para detectar fallos. Antes de activarlo actualizaremos esta política.
 
 ### 2.7 Uso de inteligencia artificial (previsto)
 
@@ -94,7 +105,7 @@ Antes de activar cualquier funcionalidad de este tipo actualizaremos esta polít
 | Fecha de nacimiento — comprobación de la edad mínima | Interés legítimo en no admitir a menores por debajo de la edad permitida (art. 6.1.f) |
 | Fecha de nacimiento y género — análisis interno y recomendaciones | Interés legítimo en conocer y mejorar el servicio (art. 6.1.f) |
 | Sesiones de lectura y datos de comportamiento | Interés legítimo en conocer y mejorar el servicio (art. 6.1.f) |
-| Datos analíticos (cuando se implementen) | Consentimiento, si requieren cookies o tecnologías similares (art. 6.1.a) |
+| Analítica de producto sin cookies (PostHog) | Interés legítimo en conocer y mejorar el servicio (art. 6.1.f). Al no almacenarse nada en tu dispositivo, no interviene el consentimiento de la normativa de cookies |
 | Funcionalidades de IA (cuando se implementen) | Consentimiento o interés legítimo, según el caso (art. 6.1.a / 6.1.f) |
 | Cumplimiento de obligaciones legales | Obligación legal (art. 6.1.c) |
 
@@ -109,6 +120,7 @@ Frente a cualquier tratamiento basado en interés legítimo tienes derecho de op
 | Cuenta y todo lo asociado (progreso, notas, subrayados, biblioteca, álbum, reseñas) | Mientras la cuenta esté activa |
 | Comentarios del foro | Mientras la cuenta esté activa; puedes pedir que se eliminen antes |
 | Mensajes de chat, sesiones de chat e historial de conversaciones | **Máximo 90 días** desde su envío. Un proceso automático diario borra todo lo anterior |
+| Eventos analíticos seudonimizados (PostHog) | Máximo 12 meses |
 | Datos agregados y anonimizados | Indefinido, porque ya no permiten identificarte |
 | Cuenta eliminada | Se borra de inmediato al pulsar el botón; las copias de seguridad de nuestros proveedores se sobrescriben en un plazo máximo de 30 días |
 
@@ -130,9 +142,11 @@ Todos ellos actúan como encargados del tratamiento, siguiendo nuestras instrucc
 
 Los correos de servicio (confirmación de cuenta, recuperación de contraseña) se envían hoy a través de la infraestructura de Supabase Auth. Tenemos previsto migrar este envío a **Resend**; cuando ocurra, este apartado se actualizará.
 
-### 5.4 Analítica y errores (previsto)
+### 5.4 Analítica y errores
 
-**PostHog** y **Sentry**, cuando se activen, en los términos de la sección 2.6.
+**PostHog** (PostHog Inc., Estados Unidos) presta el servicio de analítica de producto como encargado del tratamiento. Usamos su nube europea: los datos se almacenan en Frankfurt (Alemania), sin cookies y sin perfiles de usuario, en los términos de la sección 2.6. Política de privacidad: [posthog.com/privacy](https://posthog.com/privacy).
+
+**Sentry** (registro de errores) todavía no está activo. Cuando lo esté, actualizaremos este apartado.
 
 ### 5.5 Procesadores de pago (futuro)
 
@@ -147,6 +161,8 @@ Inmersia **no vende, alquila ni cede** tus datos personales a terceros con fines
 ## 6. Transferencias internacionales
 
 Supabase y Vercel pueden almacenar o procesar datos en servidores situados fuera del Espacio Económico Europeo, principalmente en Estados Unidos. Estas transferencias se amparan en las garantías previstas por el RGPD (Cláusulas Contractuales Tipo y, cuando corresponde, el Marco de Privacidad de Datos UE-EE. UU.). Si quieres el detalle de las garantías aplicables, escríbenos.
+
+En el caso de **PostHog** los datos analíticos se almacenan en la Unión Europea (Frankfurt), aunque el proveedor sea una empresa estadounidense y su personal pueda acceder a ellos para prestar el servicio, bajo las mismas garantías.
 
 ---
 
@@ -194,7 +210,7 @@ Inmersia **no usa cookies de rastreo, de terceros ni publicitarias**.
 
 Sí usamos el `localStorage` de tu navegador para cosas que solo tienen sentido en tu dispositivo: mantener la sesión iniciada, recordar tus preferencias de lectura y sonido, y el estado del tutorial. Esa información no sale de tu navegador y puedes borrarla vaciando los datos del sitio.
 
-Si en el futuro incorporamos analítica con cookies o tecnologías similares (sección 2.6), publicaremos un aviso y pediremos tu consentimiento antes de activarlas.
+Nuestra analítica (PostHog) está configurada expresamente para **no escribir cookies ni usar el almacenamiento del navegador**, por eso no verás un banner de consentimiento de cookies (sección 2.6). Si en el futuro incorporamos analítica que sí lo requiera, publicaremos un aviso y pediremos tu consentimiento antes de activarla.
 
 ---
 
