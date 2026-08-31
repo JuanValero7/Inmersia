@@ -19,7 +19,10 @@ function EstrellaLector({ valor, onChange }) {
   )
 }
 
-export function XraySheet({ items, chapterNum, esNoficcion, onClose, onItemClick }) {
+// `bloqueado` (tutorial): el X-ray se puede mirar, pero no es un atajo a la
+// Cartelera — saltar ahí sin pasar por Investigación deja al usuario fuera del
+// guion del onboarding.
+export function XraySheet({ items, chapterNum, esNoficcion, onClose, onItemClick, bloqueado = false }) {
   const ini = s => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
   return (
     <div className="lm-backdrop" onClick={onClose}>
@@ -33,13 +36,18 @@ export function XraySheet({ items, chapterNum, esNoficcion, onClose, onItemClick
           {items.length === 0
             ? <p style={{ fontSize: 14, color: 'rgba(74,54,34,0.5)', fontStyle: 'italic', marginTop: 12 }}>{esNoficcion ? 'Sin términos en este capítulo.' : 'Sin personajes en este capítulo.'}</p>
             : items.map(it => (
-              <button key={it.id} onClick={() => onItemClick?.(it.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(74,54,34,0.08)', width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+              <button key={it.id} type="button" disabled={bloqueado} onClick={() => onItemClick?.(it.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(74,54,34,0.08)', width: '100%', background: 'none', border: 'none', cursor: bloqueado ? 'default' : 'pointer', textAlign: 'left' }}>
                 <span style={{ flexShrink: 0, width: 34, height: 34, borderRadius: '50%', background: '#d56a52', color: '#fff', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid rgba(74,54,34,0.3)' }}>
                   {ini(it.nombre)}
                 </span>
                 <span style={{ fontFamily: 'inherit', fontWeight: 700, fontSize: 15, color: '#4a3622' }}>{it.nombre}</span>
               </button>
             ))}
+          {bloqueado && items.length > 0 && (
+            <p style={{ fontSize: 13, color: 'rgba(74,54,34,0.55)', fontStyle: 'italic', marginTop: 14, lineHeight: 1.35 }}>
+              Durante el tutorial las fichas se abren desde Investigación.
+            </p>
+          )}
         </div>
       </div>
     </div>

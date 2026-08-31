@@ -566,6 +566,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   xrayItems={xrayItems}
                   onToggleXray={() => setXrayOpen(v => !v)}
                   onXrayItemClick={(itemId) => { setXrayOpen(false); onGoCartelera(itemId) }}
+                  xrayLocked={onboarding.active}
                   onTextSelect={handleTextSelect}
                   pageW={geom.pageW}
                   pageH={geom.pageH}

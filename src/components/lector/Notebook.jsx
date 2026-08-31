@@ -127,13 +127,22 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
           <button onClick={handleClose} style={{ background: 'rgba(255,255,255,0.18)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 16, width: 28, height: 28, cursor: 'pointer', lineHeight: 1 }}>✕</button>
         </div>
 
-        {/* tipos: arriba horizontal */}
-        <div style={{ display: 'flex', gap: 8, padding: '12px 18px 10px', flexShrink: 0, borderBottom: '1px solid rgba(74,54,34,0.12)' }}>
+        {/* tipos: arriba horizontal, SIEMPRE en una sola fila.
+            Las tres pastillas medían 112+108+104 px y no encogían: como ítems
+            flex heredan `min-width:auto`, que equivale a su min-content, y su
+            texto es una palabra sin puntos de corte. La fila pedía 375px dentro
+            de una tarjeta de 335px (93vw en un móvil de 360), así que
+            "Subrayados" quedaba cortado por el `overflow:hidden` de la tarjeta.
+            Con `flex:1 1 0` + `minWidth:0` las tres se reparten el ancho por
+            igual y encogen de verdad; la fuente y el padding acompañan con
+            clamp. Medido: entra completo desde 320px, y por debajo de eso
+            (Fold cerrado) recorta con «…» antes que salirse o partir la fila. */}
+        <div style={{ display: 'flex', gap: 'clamp(5px, 1.6vw, 8px)', padding: '12px clamp(10px, 4vw, 18px) 10px', flexShrink: 0, minWidth: 0, borderBottom: '1px solid rgba(74,54,34,0.12)' }}>
           {TYPES.map(t => {
             const active = type === t.id
             return (
-              <button key={t.id} onClick={() => setType(t.id)}
-                style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: active ? 800 : 600, fontSize: 13, cursor: 'pointer', padding: '7px 16px', borderRadius: 999, border: `2px solid ${active ? theme.ink : 'transparent'}`, background: active ? t.col : `${t.col}44`, color: active ? '#fff' : t.txt, boxShadow: active ? `1.4px 1.8px 0 ${theme.ink}33` : 'none', textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none' }}>
+              <button key={t.id} onClick={() => setType(t.id)} title={t.label}
+                style={{ flex: '1 1 0', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: "'Baloo 2', sans-serif", fontWeight: active ? 800 : 600, fontSize: 'clamp(11px, 3.1vw, 13px)', cursor: 'pointer', padding: '7px clamp(6px, 2.4vw, 16px)', borderRadius: 999, border: `2px solid ${active ? theme.ink : 'transparent'}`, background: active ? t.col : `${t.col}44`, color: active ? '#fff' : t.txt, boxShadow: active ? `1.4px 1.8px 0 ${theme.ink}33` : 'none', textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none' }}>
                 {t.label}
               </button>
             )

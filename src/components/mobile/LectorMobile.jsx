@@ -699,7 +699,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       )}
 
       {/* Sheets */}
-      {sheet==='xray'     && <XraySheet items={xrayItems} chapterNum={currentChapter?.numero ?? chapterIndex + 1} esNoficcion={esNoficcion} onClose={() => setSheet(null)} onItemClick={(itemId) => { setSheet(null); irCartelera(itemId) }} />}
+      {sheet==='xray'     && <XraySheet items={xrayItems} chapterNum={currentChapter?.numero ?? chapterIndex + 1} esNoficcion={esNoficcion} bloqueado={onboarding.active} onClose={() => setSheet(null)} onItemClick={(itemId) => { setSheet(null); irCartelera(itemId) }} />}
       {sheet==='chapters' && <ChapterSheet chapters={capitulos} current={chapterIndex} onPick={pickChapter} onClose={()=>setSheet(null)} />}
       {sheet==='typo' && <TypoSheet fontSize={fontSize} onFontSize={setFontSize} readingFont={readingFont} onReadingFont={setReadingFont} readingTheme={readingTheme} onReadingTheme={setReadingTheme} onClose={()=>setSheet(null)} />}
       {sheet==='audio' && (book?.es_ficcion === false

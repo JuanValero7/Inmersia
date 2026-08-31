@@ -5,12 +5,24 @@
 // =============================================================
 
 // Color de acento por categoría (paleta storybook de la biblioteca).
+// Color del ✦ de cada categoría. Las claves son el vocabulario cerrado que fija
+// la migración 048 (9 de ficción + 3 de no ficción); cualquier categoría que no
+// esté aquí cae al naranja de marca en `catalogoShared`.
 export const CAT_COLOR = {
-  Aventura:  '#7d8db5',
-  Romance:   '#cf8ea4',
-  Fantasía:  '#86ad9e',
-  Misterio:  '#7a8fa6',
-  Poesía:    '#e0b256',
+  // Ficción
+  Aventura:            '#7d8db5',
+  Fantasía:            '#86ad9e',
+  'Ciencia ficción':   '#8778b8',
+  Misterio:            '#5f7387',
+  Terror:              '#4f4b5c',
+  Romance:             '#cf8ea4',
+  Drama:               '#b4705f',
+  Cuentos:             '#d9a441',
+  'Novela histórica':  '#9a8256',
+  // No ficción
+  Filosofía:           '#7c8a4f',
+  Ensayo:              '#6d9099',
+  Economía:            '#5f8a6d',
 }
 
 // Mezcla un color hex hacia blanco (amt>0) o negro (amt<0). Devuelve rgb().
