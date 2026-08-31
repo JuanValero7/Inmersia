@@ -13,6 +13,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { MANUAL_LIBRO_ID } from '../lib/constants.js'
 import { useBibliotecaUsuarioQuery } from '../lib/queries.js'
+import { evento } from '../lib/analytics.js'
 
 const LoadingScreen = (
   <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,background:'var(--bg-warm)'}}>
@@ -40,6 +41,7 @@ export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, gatoCol
   const matches = !!currentBook?.libro_id && (currentBook.slug === slug || currentBook.id === slug)
   const [fetchedBook, setFetchedBook] = useState(null)
   const montadoPara = useRef(null)  // libro_id para el que ya se montó el lector
+  const registrado  = useRef(null)  // libro_id ya anotado en la analítica
   const [loading, setLoading] = useState(!matches)
 
   useEffect(() => {
@@ -87,6 +89,21 @@ export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, gatoCol
     : bibliotecaQuery.isError  ? true      // fallo de red → abrir, la RLS manda
     : filas === undefined      ? null      // todavía sin resolver
     : filas.some(r => r.libro_id === libroId)
+
+  // Único punto de "se abrió un libro": por aquí pasan todos los caminos
+  // (biblioteca, tienda, enlace directo, refresco) y las dos plataformas.
+  // Se espera a saber si es muestra o no, porque esa propiedad es media
+  // pregunta: cuántos de los que curiosean acaban adquiriendo el libro.
+  useEffect(() => {
+    if (loading || !libroId || registrado.current === libroId) return
+    if (isAuthed && tieneLibro === null) return
+    registrado.current = libroId
+    evento('libro_abierto', {
+      libro_id: libroId,
+      slug: book?.slug ?? null,
+      muestra: !isAuthed || (!tieneLibro && !isSuperuser),
+    })
+  }, [loading, libroId, isAuthed, tieneLibro, isSuperuser, book?.slug])
 
   if (loading) return LoadingScreen
   if (!book) return null

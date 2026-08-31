@@ -24,6 +24,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
 import { CAPITULOS_MUESTRA } from '../lib/constants.js'
+import { evento } from '../lib/analytics.js'
 
 // Filas de subrayados_usuario → { [capitulo_num]: [{ id, texto }, ...] }
 function agruparSubrayados(filas) {
@@ -245,6 +246,14 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
       )
     }
     await Promise.all(updates)
+    // `pendingChapter` es cuántos capítulos lleva completados, no el número
+    // del capítulo — de ahí el nombre de la propiedad.
+    evento('capitulo_terminado', {
+      libro_id: book.libro_id,
+      capitulos_completados: pendingChapter,
+      porcentaje: newPct,
+      libro_terminado: newPct >= 90,
+    })
     if (newPct >= 90) { setIsLeido(true); invalidateBiblioteca() }
   }
 

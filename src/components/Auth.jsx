@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { supabase } from '../lib/supabase.js'
 import { EDAD_MINIMA, edadEnAnios } from '../lib/edad.js'
 import { LEGAL_VERSION } from '../lib/constants.js'
+import { evento } from '../lib/analytics.js'
 import LegalModal from './legal/LegalModal.jsx'
 import '../styles/auth.css'
 
@@ -128,6 +129,10 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
     // email desactivada) como el primer login tras confirmar (cuando signUp no
     // devuelve sesión y no hay auth.uid() disponible todavía para el insert).
     if (signUpError) { setLoading(false); setError(signUpError.message); return }
+    // La cuenta ya existe, con sesión inmediata o pendiente de confirmar el
+    // correo. La distinción importa: si `confirmacion_pendiente` domina, la
+    // gente se está quedando en la bandeja de entrada y nunca vuelve.
+    evento('signup_completado', { confirmacion_pendiente: !data.session })
     setLoading(false)
     if (data.session) { onAuthSuccess(data.user, { isNewAccount: true }) }
     else { setSuccess('¡Registro exitoso! Revisa tu correo para confirmar tu cuenta.'); setTab('login') }

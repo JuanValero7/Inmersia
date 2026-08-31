@@ -14,6 +14,7 @@
 import { useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
+import { evento } from '../lib/analytics.js'
 
 export const LIMITE_PENDIENTES = 5
 
@@ -26,6 +27,8 @@ export function useCompraLibro(user, isSuperuser, onOpenBook) {
     const { error } = await supabase.from('bibliotecas_usuarios').insert({ user_id: user.id, libro_id: libro.id, leido: false })
     if (error) { console.error('No se pudo adquirir el libro:', error.message); return { error: error.message } }
     invalidateBiblioteca()
+    // "Comprado" es el nombre heredado del checklist; hoy adquirir es gratis.
+    evento('libro_comprado', { libro_id: libro.id, slug: libro.slug ?? null })
     return { error: null }
   }, [user, isSuperuser, invalidateBiblioteca])
 
