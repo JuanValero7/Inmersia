@@ -107,9 +107,11 @@ function CatDock({ currentKey, onJump, onGoLanding, secciones = SECCIONES, gatoC
 
 // ── Bottom-sheet "Explorar" (mismas salidas que el desktop) ──
 function ExploreSheet({ onClose, onGoLectura, onGoForo, onGoBiblioteca }) {
+  // Mismo orden fijo que en el resto de la app (Biblioteca · Lectura ·
+  // Investigación · Foro), saltándose la sección en la que ya estás.
   const opts = [
-    onGoLectura && { key: 'lectura', label: 'Lectura', fn: onGoLectura },
     onGoBiblioteca && { key: 'biblioteca', label: 'Biblioteca', fn: onGoBiblioteca },
+    onGoLectura && { key: 'lectura', label: 'Lectura', fn: onGoLectura },
     onGoForo && { key: 'foro', label: 'Foro', fn: onGoForo },
   ].filter(Boolean)
   return (

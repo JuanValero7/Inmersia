@@ -1,5 +1,5 @@
 import React from 'react'
-import { INK, BookCover, CornerMounts } from './helpers.jsx'
+import { INK, BookCover, CornerMounts, Skel } from './helpers.jsx'
 import { imgUrl } from '../../../lib/img.js'
 
 // =============================================================
@@ -115,5 +115,38 @@ function LateralHome({ books = [], onOpen, onGoTienda, onGoAlbum }) {
   )
 }
 
+// ── Esqueleto del lateral ───────────────────────────────────
+// Los accesos a Tienda y Álbum no dependen de ningún dato: van vivos y se
+// pueden tocar mientras cargan los libros. Solo las dos fichas esperan.
+function LateralHomeSkeleton({ onGoTienda, onGoAlbum }) {
+  const ink = INK
+  const ficha = {
+    flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', gap: 16,
+    background: '#f1e8d4', borderRadius: 16, padding: '12px 16px', boxShadow: `0 8px 20px ${ink}1c`,
+  }
+  return (
+    <div style={{ height: PANEL_H, marginTop: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ flexShrink: 0, fontWeight: 800, fontSize: 19, color: '#3a2b1c', whiteSpace: 'nowrap' }}>Últimos abiertos</div>
+
+      {[0, 1].map(i => (
+        <div key={i} style={ficha}>
+          {/* portada de 132px de alto → 91 de ancho, como en <CoverCard> */}
+          <Skel w={91} h={132} r={12} />
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Skel w="85%" h={16} />
+            <Skel w="55%" h={12} />
+            <Skel w={130} h={10} r={8} style={{ marginTop: 10 }} />
+          </div>
+        </div>
+      ))}
+
+      <div style={{ flexShrink: 0, height: 86, display: 'flex', gap: 14 }}>
+        <AccessTile onClick={onGoTienda} label="Tienda" renderIcon={IconTienda} />
+        <AccessTile onClick={onGoAlbum} label="Álbum" renderIcon={IconAlbum} />
+      </div>
+    </div>
+  )
+}
+
 const LateralHomeMemo = React.memo(LateralHome)
-export { LateralHomeMemo as LateralHome }
+export { LateralHomeMemo as LateralHome, LateralHomeSkeleton }

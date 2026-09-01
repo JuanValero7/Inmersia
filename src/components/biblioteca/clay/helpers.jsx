@@ -71,6 +71,15 @@ function CornerMounts({ size = 46 }) {
 }
 
 
+// ─── Bloque del esqueleto de carga ──────────────────────────
+// Ocupa el sitio de lo que SÍ depende de la query de libros (portadas,
+// títulos, fichas) mientras el marco de la página ya está pintado.
+// El brillo que lo recorre vive en styles/biblioteca.css (.bib-skel).
+function Skel({ w = '100%', h = 14, r = 10, style }) {
+  return <div className="bib-skel" style={{ width: w, height: h, borderRadius: r, flexShrink: 0, ...style }} />
+}
+
+
 // ── Ancho del contenedor ────────────────────────────────────
 // Los spotlights del Swimlane viven en una columna cuyo ancho NO es
 // el del viewport (es `flex:3` de la fila superior, ~60%), así que una
@@ -92,4 +101,4 @@ function useAnchoContenedor() {
   return [ref, ancho]
 }
 
-export { inmTint, hashOf, spineColor, spineW, spineH, BookCover, CornerMounts, useAnchoContenedor, INK };
+export { inmTint, hashOf, spineColor, spineW, spineH, BookCover, CornerMounts, Skel, useAnchoContenedor, INK };

@@ -72,20 +72,6 @@ function CassetteIcon() {
     </span>
   )
 }
-function PolaroidsIcon() {
-  const card = (rot, left, top, z, tape) => (
-    <span style={{ position: 'absolute', left, top, width: 30, height: 36, background: '#f7f4ec', border: `2px solid ${INK}`, borderRadius: 3, transform: `rotate(${rot}deg)`, boxShadow: `1.5px 2px 0 ${INK}26`, zIndex: z, padding: '3px 3px 0' }}>
-      <span style={{ display: 'block', width: '100%', height: 21, border: `1px solid ${INK}66`, background: 'linear-gradient(135deg,#e7a877,#F2792A)' }} />
-      {tape && <span style={{ position: 'absolute', top: -4, left: '50%', transform: 'translateX(-50%) rotate(-4deg)', width: 18, height: 7, background: `${ACCENT}cc`, border: `1px solid ${INK}55` }} />}
-    </span>
-  )
-  return (
-    <span className="lm-illus" style={{ width: 54, height: 46 }}>
-      {card(-10, 3, 7, 1, false)}
-      {card(8, 20, 5, 2, true)}
-    </span>
-  )
-}
 function SpiralNotebookIcon() {
   return (
     <span className="lm-illus" style={{ width: 50, height: 46 }}>
@@ -197,7 +183,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const pageAnchorRef = useRef(null)
 
   const setSheet   = (v) => { setSheetRaw(v); setCatOpen(false) }
-  const openImage  = () => { setImageOpen(true); setCatOpen(false) }
   const openNotebook = () => { setNotebookOpen(true); setCatOpen(false) }
 
   // arranque directo en cuaderno (desde Biblioteca → "abrir cuaderno")
@@ -579,7 +564,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     // Audio: en ficción está oculto (ver AMBIENTE_FICCION_ACTIVO); en no ficción
     // abre el ruido ambiental.
     ...(esNoficcion || AMBIENTE_FICCION_ACTIVO ? [{ key: 'audio', label: 'Audio', icon: <CassetteIcon />, act: () => setSheet('audio') }] : []),
-    { key: 'imagen',   label: 'Imagen',   icon: <PolaroidsIcon />,      act: openImage },
     ...(!guestMode ? [{ key: 'cuaderno', label: 'Cuaderno', icon: <SpiralNotebookIcon />, act: openNotebook }] : []),
     ...(!guestMode ? [{ key: 'subrayar', label: modoSubrayado ? 'Apagar ✏' : 'Subrayar', icon: <HighlighterIcon active={modoSubrayado} />, act: activarModoSubrayado }] : []),
   ]

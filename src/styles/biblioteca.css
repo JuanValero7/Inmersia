@@ -85,3 +85,23 @@
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   padding:6px 0; max-height:100%;
 }
+
+/* ── Esqueleto de carga ───────────────────────────────────────
+   Mientras llega la query de libros, el marco (hero, lateral,
+   repisa) se pinta de una y solo lo que depende de los datos
+   queda como bloque con un brillo que lo recorre. */
+.bib-skel{
+  position:relative; overflow:hidden;
+  background:#e3d7bf;
+  border-radius:10px;
+}
+.bib-skel::after{
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(100deg, transparent 18%, rgba(255,253,247,0.6) 50%, transparent 82%);
+  transform:translateX(-100%);
+  animation:bib-skel-brillo 1.5s ease-in-out infinite;
+}
+@keyframes bib-skel-brillo{ to{ transform:translateX(100%); } }
+@media (prefers-reduced-motion: reduce){
+  .bib-skel::after{ animation:none; }
+}

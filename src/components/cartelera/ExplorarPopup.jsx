@@ -1,5 +1,8 @@
 // Formato: Plain JavaScript (.jsx)
 // Popup "Explorar" compartido entre Portada, BoardView y Ficha (desktop).
+// Orden de las salidas: siempre Biblioteca primero y el resto en el orden fijo
+// de la app (Biblioteca · Lectura · Investigación · Foro), saltándose la sección
+// en la que ya estás. Acá, en Investigación: Biblioteca · Lectura · Foro.
 // Gestiona su propio estado open/close y el dismiss al hacer click fuera.
 // La integración con el tour de Foro vive aquí.
 import { useState, useEffect } from 'react'
@@ -52,9 +55,9 @@ export default function ExplorarPopup({ onGoForo, onGoBack, onGoBiblioteca, btnC
           boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)',
           whiteSpace: 'nowrap',
         }}>
-          {onGoForo     && <NavBtn onClick={handleGoForo}            icon={ICON_FORO}       label="Foro" />}
-          {!soloForo && onGoBack     && <NavBtn onClick={() => { close(); onGoBack() }}     icon={ICON_LECTURA}    label="Lectura" />}
           {!soloForo && onGoBiblioteca && <NavBtn onClick={() => { close(); onGoBiblioteca() }} icon={ICON_BIBLIOTECA} label="Biblioteca" />}
+          {!soloForo && onGoBack     && <NavBtn onClick={() => { close(); onGoBack() }}     icon={ICON_LECTURA}    label="Lectura" />}
+          {onGoForo     && <NavBtn onClick={handleGoForo}            icon={ICON_FORO}       label="Foro" />}
         </div>
       )}
       <button className={`${btnClass} cart-explorar-btn`} type="button" onClick={() => setOpen(o => !o)}>

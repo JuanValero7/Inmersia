@@ -1,5 +1,5 @@
 import React from 'react'
-import { INK, inmTint, hashOf, BookCover } from './helpers.jsx'
+import { INK, inmTint, hashOf, BookCover, Skel } from './helpers.jsx'
 import { CartoonPlank } from './Shelves.jsx'
 import { imgUrl } from '../../../lib/img.js'
 import { SIN_CATEGORIA_ID } from '../constants.js'
@@ -261,5 +261,26 @@ function CategoriasHome({ groups, activeCat, onOpen }) {
   )
 }
 
+// ── Esqueleto de la colección ───────────────────────────────
+// La repisa (pared + tabla de madera) es puro decorado: se pinta ya, con
+// los huecos de las portadas esperando. Una sola fila, para no reservar
+// más alto del que la colección real vaya a ocupar.
+function CategoriasHomeSkeleton() {
+  const w = Math.round(COVER_H * 210 / 305)
+  return (
+    <div style={{ position: 'relative' }}>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 12, borderRadius: '10px 10px 4px 4px', backgroundColor: WALL, border: `2px solid ${INK}`, borderBottom: 'none', boxShadow: 'inset 0 10px 18px -10px rgba(40,30,18,0.4)' }} />
+      <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: `repeat(${PER_ROW}, 1fr)`, alignItems: 'end', gap: 16, padding: '0 18px', minHeight: COVER_H + 18 }}>
+        {Array.from({ length: PER_ROW }, (_, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: 'center' }}>
+            <Skel w={w} h={COVER_H} r={12} />
+          </div>
+        ))}
+      </div>
+      <CartoonPlank />
+    </div>
+  )
+}
+
 const CategoriasHomeMemo = React.memo(CategoriasHome)
-export { CategoriasHomeMemo as CategoriasHome }
+export { CategoriasHomeMemo as CategoriasHome, CategoriasHomeSkeleton }

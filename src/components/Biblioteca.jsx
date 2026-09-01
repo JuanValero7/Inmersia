@@ -8,10 +8,10 @@ import BibBookModal from './biblioteca/BibBookModal.jsx'
 import ManageCategoriasModal from './biblioteca/ManageCategoriasModal.jsx'
 import PanelLibro from './tienda/PanelLibro.jsx'
 import LibroReel from './tienda/LibroReel.jsx'
-import { InmHeader, Swimlane } from './biblioteca/clay/HeaderSwimlane.jsx'
-import { CategoriasHome } from './biblioteca/clay/CategoriasHome.jsx'
-import { LateralHome } from './biblioteca/clay/LateralHome.jsx'
-import { INK } from './biblioteca/clay/helpers.jsx'
+import { InmHeader, Swimlane, SwimlaneSkeleton } from './biblioteca/clay/HeaderSwimlane.jsx'
+import { CategoriasHome, CategoriasHomeSkeleton } from './biblioteca/clay/CategoriasHome.jsx'
+import { LateralHome, LateralHomeSkeleton } from './biblioteca/clay/LateralHome.jsx'
+import { INK, Skel } from './biblioteca/clay/helpers.jsx'
 import { saludoBienvenida } from '../lib/genero.js'
 import { useOnboarding } from '../context/onboarding.jsx'
 import WelcomePopup from './onboarding/WelcomePopup.jsx'
@@ -145,60 +145,62 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
       <div style={{ padding: '26px 32px 56px' }}>
         <div style={{ fontWeight: 800, fontSize: 32, letterSpacing: '-0.01em', color: headerInk }}>¡{saludoBienvenida(user?.user_metadata?.genero)}, {displayName.split(' ')[0]}!</div>
 
-        {loadingBooks ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(74,54,34,0.5)', fontSize: 17, fontWeight: 600 }}>Cargando tu biblioteca…</div>
-        ) : (
-          <>
-            {/* Fila superior: hero (60%) + lateral con 2 últimos abiertos y
-                accesos a Tienda/Álbum (40%). */}
-            <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-              <div style={{ flex: 3, minWidth: 0 }}>
-                <Swimlane featured={featured} onOpen={openBook} novedades={novedades} recomendaciones={recomendaciones} onOpenLibro={setSelectedLibro} onPreviewLibro={setReelLibro} gatoColor={gatoColor} />
-              </div>
-              <div style={{ flex: 2, minWidth: 0 }}>
-                <LateralHome books={portadas} onOpen={openBook} onGoTienda={handleGoTienda} onGoAlbum={onGoAlbum} />
-              </div>
-            </div>
+        {/* Fila superior: hero (60%) + lateral con 2 últimos abiertos y
+            accesos a Tienda/Álbum (40%). */}
+        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+          <div style={{ flex: 3, minWidth: 0 }}>
+            {loadingBooks
+              ? <SwimlaneSkeleton gatoColor={gatoColor} />
+              : <Swimlane featured={featured} onOpen={openBook} novedades={novedades} recomendaciones={recomendaciones} onOpenLibro={setSelectedLibro} onPreviewLibro={setReelLibro} gatoColor={gatoColor} />}
+          </div>
+          <div style={{ flex: 2, minWidth: 0 }}>
+            {loadingBooks
+              ? <LateralHomeSkeleton onGoTienda={handleGoTienda} onGoAlbum={onGoAlbum} />
+              : <LateralHome books={portadas} onOpen={openBook} onGoTienda={handleGoTienda} onGoAlbum={onGoAlbum} />}
+          </div>
+        </div>
 
-            {/* Encabezado colección + acciones */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginTop: 44, position: 'relative', zIndex: 2 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', flexShrink: 0 }}>
-                <span style={{ fontWeight: 800, fontSize: 24, color: headerInk, whiteSpace: 'nowrap' }}>Tu colección</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(74,54,34,0.55)', whiteSpace: 'nowrap' }}>{books.filter(b => b.id !== MANUAL_LIBRO_ID).length} {books.filter(b => b.id !== MANUAL_LIBRO_ID).length === 1 ? 'libro' : 'libros'}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 11, flexWrap: 'wrap' }}>
-                <button onClick={() => setShowFilters(v => !v)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 9, background: activeCategory !== null ? '#F2792A' : '#fffdf8', color: activeCategory !== null ? '#fff' : INK, border: `2px solid ${INK}`, borderRadius: 999, padding: '10px 17px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap', textShadow: activeCategory !== null ? '0 1px 1px rgba(0,0,0,0.2)' : 'none', boxShadow: `1.6px 2px 0 ${INK}33` }}>
-                  <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round"/></svg>
-                  Filtrar{activeCategory ? ' · 1' : ''}
-                </button>
-                <button onClick={() => setShowManage(true)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#fffdf8', color: '#2B1616', border: `2px solid ${INK}`, borderRadius: 999, padding: '10px 17px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: `1.6px 2px 0 ${INK}33` }}>
-                  <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  Gestionar tu colección
-                </button>
-              </div>
-            </div>
+        {/* Encabezado colección + acciones */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginTop: 44, position: 'relative', zIndex: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', flexShrink: 0 }}>
+            <span style={{ fontWeight: 800, fontSize: 24, color: headerInk, whiteSpace: 'nowrap' }}>Tu colección</span>
+            {loadingBooks
+              ? <Skel w={62} h={13} r={7} style={{ transform: 'translateY(2px)' }} />
+              : <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(74,54,34,0.55)', whiteSpace: 'nowrap' }}>{books.filter(b => b.id !== MANUAL_LIBRO_ID).length} {books.filter(b => b.id !== MANUAL_LIBRO_ID).length === 1 ? 'libro' : 'libros'}</span>}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11, flexWrap: 'wrap' }}>
+            <button onClick={() => setShowFilters(v => !v)}
+              style={{ display: 'flex', alignItems: 'center', gap: 9, background: activeCategory !== null ? '#F2792A' : '#fffdf8', color: activeCategory !== null ? '#fff' : INK, border: `2px solid ${INK}`, borderRadius: 999, padding: '10px 17px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap', textShadow: activeCategory !== null ? '0 1px 1px rgba(0,0,0,0.2)' : 'none', boxShadow: `1.6px 2px 0 ${INK}33` }}>
+              <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round"/></svg>
+              Filtrar{activeCategory ? ' · 1' : ''}
+            </button>
+            <button onClick={() => setShowManage(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#fffdf8', color: '#2B1616', border: `2px solid ${INK}`, borderRadius: 999, padding: '10px 17px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: `1.6px 2px 0 ${INK}33` }}>
+              <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Gestionar tu colección
+            </button>
+          </div>
+        </div>
 
-            {showFilters && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginTop: 16, flexWrap: 'wrap' }}>
-                <button onClick={() => setCategory(null)} style={chip(activeCategory === null, '#F2792A')}>Todos</button>
-                {categories.map(c => (
-                  <button key={c.id} onClick={() => setCategory(activeCategory === c.id ? null : c.id)} style={chip(activeCategory === c.id, c.color)}>
-                    <span style={{ width: 9, height: 9, borderRadius: '50%', background: c.color, display: 'inline-block', marginRight: 8, border: `1px solid ${INK}66` }} />
-                    {c.nombre}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div style={{ marginTop: 28 }}>
-              {groups.length === 0
-                ? <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(74,54,34,0.5)', fontWeight: 600, fontSize: 16 }}>No hay libros que mostrar.</div>
-                : <CategoriasHome groups={groups} activeCat={activeCategory} onOpen={openBook} />}
-            </div>
-          </>
+        {showFilters && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginTop: 16, flexWrap: 'wrap' }}>
+            <button onClick={() => setCategory(null)} style={chip(activeCategory === null, '#F2792A')}>Todos</button>
+            {categories.map(c => (
+              <button key={c.id} onClick={() => setCategory(activeCategory === c.id ? null : c.id)} style={chip(activeCategory === c.id, c.color)}>
+                <span style={{ width: 9, height: 9, borderRadius: '50%', background: c.color, display: 'inline-block', marginRight: 8, border: `1px solid ${INK}66` }} />
+                {c.nombre}
+              </button>
+            ))}
+          </div>
         )}
+
+        <div style={{ marginTop: 28 }}>
+          {loadingBooks
+            ? <CategoriasHomeSkeleton />
+            : groups.length === 0
+              ? <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(74,54,34,0.5)', fontWeight: 600, fontSize: 16 }}>No hay libros que mostrar.</div>
+              : <CategoriasHome groups={groups} activeCat={activeCategory} onOpen={openBook} />}
+        </div>
       </div>
 
       {selectedBook && (

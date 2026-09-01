@@ -177,15 +177,15 @@
   background:linear-gradient(150deg, #5b3e23, #3c2814);
   color:#f3e4cb;
 }
-.cm-root .cm-cat-lbl{ font-size:9px; font-weight:700; color:var(--ink);
+.cm-root .cm-cat-lbl{ font-size:11px; font-weight:700; color:var(--ink);
   max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cm-root .cm-cat-tool-board .cm-cat-lbl{ font-size:10.5px; }
+.cm-root .cm-cat-tool-board .cm-cat-lbl{ font-size:12px; }
 /* Pantallas muy estrechas (≤360px): gato y texto un punto más chicos, para que
    la fila siga entrando sin recortar las etiquetas. */
 @media (max-width:360px){
   .cm-root .cm-cat-img{ width:72px; }
   .cm-root .cm-cat-tray-others{ width:calc(100vw - 96px); }
-  .cm-root .cm-cat-lbl{ font-size:8px; }
+  .cm-root .cm-cat-lbl{ font-size:10px; }
   .cm-root .cm-cat-tile{ width:34px; height:34px; font-size:15px; }
 }
 @keyframes cmTray{ from{ transform:translateX(-10px) scaleX(.86); } to{ transform:none; } }
@@ -240,6 +240,11 @@
 }
 /* El chip del borde inferior (.cart-board-hint, en cartelera.css) va más chico
    acá: el tablero es angosto y si no se sale de pantalla. */
+/* Rótulos de zona (Personajes / Lugares / Datos / Hechos): viven en coordenadas
+   del TABLERO, que en mobile se reduce a ~0.43 para entrar en pantalla, así que
+   los 15px del desktop quedaban en ~6px reales — ilegibles. Se agrandan acá en
+   coordenadas de tablero para que en pantalla se lean como el resto del chrome. */
+.cm-root .cart-zone-tag{ font-size:28px; padding:12px 30px; }
 .cm-root .cart-board-hint{ font-size:12.5px; padding:7px 15px;
   box-shadow:1.6px 2.2px 0 rgba(40,26,12,.26), 0 6px 14px rgba(26,15,6,.3); }
 .cm-root .cml-avance{

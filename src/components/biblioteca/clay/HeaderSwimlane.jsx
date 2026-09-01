@@ -1,5 +1,5 @@
 import React from 'react'
-import { INK, inmTint, BookCover, CornerMounts, useAnchoContenedor } from './helpers.jsx'
+import { INK, inmTint, BookCover, CornerMounts, Skel, useAnchoContenedor } from './helpers.jsx'
 import { NovedadesSpotlight } from './NovedadesSpotlight.jsx'
 import { imgUrl } from '../../../lib/img.js'
 // =============================================================
@@ -215,8 +215,44 @@ function HeroFeatured({ book, onOpen }) {
   );
 }
 
+// ── Geometría y estilos del hero ────────────────────────────
+// A nivel de módulo (no dependen de props) para que <SwimlaneSkeleton>
+// pinte EXACTAMENTE el mismo marco mientras cargan los libros.
+const ink = INK;
+const CARD_H = 500;
+const CARD_R = 26;   // radio de la tarjeta (las esquineras lo siguen)
+const GATO_H = 230;  // gato contenido dentro del hero (más pequeño, sin sangrado)
+// Sin borde-marco: la imagen de fondo va a sangre y solo las 4 ESQUINERAS
+// (abajo) marcan sus límites. Sombra suave (no plana) para dar profundidad
+// sin el look de "slab/diapositiva".
+const surface = {
+  position: 'relative', overflow: 'hidden', borderRadius: CARD_R, padding: '20px 22px 22px', height: CARD_H,
+  display: 'flex', flexDirection: 'column',
+  backgroundColor: '#f1e8d4', boxShadow: `0 10px 26px ${ink}1f`,
+};
+const tabBtn = (active) => ({
+  border: `2px solid ${active ? ink : 'transparent'}`, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 14,
+  padding: '8px 18px', borderRadius: 999, background: active ? '#F2792A' : 'transparent', color: active ? '#fff' : 'rgba(74,54,34,0.6)',
+  whiteSpace: 'nowrap', textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none', boxShadow: active ? `1.4px 1.8px 0 ${ink}33` : 'none', transition: 'all .15s',
+});
+// Gato contenido dentro del hero (sin sangrado por debajo): asoma en la
+// esquina inferior derecha, detrás del contenido (zIndex 0).
+const gatoStyle = {
+  position: 'absolute', right: 6, bottom: 0, height: GATO_H, width: 'auto', maxWidth: '46%',
+  objectFit: 'contain', objectPosition: 'right bottom', pointerEvents: 'none', zIndex: 0, opacity: 1,
+};
+// Contenedor de las tres píldoras (Seguir / Novedades / Recomendaciones).
+const tabsWrap = {
+  display: 'flex', flexWrap: 'wrap', alignSelf: 'flex-start', maxWidth: '100%', gap: 4, padding: 5,
+  borderRadius: 22, background: 'rgba(255,253,247,0.7)', boxShadow: `inset 0 0 0 2px ${ink}38`, marginBottom: 6, flexShrink: 0,
+};
+// Velo crema de legibilidad del fallback (sin imagen de fondo).
+const veloCrema = {
+  position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
+  background: 'linear-gradient(90deg, #f1e8d4 28%, rgba(241,232,212,0.55) 46%, rgba(241,232,212,0) 66%)',
+};
+
 function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOpenLibro, onPreviewLibro, gatoColor = 'negro' }) {
-  const ink = INK;
   const [tab, setTab] = React.useState('seguir');
   // Índice del libro en foco dentro de cada spotlight (Novedades /
   // Recomendaciones). Vive acá para que el fondo hero pueda cambiar al
@@ -232,28 +268,6 @@ function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOp
     : tab === 'novedades' ? (novedades[novIdx]?.metadata?.hero_url || null)
     : (recomendaciones[recIdx]?.metadata?.hero_url || null);
 
-  const CARD_H = 500;
-  const CARD_R = 26;   // radio de la tarjeta (las esquineras lo siguen)
-  const GATO_H = 230;  // gato contenido dentro del hero (más pequeño, sin sangrado)
-  // Sin borde-marco: la imagen de fondo va a sangre y solo las 4 ESQUINERAS
-  // (abajo) marcan sus límites. Sombra suave (no plana) para dar profundidad
-  // sin el look de "slab/diapositiva".
-  const surface = {
-    position: 'relative', overflow: 'hidden', borderRadius: CARD_R, padding: '20px 22px 22px', height: CARD_H,
-    display: 'flex', flexDirection: 'column',
-    backgroundColor: '#f1e8d4', boxShadow: `0 10px 26px ${ink}1f`,
-  };
-  const tabBtn = (active) => ({
-    border: `2px solid ${active ? ink : 'transparent'}`, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 14,
-    padding: '8px 18px', borderRadius: 999, background: active ? '#F2792A' : 'transparent', color: active ? '#fff' : 'rgba(74,54,34,0.6)',
-    whiteSpace: 'nowrap', textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none', boxShadow: active ? `1.4px 1.8px 0 ${ink}33` : 'none', transition: 'all .15s',
-  });
-  // Gato contenido dentro del hero (sin sangrado por debajo): asoma en la
-  // esquina inferior derecha, detrás del contenido (zIndex 0).
-  const gatoStyle = {
-    position: 'absolute', right: 6, bottom: 0, height: GATO_H, width: 'auto', maxWidth: '46%',
-    objectFit: 'contain', objectPosition: 'right bottom', pointerEvents: 'none', zIndex: 0, opacity: 1,
-  };
   return (
     <div style={{ position: 'relative', marginTop: 20 }}>
       <div style={surface}>
@@ -272,12 +286,12 @@ function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOp
         )}
         {/* Velo crema para legibilidad: solo en el fallback (sin imagen de fondo). */}
         {!heroUrl && (
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, #f1e8d4 28%, rgba(241,232,212,0.55) 46%, rgba(241,232,212,0) 66%)', zIndex: 0, pointerEvents: 'none' }} />
+          <div style={veloCrema} />
         )}
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
           {/* Las tres píldoras suman 428px; en una caja angosta (~422px a 860px
               de viewport) envuelven a una segunda línea en vez de salirse. */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignSelf: 'flex-start', maxWidth: '100%', gap: 4, padding: 5, borderRadius: 22, background: 'rgba(255,253,247,0.7)', boxShadow: `inset 0 0 0 2px ${ink}38`, marginBottom: 6, flexShrink: 0 }}>
+          <div style={tabsWrap}>
             {SWIM_TABS.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} style={tabBtn(tab === t.id)}>{t.label}</button>
             ))}
@@ -305,4 +319,38 @@ function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOp
   );
 }
 
-export { InmHeader, Swimlane };
+// ── Esqueleto del hero ──────────────────────────────────────
+// El marco de la tarjeta (fondo crema, pestañas, gato y cantoneras) no
+// depende de ningún dato: se pinta ya, y solo la portada + los textos del
+// libro destacado esperan como bloques. Las pestañas van inertes: sin datos
+// no hay nada que mostrar detrás de Novedades / Recomendaciones.
+function SwimlaneSkeleton({ gatoColor = 'negro' }) {
+  return (
+    <div style={{ position: 'relative', marginTop: 20 }}>
+      <div style={surface}>
+        <img src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" style={gatoStyle} />
+        <div style={veloCrema} />
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+          <div style={tabsWrap} aria-hidden="true">
+            {SWIM_TABS.map(t => <span key={t.id} style={{ ...tabBtn(t.id === 'seguir'), cursor: 'default' }}>{t.label}</span>)}
+          </div>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', gap: 48, padding: '16px 14px 26px' }}>
+            {/* mismas medidas que <HeroFeatured>: portada de 300px de alto
+                (207 de ancho por el aspect-ratio 210/305) y su inclinación */}
+            <Skel w={207} h={300} r={14} style={{ marginLeft: 24, transform: 'rotate(-6deg)' }} />
+            <div style={{ flex: 1, minWidth: 0, maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Skel w="78%" h={40} />
+              <Skel w="45%" h={20} />
+              <Skel w="30%" h={16} style={{ marginTop: 14 }} />
+              <Skel w="100%" h={14} r={9} />
+              <Skel w={230} h={56} r={999} style={{ marginTop: 16 }} />
+            </div>
+          </div>
+        </div>
+        <CornerMounts size={46} />
+      </div>
+    </div>
+  );
+}
+
+export { InmHeader, Swimlane, SwimlaneSkeleton };

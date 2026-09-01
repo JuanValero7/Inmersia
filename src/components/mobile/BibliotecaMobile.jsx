@@ -11,7 +11,7 @@ import React from 'react'
 import { useBiblioteca } from '../../hooks/useBiblioteca.js'
 import { useCompraLibro, LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
 import { SIN_CATEGORIA_ID, COLOR_DEFAULT, MANUAL_LIBRO_ID } from '../biblioteca/constants.js'
-import { INK, BookCover } from './biblioteca/bibmHelpers.jsx'
+import { INK, BookCover, Skel } from './biblioteca/bibmHelpers.jsx'
 import { imgUrl } from '../../lib/img.js'
 import { saludoBienvenida } from '../../lib/genero.js'
 import { useOnboarding } from '../../context/onboarding.jsx'
@@ -35,6 +35,54 @@ const LANE_TABS = [
   { id: 'novedades', label: 'Novedades' },
   { id: 'recom', label: 'Para ti' },
 ]
+
+// ── Esqueleto de carga del hero + la tira ───────────────────
+// El marco no depende de datos: la tarjeta del hero con su gato, y las tres
+// pestañas de la tira (inertes, porque todavía no hay nada detrás). Solo la
+// portada, los textos y las tarjetas esperan como bloques.
+function HeroLaneSkeleton({ gatoColor }) {
+  return (
+    <>
+      <div className="bibm-hero">
+        <img className="bibm-hero-cat" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" />
+        <div className="bibm-hero-fade" />
+        <div className="bibm-hero-inner" style={{ position: 'relative', zIndex: 2 }}>
+          <div className="bibm-hero-body">
+            {/* portada de 190px de alto → 131 de ancho (aspect-ratio 210/305) */}
+            <Skel w={131} h={190} r={12} style={{ transform: 'rotate(-5deg)' }} />
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Skel w="90%" h={19} />
+              <Skel w="60%" h={13} />
+              <Skel w="100%" h={10} style={{ marginTop: 10 }} />
+              <Skel w={118} h={34} r={999} style={{ marginTop: 10 }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 30 }}>
+        <div className="bibm-lane-tabs" aria-hidden="true">
+          {LANE_TABS.map((t, i) => (
+            <span key={t.id} className={'bibm-lane-tab' + (i === 0 ? ' active' : '')} style={{ textAlign: 'center' }}>{t.label}</span>
+          ))}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {[0, 1].map(i => (
+            <div key={i} className="bibm-skel-card">
+              {/* portada de 100px de alto → 69 de ancho, como en <BibCard> */}
+              <Skel w={69} h={100} r={10} />
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                <Skel w="85%" h={14} />
+                <Skel w="55%" h={11} />
+                <Skel w="70%" h={9} style={{ marginTop: 6 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  )
+}
 
 export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, isSuperuser, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoNotebook }) {
   // Lógica de datos compartida con Biblioteca desktop (ver src/hooks/useBiblioteca.js)
@@ -179,105 +227,110 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
       <div className="bibm-noscroll bibm-scroll">
         <div className="bibm-greeting">¡{saludoBienvenida(user?.user_metadata?.genero)}, {displayName.split(' ')[0]}!</div>
 
-        {loadingBooks && (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(74,54,34,0.5)', fontSize: 15, fontWeight: 600 }}>Cargando tu biblioteca…</div>
-        )}
-
-        {!loadingBooks && (
-          <>
-            {/* Hero "Seguir leyendo" con el gato — único elemento del hero */}
-            <div className="bibm-hero">
-              {featured?.heroUrlMobile
-                ? <img className="bibm-hero-bg" src={imgUrl(featured.heroUrlMobile, { width: 800 })} alt="" />
-                : <img className="bibm-hero-cat" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" />}
-              {/* Velo crema para legibilidad: solo en el fallback (sin imagen de fondo), igual que en desktop. */}
-              {!featured?.heroUrlMobile && <div className="bibm-hero-fade" />}
-              <div className="bibm-hero-inner" style={{ position: 'relative', zIndex: 2 }}>
-                {featured ? (
-                  <div className="bibm-hero-body">
-                    <div className="bibm-hero-cover" onClick={(e) => openBook(featured, e.currentTarget.getBoundingClientRect())}>
-                      <BookCover book={featured} h={190} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                      <div className="bibm-hero-ttl">{featured.title}</div>
-                      <div className="bibm-hero-auth">{featured.author}</div>
-                      {typeof featured.progress === 'number' && (
-                        <div className="bibm-hero-prog">
-                          <div style={{ marginBottom: 6 }}>
-                            <span style={{ fontWeight: 700, fontSize: 14, color: INK }}>{Math.round(featured.progress * 100)}% <span style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(74,54,34,0.55)' }}>leído</span></span>
-                          </div>
-                          <div className="bibm-bar"><div style={{ width: `${Math.round(featured.progress * 100)}%` }} /></div>
-                        </div>
-                      )}
-                      <button className="bibm-btn bibm-hero-cta" onClick={(e) => openBook(featured, e.currentTarget.getBoundingClientRect())}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        {typeof featured.progress === 'number' ? 'Continuar' : 'Abrir libro'}
-                      </button>
-                    </div>
+        {loadingBooks ? <HeroLaneSkeleton gatoColor={gatoColor} /> : (<>
+          {/* Hero "Seguir leyendo" con el gato — único elemento del hero */}
+          <div className="bibm-hero">
+            {featured?.heroUrlMobile
+              ? <img className="bibm-hero-bg" src={imgUrl(featured.heroUrlMobile, { width: 800 })} alt="" />
+              : <img className="bibm-hero-cat" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" />}
+            {/* Velo crema para legibilidad: solo en el fallback (sin imagen de fondo), igual que en desktop. */}
+            {!featured?.heroUrlMobile && <div className="bibm-hero-fade" />}
+            <div className="bibm-hero-inner" style={{ position: 'relative', zIndex: 2 }}>
+              {featured ? (
+                <div className="bibm-hero-body">
+                  <div className="bibm-hero-cover" onClick={(e) => openBook(featured, e.currentTarget.getBoundingClientRect())}>
+                    <BookCover book={featured} h={190} />
                   </div>
-                ) : <div className="bibm-hero-empty">Cuando empieces a leer un libro aparecerá acá para que retomes donde lo dejaste.</div>}
-              </div>
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                    <div className="bibm-hero-ttl">{featured.title}</div>
+                    <div className="bibm-hero-auth">{featured.author}</div>
+                    {typeof featured.progress === 'number' && (
+                      <div className="bibm-hero-prog">
+                        <div style={{ marginBottom: 6 }}>
+                          <span style={{ fontWeight: 700, fontSize: 14, color: INK }}>{Math.round(featured.progress * 100)}% <span style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(74,54,34,0.55)' }}>leído</span></span>
+                        </div>
+                        <div className="bibm-bar"><div style={{ width: `${Math.round(featured.progress * 100)}%` }} /></div>
+                      </div>
+                    )}
+                    <button className="bibm-btn bibm-hero-cta" onClick={(e) => openBook(featured, e.currentTarget.getBoundingClientRect())}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                      {typeof featured.progress === 'number' ? 'Continuar' : 'Abrir libro'}
+                    </button>
+                  </div>
+                </div>
+              ) : <div className="bibm-hero-empty">Cuando empieces a leer un libro aparecerá acá para que retomes donde lo dejaste.</div>}
             </div>
+          </div>
 
-            {/* Tira inferior: Últimos abiertos / Novedades / Para ti */}
-            {(ultimosVisible.length > 0 || novedades.length > 0 || recomendaciones.length > 0) && (
-              <div style={{ marginTop: 30 }}>
-                <div className="bibm-lane-tabs">
-                  {LANE_TABS.map(t => (
-                    <button key={t.id} className={'bibm-lane-tab' + (laneTab === t.id ? ' active' : '')} onClick={() => setLaneTab(t.id)}>{t.label}</button>
-                  ))}
-                </div>
-                {laneTab === 'ultimos' && (
-                  ultimosVisible.length > 0
-                    ? <UltimosAbiertosMobile books={ultimosVisible} onOpen={openBook} />
-                    : <div className="bibm-lane-empty">Todavía no abriste ningún libro. Cuando empieces a leer, aparecerán acá.</div>
-                )}
-                {laneTab === 'novedades' && (
-                  novedades.length > 0
-                    ? <LibroCardsMobile libros={novedades.slice(0, 3)} onOpen={setReelLibro} badge="Recién llegado" />
-                    : <div className="bibm-lane-empty">Pronto verás acá los libros recién llegados a la biblioteca. <span className="bibm-soon">Próximamente</span></div>
-                )}
-                {laneTab === 'recom' && (
-                  recomendaciones.length > 0
-                    ? <LibroCardsMobile libros={recomendaciones.slice(0, 3)} onOpen={setReelLibro} badge="Para ti" />
-                    : <div className="bibm-lane-empty">Estamos preparando recomendaciones a tu medida. <span className="bibm-soon">Próximamente</span></div>
-                )}
+          {/* Tira inferior: Últimos abiertos / Novedades / Para ti */}
+          {(ultimosVisible.length > 0 || novedades.length > 0 || recomendaciones.length > 0) && (
+            <div style={{ marginTop: 30 }}>
+              <div className="bibm-lane-tabs">
+                {LANE_TABS.map(t => (
+                  <button key={t.id} className={'bibm-lane-tab' + (laneTab === t.id ? ' active' : '')} onClick={() => setLaneTab(t.id)}>{t.label}</button>
+                ))}
               </div>
-            )}
-
-            {/* Tu colección — encabezado */}
-            <div style={{ marginTop: 36 }}>
-              <div className="bibm-col-head">
-                <div className="bibm-sec-ttl">Tu colección <span className="bibm-sec-sub">{collectionCount} {collectionCount === 1 ? 'libro' : 'libros'}</span></div>
-                <div className="bibm-col-actions">
-                  <img className="bibm-manage-gato" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" loading="lazy" />
-                  <button className={'bibm-act' + (activeCategory ? ' on' : '')} onClick={() => setScreen('filter')}>
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round"/></svg>
-                    Filtrar{activeCategory ? ' · 1' : ''}
-                  </button>
-                  <button className="bibm-act manage" onClick={() => setScreen('manage')}>
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    Gestionar
-                  </button>
-                </div>
-              </div>
-
-              {activeCategory && (
-                <div className="bibm-active-filter">
-                  <span>Mostrando <strong>{activeName}</strong></span>
-                  <button onClick={() => setActiveCategory(null)}>Quitar ✕</button>
-                </div>
+              {laneTab === 'ultimos' && (
+                ultimosVisible.length > 0
+                  ? <UltimosAbiertosMobile books={ultimosVisible} onOpen={openBook} />
+                  : <div className="bibm-lane-empty">Todavía no abriste ningún libro. Cuando empieces a leer, aparecerán acá.</div>
+              )}
+              {laneTab === 'novedades' && (
+                novedades.length > 0
+                  ? <LibroCardsMobile libros={novedades.slice(0, 3)} onOpen={setReelLibro} badge="Recién llegado" />
+                  : <div className="bibm-lane-empty">Pronto verás acá los libros recién llegados a la biblioteca. <span className="bibm-soon">Próximamente</span></div>
+              )}
+              {laneTab === 'recom' && (
+                recomendaciones.length > 0
+                  ? <LibroCardsMobile libros={recomendaciones.slice(0, 3)} onOpen={setReelLibro} badge="Para ti" />
+                  : <div className="bibm-lane-empty">Estamos preparando recomendaciones a tu medida. <span className="bibm-soon">Próximamente</span></div>
               )}
             </div>
+          )}
+        </>)}
 
-            {/* Colección estilo Kindle: mosaicos de categoría paginados (6 por
-                pantalla, puntitos si hay más) y, al tocar uno, drill-in a las
-                portadas de esa categoría. Sin scroll anidado. */}
-            <div style={{ marginTop: 22 }}>
-              <MobileCategoryBrowser groups={groups} onOpen={openBook} />
+        {/* Tu colección — encabezado */}
+        <div style={{ marginTop: 36 }}>
+          <div className="bibm-col-head">
+            <div className="bibm-sec-ttl">Tu colección {loadingBooks
+                ? <Skel w={58} h={12} r={7} style={{ display: 'inline-block', verticalAlign: 'middle' }} />
+                : <span className="bibm-sec-sub">{collectionCount} {collectionCount === 1 ? 'libro' : 'libros'}</span>}</div>
+            <div className="bibm-col-actions">
+              <img className="bibm-manage-gato" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" loading="lazy" />
+              <button className={'bibm-act' + (activeCategory ? ' on' : '')} onClick={() => setScreen('filter')}>
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round"/></svg>
+                Filtrar{activeCategory ? ' · 1' : ''}
+              </button>
+              <button className="bibm-act manage" onClick={() => setScreen('manage')}>
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Gestionar
+              </button>
             </div>
-          </>
-        )}
+          </div>
+
+          {activeCategory && (
+            <div className="bibm-active-filter">
+              <span>Mostrando <strong>{activeName}</strong></span>
+              <button onClick={() => setActiveCategory(null)}>Quitar ✕</button>
+            </div>
+          )}
+        </div>
+
+        {/* Colección estilo Kindle: mosaicos de categoría paginados (6 por
+            pantalla, puntitos si hay más) y, al tocar uno, drill-in a las
+            portadas de esa categoría. Sin scroll anidado. */}
+        <div style={{ marginTop: 22 }}>
+          {loadingBooks
+            ? <div className="bibm-skel-tiles">
+                {[0, 1, 2, 3].map(i => (
+                  <div key={i} className="bibm-skel-tile">
+                    <Skel w="70%" h={14} />
+                    <Skel w="40%" h={11} />
+                  </div>
+                ))}
+              </div>
+            : <MobileCategoryBrowser groups={groups} onOpen={openBook} />}
+        </div>
       </div>
 
       {selectedBook && (

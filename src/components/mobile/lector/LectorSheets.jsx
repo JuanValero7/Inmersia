@@ -218,6 +218,9 @@ export function AudioSheet({ ambient, playing, volume, onToggle, onVolume, onClo
 // solo Investigación. El Lector ya oculta el botón Explorar hasta el cap. 2,
 // así que si esta hoja se abre durante el tutorial, Investigación está lista.
 export function NavSheet({ onGoForo, onGoCartelera, onGoBiblioteca, onClose, soloInvestigacion = false }) {
+  // Orden fijo en toda la app (Biblioteca · Lectura · Investigación · Foro),
+  // saltándose la sección en la que ya estás. Acá, en el Lector:
+  // Biblioteca · Investigación · Foro.
   const todos = [
     { label:'Biblioteca',    act: onGoBiblioteca, icon:<g><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></g> },
     { label:'Investigación', act: onGoCartelera,  icon:<g><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></g> },

@@ -21,6 +21,14 @@ export const WALL = '#f1e8d4' // mismo fondo de estante que la versión desktop
 export const spineW = (b) => Math.max(26, Math.min(52, Math.round((b.pages / 800) * 22 + 28) + (hashOf(b.id) % 7) - 3))
 export const spineH = (b) => Math.round(112 + (hashOf(b.id + 'h') % 44)) // 112..156
 
+// ─── Bloque del esqueleto de carga ──────────────────────────
+// Ocupa el sitio de lo que SÍ depende de la query de libros mientras el
+// marco de la pantalla ya está pintado. El brillo que lo recorre vive en
+// styles/biblioteca.mobile.css (.bibm-skel).
+export function Skel({ w = '100%', h = 12, r = 8, style }) {
+  return <div className="bibm-skel" style={{ width: w, height: h, borderRadius: r, ...style }} />
+}
+
 // ─── Portada face-out (generada o real) ─────────────────────
 // Misma estética ilustrada que la Tienda (.book/.book-cover/...):
 // portada + lomo/base + canto de páginas, con título y autor
