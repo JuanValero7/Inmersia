@@ -164,7 +164,6 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
             >×</button>
           )}
           <img className="login-logo-mark" src={LOGO} alt="Inmersia" />
-          <p className="login-sub">Carnet de Acceso a la Colección</p>
         </div>
 
         <div className="login-body">
@@ -191,10 +190,10 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
               <button type="submit" className="btn-stamp" disabled={loading}>
                 {loading
                   ? <span className="flex items-center justify-center gap-2"><span className="spinner" />Verificando…</span>
-                  : 'Entrar a la biblioteca'}
+                  : 'Entrar a mi biblioteca'}
               </button>
               <p className="auth-foot">
-                ¿Aún no tienes carnet?{' '}
+                ¿Aún no tienes tu biblioteca?{' '}
                 <button type="button" onClick={() => { setTab('registro'); clear() }}>Regístrate aquí</button>
                 {' · '}
                 <button type="button" onClick={() => { setTab('forgot'); clear(); setForgotEmail(loginForm.email) }}>¿Olvidaste tu contraseña?</button>
@@ -264,8 +263,8 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
               </label>
               <button type="submit" className="btn-stamp" disabled={loading || !aceptaLegal}>
                 {loading
-                  ? <span className="flex items-center justify-center gap-2"><span className="spinner" />Creando carnet…</span>
-                  : 'Crear mi carnet de biblioteca'}
+                  ? <span className="flex items-center justify-center gap-2"><span className="spinner" />Creando tu biblioteca…</span>
+                  : 'Crear mi biblioteca'}
               </button>
             </form>
           )}

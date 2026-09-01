@@ -38,8 +38,11 @@
 .inm-mobile .inm-band { padding: 52px 0; }
 .inm-mobile .inm-feature, .inm-mobile .inm-feature.flip { grid-template-columns: 1fr; gap: 22px; }
 .inm-mobile .inm-feature + .inm-feature { margin-top: 48px; }
+/* Apilado: primero el texto que explica la vista, la captura debajo. El
+   `order: 0 !important` anula el `.flip` del escritorio, que en una sola
+   columna mandaría el texto al fondo. */
 .inm-mobile .inm-feature .inm-ftxt { order: 0 !important; }
-.inm-mobile .inm-feature .inm-vis-wrap { order: -1; }
+.inm-mobile .inm-feature .inm-vis-wrap { order: 1; }
 .inm-mobile .inm-ftxt p { max-width: none; }
 /* Capturas móviles: el recuadro deja de leerse como una ventana de escritorio
    (Landing.jsx no pinta la barra de puntos en esta variante) y pasa a ser un

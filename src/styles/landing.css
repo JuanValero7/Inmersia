@@ -211,7 +211,7 @@
   .inm-portal-scene { max-width: 440px; }
   .inm-feature, .inm-feature.flip { grid-template-columns: 1fr; }
   .inm-feature .inm-ftxt { order: 0 !important; }
-  .inm-feature .inm-vis-wrap { order: -1; }
+  .inm-feature .inm-vis-wrap { order: 1; }
   .inm-closing-msg { text-align: center; }
   .inm-closing-text, .inm-closing-ctas { align-items: center; }
 }
