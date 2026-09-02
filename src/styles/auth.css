@@ -200,3 +200,20 @@
   from { opacity: 0; transform: translateY(10px) scale(0.97); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* ══ SELECTOR DE GÉNERO (segmentos, no <select>) ══════════════════════════
+   El desplegable nativo se posiciona respecto al documento; dentro del modal
+   fijo con scroll propio aparecía fuera de sitio en móvil. Tres opciones caben
+   en una fila, así que no hay nada que desplegar. */
+.seg-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.seg-option {
+  background: #f4ecda; border: 2px solid #4a3622; border-radius: 12px;
+  padding: 10px 4px; text-align: center;
+  font-family: 'Baloo 2', cursive; font-size: 13px; font-weight: 700; color: #4a3622;
+  cursor: pointer; outline: none;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.seg-option:hover { background: #efe2c6; }
+.seg-option.is-on { background: #f2792a; color: #fff8ee; border-color: #4a3622; }
+.seg-option:focus-visible { box-shadow: 0 0 0 3px rgba(242,121,42,0.4); }
+@media (max-width: 360px) { .seg-option { font-size: 11.5px; padding: 10px 2px; } }

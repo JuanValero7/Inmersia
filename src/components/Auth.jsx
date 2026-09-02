@@ -13,6 +13,13 @@ const GATO_NARANJA  = '/assets/tienda/gato-naranja-4.webp'
 const GATO_BLANCO   = '/assets/tienda/gato-blanco-5.webp'
 const GATO_NEGRO    = '/assets/cartelera/gato-negro-2.webp'
 
+// Los valores tienen que coincidir con los que lee saludoBienvenida() (lib/genero.js).
+const GENEROS = [
+  { value: 'masculino', label: 'Masculino' },
+  { value: 'femenino',  label: 'Femenino'  },
+  { value: 'diverso',   label: 'Diverso'   },
+]
+
 // icono ojo (mismo trazo que el Preview de la biblioteca)
 function EyeIcon({ size = 16 }) {
   return (
@@ -109,6 +116,8 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
     const edad = edadEnAnios(regForm.fechaNacimiento)
     if (edad === null) { setError('Revisa la fecha de nacimiento.'); return }
     if (edad < EDAD_MINIMA) { setError(`Para crear una cuenta en Inmersia tienes que tener al menos ${EDAD_MINIMA} años.`); return }
+    // El género ya no es un <select required>: la validación la hacemos aquí.
+    if (!regForm.genero) { setError('Elige una opción en Género.'); return }
     if (!aceptaLegal) { setError('Tienes que aceptar los Términos y Condiciones y la Política de Privacidad.'); return }
     setLoading(true)
     const { data, error: signUpError } = await supabase.auth.signUp({
@@ -204,7 +213,7 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
           {tab === 'forgot' && (
             <form onSubmit={handleForgot}>
               <p className="auth-foot" style={{ marginBottom: 16 }}>
-                Ingresá tu correo y te enviamos un enlace para restablecer tu contraseña.
+                Ingresa tu correo y te enviamos un enlace para restablecer tu contraseña.
               </p>
               <div className="form-field">
                 <label className="field-label">Correo electrónico</label>
@@ -232,14 +241,25 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
                 <label className="field-label">Fecha de nacimiento *</label>
                 <input type="date" required className="auth-input" value={regForm.fechaNacimiento} onChange={e => setR('fechaNacimiento', e.target.value)} style={{ colorScheme: 'light' }} />
               </div>
+              {/* Antes era un <select> nativo. El desplegable del sistema se ancla a
+                  la posición del elemento en el documento, y esta tarjeta vive dentro
+                  de un backdrop `position: fixed` con scroll propio: en móvil el
+                  desplegable salía descolocado, a veces en la otra punta de la
+                  pantalla. Con tres opciones no hace falta desplegar nada. */}
               <div className="form-field">
-                <label className="field-label">Género *</label>
-                <select required className="auth-input" value={regForm.genero} onChange={e => setR('genero', e.target.value)} style={{ colorScheme: 'light' }}>
-                  <option value="" disabled>Selecciona una opción</option>
-                  <option value="masculino">Masculino</option>
-                  <option value="femenino">Femenino</option>
-                  <option value="diverso">Diverso</option>
-                </select>
+                <span className="field-label" id="reg-genero-label">Género *</span>
+                <div className="seg-group" role="radiogroup" aria-labelledby="reg-genero-label">
+                  {GENEROS.map(g => (
+                    <button
+                      key={g.value} type="button" role="radio"
+                      aria-checked={regForm.genero === g.value}
+                      className={clsx('seg-option', regForm.genero === g.value && 'is-on')}
+                      onClick={() => setR('genero', g.value)}
+                    >
+                      {g.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="form-field">
                 <label className="field-label">Correo electrónico *</label>
