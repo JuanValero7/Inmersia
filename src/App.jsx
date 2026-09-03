@@ -12,6 +12,7 @@ import { useSuperuser } from './hooks/useSuperuser.js'
 import { useGatoColor } from './hooks/useGatoColor.js'
 import AuthModal from './components/AuthModal.jsx'
 import { AuthModalProvider } from './context/authModal.jsx'
+import { evento } from './lib/analytics.js'
 import { useOnboardingController, OnboardingProvider } from './context/onboarding.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
 import { LectorRoute } from './components/LectorRoute.jsx'
@@ -103,8 +104,17 @@ export default function App() {
   const [limiteAviso,         setLimiteAviso]         = useState(false) // aviso "límite de pendientes alcanzado"
 
   // Abre el pop-up de autenticación en la pestaña indicada.
+  //
+  // El registro es un pop-up, no una ruta, así que no genera ningún $pageview:
+  // sin este evento no hay forma de saber cuánta gente empieza a registrarse y
+  // se cae por el camino. Comparado con `signup_completado`, da el abandono del
+  // formulario; comparado con los $pageview de la landing, cuánta gente llega a
+  // pedirlo siquiera. `ruta` dice desde dónde se abrió (la landing, la tienda,
+  // el muro del lector), que es lo que decide dónde vale la pena insistir.
   const openAuth = useCallback((tab = 'login') => {
-    setAuthTab(tab === 'registro' ? 'registro' : 'login')
+    const pestana = tab === 'registro' ? 'registro' : 'login'
+    evento('auth_abierto', { pestana, ruta: window.location.pathname })
+    setAuthTab(pestana)
   }, [])
 
   const navigate    = useNavigate()

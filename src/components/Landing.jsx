@@ -20,6 +20,9 @@ import '../styles/landing.css'
 const LOGO = '/assets/inmersia-logo.png?v=4'
 const BOOK = '/assets/landing/libro2-cutout.webp?v=3'
 const GATO = '/assets/cartelera/gato-blanco-2.webp'
+// El cierre lleva el naranja para no repetir el mismo gato dos veces en una
+// misma página; es el mismo que ya se ve en la tienda, que es a donde lleva.
+const GATO_CIERRE = '/assets/tienda/gato-naranja-4.webp'
 
 export default function Landing({ onAuth, onGoTienda, mobile = false }) {
   const [legalDoc, setLegalDoc] = useState(null) // null | 'terminos' | 'privacidad'
@@ -141,8 +144,27 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
         </div>
       </section>
 
+      {/* ── INVITACIÓN AL CATÁLOGO ── */}
+      {/* Vive aquí, antes de las features, porque es el destino del enlace
+          "¿Qué es Inmersia?" del hero (queRef): quien hace clic aterriza en la
+          invitación y encuentra la explicación justo debajo. Antes este bloque
+          cerraba la página, donde casi nadie llegaba. */}
+      <section className="inm-band inm-closing inm-rule-top" ref={queRef}>
+        <div className="inm-wrap inm-closing-in">
+          <div className="inm-closing-hero" data-reveal>
+            <img className="inm-closing-cat" src={GATO} alt="" />
+            <div className="inm-closing-text">
+              <p className="inm-closing-msg">Motívate a una <em>nueva aventura</em>.</p>
+              <div className="inm-closing-ctas">
+                <a className="inm-clay-btn inm-clay-lg" href="/tienda" onClick={(e) => { e.preventDefault(); onGoTienda?.() }}>Explora nuestro catálogo</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── ¿QUÉ ES INMERSIA? + DETALLE ── */}
-      <section className="inm-band inm-rule-top" id="que-hace" ref={queRef}>
+      <section className="inm-band inm-rule-top" id="que-hace">
         <div className="inm-wrap">
           <div className="inm-ov-head">
             <h2 className="inm-sec-h" data-reveal>¿Qué es Inmersia?</h2>
@@ -171,15 +193,15 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
       </section>
 
       {/* ── CIERRE ── */}
+      {/* Sin gato ni frase: el bloque emotivo ya se gastó arriba. Aquí solo las
+          dos salidas, para quien terminó de leer la página entera. */}
       <section className="inm-band inm-closing inm-rule-top">
         <div className="inm-wrap inm-closing-in">
           <div className="inm-closing-hero" data-reveal>
-            <img className="inm-closing-cat" src={GATO} alt="" />
-            <div className="inm-closing-text">
-              <p className="inm-closing-msg">Motívate a una <em>nueva aventura</em>.</p>
-              <div className="inm-closing-ctas">
-                <a className="inm-clay-btn inm-clay-lg" href="/tienda" onClick={(e) => { e.preventDefault(); onGoTienda?.() }}>Explora nuestro catálogo</a>
-              </div>
+            <img className="inm-closing-cat" src={GATO_CIERRE} alt="" loading="lazy" />
+            <div className="inm-final-ctas">
+              <a className="inm-clay-btn inm-clay-lg" href="#registro" onClick={go('registro')}>Crear cuenta</a>
+              <a className="inm-clay-btn inm-clay-lg inm-clay-bordo" href="/tienda" onClick={(e) => { e.preventDefault(); onGoTienda?.() }}>Explora nuestro catálogo</a>
             </div>
           </div>
         </div>
