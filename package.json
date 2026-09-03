@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/generar-seo.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "security-check": "eslint src/ --quiet && node scripts/scan-secrets.mjs && npm audit --audit-level=high"
