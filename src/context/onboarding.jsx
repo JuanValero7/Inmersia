@@ -14,8 +14,10 @@
 //   bienvenida → manual → investigacion → foro → album → tienda_final → tienda → done
 // ─────────────────────────────────────────────────────────────
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase.js'
 import { ensureProfile } from '../lib/ensureProfile.js'
+import { queryKeys } from '../lib/queries.js'
 
 // 'tienda_final' = el hint "Ve a la Tienda" que vive en la Biblioteca.
 // 'tienda'       = el aviso del límite de lecturas pendientes, en la FACHADA de
@@ -32,6 +34,7 @@ export function useOnboardingController(user, navigate) {
   const [step, setStep]   = useState(null)   // null = sin resolver / sin tutorial
   const [ready, setReady] = useState(false)
   const startedRef = useRef(false)           // evita reactivar en el mismo ciclo de vida
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     let cancelled = false
@@ -44,7 +47,16 @@ export function useOnboardingController(user, navigate) {
     // registrado se quedaba SIN tutorial. ensureProfile está memoizado por user.id
     // (ver lib/ensureProfile.js), así que esto no duplica trabajo con App.jsx.
     ensureProfile(user)
-      .then(() => supabase.from('perfiles').select('onboarding_completado').eq('id', user.id).maybeSingle())
+      .then(() => {
+        // La query de bibliotecaUsuario (Biblioteca.jsx) se dispara en cuanto hay
+        // user.id, en paralelo a ensureProfile — podía ganar la carrera y cachear
+        // la lista SIN el Manual del Explorador (staleTime 60s, nadie la refresca
+        // después). Al llegar aquí el insert del Manual ya está garantizado en la
+        // DB, así que invalidamos para que el botón "Abrir el Manual" del
+        // WelcomePopup deje de quedar deshabilitado.
+        queryClient.invalidateQueries({ queryKey: queryKeys.bibliotecaUsuario(user.id) })
+        return supabase.from('perfiles').select('onboarding_completado').eq('id', user.id).maybeSingle()
+      })
       .then(({ data }) => {
         if (cancelled) return
         // === false explícito: usuario nuevo. (Si la columna no existe todavía
