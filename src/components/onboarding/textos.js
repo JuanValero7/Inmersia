@@ -2,6 +2,16 @@
 // desktop y móvil, y los textos deben coincidir palabra por palabra.
 // Los pop-ups son cortos a propósito: uno largo se ve incómodo y nadie lo lee.
 
+// Paso 'manual': aparece apenas el usuario entra al Manual del Explorador
+// (capítulo 1), antes de que sepa que las instrucciones están en el propio
+// texto del libro. Sin esto algunos abrían el manual y se quedaban esperando
+// algo en la interfaz, en vez de ponerse a leer.
+export const TEXTO_MANUAL_HINT = {
+  title: 'Antes de empezar',
+  body: 'Este manual te lo explica todo. Solo tienes que leerlo: ahí encontrarás las instrucciones para dar tus primeros pasos en Inmersia.',
+  buttonLabel: 'Entendido',
+}
+
 // La pista de la mascota va en el cuerpo y se muestra SIEMPRE, también en
 // escritorio: está redactada como condicional ("si estás desde tu celular"), así
 // que quien lee en computadora igual se entera de cómo se navega en el teléfono.
@@ -18,10 +28,14 @@ export const TEXTO_INTRO_CARTELERA = {
 // del marco ("Toca una categoría para ver los detalles").
 // No se puede descartar ni se apaga al llegar a Hechos: se queda hasta que el
 // usuario sale al Foro (que es cuando avanza el paso y la Cartelera se desmonta).
+// La pista de la mascota es un recordatorio: el pop-up de TEXTO_INTRO_CARTELERA
+// ya la menciona una vez, pero se cierra y no vuelve a verse, mientras que este
+// cartel queda fijo en pantalla durante toda la visita a la sección. Mismo truco
+// que ahí (condicional en el cuerpo, se muestra siempre) para no duplicar el texto.
 export const CARTEL_HECHOS = {
   emoji: '🔎',
   title: 'Tu próxima parada',
-  body: 'Cuando termines de curiosear, entra a la sección Hechos: ahí te espera la siguiente instrucción.',
+  body: 'Cuando termines de curiosear, entra a la sección Hechos: ahí te espera la siguiente instrucción. Si estás desde tu celular, toca a nuestra mascota para cambiar de categoría.',
 }
 
 export const TEXTO_ALBUM_HINT = {

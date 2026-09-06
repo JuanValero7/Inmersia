@@ -11,6 +11,8 @@ import { useWhiteNoise } from '../hooks/useWhiteNoise.js'
 import { useXrayItems } from '../hooks/useXrayItems.js'
 import { useSesionLectura } from '../hooks/useSesionLectura.js'
 import { useOnboarding } from '../context/onboarding.jsx'
+import TutorialHint from './onboarding/TutorialHint.jsx'
+import { TEXTO_MANUAL_HINT } from './onboarding/textos.js'
 import { anotarMuestra } from '../lib/progresoInvitado.js'
 import '../styles/lector.css'
 
@@ -123,6 +125,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const onboarding = useOnboarding()
   const tutorialManual = onboarding.active && onboarding.step === 'manual'
   const explorarVisible = !tutorialManual || chapterIndex >= 1
+  const [manualHintVisto, setManualHintVisto] = useState(false)
   const irInvestigacion = useCallback(() => {
     setExplorarOpen(false)
     if (tutorialManual) onboarding.advance('manual')   // manual → investigacion
@@ -707,6 +710,17 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
           onSugerir={sugerirMedia}
           onBorrarParrafo={borrarParrafo}
           onClose={() => setAdminPanelOpen(false)}
+        />
+      )}
+
+      {/* Onboarding (paso 'manual'): recuerda que las instrucciones están en el libro */}
+      {tutorialManual && !manualHintVisto && (
+        <TutorialHint
+          logo
+          title={TEXTO_MANUAL_HINT.title}
+          body={TEXTO_MANUAL_HINT.body}
+          buttonLabel={TEXTO_MANUAL_HINT.buttonLabel}
+          onClose={() => setManualHintVisto(true)}
         />
       )}
     </div>
