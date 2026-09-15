@@ -127,9 +127,14 @@ function sitemap(lista) {
 const lista     = await libros()
 const plantilla = await readFile(join(DIST, 'index.html'), 'utf8')
 
-await mkdir(join(DIST, 'libro'), { recursive: true })
+// Un directorio por libro con su index.html, no `<slug>.html`: así Vercel lo
+// sirve en /libro/<slug> con la resolución normal de índices, sin cleanUrls
+// (que rompía el rewrite catch-all y dejaba /tienda y las rutas protegidas en
+// 404). Un slug sin carpeta atraviesa el filesystem y cae al SPA, como antes.
 for (const l of lista) {
-  await writeFile(join(DIST, 'libro', `${l.slug}.html`), paginaLibro(plantilla, l), 'utf8')
+  const dir = join(DIST, 'libro', l.slug)
+  await mkdir(dir, { recursive: true })
+  await writeFile(join(dir, 'index.html'), paginaLibro(plantilla, l), 'utf8')
 }
 await writeFile(join(DIST, 'sitemap.xml'), sitemap(lista), 'utf8')
 
