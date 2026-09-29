@@ -38,10 +38,13 @@ const NAV_ICONS = {
 }
 
 // ── Header (atrás opcional · título · Explorar) ──
-function Header({ book, onBack, onExplore }) {
+// `backLabel` dice A DÓNDE lleva la flecha, no de dónde vienes: es lo que
+// anuncia un lector de pantalla, y dentro de la Cartelera el destino cambia
+// según lo profundo que estés (ver el onBack jerárquico de SectionView).
+function Header({ book, onBack, onExplore, backLabel = 'Volver' }) {
   return (
     <header className="cm-header">
-      {onBack && <button type="button" className="cm-iconbtn" onClick={onBack} aria-label="Volver a Investigación"><Back /></button>}
+      {onBack && <button type="button" className="cm-iconbtn" onClick={onBack} aria-label={backLabel}><Back /></button>}
       <div className="cm-title">
         <h1>{book?.title || 'Investigación'}</h1>
         <p>Investigación</p>
@@ -148,19 +151,45 @@ function SectionView({ sectionKey, data, onGoBack, onGoLanding, onJump, onExplor
   useEffect(() => { setTab('lista'); setSelId(null); listScrollRef.current = 0 }, [sectionKey])
 
   // salto directo a un item desde X-ray: back desde ficha va al origen, no a la lista
+  const saltoDirecto = useRef(false)
   useEffect(() => {
     if (!initialItemId || items.length === 0) return
     if (items.find(it => it.id === initialItemId || it.allIds?.includes(initialItemId))) {
       setSelId(initialItemId)
       setTab('ficha')
+      saltoDirecto.current = true
     }
   }, [initialItemId, items])
 
-  const pick = (id) => { setSelId(id); setTab('ficha') }
+  const pick = (id) => { setSelId(id); setTab('ficha'); saltoDirecto.current = false }
+
+  // ── La flecha de atrás del header retrocede POR DENTRO ──────────────
+  // La Cartelera es la única pantalla de la app con vistas anidadas
+  // (tablero → sección → detalle). El resto son vistas planas, y por eso en
+  // ellas la flecha sale y ya está.
+  //
+  // Aquí salir de un tirón desde el detalle obligaba a usar el botón "Lista",
+  // y para volver al tablero había que ir al gato del pie. La flecha, que es
+  // donde todo el mundo mira primero, se saltaba los dos escalones.
+  //
+  // La excepción es el salto desde el X-ray del lector: ahí se aterriza
+  // directamente en un detalle sin haber pasado por la lista, así que la
+  // flecha devuelve al lector. Mandar a una lista por la que nunca pasaste
+  // sería inventarte un camino.
+  const atrasJerarquico =
+    tab === 'ficha' && !saltoDirecto.current ? () => setTab('lista')
+    : tab === 'ficha'                        ? onGoBack
+    : onGoLanding
+
+  const etiquetaAtras =
+    tab === 'ficha' && !saltoDirecto.current ? `Volver a ${meta.label}`
+    : tab === 'ficha'                        ? 'Volver a la lectura'
+    : 'Volver al tablero'
 
   return (
     <div className="cm-screen" style={{ '--sec': meta.color }}>
-      <Header book={data.book} onBack={onGoBack} onExplore={onExplore} />
+      <Header book={data.book} onBack={onGoBack && atrasJerarquico}
+              backLabel={etiquetaAtras} onExplore={onExplore} />
 
       <div className="cm-subhead">
         <div className="cm-sec-name">
@@ -274,7 +303,8 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
     <div className="cart-root cm-root">
       {view.kind === 'landing' ? (
         <div className="cm-screen">
-          <Header book={book} onBack={backProp} onExplore={() => setExplore(true)} />
+          <Header book={book} onBack={backProp} backLabel="Volver"
+                  onExplore={() => setExplore(true)} />
           <CarteleraLandingMobile data={dataWithBook} esNoficcion={esNoficcion} onOpenSection={openSection} />
         </div>
       ) : (
