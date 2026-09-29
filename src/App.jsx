@@ -93,12 +93,9 @@ async function rescatarMuestra(userId, libroId) {
 export default function App() {
   const [user,                setUser]                = useState(undefined)
   const [authReady,           setAuthReady]           = useState(false)
-  const [currentBook,         setCurrentBook]         = useState(null)
   const [lastOpenedBookIds,   setLastOpenedBookIds]   = useState([])
   const lastOpenedBookIdsRef = useRef(lastOpenedBookIds)
   lastOpenedBookIdsRef.current = lastOpenedBookIds
-  const [foroSource,          setForoSource]          = useState('biblioteca')
-  const [carteleraSource,     setCarteleraSource]     = useState('lectura')
   const [lectorStartNotebook, setLectorStartNotebook] = useState(false)
   const [cartelaJumpId,       setCartelaJumpId]       = useState(null)
   const [authTab,             setAuthTab]             = useState(null) // null | 'login' | 'registro'
@@ -221,17 +218,61 @@ export default function App() {
     }
   }
 
+  // Navegar apuntando de dónde se viene, para que el botón atrás de la app
+  // sepa volver sin necesidad de recordarlo en una variable global.
+  //
+  // Sustituye a `foroSource` y `carteleraSource`, que eran dos estados que
+  // había que acordarse de poner A MANO antes de cada navegación, desde seis
+  // sitios distintos. Si alguien añadía una ruta nueva al Foro y se olvidaba
+  // del setter, el botón atrás mandaba al usuario a un sitio por el que nunca
+  // había pasado, sin dar ningún error. Y con un enlace compartido fallaba
+  // siempre, porque el estado valía su valor por defecto.
+  const irA = useCallback((destino, book) => {
+    navigate(destino, { state: { from: location.pathname, book } })
+  }, [navigate, location.pathname])
+
+  // Destino del botón atrás DE LA APP (el de pantalla, no el del navegador).
+  //
+  // Ese botón no se puede quitar aunque parezca redundante: en iOS no hay
+  // botón de sistema visible, y sin él un usuario de iPhone se queda encerrado
+  // en el Foro sin salida evidente.
+  //
+  // Ojo con `navigate(-1)` a secas: si el usuario llegó desde WhatsApp o
+  // Google, -1 lo saca del sitio. El `from` con destino de respaldo cubre los
+  // dos casos.
+  const volver = useCallback((respaldo = '/biblioteca') => {
+    navigate(location.state?.from || respaldo)
+  }, [navigate, location.state])
+
+  // El slug de /foro/:slug e /investigacion/:slug. useParams() no sirve aquí:
+  // App queda por encima de la Route, así que se lee de la propia URL, que es
+  // la fuente de verdad de qué libro se está mirando.
+  const slugDeLaUrl = useCallback(() => location.pathname.split('/').at(-1), [location.pathname])
+
+  // El libro viaja en el `state` de la navegación, no en un estado de App.
+  //
+  // POR QUÉ ASÍ
+  // Antes había un `currentBook` global cuyo trabajo era doble: recordar de
+  // dónde venía el usuario para el botón atrás, y evitar que el Lector
+  // volviera a pedir el libro que quien navega YA tenía cargado.
+  //
+  // Lo segundo sigue haciendo falta —es un viaje de red en el momento más
+  // sensible de la app, el instante en que alguien abre un libro— pero no
+  // necesita estado global: React Router guarda el `state` por entrada de
+  // historial, así que viaja con la navegación y además sobrevive al atrás y
+  // adelante del navegador, cosa que una variable de App no hacía.
+  //
+  // Quien entra por un enlace compartido no trae `state`, y entonces el libro
+  // se resuelve por slug como siempre. Que es exactamente lo correcto.
   const handleOpenBook = useCallback((book) => {
     pushBookId(book.id, user)
-    setCurrentBook(book)
-    navigate(`/libro/${book.slug || book.id}`)
+    navigate(`/libro/${book.slug || book.id}`, { state: { book } })
   }, [user, navigate])
 
   const handleGoNotebook = useCallback((book) => {
     pushBookId(book.id, user)
-    setCurrentBook(book)
     setLectorStartNotebook(true)
-    navigate(`/libro/${book.slug || book.id}`)
+    navigate(`/libro/${book.slug || book.id}`, { state: { book } })
   }, [user, navigate])
 
   // Tras autenticarse desde el paywall de invitado (estando en /libro/:slug),
@@ -245,8 +286,10 @@ export default function App() {
     const slug = location.pathname.split('/')[2]
     if (!slug) return
 
-    // Resolver el libro: usar currentBook si coincide con la URL; si no, buscarlo.
-    let libroId = (currentBook?.slug === slug || currentBook?.id === slug) ? currentBook?.libro_id : null
+    // Resolver el libro: usar el que traiga la navegación si coincide con la
+    // URL; si no, buscarlo (caso del enlace compartido).
+    const libroNav = location.state?.book
+    let libroId = (libroNav?.slug === slug || libroNav?.id === slug) ? libroNav?.libro_id : null
     if (!libroId) {
       const { data } = await supabase.from('libros').select('id').eq('slug', slug).maybeSingle()
       libroId = data?.id
@@ -276,7 +319,7 @@ export default function App() {
     await rescatarMuestra(u.id, libroId)
     queryClient.invalidateQueries({ queryKey: queryKeys.bibliotecaUsuario(u.id) })
     // Permanece en el lector; el efecto de guestMode oculta el paywall al dejar de ser invitado.
-  }, [location.pathname, currentBook, navigate, queryClient])
+  }, [location.pathname, location.state, navigate, queryClient])
 
   // El aviso de "límite alcanzado" se autodescarta a los 7 s.
   useEffect(() => {
@@ -331,15 +374,12 @@ export default function App() {
             <LectorRoute
               LectorCmp={Lectura}
               user={user}
-              currentBook={currentBook}
               isSuperuser={isSuperuser}
               gatoColor={gatoColor}
               openAuth={openAuth}
               lectorStartNotebook={lectorStartNotebook}
               setLectorStartNotebook={setLectorStartNotebook}
               setCartelaJumpId={setCartelaJumpId}
-              setForoSource={setForoSource}
-              setCarteleraSource={setCarteleraSource}
             />
           } />
 
@@ -357,11 +397,7 @@ export default function App() {
                 onGoTienda={() => navigate('/tienda')}
                 onGoPerfil={() => navigate('/perfil')}
                 onGoAlbum={() => navigate('/album')}
-                onGoForo={(book) => {
-                  setCurrentBook(book)
-                  setForoSource('biblioteca')
-                  navigate(`/foro/${book.slug || book.id}`)
-                }}
+                onGoForo={(book) => irA(`/foro/${book.slug || book.id}`, book)}
                 onGoNotebook={handleGoNotebook}
               />
             } />
@@ -372,16 +408,8 @@ export default function App() {
                 gatoColor={gatoColor}
                 onOpenBook={handleOpenBook}
                 onGoBack={() => navigate('/biblioteca')}
-                onGoForo={(book) => {
-                  setCurrentBook(book)
-                  setForoSource('album')
-                  navigate(`/foro/${book.slug || book.id}`)
-                }}
-                onGoInvestigacion={(book) => {
-                  setCurrentBook(book)
-                  setCarteleraSource('album')
-                  navigate(`/investigacion/${book.slug || book.id}`)
-                }}
+                onGoForo={(book) => irA(`/foro/${book.slug || book.id}`, book)}
+                onGoInvestigacion={(book) => irA(`/investigacion/${book.slug || book.id}`, book)}
               />
             } />
 
@@ -395,30 +423,16 @@ export default function App() {
               />
             } />
 
-            {/* Investigación y Foro cargan el libro por slug; currentBook es caché opcional. */}
+            {/* Investigación y Foro resuelven el libro por slug con useBookBySlug;
+                el que viaja en el state es solo una pista de caché. */}
             <Route path="/investigacion/:slug" element={
               <Cartelera
-                onGoBack={() => {
-                  if (!currentBook) { navigate('/biblioteca'); return }
-                  const dest = carteleraSource === 'foro'
-                    ? `/foro/${currentBook.slug || currentBook.id}`
-                    : carteleraSource === 'album'
-                      ? '/album'
-                      : `/libro/${currentBook.slug || currentBook.id}`
-                  navigate(dest)
-                }}
-                onGoLectura={() => {
-                  if (!currentBook) { navigate('/biblioteca'); return }
-                  navigate(`/libro/${currentBook.slug || currentBook.id}`)
-                }}
-                book={currentBook}
+                onGoBack={() => volver()}
+                onGoLectura={() => irA(`/libro/${slugDeLaUrl()}`, location.state?.book)}
+                book={location.state?.book}
                 user={user}
                 gatoColor={gatoColor}
-                onGoForo={() => {
-                  setForoSource('cartelera')
-                  const slug = currentBook?.slug || location.pathname.split('/').at(-1)
-                  navigate(`/foro/${slug}`)
-                }}
+                onGoForo={() => irA(`/foro/${slugDeLaUrl()}`, location.state?.book)}
                 onGoBiblioteca={() => navigate('/biblioteca')}
                 jumpToItemId={cartelaJumpId}
                 onJumpConsumed={() => setCartelaJumpId(null)}
@@ -428,30 +442,13 @@ export default function App() {
 
             <Route path="/foro/:slug" element={
               <Foro
-                book={currentBook}
+                book={location.state?.book}
                 user={user}
                 isSuperuser={isSuperuser}
-                onGoBack={() => {
-                  const slug = currentBook?.slug || location.pathname.split('/').at(-1)
-                  const dest = foroSource === 'cartelera'
-                    ? `/investigacion/${slug}`
-                    : foroSource === 'lectura'
-                      ? `/libro/${slug}`
-                      : foroSource === 'album'
-                        ? '/album'
-                        : '/biblioteca'
-                  navigate(dest)
-                }}
-                onGoLectura={() => {
-                  const slug = currentBook?.slug || location.pathname.split('/').at(-1)
-                  navigate(`/libro/${slug}`)
-                }}
+                onGoBack={() => volver()}
+                onGoLectura={() => irA(`/libro/${slugDeLaUrl()}`, location.state?.book)}
                 onGoBiblioteca={() => navigate('/biblioteca')}
-                onGoCartelera={() => {
-                  setCarteleraSource('foro')
-                  const slug = currentBook?.slug || location.pathname.split('/').at(-1)
-                  navigate(`/investigacion/${slug}`)
-                }}
+                onGoCartelera={() => irA(`/investigacion/${slugDeLaUrl()}`, location.state?.book)}
               />
             } />
 

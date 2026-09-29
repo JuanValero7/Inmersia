@@ -11,7 +11,7 @@
 //   { onGoBack, book, user, onGoForo, onGoBiblioteca }
 // ─────────────────────────────────────────────────────────────
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useLocation } from 'react-router-dom'
 import { useBookBySlug } from '../../hooks/useBookBySlug.js'
 
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
@@ -194,6 +194,7 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
   const secciones  = getSecciones(esNoficcion)
   const data = useCartelera(book?.libro_id || null, user?.id || null, isSuperuser)
   const [searchParams, setSearchParams] = useSearchParams()
+  const location = useLocation()
   // Lazy init: jumpToItemId tiene prioridad; si no, lee ?seccion= de la URL.
   const [view, setView] = useState(() => {
     if (jumpToItemId) return { kind: 'board', key: secciones[0].key }
@@ -202,10 +203,15 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
   })
   const [explore, setExplore] = useState(false)
 
+  // El `state` se repasa a propósito: setSearchParams reemplaza la entrada del
+  // historial y DESCARTA el state si no se le pasa. Ahí viajan el "de dónde
+  // vengo" del botón atrás y el libro ya resuelto, así que sin esto abrir una
+  // sección del tablero hacía que el botón atrás perdiera su destino.
   useEffect(() => {
-    if (view.key) setSearchParams({ seccion: view.key }, { replace: true })
-    else setSearchParams({}, { replace: true })
-  }, [view.key, setSearchParams])
+    const opts = { replace: true, state: location.state }
+    if (view.key) setSearchParams({ seccion: view.key }, opts)
+    else setSearchParams({}, opts)
+  }, [view.key, setSearchParams, location.state])
   const [fichaInitItemId, setFichaInitItemId] = useState(() => jumpToItemId || null)
 
   useEffect(() => {

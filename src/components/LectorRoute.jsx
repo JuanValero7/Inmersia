@@ -1,15 +1,15 @@
 // Maneja la ruta /libro/:slug para usuarios autenticados y para invitados.
-// Si el currentBook de App corresponde al slug del URL se usa directamente
-// (evita un fetch extra); si no —refresh de página, enlace directo o libro
-// distinto— se fetchea desde `libros` por slug. Para usuarios se embebe
-// bibliotecas_usuarios(leido).
+// Si la navegación trae el libro en su state y corresponde al slug del URL se
+// usa directamente (evita un fetch extra); si no —refresh de página, enlace
+// compartido o libro distinto— se fetchea desde `libros` por slug. Para
+// usuarios se embebe bibliotecas_usuarios(leido).
 //
 // Modo MUESTRA (`guestMode`): se entra tanto sin sesión como con sesión pero sin
 // tener el libro en la biblioteca. Son 2 capítulos en ambos casos — para `anon` lo
 // aplica la RLS, y para `authenticated` lo aplica useLectorData recortando la lista
 // (la RLS no distingue quién adquirió qué).
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { MANUAL_LIBRO_ID } from '../lib/constants.js'
 import { useBibliotecaUsuarioQuery } from '../lib/queries.js'
@@ -35,19 +35,21 @@ const LoadingScreen = (
  * @param {object} props
  * @param {React.ComponentType} props.LectorCmp   cáscara a montar (escritorio o móvil)
  * @param {{ id: string }|null} props.user
- * @param {object|null} props.currentBook          libro ya cargado, si se navegó desde dentro
  * @param {boolean} props.isSuperuser
  * @param {'negro'|'blanco'|'naranja'} props.gatoColor
  * @param {(tab?: string) => void} props.openAuth
  * @param {boolean} props.lectorStartNotebook
  * @param {(v: boolean) => void} props.setLectorStartNotebook
  * @param {(id: string|null) => void} props.setCartelaJumpId
- * @param {(v: string) => void} props.setForoSource
- * @param {(v: string) => void} props.setCarteleraSource
  */
-export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, gatoColor, openAuth, lectorStartNotebook, setLectorStartNotebook, setCartelaJumpId, setForoSource, setCarteleraSource }) {
+export function LectorRoute({ LectorCmp, user, isSuperuser, gatoColor, openAuth, lectorStartNotebook, setLectorStartNotebook, setCartelaJumpId }) {
   const { slug } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  // El libro que traiga la navegación, si viene de dentro de la app. Antes era
+  // un `currentBook` global de App.jsx; ahora viaja en el state del historial,
+  // que es donde pertenece y además sobrevive al atrás del navegador.
+  const currentBook = location.state?.book
   const isAuthed = !!user
   // Los libros navegan por slug o, si no tienen, por id (ver handleOpenBook).
   const matches = !!currentBook?.libro_id && (currentBook.slug === slug || currentBook.id === slug)
@@ -91,6 +93,12 @@ export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, gatoCol
   // misma que usan Biblioteca/Tienda/Álbum: si el usuario llegó desde cualquiera
   // de ellas ya está en caché y esto no cuesta ni un viaje de red ni un spinner.
   const book = matches ? currentBook : fetchedBook
+
+  // Navegar al Foro o a la Investigación apuntando de dónde se viene, para que
+  // su botón atrás sepa volver al lector. Lleva también el libro, que a estas
+  // alturas ya está resuelto: así esas vistas no lo vuelven a pedir.
+  const irA = (destino) =>
+    navigate(destino, { state: { from: location.pathname, book } })
   const libroId = book?.libro_id ?? null
   const bibliotecaQuery = useBibliotecaUsuarioQuery(user?.id)
   const filas = bibliotecaQuery.data
@@ -139,8 +147,8 @@ export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, gatoCol
       onRequestAuth={(tab) => openAuth?.(tab || 'login')}
       onGoBack={() => navigate(user ? '/biblioteca' : '/')}
       onGoTienda={() => navigate('/tienda')}
-      onGoCartelera={(itemId) => { setCartelaJumpId(itemId || null); setCarteleraSource?.('lectura'); navigate(`/investigacion/${book.slug || book.id}`) }}
-      onGoForo={() => { setForoSource('lectura'); navigate(`/foro/${book.slug || book.id}`) }}
+      onGoCartelera={(itemId) => { setCartelaJumpId(itemId || null); irA(`/investigacion/${book.slug || book.id}`) }}
+      onGoForo={() => irA(`/foro/${book.slug || book.id}`)}
       startWithNotebook={lectorStartNotebook}
       onNotebookStarted={() => setLectorStartNotebook(false)}
       isSuperuser={isSuperuser}

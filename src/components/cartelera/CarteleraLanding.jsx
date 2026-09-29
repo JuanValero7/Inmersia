@@ -226,7 +226,7 @@ const SHOW_HECHOS = true
 
 export default function CarteleraLanding({
   subtitle, data, esNoficcion = false,
-  onOpenSection, onOpenList, onGoBack, onGoForo, onGoBiblioteca,
+  onOpenSection, onOpenList, onGoLectura, onGoForo, onGoBiblioteca,
 }) {
   const stageRef = useRef(null)
   const TOTAL_W = BOARD_W + FRAME * 2
@@ -324,7 +324,7 @@ export default function CarteleraLanding({
         </div>
         <div className="cart-portada-hint">El tablero de tu investigación</div>
         <div className="actions">
-          <ExplorarPopup onGoForo={onGoForo} onGoBack={onGoBack} onGoBiblioteca={onGoBiblioteca} btnClass="back-btn" />
+          <ExplorarPopup onGoForo={onGoForo} onGoLectura={onGoLectura} onGoBiblioteca={onGoBiblioteca} btnClass="back-btn" />
         </div>
       </div>
 

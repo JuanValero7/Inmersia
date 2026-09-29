@@ -2,9 +2,9 @@
 // Vista principal de la Cartelera. Orquesta: Landing → Ficha (cuaderno).
 // El mural suelto por sección ya no existe: las imágenes que se desbloquean
 // viven en las placas del landing. Lee todo de Supabase con useCartelera.
-//   <CartelaView onGoBack book user onGoForo />
+//   <CartelaView onGoLectura book user onGoForo />
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useLocation } from 'react-router-dom'
 import { useBookBySlug } from '../hooks/useBookBySlug.js'
 
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
@@ -32,7 +32,7 @@ function Filters() {
  * van revelando según el capítulo al que ha llegado el lector.
  *
  * @param {object} props
- * @param {() => void} props.onGoBack
+ * @param {() => void} props.onGoLectura   vuelve al lector (el botón se llama "Lectura")
  * @param {object|null} props.book               libro; si falta se resuelve por la URL
  * @param {{ id: string }|null} props.user
  * @param {() => void} props.onGoForo
@@ -42,22 +42,28 @@ function Filters() {
  * @param {boolean} [props.isSuperuser]
  * @param {'negro'|'blanco'|'naranja'} [props.gatoColor]
  */
-export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false, gatoColor = 'negro' }) {
+export default function CartelaView({ onGoLectura, book: bookProp, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false, gatoColor = 'negro' }) {
   const { book, loading: bookLoading } = useBookBySlug(bookProp)
   const esNoficcion = book?.es_ficcion === false
   const secciones  = getSecciones(esNoficcion)
   const data = useCartelera(book?.libro_id || null, user?.id || null, isSuperuser)
   const [searchParams, setSearchParams] = useSearchParams()
+  const location = useLocation()
   const [view, setView] = useState(() => {
     const s = searchParams.get('seccion')
     return s && VALID_SECCIONES.includes(s) ? { kind: 'ficha', key: s } : { kind: 'landing', key: null }
   })
   const [fichaInitItemId, setFichaInitItemId] = useState(null)
 
+  // El `state` se repasa a propósito: setSearchParams reemplaza la entrada del
+  // historial y DESCARTA el state si no se le pasa. Ahí viajan el "de dónde
+  // vengo" del botón atrás y el libro ya resuelto, así que sin esto abrir una
+  // sección del tablero hacía que el botón atrás perdiera su destino.
   useEffect(() => {
-    if (view.key) setSearchParams({ seccion: view.key }, { replace: true })
-    else setSearchParams({}, { replace: true })
-  }, [view.key, setSearchParams])
+    const opts = { replace: true, state: location.state }
+    if (view.key) setSearchParams({ seccion: view.key }, opts)
+    else setSearchParams({}, opts)
+  }, [view.key, setSearchParams, location.state])
 
   // ── Tutorial (paso 'investigacion') ──
   // Vive acá arriba y no en el landing a propósito: el landing se desmonta al
@@ -98,14 +104,14 @@ export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, 
     content = <CarteleraLanding subtitle={book?.title} data={data} esNoficcion={esNoficcion}
       onOpenSection={(k) => setView({ kind: 'ficha', key: k })}
       onOpenList={(k) => setView({ kind: 'ficha', key: k })}
-      onGoBack={onGoBack} onGoForo={onGoForo} onGoBiblioteca={onGoBiblioteca} />
+      onGoLectura={onGoLectura} onGoForo={onGoForo} onGoBiblioteca={onGoBiblioteca} />
   } else {
     content = <Ficha key={view.key} section={secciones.find(s => s.key === view.key)} items={data.itemsBySeccion[view.key] || []}
       initialItemId={fichaInitItemId}
       secciones={secciones}
       gatoColor={gatoColor}
       onBackPortada={() => setView({ kind: 'landing', key: null })}
-      onGoBack={onGoBack}
+      onGoLectura={onGoLectura}
       onGoForo={onGoForo}
       onGoBiblioteca={onGoBiblioteca}
       onOpenList={(k) => setView({ kind: 'ficha', key: k })} />

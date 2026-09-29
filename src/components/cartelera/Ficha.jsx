@@ -21,7 +21,7 @@ function Wave({ color }) {
     <path d="M2 8 Q22 1 42 8 T82 8 T122 8 T162 8 T202 8 T242 8 T282 8 T318 8" /></svg>)
 }
 
-export default function Ficha({ section, items = [], onBackPortada, initialItemId, onGoBack, onGoForo, onGoBiblioteca, onOpenList, secciones = [], gatoColor }) {
+export default function Ficha({ section, items = [], onBackPortada, initialItemId, onGoLectura, onGoForo, onGoBiblioteca, onOpenList, secciones = [], gatoColor }) {
   const total = items.length
   const [sel, setSel] = useState(initialItemId || items[0]?.id || null)
   const [query, setQuery] = useState('')
@@ -68,7 +68,7 @@ export default function Ficha({ section, items = [], onBackPortada, initialItemI
         </div>
         <div className="cart-sec-hint">Sigue leyendo para revelar una sorpresa</div>
         <div className="actions actions-col">
-          <ExplorarPopup onGoForo={onGoForo} onGoBack={onGoBack} onGoBiblioteca={onGoBiblioteca} />
+          <ExplorarPopup onGoForo={onGoForo} onGoLectura={onGoLectura} onGoBiblioteca={onGoBiblioteca} />
         </div>
       </div>
 
