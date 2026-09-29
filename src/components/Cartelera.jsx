@@ -8,7 +8,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useBookBySlug } from '../hooks/useBookBySlug.js'
 
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
-import { useCartelera } from './cartelera/useCartelera.js'
+import { useCartelera } from '../hooks/useCartelera.js'
 import { getSecciones } from './cartelera/carteleraHelpers.js'
 import CarteleraLanding from './cartelera/CarteleraLanding.jsx'
 import Ficha from './cartelera/Ficha.jsx'

@@ -1,4 +1,3 @@
-// Formato: Plain JavaScript (.jsx)
 // Hook de datos de la Cartelera. Trae todo on-demand desde Supabase para un
 // (libro, usuario): capítulo actual, porcentaje de avance, items por sección,
 // las 4 imágenes "principales" (fondo de cada tablero) y las predicciones.
@@ -9,14 +8,27 @@
 //     de Lector.jsx: pct = round(pendingIdx / total * 100)).
 //   - cartelera_items / predicciones: se filtran en servidor con capitulo < capActual.
 import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase.js'
-import { useReadingStats } from '../../hooks/useReadingStats.js'
+import { supabase } from '../lib/supabase.js'
+import { useReadingStats } from './useReadingStats.js'
 
 // A partir de qué avance se cargan las estadísticas de lectura para la placa
 // del tablero "Datos"/"Resumen" (ver TableroDatos.jsx). Recién cerca del final
 // del libro tiene sentido pagar esas dos queries extra (sesiones + notas).
 const STATS_FROM_PCT = 90
 
+/**
+ * Datos del tablero de investigación de un libro, compartidos tal cual por la
+ * Cartelera de escritorio y la de móvil.
+ *
+ * Vivía en components/cartelera/ pese a ser un hook: los datos entran por
+ * src/hooks/, y las dos cáscaras de la Cartelera solo bifurcan el layout.
+ *
+ * @param {string|null} libroId
+ * @param {string|null} userId
+ * @param {boolean} [isSuperuser]   ve todo el tablero, sin el filtro por capítulo
+ * @returns {{ loading: boolean, capituloActual: number, porcentaje: number,
+ *             itemsBySeccion: object, principal: object, stats: object|null }}
+ */
 export function useCartelera(libroId, userId, isSuperuser = false) {
   const [loading, setLoading]       = useState(true)
   const [capituloActual, setCap]    = useState(0)

@@ -15,7 +15,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useBookBySlug } from '../../hooks/useBookBySlug.js'
 
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
-import { useCartelera } from '../cartelera/useCartelera.js'
+import { useCartelera } from '../../hooks/useCartelera.js'
 import { SECCIONES, getSecciones } from '../cartelera/carteleraHelpers.js'
 import CarteleraLandingMobile from './CarteleraLandingMobile.jsx'
 import CarteleraMobileFicha, { CarteleraMobileLista } from './CarteleraMobileFicha.jsx'
