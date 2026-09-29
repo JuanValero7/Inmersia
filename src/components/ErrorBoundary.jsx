@@ -1,4 +1,5 @@
 import React from 'react'
+import { reportarError } from '../lib/errores.js'
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -12,6 +13,10 @@ export default class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, info) {
     console.error('[Inmersia] Error no controlado:', error, info.componentStack)
+    // React captura estos errores y los relanza de una forma que los
+    // manejadores globales de Sentry no ven: si no se reporta aquí a mano,
+    // justo los que dejan la pantalla en blanco son los que nunca llegan.
+    reportarError(error, { componentStack: info.componentStack })
   }
 
   render() {
