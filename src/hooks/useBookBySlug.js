@@ -5,16 +5,32 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 
-function mapLibro(data) {
+// Fila de `libros` de Supabase → la forma que consumen las vistas.
+//
+// `leido` sale del join con bibliotecas_usuarios, que solo pide LectorRoute y
+// solo cuando hay sesión. Sin el join el encadenamiento opcional cae en false,
+// que es lo correcto: un invitado no tiene ningún libro marcado como leído.
+export function mapLibro(data) {
   return {
     id: data.id, libro_id: data.id, slug: data.slug,
     title: data.titulo, author: data.autor || 'Desconocido',
     pages: data.paginas || 200, _baseColor: data.color || '#F2792A',
     summary: data.descripcion || '', cover: data.portada_url || null,
-    es_ficcion: data.es_ficcion ?? true, leido: false,
+    es_ficcion: data.es_ficcion ?? true,
+    leido: data.bibliotecas_usuarios?.[0]?.leido ?? false,
   }
 }
 
+/**
+ * Resuelve el libro de la URL (/libro/:slug, /foro/:slug...).
+ *
+ * Si quien llama ya tiene el libro cargado y su slug coincide, lo devuelve tal cual
+ * y NO pega a la red: es el camino rápido al navegar dentro de la app. Solo consulta
+ * cuando el usuario entra directo por un enlace compartido.
+ *
+ * @param {object|null} bookProp   libro ya cargado, si lo hay
+ * @returns {{ book: object|null, loading: boolean }}
+ */
 export function useBookBySlug(bookProp) {
   const { slug } = useParams()
   const alreadyLoaded = !!bookProp?.libro_id && bookProp.slug === slug

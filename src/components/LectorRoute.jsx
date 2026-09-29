@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase.js'
 import { MANUAL_LIBRO_ID } from '../lib/constants.js'
 import { useBibliotecaUsuarioQuery } from '../lib/queries.js'
 import { evento } from '../lib/analytics.js'
+import { mapLibro } from '../hooks/useBookBySlug.js'
 
 const LoadingScreen = (
   <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,background:'var(--bg-warm)'}}>
@@ -22,17 +23,28 @@ const LoadingScreen = (
   </div>
 )
 
-function mapLibro(data) {
-  return {
-    id: data.id, libro_id: data.id, slug: data.slug,
-    title: data.titulo, author: data.autor || 'Desconocido',
-    pages: data.paginas || 200, _baseColor: data.color || '#F2792A',
-    summary: data.descripcion || '', cover: data.portada_url || null,
-    es_ficcion: data.es_ficcion ?? true,
-    leido: data.bibliotecas_usuarios?.[0]?.leido ?? false,
-  }
-}
-
+/**
+ * Resuelve el libro de la URL y monta el Lector que toque, con la muestra de invitado
+ * si no hay sesión.
+ *
+ * Es la ruta con más props del proyecto, y por eso la que más se beneficia de esto:
+ * un `gatoColour` mal escrito no da error en React — el componente lee `gatoColor`,
+ * recibe undefined, usa su valor por defecto y todo PARECE funcionar. Te enteras
+ * cuando alguien dice que su gato blanco sale negro.
+ *
+ * @param {object} props
+ * @param {React.ComponentType} props.LectorCmp   cáscara a montar (escritorio o móvil)
+ * @param {{ id: string }|null} props.user
+ * @param {object|null} props.currentBook          libro ya cargado, si se navegó desde dentro
+ * @param {boolean} props.isSuperuser
+ * @param {'negro'|'blanco'|'naranja'} props.gatoColor
+ * @param {(tab?: string) => void} props.openAuth
+ * @param {boolean} props.lectorStartNotebook
+ * @param {(v: boolean) => void} props.setLectorStartNotebook
+ * @param {(id: string|null) => void} props.setCartelaJumpId
+ * @param {(v: string) => void} props.setForoSource
+ * @param {(v: string) => void} props.setCarteleraSource
+ */
 export function LectorRoute({ LectorCmp, user, currentBook, isSuperuser, gatoColor, openAuth, lectorStartNotebook, setLectorStartNotebook, setCartelaJumpId, setForoSource, setCarteleraSource }) {
   const { slug } = useParams()
   const navigate = useNavigate()

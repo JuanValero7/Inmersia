@@ -5,12 +5,24 @@
 // app cambia de modo sola. El corte por defecto es 820px:
 //   ≤ 820px  → mobile   (teléfonos + tablet en vertical estrecho)
 //   > 820px  → desktop  (PC y tablet apaisado)
-// Ajustá BREAKPOINT si querés otro límite.
+// Ajusta BREAKPOINT si quieres otro límite.
 // ─────────────────────────────────────────────────────────────
 import { useState, useEffect } from 'react'
 
 const BREAKPOINT = 820
 
+/**
+ * ¿Estamos en un viewport móvil? Reactivo: si el usuario rota el tablet o achica la
+ * ventana, la app cambia de modo sola.
+ *
+ * Es el ÚNICO corte del proyecto y decide qué árbol monta App.jsx. No definas otro
+ * breakpoint en un componente suelto: hubo un bug así, con un useIsMobile local a
+ * 640px, que entre 641 y 820px hacía que la app se creyera móvil y la Tienda se
+ * creyera escritorio dentro de la misma pantalla.
+ *
+ * @param {number} [breakpoint]   ancho máximo considerado móvil, en px
+ * @returns {boolean}
+ */
 export default function useIsMobile(breakpoint = BREAKPOINT) {
   const query = `(max-width: ${breakpoint}px)`
   const [isMobile, setIsMobile] = useState(

@@ -22,18 +22,12 @@ import { usePerfilData } from '../hooks/usePerfilData.js'
 import { descargarMisDatos } from '../lib/misDatos.js'
 import { useOnboarding } from '../context/onboarding.jsx'
 import LegalModal from './legal/LegalModal.jsx'
+import { tint } from './lector/clay.jsx'
 import '../styles/perfil.css'
 
 // ── Color de barra por sección (acuarela derivada de la paleta) ──
 export const SEC_COLOR = { datos: '#7C8A4F', seguridad: '#2F4A6B', transac: '#d9a05a', historial: '#cf8ea4', legal: '#2B1616' }
 
-function tint(hex, amt) {
-  const n = parseInt(hex.slice(1), 16)
-  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255
-  const t = amt < 0 ? 0 : 255, p = Math.abs(amt)
-  const mix = c => Math.round((t - c) * p + c)
-  return `rgb(${mix(r)},${mix(g)},${mix(b)})`
-}
 export function washBg(base) {
   return [
     `radial-gradient(58% 52% at 18% 12%, ${tint(base, 0.32)}, transparent 60%)`,

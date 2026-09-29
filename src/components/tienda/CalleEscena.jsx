@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { BG, telonActual } from './tiendaHelpers.jsx'
+import useIsMobile from '../../hooks/useIsMobile.js'
 
 // =============================================================
 // CalleEscena · fachada con imágenes reales por hora del día
@@ -7,10 +8,15 @@ import { BG, telonActual } from './tiendaHelpers.jsx'
 // según la hora del usuario. Hotspot sobre la tienda central, zoom
 // a la puerta y, si el acceso está bloqueado, aviso "Cerrado".
 //
-// RESPONSIVE: en pantallas chicas (≤640px) la escena se renderiza
-// "encuadrada" sobre la tienda Inmersia (recorte de los locales
-// vecinos para que no se vea estirada), con un botón a pantalla
-// completa para entrar. En desktop se mantiene el "cover" original.
+// RESPONSIVE: en pantallas chicas la escena se renderiza "encuadrada"
+// sobre la tienda Inmersia (recorte de los locales vecinos para que no
+// se vea estirada), con un botón a pantalla completa para entrar. En
+// desktop se mantiene el "cover" original.
+//
+// El corte lo decide useIsMobile (820px), el mismo que usa App.jsx para
+// elegir qué árbol monta. Antes este archivo tenía su propio hook con
+// corte en 640px, así que entre 641 y 820px la app se creía móvil y esta
+// escena se creía desktop dentro de la misma pantalla.
 //
 // Props:
 //   pendientes  · nº de lecturas sin terminar (solo informativo)
@@ -23,19 +29,6 @@ import { BG, telonActual } from './tiendaHelpers.jsx'
 const IMG_W = 1024, IMG_H = 700
 const DOOR = { x: 50.5, y: 85 }   // puerta — origen del zoom
 const LOGO = { x: 55,   y: 37 }   // letrero sobre la cornisa de ladrillo
-
-// Hook: ¿viewport mobile?
-function useIsMobile(query = '(max-width: 640px)') {
-  const [m, setM] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia(query).matches)
-  useEffect(() => {
-    const mq = window.matchMedia(query)
-    const h = e => setM(e.matches)
-    mq.addEventListener ? mq.addEventListener('change', h) : mq.addListener(h)
-    return () => mq.removeEventListener ? mq.removeEventListener('change', h) : mq.removeListener(h)
-  }, [query])
-  return m
-}
 
 export default function CalleEscena({ pendientes = 0, limite = 5, bloqueado = false, onEntrar, onGoBack }) {
   const mobile = useIsMobile()
@@ -123,7 +116,7 @@ export default function CalleEscena({ pendientes = 0, limite = 5, bloqueado = fa
 
           {/* Tap = todo el escaparate */}
           <button className="cm-tap" type="button" onClick={enter} aria-label="Entrar a la tienda" />
-          {!opening && <button className="cm-hint" type="button" onClick={enter}>Tocá para entrar ✦</button>}
+          {!opening && <button className="cm-hint" type="button" onClick={enter}>Toca para entrar ✦</button>}
 
           <div className={`warmflash ${zooming ? 'on' : ''}`}
             style={{ background: 'radial-gradient(circle at 52% 72%, rgba(255,216,130,0.98), rgba(255,196,110,0) 52%)' }} />
