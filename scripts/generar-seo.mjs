@@ -10,12 +10,29 @@
 // misma tarjeta genérica que compartir la portada — mismo título, misma imagen,
 // y un og:url que apunta a la home.
 //
+// Y TAMPOCO PARA GOOGLE, como se creía. Google sí ejecuta JavaScript, pero en
+// dos pasadas: primero rastrea el HTML crudo y lo indexa, y solo después, en
+// una cola aparte que puede tardar días o no llegar nunca, lo renderiza. Con el
+// <body> vacío, las 51 fichas de libro llegaban a esa primera pasada como 51
+// documentos idénticos y sin contenido. El resultado medido en Search Console
+// el 18-09-2026: 50 URLs en «Descubierta: actualmente sin indexar». Bing y los
+// rastreadores de IA directamente no renderizan nada.
+//
 // QUÉ HACE
-// Por cada libro visible escribe dist/libro/<slug>.html: el index.html del build
-// tal cual (mismos bundles, mismos hashes) con seis cadenas sustituidas. Vercel
-// lo sirve en /libro/<slug> gracias a cleanUrls, porque el sistema de archivos
-// se consulta ANTES que los rewrites. Si un libro no tiene su archivo, la ruta
-// cae al catch-all de siempre y la app funciona igual: se degrada sola.
+// Por cada libro visible escribe dist/libro/<slug>/index.html: el index.html del
+// build tal cual (mismos bundles, mismos hashes) con las etiquetas del <head>
+// sustituidas, un JSON-LD de schema.org/Book y —esto es lo nuevo— el bloque
+// <div id="seo-estatico"> relleno con contenido real: título, autor, portada,
+// sinopsis y el capítulo 1 entero. Son obras de dominio público: no hay nada
+// que proteger y cada capítulo es una puerta de entrada orgánica.
+//
+// El bloque lo retira src/main.jsx antes de montar React, así que el usuario
+// solo lo ve durante la misma ventana en la que hoy ve una pantalla en blanco.
+// El JSON-LD va en el <head> y sí se queda: sobrevive al renderizado.
+//
+// Vercel sirve el archivo en /libro/<slug> porque el sistema de archivos se
+// consulta ANTES que los rewrites. Si un libro no tiene su archivo, la ruta cae
+// al catch-all de siempre y la app funciona igual: se degrada sola.
 //
 // CUÁNDO SE EJECUTA
 // En cada build de Vercel (npm run build). No hay archivos generados en el
@@ -59,19 +76,158 @@ function recortar(txt, max = 100) {
   return corte.slice(0, corte.lastIndexOf(' ')).replace(/[,;:.]$/, '') + '…'
 }
 
-async function libros() {
-  const campos = 'slug,titulo,autor,descripcion,portada_url,metadata'
-  const res = await fetch(
-    `${URL_SB}/rest/v1/libros?select=${campos}&visible=eq.true&slug=not.is.null`,
-    { headers: { apikey: KEY_SB, Authorization: `Bearer ${KEY_SB}` } })
+const CABECERAS = { apikey: KEY_SB, Authorization: `Bearer ${KEY_SB}` }
+
+async function pedir(ruta) {
+  const res = await fetch(`${URL_SB}/rest/v1/${ruta}`, { headers: CABECERAS })
   if (!res.ok) throw new Error(`Supabase respondió ${res.status}: ${await res.text()}`)
   return res.json()
+}
+
+async function libros() {
+  const campos = 'id,slug,titulo,autor,descripcion,portada_url,metadata'
+  return pedir(`libros?select=${campos}&visible=eq.true&slug=not.is.null`)
+}
+
+// El capítulo 1 de cada libro. Se puede leer con la clave pública: las
+// políticas capitulos_guest_preview y parrafos_guest_preview ya abren los dos
+// primeros capítulos al rol `anon` — es la misma muestra que ve un invitado en
+// el lector. Aquí no hace falta ninguna credencial de servicio.
+async function primerosCapitulos(ids) {
+  const caps = await pedir(
+    `capitulos?select=id,libro_id,titulo&numero=eq.1&libro_id=in.(${ids.join(',')})`)
+  return new Map(caps.map(c => [c.libro_id, c]))
+}
+
+// Un libro con 117 párrafos en el capítulo 1 no cabe en una consulta conjunta
+// sin paginar (el REST de Supabase corta en 1000 filas), así que se pide uno a
+// uno con el pool de abajo. Solo texto y diálogo: los separadores son "* * *"
+// y las notas marginales son voz del narrador ficticio de Inmersia, no del
+// original — meterlas confundiría a un buscador sobre qué obra es esta.
+async function parrafosDe(capituloId) {
+  return pedir(`parrafos?select=numero,contenido,tipo&capitulo_id=eq.${capituloId}` +
+               `&tipo=in.(texto,dialogo)&order=numero`)
+}
+
+// 51 peticiones secuenciales alargarían el build un minuto largo; todas a la
+// vez son 51 conexiones simultáneas contra Supabase. Seis es el punto medio.
+async function enPool(items, limite, tarea) {
+  const salida = new Array(items.length)
+  let siguiente = 0
+  const obreros = Array.from({ length: Math.min(limite, items.length) }, async () => {
+    while (siguiente < items.length) {
+      const i = siguiente++
+      salida[i] = await tarea(items[i])
+    }
+  })
+  await Promise.all(obreros)
+  return salida
 }
 
 // El hero es la acuarela apaisada de "Seguir leyendo": es el formato que quieren
 // las tarjetas (1200x630 aprox.). La portada es vertical y WhatsApp la recorta
 // por el centro, que en un libro suele ser justo el título.
 const imagenDe = (l) => l?.metadata?.hero_url || l?.portada_url || `${ORIGEN}/og-image.png`
+
+// schema.org/Book en JSON-LD. Va en el <head>, que es lo que lo hace fiable:
+// no lo toca nadie al renderizar, así que Google lo lee en las dos pasadas.
+// Habilita los resultados enriquecidos (autor, portada, "gratis") en la página
+// de resultados. `isAccessibleForFree` es cierto y conviene declararlo: hoy
+// todo Inmersia es gratis, y Google lo usa para no marcar la página como muro
+// de pago cuando ve texto que el rastreador sí lee y un visitante debe registrarse.
+function jsonLdLibro(l, url, img) {
+  const datos = {
+    '@context': 'https://schema.org',
+    '@type': 'Book',
+    name: l.titulo,
+    author: { '@type': 'Person', name: l.autor || 'Desconocido' },
+    url,
+    image: img,
+    inLanguage: 'es',
+    bookFormat: 'https://schema.org/EBook',
+    isAccessibleForFree: true,
+    publisher: { '@type': 'Organization', name: 'Inmersia', url: ORIGEN },
+  }
+  if (l.descripcion) datos.description = String(l.descripcion).replace(/\s+/g, ' ').trim()
+  // `<` escapado: un "</script>" dentro de un título cerraría la etiqueta y
+  // volcaría el resto del JSON como HTML en mitad del <head>.
+  const json = JSON.stringify(datos, null, 2).replace(/</g, '\\u003c')
+  return `<script type="application/ld+json">\n${json}\n    </script>`
+}
+
+// El contenido que se lleva el rastreador que no ejecuta JavaScript. Estilo
+// propio y mínimo, sin depender del CSS de la app: durante el instante que se
+// ve, antes de que React monte, tiene que parecerse a Inmersia y no a un
+// documento sin formato. Los colores son los de la marca (index.css).
+function bloqueEstatico(l, parrafos) {
+  const texto = parrafos
+    .map(p => `<p>${esc(p.contenido)}</p>`)
+    .join('\n          ')
+
+  const portada = l.portada_url
+    ? `<img src="${esc(l.portada_url)}" alt="Portada de ${esc(l.titulo)}" width="220" loading="eager" />`
+    : ''
+
+  return `<div id="seo-estatico">
+      <style>
+        #seo-estatico { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 4rem;
+          font-family: Lora, Georgia, serif; color: #4a3622; background: #fffdf8; }
+        #seo-estatico h1 { font-family: 'Playfair Display', Georgia, serif;
+          font-size: 2rem; margin: 0 0 .25rem; line-height: 1.2; }
+        #seo-estatico h2 { font-family: 'Playfair Display', Georgia, serif;
+          font-size: 1.35rem; margin: 2.5rem 0 1rem; }
+        #seo-estatico .autor { font-size: 1.05rem; opacity: .75; margin: 0 0 1.5rem; }
+        #seo-estatico img { max-width: 100%; height: auto; border-radius: 6px; }
+        #seo-estatico p { line-height: 1.7; margin: 0 0 1.1rem; }
+        #seo-estatico .leer { display: inline-block; margin: 1.5rem 0; padding: .7rem 1.4rem;
+          background: #f2792a; color: #fffdf8; border-radius: 999px; text-decoration: none; }
+      </style>
+      <article>
+        <h1>${esc(l.titulo)}</h1>
+        <p class="autor">${esc(l.autor || 'Autor desconocido')}</p>
+        ${portada}
+        ${l.descripcion ? `<p>${esc(l.descripcion)}</p>` : ''}
+        <p><a class="leer" href="${ORIGEN}/libro/${esc(l.slug)}">Leer ${esc(l.titulo)} en Inmersia</a></p>
+        ${texto ? `<h2>${esc(l.capituloTitulo || 'Capítulo 1')}</h2>\n          ${texto}` : ''}
+      </article>
+    </div>`
+}
+
+// El catálogo como lista de enlaces en el HTML crudo.
+//
+// POR QUÉ IMPORTA MÁS QUE EL RESTO
+// Un sitemap le dice a Google que una URL existe; los enlaces internos le dicen
+// que merece la pena rastrearla. Hasta ahora ninguna página de Inmersia
+// enlazaba a otra en el HTML crudo —los enlaces los pinta React— así que los 51
+// libros eran 51 URLs sueltas sin nada que apuntara a ellas. Eso es justo lo
+// que Search Console llama «Descubierta: actualmente sin indexar».
+function bloqueCatalogo(lista, titulo, intro) {
+  const items = lista
+    .map(l => `<li><a href="${ORIGEN}/libro/${esc(l.slug)}">${esc(l.titulo)}</a>` +
+              `<span> — ${esc(l.autor || 'Autor desconocido')}</span></li>`)
+    .join('\n          ')
+
+  return `<div id="seo-estatico">
+      <style>
+        #seo-estatico { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 4rem;
+          font-family: Lora, Georgia, serif; color: #4a3622; background: #fffdf8; }
+        #seo-estatico h1 { font-family: 'Playfair Display', Georgia, serif;
+          font-size: 2rem; margin: 0 0 .75rem; line-height: 1.2; }
+        #seo-estatico p { line-height: 1.7; margin: 0 0 1.5rem; }
+        #seo-estatico ul { list-style: none; padding: 0; margin: 0; }
+        #seo-estatico li { padding: .5rem 0; border-bottom: 1px solid rgba(74,54,34,.12); }
+        #seo-estatico a { color: #8b4d2a; text-decoration: none; font-weight: 600; }
+        #seo-estatico span { opacity: .7; font-weight: 400; }
+      </style>
+      <article>
+        <h1>${esc(titulo)}</h1>
+        <p>${esc(intro)}</p>
+        <ul>
+          ${items}
+        </ul>
+      </article>
+    </div>`
+}
 
 function paginaLibro(plantilla, l) {
   const titulo = `${l.titulo} — ${l.autor} | Inmersia`
@@ -84,7 +240,13 @@ function paginaLibro(plantilla, l) {
   return plantilla
     .replace(
       '<title>Inmersia — Lee, investiga y colecciona</title>',
-      `<title>${esc(titulo)}</title>\n    <link rel="canonical" href="${esc(url)}" />`)
+      `<title>${esc(titulo)}</title>`)
+    .replace(
+      '<link rel="canonical" href="https://www.inmersia.io/" />',
+      `<link rel="canonical" href="${esc(url)}" />\n    ${jsonLdLibro(l, url, img)}`)
+    .replace(
+      '<div id="seo-estatico"></div>',
+      bloqueEstatico(l, l.parrafos || []))
     .replace(/<meta name="description" content="[^"]*" \/>/,
       `<meta name="description" content="${esc(desc)}" />`)
     .replace('<meta property="og:type" content="website" />',
@@ -127,6 +289,17 @@ function sitemap(lista) {
 const lista     = await libros()
 const plantilla = await readFile(join(DIST, 'index.html'), 'utf8')
 
+// Cada libro se lleva colgado el capítulo 1 que se va a publicar. Si un libro
+// no lo tiene (aún sin cargar, o el capítulo 1 no existe) se queda sin texto y
+// su ficha sale igual, solo con sinopsis: se degrada sola, como el resto.
+const caps = await primerosCapitulos(lista.map(l => l.id))
+await enPool(lista, 6, async (l) => {
+  const cap = caps.get(l.id)
+  if (!cap) return
+  l.capituloTitulo = cap.titulo
+  l.parrafos = await parrafosDe(cap.id)
+})
+
 // Un directorio por libro con su index.html, no `<slug>.html`: así Vercel lo
 // sirve en /libro/<slug> con la resolución normal de índices, sin cleanUrls
 // (que rompía el rewrite catch-all y dejaba /tienda y las rutas protegidas en
@@ -136,8 +309,33 @@ for (const l of lista) {
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, 'index.html'), paginaLibro(plantilla, l), 'utf8')
 }
+// La home y la tienda también dejan de llegar con el cuerpo vacío. Se
+// sobrescriben DESPUÉS de las fichas, porque `plantilla` ya está en memoria y
+// las fichas deben salir del index.html limpio del build.
+const INTRO = 'Obras de dominio público ilustradas, con sonido y pistas para ' +
+              'investigar la trama. Leer en Inmersia es gratis.'
+
+const home = plantilla.replace(
+  '<div id="seo-estatico"></div>',
+  bloqueCatalogo(lista, 'Inmersia — Lee, investiga y colecciona', INTRO))
+await writeFile(join(DIST, 'index.html'), home, 'utf8')
+
+const tienda = plantilla
+  .replace('<title>Inmersia — Lee, investiga y colecciona</title>',
+           '<title>Catálogo — Inmersia</title>')
+  .replace('<link rel="canonical" href="https://www.inmersia.io/" />',
+           `<link rel="canonical" href="${ORIGEN}/tienda" />`)
+  .replace(/<meta property="og:url" content="[^"]*" \/>/,
+           `<meta property="og:url" content="${ORIGEN}/tienda" />`)
+  .replace('<div id="seo-estatico"></div>',
+           bloqueCatalogo(lista, `Catálogo — ${lista.length} libros`, INTRO))
+await mkdir(join(DIST, 'tienda'), { recursive: true })
+await writeFile(join(DIST, 'tienda', 'index.html'), tienda, 'utf8')
+
 await writeFile(join(DIST, 'sitemap.xml'), sitemap(lista), 'utf8')
 
-const sinHero = lista.filter(l => !l?.metadata?.hero_url).length
+const sinHero  = lista.filter(l => !l?.metadata?.hero_url).length
+const sinTexto = lista.filter(l => !l.parrafos?.length).length
 console.log(`[seo] ${lista.length} libros · sitemap con ${lista.length + 2} URLs` +
-            (sinHero ? ` · ${sinHero} sin hero_url (usan la portada)` : ''))
+            (sinHero  ? ` · ${sinHero} sin hero_url (usan la portada)` : '') +
+            (sinTexto ? ` · ⚠️ ${sinTexto} sin capítulo 1 indexable` : ''))

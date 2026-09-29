@@ -17,6 +17,7 @@ import { useOnboardingController, OnboardingProvider } from './context/onboardin
 import ResetPassword from './components/ResetPassword.jsx'
 import { LectorRoute } from './components/LectorRoute.jsx'
 import AvisoRed from './components/AvisoRed.jsx'
+import NoEncontrada from './components/NoEncontrada.jsx'
 
 const VistaBiblioteca       = lazy(() => import('./components/Biblioteca.jsx'))
 const VistaLectura          = lazy(() => import('./components/Lector.jsx'))
@@ -456,8 +457,10 @@ export default function App() {
 
           </Route>
 
-          {/* Cualquier ruta desconocida → raíz */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Cualquier ruta desconocida → 404 con noindex.
+              Antes redirigía a la raíz y Search Console lo contaba como
+              soft 404. Ver el comentario de NoEncontrada.jsx. */}
+          <Route path="*" element={<NoEncontrada />} />
 
         </Routes>
       </Suspense>

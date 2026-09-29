@@ -7,6 +7,7 @@
          página va a sangre bajo el notch y esas reglas empiezan a trabajar. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Inmersia — Lee, investiga y colecciona</title>
+    <link rel="canonical" href="https://www.inmersia.io/" />
     <meta name="description" content="Inmersia convierte cada libro en un mundo para habitar: imágenes, sonido, pistas para investigar la trama y una comunidad que lee contigo." />
     <meta name="theme-color" content="#f5efe2" />
 
@@ -19,8 +20,8 @@
     <meta property="og:site_name" content="Inmersia" />
     <meta property="og:title" content="Inmersia — Lee, investiga y colecciona" />
     <meta property="og:description" content="Inmersia convierte cada libro en un mundo para habitar: imágenes, sonido, pistas para investigar la trama y una comunidad que lee contigo." />
-    <meta property="og:url" content="https://inmersia.io/" />
-    <meta property="og:image" content="https://inmersia.io/og-image.png" />
+    <meta property="og:url" content="https://www.inmersia.io/" />
+    <meta property="og:image" content="https://www.inmersia.io/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:locale" content="es_ES" />
@@ -28,7 +29,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Inmersia — Lee, investiga y colecciona" />
     <meta name="twitter:description" content="Inmersia convierte cada libro en un mundo para habitar: imágenes, sonido, pistas para investigar la trama y una comunidad que lee contigo." />
-    <meta name="twitter:image" content="https://inmersia.io/og-image.png" />
+    <meta name="twitter:image" content="https://www.inmersia.io/og-image.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -38,6 +39,16 @@
     />
   </head>
   <body>
+    <!-- Bloque estático para los rastreadores. Lo rellena scripts/generar-seo.mjs
+         durante el build, con contenido distinto por libro (título, sinopsis,
+         índice y capítulo 1). Existe porque el <body> de un SPA llega vacío por
+         el cable: Google indexa el HTML crudo en una primera pasada y solo
+         después, en una cola aparte, ejecuta el JavaScript. Bing, WhatsApp,
+         Telegram y los rastreadores de IA no ejecutan nada en absoluto.
+         src/main.jsx lo retira antes de montar React, así que el usuario solo
+         lo ve en la misma ventana en la que hoy ve una pantalla en blanco.
+         En `npm run dev` queda vacío y no hace nada. -->
+    <div id="seo-estatico"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
