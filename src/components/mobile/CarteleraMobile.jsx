@@ -207,11 +207,28 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
   // historial y DESCARTA el state si no se le pasa. Ahí viajan el "de dónde
   // vengo" del botón atrás y el libro ya resuelto, así que sin esto abrir una
   // sección del tablero hacía que el botón atrás perdiera su destino.
+  //
+  // ⚠️ DOS PRECAUCIONES QUE NO SE PUEDEN QUITAR
+  //
+  // 1. El state se lee de un ref, NO de las dependencias. Pasarlo a
+  //    setSearchParams produce un location nuevo, así que tenerlo como
+  //    dependencia hace que el efecto se dispare a sí mismo sin parar: cientos
+  //    de replaceState por segundo que, además de quemar CPU, pisan cualquier
+  //    navegación que intente salir de aquí. El botón atrás dejaba de
+  //    funcionar porque su pushState se sobrescribía al instante.
+  //
+  // 2. La guarda de abajo: si la URL ya dice lo que queremos, no se toca.
+  //    Corta el bucle por si alguien vuelve a añadir una dependencia.
+  const stateRef = useRef(location.state)
+  stateRef.current = location.state
+
   useEffect(() => {
-    const opts = { replace: true, state: location.state }
+    const actual = searchParams.get('seccion')
+    if (actual === (view.key ?? null)) return
+    const opts = { replace: true, state: stateRef.current }
     if (view.key) setSearchParams({ seccion: view.key }, opts)
     else setSearchParams({}, opts)
-  }, [view.key, setSearchParams, location.state])
+  }, [view.key, searchParams, setSearchParams])
   const [fichaInitItemId, setFichaInitItemId] = useState(() => jumpToItemId || null)
 
   useEffect(() => {
