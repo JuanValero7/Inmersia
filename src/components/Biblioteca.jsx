@@ -27,6 +27,23 @@ import { TEXTO_ALBUM_HINT, TEXTO_TIENDA_FINAL } from './onboarding/textos.js'
 // (búsqueda, groups, portadas).
 // =============================================================
 
+/**
+ * Biblioteca de escritorio: las estanterías con los libros del usuario, sus
+ * categorías y los carruseles de novedades y recomendaciones.
+ *
+ * @param {object} props
+ * @param {{ id: string }|null} props.user
+ * @param {'negro'|'blanco'|'naranja'} props.gatoColor
+ * @param {string[]} props.lastOpenedBookIds   para ordenar "seguir leyendo"
+ * @param {boolean} props.isSuperuser
+ * @param {() => void} props.onSignOut
+ * @param {(libro: object) => void} props.onOpenBook
+ * @param {() => void} props.onGoTienda
+ * @param {() => void} props.onGoPerfil
+ * @param {() => void} props.onGoAlbum
+ * @param {(libro: object) => void} props.onGoForo
+ * @param {(libro: object) => void} props.onGoNotebook
+ */
 function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSignOut, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoNotebook }) {
   // Lógica de datos compartida con BibliotecaMobile (ver src/hooks/useBiblioteca.js)
   const {

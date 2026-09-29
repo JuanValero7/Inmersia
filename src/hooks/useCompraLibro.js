@@ -18,6 +18,18 @@ import { evento } from '../lib/analytics.js'
 
 export const LIMITE_PENDIENTES = 5
 
+/**
+ * Añadir un libro a la biblioteca del usuario.
+ *
+ * El tope de lecturas pendientes (LIMITE_PENDIENTES) es deliberado: a un lector que
+ * no lee, una biblioteca de 40 libros sin empezar le da culpa, no ganas. Los
+ * superusuarios no lo tienen.
+ *
+ * @param {{ id: string }|null} user
+ * @param {boolean} isSuperuser
+ * @param {(libro: object) => void} onOpenBook   qué hacer tras comprar y abrir
+ * @returns {object} comprar y comprarYLeer, que devuelven { error } si no se pudo
+ */
 export function useCompraLibro(user, isSuperuser, onOpenBook) {
   const invalidateBiblioteca = useInvalidateBibliotecaUsuario(user?.id)
 

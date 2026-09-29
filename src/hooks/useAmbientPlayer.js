@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 
+/**
+ * Reproductor del sonido ambiente de un capítulo, en bucle y con volumen propio.
+ * @param {string|null} ambientUrl  URL del audio; con null el reproductor queda inerte
+ * @returns {{ playing: boolean, volume: number, toggle: () => void,
+ *             setVol: (v: number) => void }}
+ */
 export function useAmbientPlayer(ambientUrl) {
   const audioRef = useRef(null)
   const [playing, setPlaying] = useState(false)

@@ -46,6 +46,15 @@ function seededShuffle(arr, seedStr) {
   return out
 }
 
+/**
+ * Todo el estado de la Biblioteca: libros del usuario, categorías y los carruseles
+ * derivados (novedades, recomendaciones, destacado).
+ *
+ * @param {{ id: string }|null} user       sesión; sin ella no se consulta nada
+ * @param {string[]} [lastOpenedBookIds]   ids recientes, para ordenar "seguir leyendo"
+ * @returns {object} libros y categorías ya cruzados, más las operaciones de categoría
+ *   (createCategoria, updateCategoria, deleteCategoria, assignCategoriaToBook).
+ */
 export function useBiblioteca(user, lastOpenedBookIds) {
   const [categories, setCategories] = useState([])
   const [progresos, setProgresos] = useState([])

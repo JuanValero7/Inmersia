@@ -27,6 +27,21 @@ function Filters() {
   )
 }
 
+/**
+ * Tablero de investigación de un libro: personajes, lugares, hechos y datos, que se
+ * van revelando según el capítulo al que ha llegado el lector.
+ *
+ * @param {object} props
+ * @param {() => void} props.onGoBack
+ * @param {object|null} props.book               libro; si falta se resuelve por la URL
+ * @param {{ id: string }|null} props.user
+ * @param {() => void} props.onGoForo
+ * @param {() => void} props.onGoBiblioteca
+ * @param {string|null} props.jumpToItemId       ítem al que saltar al abrir
+ * @param {() => void} props.onJumpConsumed
+ * @param {boolean} [props.isSuperuser]
+ * @param {'negro'|'blanco'|'naranja'} [props.gatoColor]
+ */
 export default function CartelaView({ onGoBack, book: bookProp, user, onGoForo, onGoBiblioteca, jumpToItemId, onJumpConsumed, isSuperuser = false, gatoColor = 'negro' }) {
   const { book, loading: bookLoading } = useBookBySlug(bookProp)
   const esNoficcion = book?.es_ficcion === false

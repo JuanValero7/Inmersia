@@ -8,6 +8,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 
+/**
+ * Color del gato de compañía, persistido en preferencias_usuario.
+ *
+ * FUENTE ÚNICA: instanciar este hook en varios componentes a la vez crea copias del
+ * estado que se desincronizan. Se monta UNA vez (App.jsx) y el valor baja por props.
+ *
+ * @param {{ id: string }|null} user
+ * @returns {{ gatoColor: 'negro'|'blanco'|'naranja',
+ *             updateGatoColor: (c: string) => Promise<void> }}
+ */
 export function useGatoColor(user) {
   const [gatoColor, setGatoColor] = useState('negro')
 

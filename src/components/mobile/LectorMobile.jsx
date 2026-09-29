@@ -106,6 +106,15 @@ function HighlighterIcon({ active }) {
 // ═══════════════════════════════════════════════════════════════
 //  COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════════
+/**
+ * Lector móvil: una página a pantalla completa con hojas deslizantes.
+ *
+ * Mismas props que el de escritorio (ver el typedef PropsLector en Lector.jsx) y el
+ * mismo useLectorData. Lo único que cambia es el layout, que es justo la razón de que
+ * exista este archivo: no se resuelve con media queries.
+ *
+ * @param {object} props  ver PropsLector en src/components/Lector.jsx
+ */
 export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, muestraMotivo = 'invitado', onRequestAuth, onGoTienda, gatoColor = 'negro' }) {
   // ── Estado de navegación de lectura (UI) ──
   const [chapterIndex, setChapterIndex] = useState(0)

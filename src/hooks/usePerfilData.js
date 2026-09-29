@@ -13,6 +13,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase.js'
 import { usePerfilQuery, queryKeys } from '../lib/queries.js'
 
+/**
+ * Datos del carnet de socio: nombre, apellido, correo y fecha de alta, más el guardado.
+ *
+ * @param {{ id: string, email: string }|null} user
+ * @returns {object} campos editables con sus setters, guardarDatos y onPickAvatar
+ */
 export function usePerfilData(user) {
   const [sec, setSec] = useState('datos')
   const [nombre, setNombre] = useState('')

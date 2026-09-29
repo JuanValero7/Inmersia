@@ -4,6 +4,17 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 
+/**
+ * Ítems de la Cartelera que ya se han revelado, para el panel de rayos X del Lector.
+ *
+ * Solo consulta con el panel abierto: es un panel que la mayoría de lectores no abre.
+ *
+ * @param {boolean} isOpen
+ * @param {string} bookId
+ * @param {number} chapterNum   se revela lo de capítulo_número <= este
+ * @param {'personajes'|'lugares'|'hechos'|'datos'} [sección]
+ * @returns {object[]}
+ */
 export function useXrayItems(isOpen, bookId, chapterNum, seccion = 'personajes') {
   const [items, setItems] = useState([])
 

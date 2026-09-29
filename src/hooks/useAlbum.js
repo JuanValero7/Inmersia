@@ -86,6 +86,13 @@ function buildSeccion(rows, capActual, { heroItem = null, libroId, seccion, pega
   return { total, unlocked, items, extra }
 }
 
+/**
+ * El Álbum: barajitas por libro y sección, con cuáles están desbloqueadas según el
+ * capítulo al que ha llegado el usuario y cuáles ya pegó.
+ *
+ * @param {{ id: string }|null} user
+ * @returns {{ items: object[], loading: boolean }}
+ */
 export function useAlbum(user) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)

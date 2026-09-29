@@ -28,6 +28,13 @@ export function computeSesionStats(sesiones) {
 // Estadísticas de UN libro. Solo dispara las queries cuando `enabled` es true
 // — en la Cartelera la placa recién tiene sentido cerca del final del libro,
 // así que se gatea a partir del 90% de avance (ver TableroDatos/useCartelera).
+/**
+ * Estadísticas de lectura de un libro para un usuario, a partir de sesiones_lectura.
+ * @param {string} libroId
+ * @param {string|null} userId
+ * @param {boolean} enabled   con false no consulta
+ * @returns {object} totales ya formateados
+ */
 export function useReadingStats(libroId, userId, enabled) {
   const [stats, setStats] = useState(null)
 

@@ -45,6 +45,21 @@ function agruparSubrayados(filas) {
 // no adquirió el libro). Recorta la lista de capítulos a CAPITULOS_MUESTRA: para el
 // rol `anon` la RLS ya devuelve solo esos dos, pero para `authenticated` no, así que
 // sin este tope un usuario logueado leía el libro entero abriéndolo por URL.
+/**
+ * Wiring de datos del Lector, compartido tal cual por la cáscara de escritorio y la
+ * de móvil. Es la plantilla de cómo debería verse el resto de pantallas: aquí está
+ * TODO lo que no es layout.
+ *
+ * Incluye capítulos y su caché, subrayados, progreso, reseña, y las operaciones de
+ * superusuario sobre medios y párrafos.
+ *
+ * @param {object|null} book                     libro abierto
+ * @param {(n: number) => void} setChapterIndex
+ * @param {(n: number) => void} setPageIndex
+ * @param {boolean} [muestra]   modo invitado: solo 2 capítulos, sin subrayado,
+ *                              cuaderno ni progreso
+ * @returns {object} datos, operaciones y estado de la reseña
+ */
 export function useLectorData(book, setChapterIndex, setPageIndex, muestra = false) {
   const [capitulos, setCapitulos] = useState([])
   // El caché es estado porque el render lo lee (currentChapData), pero

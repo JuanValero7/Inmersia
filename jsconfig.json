@@ -1,0 +1,37 @@
+{
+  "//": [
+    "Tipado opcional sobre el JavaScript de siempre, vía JSDoc. NO es una migración a",
+    "TypeScript: no cambia ninguna extensión, no toca el build y Vite lo ignora por",
+    "completo. Las tres dependencias que lo sostienen (typescript, @types/react y",
+    "@types/react-dom) son de desarrollo: no entran en el bundle.",
+    "",
+    "QUÉ DA: el editor autocompleta las props de un componente y avisa de los typos.",
+    "Un `gatoColour` mal escrito no falla en React — el componente lee `gatoColor`,",
+    "recibe undefined, usa su valor por defecto y todo PARECE funcionar. Comprobado:",
+    "con esto puesto, tsc responde «Property 'gatoColour' does not exist. Did you mean",
+    "'gatoColor'?».",
+    "",
+    "checkJs va en FALSE a propósito. Con true, `npm run typecheck` devuelve más de",
+    "12.000 errores en archivos que todavía no tienen JSDoc — medido, no estimado. Ese",
+    "ruido acaba en que alguien apaga la comprobación entera.",
+    "",
+    "CÓMO SE USA: pon `// @ts-check` en la primera línea de un archivo cuando lo",
+    "documentes; solo ese archivo se comprueba. Los tipos de los hooks y componentes",
+    "ya documentados funcionan igual al pasar el ratón por encima, sin necesidad de nada.",
+    "",
+    "Cuando la mayoría de archivos lleven `// @ts-check`, se puede invertir: checkJs a",
+    "true y `// @ts-nocheck` en los pocos que falten."
+  ],
+  "compilerOptions": {
+    "checkJs": false,
+    "allowJs": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "esnext",
+    "strictNullChecks": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

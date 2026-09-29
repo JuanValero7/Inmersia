@@ -81,6 +81,31 @@ function EstrellaLector({ valor, onChange }) {
   )
 }
 
+/**
+ * Props del Lector, idénticas en la cáscara de escritorio y en la de móvil.
+ * Las dos reciben exactamente esto y bifurcan solo el layout.
+ *
+ * @typedef {object} PropsLector
+ * @property {object} book                  libro abierto, ya mapeado por mapLibro
+ * @property {() => void} onGoBack
+ * @property {() => void} onGoCartelera
+ * @property {() => void} onGoForo
+ * @property {boolean} startWithNotebook    abrir directamente en el cuaderno
+ * @property {() => void} onNotebookStarted
+ * @property {boolean} [isSuperuser]
+ * @property {boolean} [guestMode]          invitado: solo 2 capítulos, sin subrayado
+ *                                          ni cuaderno ni progreso
+ * @property {'invitado'|'limite'} [muestraMotivo]  por qué se muestra el aviso de muestra
+ * @property {() => void} onRequestAuth      abre el pop-up de registro
+ * @property {() => void} onGoTienda
+ * @property {'negro'|'blanco'|'naranja'} [gatoColor]
+ */
+
+/**
+ * Lector de escritorio: escritorio de doble página con barras flotantes.
+ * Todo el wiring de datos vive en useLectorData, compartido con la versión móvil.
+ * @param {PropsLector} props
+ */
 export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, muestraMotivo = 'invitado', onRequestAuth, onGoTienda, gatoColor = 'negro' }) {
   const [chapterIndex,   setChapterIndex]   = useState(0)
   const [pageIndex,      setPageIndex]      = useState(0)

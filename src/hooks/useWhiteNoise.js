@@ -65,6 +65,10 @@ function buildNoiseBuffer(ctx, tipo) {
   return buf
 }
 
+/**
+ * Ruido blanco y sonido ambiente del Lector, con su tipo y volumen persistidos.
+ * @returns {object} tipo de ruido, ambiente y sus dos volúmenes, con setters
+ */
 export function useWhiteNoise() {
   const pref = loadPref()
   const [tipo,       setTipo]       = useState('off')

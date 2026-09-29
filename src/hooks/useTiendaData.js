@@ -23,6 +23,15 @@ function idsMasNuevos(libros, n) {
   )
 }
 
+/**
+ * Catálogo de la Tienda más el estado de compra (que tiene ya el usuario, cuantas
+ * lecturas pendientes lleva y si el acceso está bloqueado por el tope).
+ *
+ * @param {{ id: string }|null} user
+ * @param {boolean} isSuperuser
+ * @param {(libro: object) => void} onOpenBook
+ * @returns {object} catálogo, contadores y las operaciones de compra
+ */
 export function useTiendaData(user, isSuperuser, onOpenBook) {
   const catalogoQuery = useCatalogoLibrosQuery()
   const bibliotecaQuery = useBibliotecaUsuarioQuery(user?.id)

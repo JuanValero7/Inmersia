@@ -15,6 +15,16 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { fetchNombre } from '../components/foro/foroUtils.jsx'
 
+/**
+ * Foro de un libro: la fila del foro, el nombre público del usuario y los contadores
+ * que deciden si la sala se muestra o no.
+ *
+ * @param {{ libro_id: string }|null} book
+ * @param {{ id: string }|null} user
+ * @returns {{ foro: object|null, miNombre: string, loading: boolean,
+ *             comentariosCount: number, setComentariosCount: Function,
+ *             hasSesion: boolean, setHasSesion: Function }}
+ */
 export function useForoData(book, user) {
   const [foro, setForo] = useState(null)
   const [miNombre, setMiNombre] = useState('Lector')

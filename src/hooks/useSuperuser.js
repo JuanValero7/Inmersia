@@ -5,6 +5,15 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 
+/**
+ * Si el usuario está en la tabla superusuarios.
+ *
+ * Esto es solo para la UI. La autorización de verdad la imponen las políticas RLS, que
+ * comprueban la pertenencia en la propia policy: no basta con mentirle a este hook.
+ *
+ * @param {{ id: string }|null} user
+ * @returns {boolean}
+ */
 export function useSuperuser(user) {
   const [isSuperuser, setIsSuperuser] = useState(false)
 

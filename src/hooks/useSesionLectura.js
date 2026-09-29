@@ -23,6 +23,17 @@ function guardarSesion(datos) {
   catch { /* almacenamiento no disponible */ }
 }
 
+/**
+ * Abre una fila en sesiones_lectura al entrar al Lector y la cierra al salir.
+ *
+ * Es la base de las métricas de retención: sesiones_lectura es la única fuente con un
+ * user_id estable, porque PostHog va en modo cookieless y su hash rota cada día.
+ * Ver supabase/consultas/cohortes.sql.
+ *
+ * @param {string|null} userId
+ * @param {object|null} book
+ * @param {boolean} guestMode   los invitados no dejan sesión
+ */
 export function useSesionLectura(userId, book, guestMode) {
   const sessionIdRef = useRef(null)
 

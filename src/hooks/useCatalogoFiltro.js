@@ -6,6 +6,15 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { PG_SIZE } from '../components/tienda/catalogoShared.jsx'
 
+/**
+ * Buscador, filtro por categorías y paginación del catálogo de la Tienda.
+ * Todo el trabajo es en memoria sobre el catálogo ya cargado: no consulta nada.
+ *
+ * @param {object[]} catalogo                    catálogo completo
+ * @param {'todos'|'mios'|'nuevos'} filtroTipo   filtro de la barra superior
+ * @param {(id: string) => boolean} tieneLibro   si el usuario ya tiene ese libro
+ * @returns {object} estado del filtro y la lista ya paginada (paginatedList)
+ */
 export function useCatalogoFiltro(catalogo, filtroTipo, tieneLibro) {
   const [selCats, setSelCats] = useState(new Set())
   const [qInput,  setQInput]  = useState('')

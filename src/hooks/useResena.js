@@ -8,6 +8,15 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 
+/**
+ * Reseña del usuario sobre un libro: la suya si ya existe, y el formulario para
+ * crearla o editarla.
+ *
+ * @param {{ libro_id: string }|null} book
+ * @param {{ id: string }|null} user
+ * @param {boolean} esManual   el Manual del Explorador no admite reseña
+ * @returns {object} miReseña, el formulario y submitReseña
+ */
 export function useResena(book, user, esManual) {
   const [miResena, setMiResena] = useState(null)
   const [form, setForm] = useState({ rating: 0, texto: '' })
