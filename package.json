@@ -8,9 +8,11 @@
     "build": "vite build && node scripts/generar-seo.mjs",
     "preview": "vite preview",
     "test": "vitest run",
-    "security-check": "eslint src/ --quiet && node scripts/scan-secrets.mjs && npm audit --audit-level=high"
+    "security-check": "eslint src/ --quiet && node scripts/scan-secrets.mjs && npm audit --audit-level=high",
+    "typecheck": "tsc -p jsconfig.json --noEmit"
   },
   "dependencies": {
+    "@sentry/browser": "^10.75.0",
     "@supabase/supabase-js": "^2.45.4",
     "@tanstack/react-query": "^5.101.2",
     "clsx": "^2.1.1",
@@ -20,16 +22,16 @@
     "react-router-dom": "^7.18.0"
   },
   "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^4.3.3",
-    "autoprefixer": "^10.4.20",
     "eslint": "^9.39.4",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-security": "^4.0.0",
     "jsdom": "^29.1.1",
     "playwright": "^1.62.1",
-    "postcss": "^8.4.47",
-    "tailwindcss": "^3.4.14",
+    "typescript": "^7.0.2",
     "vite": "^5.4.10",
     "vitest": "^4.1.9"
   }

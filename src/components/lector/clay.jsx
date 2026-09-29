@@ -4,8 +4,22 @@
 // acento terracota, bordes con sombra offset).
 import { useState } from 'react'
 
+// ⚠️ Estos dos valores están DUPLICADOS a propósito: son los mismos que
+// --ink y --accent del bloque :root de src/index.css, que es la fuente única
+// de la paleta.
+//
+// Se quedan como hex literal y no como 'var(--ink)' porque 116 sitios del
+// código hacen `${INK}33` para pegarle un alfa. Con un hex eso da #4a362233,
+// que es válido; con var(--ink) da "var(--ink)33", que el navegador descarta
+// SIN avisar, y se perderían sombras y bordes por toda la app.
+//
+// Para que las dos copias no se separen hay un test que las compara:
+// src/index.tokens.test.js. Si cambias un color, cámbialo en los dos sitios.
+/* eslint-disable no-restricted-syntax -- ver el comentario de arriba: aquí el
+   hex literal es obligatorio, no un descuido. */
 export const INK = '#4a3622'
 export const ACCENT = '#F2792A'
+/* eslint-enable no-restricted-syntax */
 
 // mezcla un hex con blanco (amt>0) o negro (amt<0)
 export function tint(hex, amt) {

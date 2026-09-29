@@ -79,4 +79,34 @@ export default [
       "security/detect-pseudoRandomBytes": "error",
     },
   },
+  {
+    // Colores a mano en JSX.
+    //
+    // El naranja de la marca estaba escrito 88 veces entre .jsx y .css, y la
+    // tinta 105, sin un sitio donde cambiarlos. La paleta vive ahora en el
+    // bloque :root de src/index.css. Esta regla evita que vuelvan a entrar
+    // hex nuevos sin que nadie lo note.
+    //
+    // En "warn" y no "error" a propósito: quedan ~500 hex heredados que se
+    // van sustituyendo por pantalla, cuando se toca cada una por otro motivo.
+    // Un "error" dejaría el lint rojo desde el primer día y se acabaría
+    // desactivando la regla entera, que es peor.
+    //
+    // OJO: `npm run security-check` usa `eslint --quiet`, que NO muestra
+    // warnings. Esta regla trabaja en el editor, subrayando mientras escribes.
+    // Para ver la lista completa: npx eslint src/ --ext .jsx
+    //
+    // Cuando el contador llegue a cero, súbela a "error" y ahí sí entra en
+    // security-check.
+    files: ["src/**/*.jsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector: "Literal[value=/^#[0-9a-fA-F]{3,8}$/]",
+          message: "Usa una variable CSS var(--…) de index.css en vez de un hex literal.",
+        },
+      ],
+    },
+  },
 ];
