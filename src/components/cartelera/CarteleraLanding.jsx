@@ -24,6 +24,7 @@ import {
   threadChain, pick3,
   Pin, PassportPhoto, DocSheetCard, HechoItem, BlueprintBg, ZonePopup,
 } from './carteleraZonas.jsx'
+import { pinAbs, docPinAbs, hechoPinAbs } from '../../lib/carteleraGeometria.js'
 
 // Geometría de la cartelera (coordenadas internas del corcho)
 const BOARD_W = 1180, BOARD_H = 720
@@ -193,24 +194,10 @@ const SHEET_TIE_MAP    = { x: CENTER.cx + CENTER.w / 2 - TIE_IN, y: CENTER.cy - 
 const SHEET_TIE_DATOS  = { x: CENTER.cx - CENTER.w / 2 + TIE_IN, y: CENTER.cy + 42 }  // borde izq, abajo
 const SHEET_TIE_HECHOS = { x: CENTER.cx + CENTER.w / 2 - TIE_IN, y: CENTER.cy + 42 }  // borde der, abajo
 
-// Punta absoluta (coords del tablero) de un pin del mapa: aplica el giro del mapa
-function pinAbs(p) {
-  const lx = MAP.cx - MAP.w / 2 + p.x, ly = MAP.cy - MAP.h / 2 + p.y
-  const a = MAP.rot * Math.PI / 180, dx = lx - MAP.cx, dy = ly - MAP.cy
-  return { x: MAP.cx + dx * Math.cos(a) - dy * Math.sin(a), y: MAP.cy + dx * Math.sin(a) + dy * Math.cos(a) }
-}
-// Punta del pin (arriba, centro) de un documento, aplicando su leve giro.
-// Se ancla justo por DEBAJO del pin, igual que Personajes (pin por encima).
-function docPinAbs(s) {
-  const a = s.rot * Math.PI / 180, dy = -DOC_H / 2 + 8
-  return { x: s.x - dy * Math.sin(a), y: s.y + dy * Math.cos(a) }
-}
-// Punta del pin (arriba, centro) de una evidencia de Hechos, según su tipo/giro.
-function hechoPinAbs(it) {
-  const { h } = HECHOS_SIZE[it.type]
-  const a = it.rot * Math.PI / 180, dy = -h / 2 + 6
-  return { x: it.x - dy * Math.sin(a), y: it.y + dy * Math.cos(a) }
-}
+// Las tres funciones de geometría viven en lib/carteleraGeometria.js, que las
+// comparte con el tablero móvil. Reciben MAP y DOC_H por PARÁMETRO: móvil usa
+// un tablero de otro tamaño con constantes del mismo nombre y otros valores,
+// así que no pueden leerlas por clausura. Ver el comentario de ese archivo.
 // `reservaAbajo`: alto que hay que dejar libre debajo del tablero para el chip
 // que se monta sobre su borde inferior (ver .cart-board-hint). Coincide con el
 // padding inferior de .cart-landing-stage, que clientHeight sí incluye.
@@ -307,7 +294,7 @@ export default function CarteleraLanding({
     const m = visiblePins.length
     if (m === 0) return []
     const idx = m >= 3 ? pick3(m, PIN_PRIORITY) : [...Array(m).keys()]
-    return threadChain(SHEET_TIE_MAP, idx.map(i => pinAbs(visiblePins[i])))
+    return threadChain(SHEET_TIE_MAP, idx.map(i => pinAbs(visiblePins[i], MAP)))
   })()
   // Hilo de Datos: 3 pines de documentos (o los que haya) → hoja de predicciones
   const datosThreads = (() => {
@@ -317,7 +304,7 @@ export default function CarteleraLanding({
     const chosen = vis.length >= 3
       ? [...vis].sort((a, b) => DOC_PRIORITY[a] - DOC_PRIORITY[b]).slice(0, 3)
       : vis
-    return threadChain(SHEET_TIE_DATOS, chosen.map(i => docPinAbs(DOC_FLAT[i])))
+    return threadChain(SHEET_TIE_DATOS, chosen.map(i => docPinAbs(DOC_FLAT[i], DOC_H)))
   })()
   // Hilo de Hechos: 3 evidencias (o las que haya) → hoja de predicciones
   const hechosThreads = (() => {

@@ -20,6 +20,7 @@ import {
   threadChain, pick3,
   Pin, PassportPhoto, DocSheetCard, HechoItem, BlueprintBg, ZonePopup,
 } from '../cartelera/carteleraZonas.jsx'
+import { pinAbs, docPinAbs, hechoPinAbs } from '../../lib/carteleraGeometria.js'
 
 // ── Ajuste del tablero ──
 const MODE = 'fit'               // 'fit' (todo a la vez, sin scroll) | 'scroll' (legible + scroll)
@@ -161,21 +162,10 @@ const SHEET_TIE_MAP    = { x: CENTER.cx + CENTER.w / 2 - TIE_IN, y: CENTER.cy - 
 const SHEET_TIE_DATOS  = { x: CENTER.cx - CENTER.w / 2 + TIE_IN, y: CENTER.cy + 48 }
 const SHEET_TIE_HECHOS = { x: CENTER.cx + CENTER.w / 2 - TIE_IN, y: CENTER.cy + 48 }
 
-// Punta absoluta de un pin del mapa (aplica el giro del mapa)
-function pinAbs(p) {
-  const lx = MAP.cx - MAP.w / 2 + p.x, ly = MAP.cy - MAP.h / 2 + p.y
-  const a = MAP.rot * Math.PI / 180, dx = lx - MAP.cx, dy = ly - MAP.cy
-  return { x: MAP.cx + dx * Math.cos(a) - dy * Math.sin(a), y: MAP.cy + dx * Math.sin(a) + dy * Math.cos(a) }
-}
-function docPinAbs(s) {
-  const a = s.rot * Math.PI / 180, dy = -DOC_H / 2 + 8
-  return { x: s.x - dy * Math.sin(a), y: s.y + dy * Math.cos(a) }
-}
-function hechoPinAbs(it) {
-  const { h } = HECHOS_SIZE[it.type]
-  const a = it.rot * Math.PI / 180, dy = -h / 2 + 6
-  return { x: it.x - dy * Math.sin(a), y: it.y + dy * Math.cos(a) }
-}
+// Las tres funciones de geometría viven en lib/carteleraGeometria.js, que las
+// comparte con el tablero de escritorio. Reciben MAP y DOC_H por PARÁMETRO
+// porque ESTE tablero es 860x1000 y el de escritorio 1180x720: las constantes
+// se llaman igual y valen distinto. Ver el comentario de ese archivo.
 
 // Escala el tablero fijo (vertical) según el modo. En 'scroll' encaja al ancho
 // y el alto define el recorrido; en 'fit' entra completo.
@@ -259,7 +249,7 @@ export default function CarteleraLandingMobile({ data, esNoficcion = false, onOp
     const m = visiblePins.length
     if (m === 0) return []
     const idx = m >= 3 ? pick3(m, PIN_PRIORITY) : [...Array(m).keys()]
-    return threadChain(SHEET_TIE_MAP, idx.map(i => pinAbs(visiblePins[i])))
+    return threadChain(SHEET_TIE_MAP, idx.map(i => pinAbs(visiblePins[i], MAP)))
   })()
   const datosThreads = (() => {
     const vis = DOC_FLAT.map((s, i) => i).filter(i => DOC_FLAT[i].row < visiblePerCol)
@@ -267,7 +257,7 @@ export default function CarteleraLandingMobile({ data, esNoficcion = false, onOp
     const chosen = vis.length >= 3
       ? [...vis].sort((a, b) => DOC_PRIORITY[a] - DOC_PRIORITY[b]).slice(0, 3)
       : vis
-    return threadChain(SHEET_TIE_DATOS, chosen.map(i => docPinAbs(DOC_FLAT[i])))
+    return threadChain(SHEET_TIE_DATOS, chosen.map(i => docPinAbs(DOC_FLAT[i], DOC_H)))
   })()
   const hechosThreads = (() => {
     const n = visibleHechos.length
