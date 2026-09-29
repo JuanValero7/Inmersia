@@ -7,16 +7,13 @@
 // spoilers — eso lo resuelve useCartelera.
 //
 //   <CarteleraMobileLista section items onPick />
-//   <CarteleraMobileFicha section item onBack />
+//   <CarteleraMobileFicha section item />
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo, useRef, useLayoutEffect } from 'react'
 import { getTags, getCap, shade, DOT_AMT, initial, deltaDesc } from '../cartelera/carteleraHelpers.js'
 
 function SearchIcon() {
   return (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>)
-}
-function BackIcon({ s = 14 }) {
-  return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>)
 }
 function Wave({ color }) {
   return (<svg className="cm-fic-rule" viewBox="0 0 320 14" preserveAspectRatio="none" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round">
@@ -74,13 +71,11 @@ export function CarteleraMobileLista({ section, items = [], onPick, initialScrol
   )
 }
 
-export default function CarteleraMobileFicha({ section, item, onBack, backLabel = 'Lista' }) {
+export default function CarteleraMobileFicha({ section, item }) {
   const sec = section.color
   if (!item) return null
   return (
     <div className="cm-ficha-wrap">
-      <button type="button" className="cm-fic-back" onClick={onBack}><BackIcon s={14} /> {backLabel}</button>
-
       <div className="cm-ficha" key={item.id}>
         {item.imagen?.url && (
           <div className="cm-polaroid">

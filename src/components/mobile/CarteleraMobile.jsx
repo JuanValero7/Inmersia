@@ -209,7 +209,7 @@ function SectionView({ sectionKey, data, onGoBack, onGoLanding, onJump, onExplor
       )}
 
       {tab === 'ficha' && (
-        <CarteleraMobileFicha section={meta} item={current} onBack={() => setTab('lista')} backLabel="Lista" />
+        <CarteleraMobileFicha section={meta} item={current} />
       )}
 
       <CatDock currentKey={sectionKey} onJump={onJump} onGoLanding={onGoLanding} secciones={secciones} gatoColor={gatoColor} />
