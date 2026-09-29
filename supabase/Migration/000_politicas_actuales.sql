@@ -10,8 +10,31 @@
 -- implementan la muestra de 2 capítulos para invitados.
 --
 -- Los cambios POSTERIORES a este volcado viven en sus migraciones
--- numeradas (037 en adelante). Si volvés a exportar, reemplazá este
--- archivo entero y actualizá la fecha de arriba.
+-- numeradas (037 en adelante). Si vuelves a exportar, reemplaza este
+-- archivo entero y actualiza la fecha de arriba.
+--
+--
+-- ⚠️ NO CONVIERTAS ESTE ARCHIVO EN UNA MIGRACIÓN
+--
+-- Es tentador: son las políticas, parecen listas para ejecutar. Pero está
+-- FECHADO, y las migraciones 037-051 cambiaron políticas que aquí siguen
+-- apareciendo en su versión vieja. Ejecutar esto las revertiría en silencio.
+--
+-- Divergencias comprobadas el 2026-09-29 (hay tres, y las tres abren
+-- agujeros de verdad):
+--
+--   · capitulos_select / parrafos_select — aquí dicen USING (true).
+--     La migración 037 las cerró a "capítulos 1-2 o libro en su
+--     biblioteca". Volver atrás = cualquier usuario registrado lee todos
+--     los libros enteros, sin pasar por la biblioteca.
+--
+--   · subrayados_select — aquí dice USING (true).
+--     La migración 040 la cerró a auth.uid() = user_id. Volver atrás =
+--     cualquiera lee los subrayados de los demás. Son datos personales.
+--
+-- Para una migración ejecutable usa el BLOQUE 1 de
+-- supabase/exportar-politicas.sql, que lee el catálogo VIVO y ya emite el
+-- DROP + CREATE idempotente. Eso nunca se queda viejo.
 -- =============================================================
 
 CREATE POLICY album_pegadas_insert
