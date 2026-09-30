@@ -11,6 +11,9 @@ import LibroReel from './tienda/LibroReel.jsx'
 import { InmHeader, Swimlane, SwimlaneSkeleton } from './biblioteca/clay/HeaderSwimlane.jsx'
 import { CategoriasHome, CategoriasHomeSkeleton } from './biblioteca/clay/CategoriasHome.jsx'
 import { LateralHome, LateralHomeSkeleton } from './biblioteca/clay/LateralHome.jsx'
+import ComunidadesMenu from './comunidades/ComunidadesMenu.jsx'
+import ComunidadPanel from './comunidades/ComunidadPanel.jsx'
+import { useCatalogoLibrosQuery } from '../lib/queries.js'
 import { INK, Skel } from './biblioteca/clay/helpers.jsx'
 import { saludoBienvenida } from '../lib/genero.js'
 import { useOnboarding } from '../context/onboarding.jsx'
@@ -58,6 +61,19 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
   const [selectedBook, setSelectedBook] = React.useState(null);
   const [selectedLibro, setSelectedLibro] = React.useState(null); // libro de Novedades/Recomendaciones (aún no adquirido)
   const [reelLibro, setReelLibro] = React.useState(null); // preview (LibroReel) del panel de arriba
+  const [panelComunidad, setPanelComunidad] = React.useState(null); // { id, bienvenida } del panel "Ver comunidad"
+
+  // "Leer con el club" / lecturas anteriores del panel de una comunidad:
+  // si el libro ya es mío se abre; si no, su ficha del catálogo con
+  // "Empezar a leer" (el mismo PanelLibro de Novedades).
+  const { data: catalogo = [] } = useCatalogoLibrosQuery();
+  const leerLibroDeComunidad = React.useCallback((libroId) => {
+    setPanelComunidad(null);
+    const mio = books.find(b => b.id === libroId);
+    if (mio) { onOpenBook(mio); return; }
+    const delCatalogo = catalogo.find(l => l.id === libroId);
+    if (delCatalogo) setSelectedLibro(delCatalogo);
+  }, [books, catalogo, onOpenBook]);
   const [showManageCats, setShowManage] = React.useState(false);
   const [showFilters, setShowFilters] = React.useState(false);
   const [searchInput, setSearchInput] = React.useState('');
@@ -157,7 +173,8 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
   return (
     <div className="bib-body" style={{ fontFamily: "'Baloo 2', cursive", color: INK, minHeight: '100%', backgroundColor: '#FBF5EC' }}>
       <InmHeader search={searchInput} onSearch={handleSearchChange} onSearchKeyDown={handleSearchKeyDown} displayName={displayName} inicial={inicial}
-        onGoPerfil={onGoPerfil} onSignOut={onSignOut} />
+        onGoPerfil={onGoPerfil} onSignOut={onSignOut}
+        comunidades={<ComunidadesMenu user={user} onVerComunidad={(id, bienvenida) => setPanelComunidad({ id, bienvenida })} />} />
 
       <div style={{ padding: '26px 32px 56px' }}>
         <div style={{ fontWeight: 800, fontSize: 32, letterSpacing: '-0.01em', color: headerInk }}>¡{saludoBienvenida(user?.user_metadata?.genero)}, {displayName.split(' ')[0]}!</div>
@@ -250,6 +267,10 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
           onPreview={() => setReelLibro(selectedLibro)}
           onEmpezarLeer={() => handleEmpezarLeerLibro(selectedLibro)}
         />
+      )}
+      {panelComunidad && (
+        <ComunidadPanel user={user} comunidadId={panelComunidad.id} bienvenida={panelComunidad.bienvenida}
+          modo="lateral" onClose={() => setPanelComunidad(null)} onLeerLibro={leerLibroDeComunidad} />
       )}
       {reelLibro && (
         <LibroReel

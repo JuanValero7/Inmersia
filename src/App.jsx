@@ -35,6 +35,7 @@ const Landing               = lazy(() => import('./components/Landing.jsx'))
 const LandingMobile         = lazy(() => import('./components/mobile/LandingMobile.jsx'))
 const VistaAlbum            = lazy(() => import('./components/Album.jsx'))
 const AlbumMobile           = lazy(() => import('./components/mobile/AlbumMobile.jsx'))
+const ComunidadesMobile     = lazy(() => import('./components/mobile/ComunidadesMobile.jsx'))
 
 const Fallback = (
   <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,background:'var(--bg-warm)'}}>
@@ -231,6 +232,7 @@ export default function App() {
     navigate(destino, { state: { from: location.pathname, book } })
   }, [navigate, location.pathname])
 
+
   // Destino del botón atrás DE LA APP (el de pantalla, no el del navegador).
   //
   // Ese botón no se puede quitar aunque parezca redundante: en iOS no hay
@@ -399,7 +401,25 @@ export default function App() {
                 onGoAlbum={() => navigate('/album')}
                 onGoForo={(book) => irA(`/foro/${book.slug || book.id}`, book)}
                 onGoNotebook={handleGoNotebook}
+                onGoComunidades={(vista) => navigate('/comunidades', { state: { from: location.pathname, vista } })}
               />
+            } />
+
+            {/* Comunidades. /comunidades es la pantalla móvil de invitación,
+                búsqueda y creación (se llega desde la hoja "Leer como" con
+                state.vista). En escritorio todo vive en la barra de la
+                Biblioteca, así que la ruta redirige allí. La comunidad en sí
+                no tiene página: es un panel sobre la Biblioteca
+                (ComunidadPanel), que se abre con state.verComunidad. */}
+            <Route path="/comunidades" element={
+              isMobile
+                ? <ComunidadesMobile
+                    user={user}
+                    vistaInicial={location.state?.vista || null}
+                    onGoBack={() => volver()}
+                    onListo={(id, bienvenida) => navigate('/biblioteca', { state: { verComunidad: id, bienvenida } })}
+                  />
+                : <Navigate to="/biblioteca" replace />
             } />
 
             <Route path="/album" element={

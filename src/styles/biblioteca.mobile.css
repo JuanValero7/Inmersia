@@ -44,6 +44,15 @@
 .bibm-icon-btn:active { transform: translateY(1.5px); box-shadow: 0.5px 1px 0 rgba(74,54,34,0.18); }
 .bibm-avatar { width: 40px; height: 40px; flex-shrink: 0; border-radius: 999px; background: linear-gradient(135deg, #F2792A, #6f9457); color: #fff; font-weight: 800; font-size: 16px; border: 2px solid var(--ink); cursor: pointer; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.2); display: flex; align-items: center; justify-content: center; transition: transform 0.12s; }
 .bibm-avatar:active { transform: translateY(1.5px); }
+/* Botones con nombre: Comunidades en la cabecera; Tienda y Álbum en la
+   fila de debajo. */
+.bibm-icon-btn { gap: 8px; font-family: inherit; font-weight: 700; font-size: 14px; white-space: nowrap; }
+.bibm-com-btn { min-width: 0; }
+/* Nombre de la comunidad activa: se corta con … si no cabe. */
+.bibm-com-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.bibm-nav-row { display: flex; gap: 9px; margin-top: 10px; }
+/* Dentro de "Tu colección" el hueco lo pone el gap de .bibm-col-head. */
+.bibm-col-head .bibm-search { margin-top: 0; }
 .bibm-search { margin-top: 11px; display: flex; align-items: center; gap: 11px; background: rgba(255,253,247,0.94); border: 2px solid var(--ink); border-radius: 999px; padding: 10px 16px; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.12); }
 .bibm-search input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-weight: 600; font-size: 14.5px; color: var(--ink); }
 .bibm-search input::placeholder { color: rgba(74,54,34,0.42); }

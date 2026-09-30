@@ -10,7 +10,9 @@ import { imgUrl } from '../../../lib/img.js'
 // Exporta: window.InmHeader, Swimlane
 // =============================================================
 
-function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, onGoPerfil, onSignOut }) {
+// `comunidades`: el menú de Comunidades (ComunidadesMenu) ya montado por
+// la Biblioteca, que es quien tiene el usuario; va antes del perfil.
+function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, onGoPerfil, onSignOut, comunidades = null }) {
   const ink = INK;
   const bar = {
     display: 'flex', alignItems: 'center', gap: 16, borderRadius: 22, padding: '13px 17px',
@@ -33,6 +35,7 @@ function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, on
             style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontWeight: 600, fontSize: 15, color: ink }} />
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 11, flexShrink: 0 }}>
+          {comunidades}
           <button onClick={onGoPerfil} style={{ ...navBtn, padding: '7px 15px 7px 8px' }} title="Mi perfil">
             <span style={{ width: 27, height: 27, borderRadius: '50%', background: 'linear-gradient(135deg, #F2792A, #6f9457)', color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, border: `2px solid ${ink}` }}>{inicial}</span>
             <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>

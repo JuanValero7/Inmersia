@@ -8,6 +8,7 @@
 // Gestionar como pantallas propias.
 // =============================================================
 import React from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useBiblioteca } from '../../hooks/useBiblioteca.js'
 import { useCompraLibro, LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
 import { SIN_CATEGORIA_ID, COLOR_DEFAULT, MANUAL_LIBRO_ID } from '../biblioteca/constants.js'
@@ -26,6 +27,11 @@ import PanelLibro from '../tienda/PanelLibro.jsx'
 import LibroReel from '../tienda/LibroReel.jsx'
 import '../../styles/tienda.css' // estilos de PanelLibro/LibroReel (.bkp-*, .reel-*) — sin esto renderizan sin overlay/estilos
 import '../../styles/biblioteca.mobile.css'
+import LeerComoSheet from '../comunidades/LeerComoSheet.jsx'
+import ComunidadPanel from '../comunidades/ComunidadPanel.jsx'
+import { Sello } from '../comunidades/comunidadesShared.jsx'
+import { useComunidadActiva } from '../../hooks/useComunidades.js'
+import { useCatalogoLibrosQuery } from '../../lib/queries.js'
 
 // Tira inferior desacoplada del hero: "Seguir leyendo" queda solo en el hero;
 // acá el usuario alterna entre sus últimos abiertos y las sugerencias de la
@@ -84,7 +90,7 @@ function HeroLaneSkeleton({ gatoColor }) {
   )
 }
 
-export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, isSuperuser, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoNotebook }) {
+export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, isSuperuser, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoNotebook, onGoComunidades }) {
   // Lógica de datos compartida con Biblioteca desktop (ver src/hooks/useBiblioteca.js)
   const {
     loadingBooks, categories, categoriasMap, books, featured, novedades, recomendaciones, displayName, inicial,
@@ -98,6 +104,31 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
   const [selectedBook, setSelectedBook] = React.useState(null)
   const [selectedLibro, setSelectedLibro] = React.useState(null) // libro de Novedades/Para ti (aún no adquirido)
   const [reelLibro, setReelLibro] = React.useState(null)
+
+  // Comunidades: hoja "Leer como" y panel "Ver comunidad". Al volver de
+  // /comunidades tras unirse o crear, llega { verComunidad, bienvenida } en
+  // el state de la navegación: se abre el panel una vez y se limpia el state
+  // para que no reaparezca al recargar.
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { activa } = useComunidadActiva(user?.id)
+  const [hojaLeerComo, setHojaLeerComo] = React.useState(false)
+  const [panelComunidad, setPanelComunidad] = React.useState(() =>
+    location.state?.verComunidad ? { id: location.state.verComunidad, bienvenida: location.state.bienvenida || null } : null)
+  React.useEffect(() => {
+    if (location.state?.verComunidad) navigate(location.pathname, { replace: true, state: null })
+  }, [location.state, location.pathname, navigate])
+
+  // "Leer con el club": si el libro ya es mío se abre; si no, su ficha del
+  // catálogo con "Empezar a leer" (el mismo PanelLibro de Novedades).
+  const { data: catalogo = [] } = useCatalogoLibrosQuery()
+  const leerLibroDeComunidad = React.useCallback((libroId) => {
+    setPanelComunidad(null)
+    const mio = books.find(b => b.id === libroId)
+    if (mio) { onOpenBook(mio); return }
+    const delCatalogo = catalogo.find(l => l.id === libroId)
+    if (delCatalogo) setSelectedLibro(delCatalogo)
+  }, [books, catalogo, onOpenBook])
   const [search, setSearch] = React.useState('')
   // El input usa `search` (tecleo instantáneo); el filtrado usa el valor diferido
   // para no recalcular estantes/grupos en cada pulsación.
@@ -204,22 +235,26 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
       <div className="bibm-header-wrap">
         <div className="bibm-header">
           <div className="bibm-logo"><img src="/assets/inmersia-logo2.png" alt="Inmersia" /></div>
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 10 }}>
-            <button className="bibm-icon-btn" onClick={onGoTienda} title="Ir a la Tienda" aria-label="Ir a la Tienda">
-              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4m1.6 8L5 5H3m4 8a2 2 0 100 4 2 2 0 000-4zm10 0a2 2 0 100 4 2 2 0 000-4z" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            <button className="bibm-icon-btn" onClick={onGoAlbum} title="Mi álbum" aria-label="Mi álbum">
-              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="3" width="7" height="9" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="14" y="3" width="7" height="5" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="14" y="12" width="7" height="9" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="3" y="16" width="7" height="5" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-          </div>
+          <button className="bibm-icon-btn bibm-com-btn" onClick={() => setHojaLeerComo(true)}
+            title={activa ? `Leyendo con ${activa.nombre}` : 'Comunidades'}>
+            {activa
+              ? <Sello c={activa} tam="sm" />
+              : <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9.5" r="2.5"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M15 14.3c2.6-.3 4.9 1.2 5.5 4.2"/></svg>}
+            <span className="bibm-com-txt">{activa ? activa.nombre : 'Comunidades'}</span>
+          </button>
           <button className="bibm-avatar" onClick={onGoPerfil} title="Mi perfil">{inicial}</button>
         </div>
-        <div className="bibm-search">
-          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={INK} strokeWidth="2.4"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35" strokeLinecap="round"/></svg>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por título, autor…" />
-          {search && <button className="bibm-search-x" onClick={() => setSearch('')} aria-label="Limpiar">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" strokeLinecap="round"/></svg>
-          </button>}
+        {/* Tienda y Álbum, con nombre, debajo de la cabecera (antes eran dos
+            íconos en el centro de la cabecera, que ahora ocupa Comunidades). */}
+        <div className="bibm-nav-row">
+          <button className="bibm-icon-btn" onClick={onGoTienda} title="Ir a la Tienda">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4m1.6 8L5 5H3m4 8a2 2 0 100 4 2 2 0 000-4zm10 0a2 2 0 100 4 2 2 0 000-4z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Tienda
+          </button>
+          <button className="bibm-icon-btn" onClick={onGoAlbum} title="Mi álbum">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="3" width="7" height="9" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="14" y="3" width="7" height="5" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="14" y="12" width="7" height="9" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="3" y="16" width="7" height="5" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Álbum
+          </button>
         </div>
       </div>
 
@@ -295,6 +330,15 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
             <div className="bibm-sec-ttl">Tu colección {loadingBooks
                 ? <Skel w={58} h={12} r={7} style={{ display: 'inline-block', verticalAlign: 'middle' }} />
                 : <span className="bibm-sec-sub">{collectionCount} {collectionCount === 1 ? 'libro' : 'libros'}</span>}</div>
+            {/* El buscador filtra la colección, así que vive con ella (antes
+                iba fijo bajo la cabecera). */}
+            <div className="bibm-search">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={INK} strokeWidth="2.4"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35" strokeLinecap="round"/></svg>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por título, autor…" />
+              {search && <button className="bibm-search-x" onClick={() => setSearch('')} aria-label="Limpiar">
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" strokeLinecap="round"/></svg>
+              </button>}
+            </div>
             <div className="bibm-col-actions">
               <img className="bibm-manage-gato" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" loading="lazy" />
               <button className={'bibm-act' + (activeCategory ? ' on' : '')} onClick={() => setScreen('filter')}>
@@ -346,6 +390,15 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
         />
       )}
 
+      {hojaLeerComo && (
+        <LeerComoSheet user={user} onClose={() => setHojaLeerComo(false)}
+          onVer={(id) => setPanelComunidad({ id, bienvenida: null })}
+          onIr={(vista) => { setHojaLeerComo(false); onGoComunidades(vista) }} />
+      )}
+      {panelComunidad && (
+        <ComunidadPanel user={user} comunidadId={panelComunidad.id} bienvenida={panelComunidad.bienvenida}
+          modo="hoja" onClose={() => setPanelComunidad(null)} onLeerLibro={leerLibroDeComunidad} />
+      )}
       {selectedLibro && (
         <PanelLibro
           key={selectedLibro.id}

@@ -23,6 +23,14 @@ export const queryKeys = {
   perfil: (userId) => ['perfil', userId],
   catalogoLibros: () => ['catalogoLibros'],
   bibliotecaUsuario: (userId) => ['bibliotecaUsuario', userId],
+  // Comunidades (ver src/hooks/useComunidades.js)
+  misComunidades: (userId) => ['misComunidades', userId],
+  buscarComunidades: (texto) => ['buscarComunidades', texto],
+  puedeCrearComunidad: (userId) => ['puedeCrearComunidad', userId],
+  comunidad: (id) => ['comunidad', id],
+  comunidadActiva: (userId) => ['comunidadActiva', userId],
+  progresoComunidad: (id) => ['progresoComunidad', id],
+  lecturasAnteriores: (id) => ['lecturasAnteriores', id],
 }
 
 // perfiles.nombre/apellido — Biblioteca (saludo) y Perfil (formulario)

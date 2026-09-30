@@ -1,0 +1,348 @@
+/* =============================================================
+   INMERSIA · Comunidades — piezas compartidas + menú de escritorio
+   (ComunidadesMenu, en la barra naranja de la Biblioteca) + página
+   provisional /comunidad/:id. La pantalla móvil suma
+   comunidades.mobile.css.
+   Mismos tokens que la Biblioteca (biblioteca.mobile.css / InmHeader).
+   ============================================================= */
+
+.com-menu, .comm-screen, .cc-overlay {
+  --ink: #4a3622;
+  --accent: #F2792A;
+  --green: #6f9457;
+  --paper: #FBF5EC;
+  --cream: #fffdf8;
+  --sand: #f1e8d4;
+  --muted: rgba(74,54,34,0.6);
+  --faint: rgba(74,54,34,0.14);
+}
+
+/* ── Botones ── */
+.com-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--cream); color: var(--ink);
+  border: 2px solid var(--ink); border-radius: 999px; padding: 8px 16px;
+  font-family: inherit; font-weight: 700; font-size: 13.5px; white-space: nowrap;
+  box-shadow: 1.5px 2px 0 rgba(74,54,34,0.12); cursor: pointer;
+  transition: transform .12s, background-color .12s;
+}
+.com-btn:active:not(:disabled) { transform: translateY(1.5px); }
+.com-btn:focus-visible { outline: 3px solid rgba(242,121,42,0.45); outline-offset: 2px; }
+.com-btn:disabled { opacity: .5; cursor: not-allowed; }
+.com-btn.solid { background: var(--accent); color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
+.com-btn.sm { padding: 5px 12px; font-size: 12px; flex-shrink: 0; }
+
+/* ── Entradas ── */
+.com-input {
+  display: flex; align-items: center; gap: 10px; min-width: 0;
+  background: rgba(255,253,247,0.95); border: 2px solid var(--ink); border-radius: 999px;
+  padding: 9px 16px; box-shadow: 1.5px 2px 0 rgba(74,54,34,0.1); color: var(--ink);
+}
+.com-input:focus-within { outline: 3px solid rgba(242,121,42,0.45); outline-offset: 2px; }
+.com-input input {
+  flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+  font-family: inherit; font-weight: 600; font-size: 14.5px; color: var(--ink);
+}
+.com-input input::placeholder { color: rgba(74,54,34,0.42); }
+.com-input.code input { letter-spacing: .18em; text-transform: uppercase; }
+.com-input.code input::placeholder { letter-spacing: normal; text-transform: none; }
+
+/* ── Filas de comunidad ── */
+.com-list { display: flex; flex-direction: column; }
+.com-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 10px; background: none; border: none; border-radius: 14px;
+  font-family: inherit; color: var(--ink); cursor: pointer;
+}
+.com-row + .com-row { border-top: 1.5px solid var(--faint); }
+.com-row:hover { background: rgba(242,121,42,0.08); }
+.com-row:focus-visible { outline: 3px solid rgba(242,121,42,0.45); outline-offset: -3px; }
+.com-cover {
+  display: block; width: 38px; height: 54px; flex-shrink: 0; object-fit: cover;
+  border: 2px solid var(--ink); border-radius: 4px 7px 7px 4px; box-shadow: 2px 3px 0 rgba(74,54,34,0.15);
+}
+.com-cover.grande { width: 84px; height: 122px; }
+.com-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.com-name { font-weight: 700; font-size: 15px; line-height: 1.2; }
+.com-meta { font-size: 12.5px; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.com-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.com-chip { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; border: 1.5px solid var(--ink); white-space: nowrap; }
+.com-chip.priv { background: var(--sand); }
+.com-chip.pub { background: #e3edd9; }
+.com-chip.mod { background: var(--accent); color: #fff; }
+.com-chev { color: var(--muted); font-weight: 800; font-size: 18px; }
+
+.com-res { display: flex; align-items: center; gap: 10px; padding: 9px 10px; }
+.com-res + .com-res { border-top: 1.5px solid var(--faint); }
+.com-res .com-cover { width: 30px; height: 42px; }
+
+/* ── Textos sueltos ── */
+.com-label { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.com-dd-msg { margin: 0; padding: 18px 12px; text-align: center; color: var(--muted); font-size: 13.5px; font-weight: 600; }
+.com-error { margin: 0; color: #b0412a; font-size: 13px; font-weight: 700; }
+.com-nota { margin: 0; font-size: 12px; color: var(--muted); font-weight: 600; }
+
+/* ── Menú de escritorio (barra naranja) ── */
+.com-menu { position: relative; z-index: 40; display: flex; align-items: center; gap: 10px; }
+.com-select { min-width: 196px; justify-content: space-between; }
+.com-select.open { background: var(--sand); }
+.com-select-lbl { display: inline-flex; align-items: center; gap: 8px; }
+
+.com-dd {
+  position: absolute; top: calc(100% + 12px); right: 0; width: 360px;
+  display: flex; flex-direction: column; padding: 8px;
+  background: var(--cream); border: 2px solid var(--ink); border-radius: 18px;
+  box-shadow: 4px 6px 0 rgba(74,54,34,0.14); color: var(--ink);
+}
+.com-dd.ancho { width: 390px; padding: 16px; }
+.com-dd-head { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 8px 4px; }
+.com-dd-head h3 { margin: 0; font-size: 17px; font-weight: 800; }
+.com-dd-head span { font-size: 12px; color: var(--muted); font-weight: 600; }
+/* Acciones al final de "Mis comunidades" */
+.com-dd-acciones { display: flex; flex-direction: column; gap: 8px; padding: 12px 6px 6px; margin-top: 6px; border-top: 1.5px solid var(--faint); }
+.com-dd-acciones .com-fila .com-btn { flex: 1; padding: 8px 10px; font-size: 13px; }
+.com-dd-crear { width: 100%; height: 44px; font-size: 15px; }
+/* Vistas "Tengo una invitación" y "Buscar comunidades" */
+.com-dd-vista { gap: 12px; }
+.com-dd-volver { display: flex; align-items: center; gap: 10px; }
+.com-dd-volver h3 { margin: 0; font-size: 17px; font-weight: 800; }
+.com-dd-volver .com-btn { width: 32px; height: 32px; padding: 0; font-size: 17px; }
+.com-dd-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 24px 18px 20px; text-align: center; }
+.com-dd-empty b { font-size: 15.5px; }
+.com-dd-empty p { margin: 0; max-width: 30ch; color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+.com-blank {
+  width: 60px; height: 60px; border-radius: 50%; border: 2px dashed rgba(74,54,34,0.35);
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 24px; color: rgba(74,54,34,0.35);
+}
+.com-block { display: flex; flex-direction: column; gap: 8px; }
+.com-fila { display: flex; gap: 8px; }
+.com-fila .com-input { flex: 1; }
+.com-results {
+  display: flex; flex-direction: column; max-height: 228px; overflow-y: auto;
+  border: 1.5px solid var(--faint); border-radius: 14px;
+}
+
+/* ── Formulario "Crear comunidad" (CrearComunidad.jsx) ── */
+.cc-overlay {
+  position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: rgba(74,54,34,0.38); font-family: 'Baloo 2', system-ui, sans-serif; color: var(--ink);
+}
+.cc-modal {
+  width: min(820px, 100%); max-height: 100%; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden;
+  background: var(--paper); border: 2px solid var(--ink); border-radius: 24px; box-shadow: 6px 9px 0 rgba(74,54,34,0.2);
+}
+.cc-main, .cc-side { padding: 22px 24px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; min-height: 0; }
+.cc-main h2 { margin: 0; font-size: 26px; font-weight: 800; }
+.cc-side { background: var(--sand); border-left: 2px solid var(--ink); max-height: min(720px, calc(100dvh - 48px)); }
+.cc-side-head { display: flex; justify-content: space-between; align-items: center; }
+.cc-side-nota { margin-top: auto; }
+.cc-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: auto; padding-top: 4px; }
+.com-btn.cc-ghost { background: transparent; border-color: transparent; box-shadow: none; color: var(--muted); }
+
+.cc-field { display: flex; flex-direction: column; gap: 6px; }
+.cc-label { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-weight: 800; font-size: 15px; }
+.cc-label small { font-weight: 600; font-size: 12.5px; color: var(--muted); text-align: right; }
+.com-input.cc-box { border-radius: 14px; }
+.cc-box textarea {
+  flex: 1; min-width: 0; border: none; outline: none; background: transparent; resize: vertical;
+  font-family: inherit; font-weight: 600; font-size: 14.5px; line-height: 1.4; color: var(--ink);
+}
+.cc-box input[type="date"], .cc-box input[type="datetime-local"] { color-scheme: light; }
+
+.cc-tipos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cc-tipo {
+  display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; text-align: left; cursor: pointer;
+  border: 2px solid rgba(74,54,34,0.3); border-radius: 16px; background: var(--cream); font-family: inherit; color: var(--ink);
+}
+.cc-tipo b { display: flex; align-items: center; gap: 8px; font-size: 15.5px; }
+.cc-tipo span { font-size: 12.5px; color: var(--muted); font-weight: 600; line-height: 1.35; }
+.cc-tipo.on { border-color: var(--ink); background: #fff1e4; box-shadow: 2px 3px 0 rgba(74,54,34,0.14); }
+.cc-tipo:focus-visible { outline: 3px solid rgba(242,121,42,0.45); outline-offset: 2px; }
+.cc-radio { width: 16px; height: 16px; flex-shrink: 0; border-radius: 50%; border: 2px solid var(--ink); }
+.cc-tipo.on .cc-radio { background: radial-gradient(circle, var(--accent) 45%, transparent 50%); }
+
+.cc-libro-vacio {
+  padding: 14px; border: 2px dashed rgba(74,54,34,0.35); border-radius: 16px; background: transparent;
+  font-family: inherit; font-weight: 700; font-size: 14.5px; color: var(--muted); cursor: pointer;
+}
+.cc-libro-vacio:hover { border-color: var(--ink); color: var(--ink); }
+.cc-libro-sel {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  border: 2px solid var(--ink); border-radius: 16px; background: var(--cream);
+}
+.cc-quitar {
+  align-self: flex-start; background: none; border: none; padding: 0; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--muted); text-decoration: underline;
+}
+
+.cc-selector { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.cc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 14px 12px; }
+.cc-gl {
+  display: flex; flex-direction: column; gap: 4px; align-items: stretch; text-align: left;
+  background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; color: var(--ink);
+}
+.cc-gl b { font-size: 13px; line-height: 1.15; }
+.cc-gl > span:last-child { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+.cc-gl-c { position: relative; display: block; aspect-ratio: 210 / 305; }
+.cc-gl-img {
+  display: block; width: 100%; height: 100%; object-fit: cover;
+  border: 2px solid var(--ink); border-radius: 4px 9px 9px 4px; box-shadow: 2px 3px 0 rgba(74,54,34,0.15);
+}
+.cc-gl.on .cc-gl-img { outline: 3.5px solid var(--accent); outline-offset: 2px; }
+.cc-gl.on .cc-gl-c::after {
+  content: '✓'; position: absolute; top: -9px; right: -9px; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--accent); color: #fff; border: 2px solid var(--ink);
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px;
+}
+.cc-gl:focus-visible { outline: 3px solid rgba(242,121,42,0.45); outline-offset: 3px; border-radius: 8px; }
+
+/* Móvil: el formulario va dentro de .comm-screen, con el botón abajo. */
+.cc-movil { gap: 16px; padding-bottom: 4px; }
+.cc-movil .cc-tipos { grid-template-columns: 1fr 1fr; }
+.cc-movil-foot { position: sticky; bottom: 0; padding-top: 6px; background: linear-gradient(transparent, var(--paper) 30%); }
+.cc-movil-foot .com-btn { width: 100%; }
+.comm-body .cc-grid { grid-template-columns: repeat(3, 1fr); }
+
+/* ── Código y fecha meta (panel y bienvenida) ── */
+.com-codigo {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 10px 14px; border: 2px dashed var(--ink); border-radius: 14px; background: var(--cream);
+}
+.com-codigo b { font-size: 22px; font-weight: 800; letter-spacing: .16em; user-select: all; word-break: break-all; }
+.com-when {
+  align-self: flex-start; font-size: 12.5px; font-weight: 700; background: var(--sand);
+  border-radius: 999px; padding: 2px 11px;
+}
+
+/* ── Sello de comunidad (iniciales + color) ── */
+.com-sello {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  border: 2px solid var(--ink); color: var(--ink); font-weight: 800; line-height: 1;
+}
+.com-sello.sm { width: 24px; height: 24px; border-radius: 7px; font-size: 10.5px; }
+.com-sello.md { width: 30px; height: 30px; border-radius: 9px; font-size: 12px; }
+.com-sello.lg { width: 50px; height: 50px; border-radius: 14px; font-size: 19px; }
+
+/* Botón de la barra con la comunidad activa */
+.com-select.activa { background: #fff1e4; }
+.com-select-txt { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── "Leer como" (menú de escritorio y hoja móvil) ── */
+.com-leer { display: flex; flex-direction: column; gap: 4px; padding: 2px; }
+.com-modo {
+  display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+  padding: 9px 10px; border-radius: 14px; border: none; background: none;
+  font-family: inherit; color: var(--ink); cursor: pointer;
+}
+.com-modo:hover { background: rgba(242,121,42,0.07); }
+.com-modo.on { background: #fff1e4; box-shadow: inset 0 0 0 2px var(--ink); }
+.com-modo-sel {
+  display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; text-align: left;
+  border: none; background: none; padding: 0; font-family: inherit; color: var(--ink); cursor: pointer;
+}
+.com-modo:focus-visible, .com-modo-sel:focus-visible, .com-ver:focus-visible { outline: 3px solid rgba(242,121,42,0.45); outline-offset: 2px; border-radius: 10px; }
+.com-radio { width: 17px; height: 17px; flex-shrink: 0; border-radius: 50%; border: 2px solid var(--ink); background: var(--cream); }
+.com-modo.on .com-radio { background: radial-gradient(circle, var(--accent) 45%, var(--cream) 50%); }
+.com-ver {
+  flex-shrink: 0; background: none; border: none; padding: 4px 2px; cursor: pointer; white-space: nowrap;
+  font-family: inherit; font-size: 12.5px; font-weight: 700; color: #c45f17;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.com-leer-vacio { padding: 6px 10px 2px; line-height: 1.45; }
+
+/* ── Panel "Ver comunidad" (ComunidadPanel) ──
+   .lateral = escritorio (desde la derecha), .hoja = móvil (desde abajo). */
+.cp-wrap {
+  --ink: #4a3622; --accent: #F2792A; --paper: #FBF5EC; --cream: #fffdf8; --sand: #f1e8d4;
+  --muted: rgba(74,54,34,0.6); --faint: rgba(74,54,34,0.14);
+  position: fixed; inset: 0; z-index: 900; font-family: 'Baloo 2', system-ui, sans-serif; color: var(--ink);
+}
+.cp-wrap * { box-sizing: border-box; }
+.cp-dim { position: absolute; inset: 0; background: rgba(74,54,34,0.34); }
+.cp-panel {
+  position: absolute; display: flex; flex-direction: column; background: var(--paper); border: 2px solid var(--ink);
+  overflow: hidden;
+}
+.cp-wrap.lateral .cp-panel { top: 0; right: 0; bottom: 0; width: min(470px, 100%); border-width: 0 0 0 2px; box-shadow: -8px 0 24px rgba(74,54,34,0.18); }
+.cp-wrap.hoja .cp-panel {
+  left: 0; right: 0; bottom: 0; max-height: calc(100dvh - 48px); border-width: 2px 0 0; border-radius: 24px 24px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.cp-grab { display: block; width: 44px; height: 5px; border-radius: 5px; background: rgba(74,54,34,0.25); margin: 9px auto 0; flex-shrink: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .cp-wrap.lateral .cp-panel { animation: cp-derecha .22s ease-out; }
+  .cp-wrap.hoja .cp-panel { animation: cp-arriba .22s ease-out; }
+}
+@keyframes cp-derecha { from { transform: translateX(40px); opacity: 0; } }
+@keyframes cp-arriba { from { transform: translateY(40px); opacity: 0; } }
+
+.cp-head { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px 14px; background: var(--cream); border-bottom: 2px solid var(--faint); flex-shrink: 0; }
+.cp-head h2 { margin: 0; font-size: 23px; font-weight: 800; line-height: 1.1; text-wrap: balance; }
+.cp-x { width: 36px; height: 36px; padding: 0; flex-shrink: 0; }
+.cp-body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 18px; }
+.cp-sec { display: flex; flex-direction: column; gap: 9px; }
+.cp-desc { margin: 0; font-size: 14.5px; line-height: 1.5; }
+
+.cp-lectura { display: flex; gap: 14px; align-items: center; }
+.cp-libro { font-weight: 800; font-size: 18px; line-height: 1.15; }
+.cp-encuentro { display: flex; gap: 12px; align-items: center; background: #fff1e4; border: 2px solid var(--ink); border-radius: 14px; padding: 10px 12px; }
+.cp-dia { width: 48px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; line-height: 1; padding: 5px 0; border: 2px solid var(--ink); border-radius: 10px; background: var(--cream); }
+.cp-dia b { font-size: 20px; }
+.cp-dia span { font-size: 10.5px; font-weight: 700; text-transform: uppercase; }
+.cp-enc-t { font-weight: 700; font-size: 14.5px; }
+.cp-enc-t::first-letter { text-transform: uppercase; }
+.cp-enc-l { font-size: 13.5px; color: var(--muted); font-weight: 600; white-space: pre-line; overflow-wrap: anywhere; }
+
+/* El camino */
+.cp-camino { position: relative; margin-inline: 10px; }
+.cp-linea { position: absolute; left: 0; right: 0; bottom: 12px; height: 6px; border-radius: 6px; background: repeating-linear-gradient(90deg, rgba(74,54,34,0.25) 0 10px, transparent 10px 16px); }
+.cp-hecho { position: absolute; left: 0; bottom: 12px; height: 6px; border-radius: 6px; background: var(--accent); }
+.cp-ficha { position: absolute; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.cp-ficha i, .cp-otros i, .cp-miembros i {
+  font-style: normal; width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; border: 2px solid var(--ink);
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12.5px; color: var(--ink);
+}
+.cp-ficha small { font-size: 10px; font-weight: 700; color: var(--muted); }
+.cp-ficha.yo i { outline: 2.5px solid var(--accent); outline-offset: 1.5px; }
+.cp-meta { position: absolute; right: -8px; bottom: -8px; font-size: 10.5px; font-weight: 700; color: var(--muted); }
+.cp-otros { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.cp-otros li { display: flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 600; }
+.cp-otros i { width: 24px; height: 24px; font-size: 11px; }
+
+/* Lecturas anteriores */
+.cp-estante { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; padding: 6px 10px 0; border-bottom: 6px solid #c9a77c; border-radius: 4px; }
+.cp-lomo { background: none; border: none; padding: 0; cursor: pointer; }
+.cp-lomo:focus-visible { outline: 3px solid rgba(242,121,42,0.45); outline-offset: 2px; border-radius: 6px; }
+
+/* Caja del moderador */
+.cp-mod { display: flex; flex-direction: column; gap: 9px; background: var(--cream); border: 2px dashed rgba(74,54,34,0.4); border-radius: 14px; padding: 12px; }
+.cp-codigo-fila { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px; }
+.cp-codigo { font-size: 16px; letter-spacing: .14em; user-select: all; }
+.cp-mod-acciones { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.cp-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: auto; padding-top: 6px; }
+.cp-salir { background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700; color: #b0412a; }
+.com-btn.cp-peligro { background: #b0412a; color: #fff; }
+
+.cp-bienvenida { display: flex; flex-direction: column; gap: 10px; background: #fff1e4; border: 2px solid var(--ink); border-radius: 16px; padding: 14px; }
+.cp-bienvenida h3 { margin: 0; font-size: 19px; font-weight: 800; }
+.cp-bienvenida p { margin: 0; font-size: 14px; line-height: 1.45; }
+.cp-ok { align-self: flex-end; }
+
+/* Vistas de gestión */
+.cp-sub { display: flex; flex-direction: column; gap: 14px; }
+.cp-form { display: flex; flex-direction: column; gap: 14px; }
+.cp-guardar { height: 44px; font-size: 15px; }
+.cp-aviso { color: #3f6b2c; }
+.cp-miembros { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.cp-miembros li { display: flex; align-items: center; gap: 10px; padding: 9px 2px; }
+.cp-miembros li + li { border-top: 1.5px solid var(--faint); }
+.cp-confirma { display: flex; gap: 4px; }
+
+/* Hoja "Leer como" (LeerComoSheet) */
+.cp-panel.lcs { padding: 0 12px calc(env(safe-area-inset-bottom) + 14px); gap: 6px; overflow-y: auto; }
+.cp-panel.lcs .com-dd-head { padding: 10px 8px 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .com-btn { transition: none; }
+}
