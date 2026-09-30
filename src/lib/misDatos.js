@@ -8,7 +8,7 @@
 // y en la tabla de la sección 2 de la política.
 import { supabase } from './supabase.js'
 
-// [clave en el JSON, tabla, columna que apunta al usuario]
+// [clave en el JSON, tabla, columna que apunta al usuario, columnas (opcional)]
 const FUENTES = [
   ['biblioteca',        'bibliotecas_usuarios',    'user_id'],
   ['progreso_lectura',  'progreso_lectura',        'user_id'],
@@ -21,6 +21,15 @@ const FUENTES = [
   ['album',             'album_barajitas_pegadas', 'user_id'],
   ['predicciones',      'predicciones_usuario',    'user_id'],
   ['preferencias',      'preferencias_usuario',    'user_id'],
+  // Comunidades (051–058)
+  ['comunidades_creadas',        'comunidades',          'creador_id'],
+  ['comunidades_miembro',        'comunidad_miembros',   'user_id'],
+  ['comentarios_comunidad',      'comentarios_lectura',  'autor_id'],
+  ['permiso_crear_comunidades',  'creadores_comunidad',  'user_id'],
+  // Solo los que TÚ enviaste: los recibidos son texto de otra persona (como el chat).
+  ['mensajitos_enviados',        'mensajitos',           'de_id'],
+  // Sin contenido_denunciado: es la copia del texto de otra persona.
+  ['denuncias_hechas',           'denuncias',            'denunciante_id', 'id, tipo, objeto_id, comunidad_id, motivo, estado, created_at'],
 ]
 
 export async function reunirMisDatos(user) {
@@ -42,12 +51,12 @@ export async function reunirMisDatos(user) {
     .from('perfiles').select('*').eq('id', user.id).maybeSingle()
   datos.perfil = perfil ?? null
 
-  // En paralelo: son once consultas independientes y cada una va por su
+  // En paralelo: son consultas independientes y cada una va por su
   // índice de user_id. Una tabla que falle no debe tumbar la descarga
   // entera, así que el error se anota en su propia clave.
   const resultados = await Promise.all(
-    FUENTES.map(([, tabla, columna]) =>
-      supabase.from(tabla).select('*').eq(columna, user.id)
+    FUENTES.map(([, tabla, columna, columnas = '*']) =>
+      supabase.from(tabla).select(columnas).eq(columna, user.id)
     )
   )
   FUENTES.forEach(([clave], i) => {
@@ -60,6 +69,9 @@ export async function reunirMisDatos(user) {
   // Se conservan un máximo de 90 días (Política de Privacidad, sección 4).
   datos._nota_chat =
     'Los mensajes de chat privado no se incluyen porque contienen también los mensajes de tu interlocutor. Se borran automáticamente a los 90 días.'
+  // Misma razón para los mensajitos recibidos y el texto de las denuncias.
+  datos._nota_comunidades =
+    'Se incluyen los mensajitos que enviaste, pero no los que recibiste, porque su texto es de otra persona. Por la misma razón, en tus denuncias no va la copia del texto denunciado.'
 
   return datos
 }

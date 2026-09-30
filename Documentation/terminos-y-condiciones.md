@@ -1,6 +1,6 @@
 # Términos y Condiciones de Inmersia
 
-**Última actualización:** 31 de agosto de 2026
+**Última actualización:** 30 de septiembre de 2026
 
 ---
 
@@ -31,6 +31,7 @@ Inmersia es una plataforma de lectura inmersiva. **Hoy todas sus funciones son g
 - **Cartelera de investigación** — contenido curado y análisis literario de cada obra.
 - **Foro de la comunidad** — comentarios públicos por libro.
 - **Chat privado** — conversaciones uno a uno entre lectores del mismo libro, **reservado a usuarios de 16 años o más** (ver 3.1).
+- **Comunidades de lectura** — grupos para leer un libro juntos. Pueden ser públicas o privadas (se entra con un código de invitación). Dentro del libro, los miembros dejan comentarios en los párrafos para toda la comunidad y **mensajitos** de una persona a otra, estos últimos **reservados a usuarios de 16 años o más**. Puedes estar en un máximo de 5 comunidades. Por ahora, crear comunidades solo está habilitado para algunas cuentas.
 - **Manual del Explorador** — guía de uso de la Plataforma.
 
 Sin cuenta puedes leer una **muestra de dos capítulos** de los libros del catálogo.
@@ -59,7 +60,7 @@ Inmersia podrá incorporar funcionalidades que utilicen inteligencia artificial.
 
 Para crear una cuenta debes tener al menos **14 años**.
 
-El **chat privado uno a uno** está reservado a usuarios de **16 años o más**, por tratarse de una conversación no supervisada entre dos personas. El resto de la Plataforma, incluido el foro público —que sí está moderado—, es accesible desde los 14.
+El **chat privado uno a uno** y los **mensajitos** de las comunidades están reservados a usuarios de **16 años o más**, por tratarse de un contacto no supervisado entre dos personas. El resto de la Plataforma, incluidos el foro público y los comentarios en las comunidades —que sí están moderados—, es accesible desde los 14.
 
 La edad se determina por la fecha de nacimiento que declaras al registrarte. Si declaras una edad falsa, podemos suspender o cancelar la cuenta.
 
@@ -67,7 +68,7 @@ La edad se determina por la fecha de nacimiento que declaras al registrarte. Si 
 
 Debes proporcionar un correo electrónico válido, una contraseña, tu nombre y apellido reales, tu fecha de nacimiento y tu género, y aceptar estos Términos y la Política de Privacidad.
 
-**Tu nombre y apellido serán visibles** para el resto de usuarios registrados: firman tus comentarios, tus reseñas y tu presencia en la sala de chat. Si no quieres que tu nombre real aparezca en la comunidad, no publiques en ella.
+**Tu nombre y apellido serán visibles** para el resto de usuarios registrados: firman tus comentarios, tus reseñas y tu presencia en la sala de chat. Dentro de una comunidad, sus miembros ven además tu avance en el libro de la comunidad (ver la Política de Privacidad, sección 2.5). Si no quieres que tu nombre real aparezca en la comunidad, no publiques en ella.
 
 La información que aportes debe ser veraz y estar actualizada. Podemos suspender cuentas con información falsa o engañosa.
 
@@ -111,9 +112,9 @@ Las notas de tu cuaderno y tus frases subrayadas son **tuyas y privadas**. Inmer
 
 Tus subrayados sí se utilizan de forma **agregada y anónima** para mostrar en la ficha de cada libro las frases más subrayadas por el conjunto de lectores. Ese recuento no revela quién subrayó qué.
 
-### 5.2 Reseñas y comentarios del foro
+### 5.2 Reseñas, comentarios del foro y comentarios en las comunidades
 
-Tus reseñas de libros y tus comentarios del foro son **visibles para los demás usuarios** y aparecen firmados con tu nombre y apellido. Al publicarlos:
+Tus reseñas de libros y tus comentarios del foro son **visibles para los demás usuarios** y aparecen firmados con tu nombre y apellido. Tus comentarios en el libro dentro de una comunidad solo los ven los miembros de esa comunidad, también firmados con tu nombre. Al publicarlos:
 
 - Afirmas que tienes derecho a compartir ese contenido.
 - Otorgas a Inmersia una licencia no exclusiva, mundial y gratuita para mostrarlo dentro de la Plataforma.
@@ -123,7 +124,7 @@ Conservas la propiedad de lo que escribes y puedes pedir que lo eliminemos.
 
 ### 5.3 Contenido prohibido
 
-Queda prohibido publicar —en el foro, en las reseñas o en el chat— contenido que:
+Queda prohibido publicar —en el foro, en las reseñas, en el chat, en las comunidades (nombre, descripción y comentarios) o en los mensajitos— contenido que:
 
 - Sea ilegal, difamatorio, acosador, amenazante u obsceno.
 - Infrinja derechos de propiedad intelectual de terceros.
@@ -141,9 +142,18 @@ Inmersia aloja el contenido que publican sus usuarios y no lo revisa antes de su
 - Cada usuario es el único responsable de lo que publica y de contar con los derechos necesarios para hacerlo.
 - Inmersia no responde frente a otros usuarios ni frente a terceros por el contenido publicado por un usuario, sin perjuicio de nuestra obligación de retirarlo cuando tengamos conocimiento efectivo de que es ilícito.
 
-Si ves contenido que consideras ilegal o contrario a estos Términos, repórtalo a **legal@inmersia.io**.
+Si ves contenido que consideras ilegal o contrario a estos Términos, repórtalo con el botón **Denunciar** (en los comentarios y mensajitos de las comunidades) o escribiendo a **legal@inmersia.io**.
 
-### 5.5 Notificación de infracción de derechos de autor
+### 5.5 Comunidades y moderación
+
+- Quien crea una comunidad es su **moderador** y responde de su nombre y su descripción. El moderador puede borrar comentarios de su comunidad y gestionar sus miembros. Si deja la comunidad o borra su cuenta, la moderación pasa a otro miembro.
+- **Los moderadores no pueden leer los mensajitos.** Un mensajito solo lo puede borrar quien lo recibe o Inmersia, tras una denuncia.
+- Los comentarios en las comunidades **no se responden**: son notas en el margen del libro, no una conversación.
+- Si sales de una comunidad, tus comentarios se quedan en ella. Puedes borrarlos antes de salir.
+- Las comunidades privadas lo son frente a otros usuarios, no frente a Inmersia: podemos revisar su contenido cuando recibimos una denuncia o para aplicar estos Términos.
+- Inmersia puede borrar contenido, sacar a una persona de una comunidad o cerrar una comunidad que incumpla estos Términos.
+
+### 5.6 Notificación de infracción de derechos de autor
 
 Si eres titular de derechos de propiedad intelectual (o representas a su titular) y consideras que un contenido publicado en Inmersia los infringe, escríbenos a **legal@inmersia.io** con el asunto *"Notificación de infracción de derechos de autor"*, indicando:
 
@@ -155,7 +165,7 @@ Si eres titular de derechos de propiedad intelectual (o representas a su titular
 
 Al recibir una notificación que cumpla estos requisitos retiraremos o bloquearemos el acceso al contenido con la mayor celeridad razonable, sin perjuicio de las acciones legales que correspondan. Podemos cancelar la cuenta de usuarios objeto de notificaciones reiteradas.
 
-### 5.6 Indemnización
+### 5.7 Indemnización
 
 Nos mantendrás indemnes frente a reclamaciones, daños o gastos razonables que se deriven de (i) el contenido que publiques, (ii) tu incumplimiento de estos Términos o (iii) la infracción de derechos de terceros por tu causa. Esta obligación no se aplica en la medida en que el daño no te sea imputable.
 
@@ -222,7 +232,7 @@ El uso continuado tras la entrada en vigor implica su aceptación. Si no los ace
 
 ### 11.1 Por tu parte
 
-Puedes eliminar tu cuenta cuando quieras desde **Perfil → Legal → Eliminar mi cuenta**. El borrado es inmediato e irreversible: se eliminan tu perfil, tu biblioteca, tu progreso, tus notas, tus subrayados, tus reseñas, tus comentarios, tus chats y tu álbum. Las copias de seguridad de nuestros proveedores se sobrescriben en un plazo máximo de 30 días.
+Puedes eliminar tu cuenta cuando quieras desde **Perfil → Legal → Eliminar mi cuenta**. El borrado es inmediato e irreversible: se eliminan tu perfil, tu biblioteca, tu progreso, tus notas, tus subrayados, tus reseñas, tus comentarios (también los de las comunidades), tus chats, tus mensajitos y tu álbum. Las comunidades que creaste siguen existiendo para sus miembros, con otro moderador. Las copias de seguridad de nuestros proveedores se sobrescriben en un plazo máximo de 30 días.
 
 Antes de borrar, puedes descargar tus datos desde el mismo lugar.
 

@@ -1,12 +1,12 @@
 # Política de Privacidad de Inmersia
 
-**Última actualización:** 31 de agosto de 2026
+**Última actualización:** 30 de septiembre de 2026
 
 ---
 
 ## 1. Quién es el responsable de tus datos
 
-Inmersia es una plataforma de lectura inmersiva que te permite leer libros, llevar un cuaderno de notas y subrayados, coleccionar barajitas en tu álbum, participar en el foro y el chat de la comunidad, escribir reseñas y explorar una cartelera de investigación literaria.
+Inmersia es una plataforma de lectura inmersiva que te permite leer libros, llevar un cuaderno de notas y subrayados, coleccionar barajitas en tu álbum, participar en el foro y el chat de la comunidad, leer en grupo con una comunidad de lectura, escribir reseñas y explorar una cartelera de investigación literaria.
 
 Inmersia no es todavía una empresa registrada. Mientras no lo sea, el responsable del tratamiento de tus datos es una persona física:
 
@@ -46,6 +46,10 @@ Los cinco son obligatorios: sin ellos no podemos crear la cuenta.
 | Comentarios en el foro | Permitir la participación en la comunidad |
 | Mensajes de chat privado | Prestar el servicio de chat; conservados un máximo de 90 días (ver 4) |
 | Álbum, barajitas y predicciones | Guardar tu progreso en el álbum y las predicciones que haces sobre cada libro |
+| Comunidades de lectura: las que creas, a las que perteneces y tu papel en ellas (miembro o moderador) | Leer en grupo, mostrar la comunidad a sus miembros y permitir su gestión (ver 2.5) |
+| Comentarios en el libro dentro de una comunidad | Mostrárselos a los miembros de esa comunidad en el párrafo donde los dejaste |
+| Mensajitos (notas de un miembro a otro dentro del libro) | Entregárselos a la persona a la que van dirigidos (ver 2.5 y 4) |
+| Denuncias que haces y copia del contenido denunciado | Revisar el contenido denunciado y moderar la comunidad (ver 2.6) |
 | Preferencias (color del gato, sonido, últimos libros, estado del tutorial) | Que la aplicación se comporte igual en todos tus dispositivos |
 
 ### 2.3 Datos de visitantes sin cuenta
@@ -64,12 +68,26 @@ Es importante que lo sepas antes de registrarte:
 
 - **Tu nombre y apellido son visibles** para cualquier usuario registrado de Inmersia: firman tus comentarios en el foro, tus reseñas y tu presencia en la sala de chat.
 - **Tus reseñas y comentarios del foro son públicos** dentro de la plataforma.
-- **Tus subrayados solo se muestran de forma agregada**, sumados a los del resto de lectores y sin identificar quién subrayó qué.
-- **Tu cuaderno de notas, tu progreso, tu biblioteca, tu álbum y tus mensajes privados no los ve nadie más que tú.**
+- **Tus subrayados solo se muestran de forma agregada**, sumados a los del resto de lectores y sin identificar quién subrayó qué. Tus subrayados y tus notas del cuaderno nunca se comparten con tu comunidad.
+- **Dentro de una comunidad de lectura**, los demás miembros ven:
+  - tu nombre y apellido, y si eres moderador;
+  - los comentarios que dejas en el libro, firmados con tu nombre;
+  - tu avance en el libro de la comunidad (en porcentaje) y cuándo leíste por última vez;
+  - si lo último que leíste es otro libro, cuál es y tu porcentaje en él.
+
+  Nunca ven el punto exacto donde vas, ni el resto de tu biblioteca. Quien no es miembro no ve nada de esto. De una comunidad pública, cualquier usuario registrado ve el nombre, el libro que lee y cuántos miembros tiene, pero no quiénes son.
+- **Los mensajitos solo los ven quien los escribe y quien los recibe.** Ni los moderadores de la comunidad pueden leerlos.
+- **Tu progreso fuera de las comunidades, tu cuaderno de notas, tu biblioteca, tu álbum y tus mensajes privados no los ve nadie más que tú.**
 
 Ni tu correo, ni tu fecha de nacimiento, ni tu género son visibles para otros usuarios.
 
-### 2.6 Datos analíticos (analytics)
+### 2.6 Moderación y denuncias en las comunidades
+
+Quien crea una comunidad es su moderador. Si deja la comunidad o borra su cuenta, la moderación pasa a otro miembro. El moderador puede borrar comentarios de la comunidad, pero no puede leer los mensajitos.
+
+Cualquier miembro puede denunciar un comentario o un mensajito que haya recibido. Al denunciar guardamos quién denuncia, qué se denuncia y **una copia del texto denunciado**, para poder revisarlo aunque su autor lo borre o se trate de un mensajito que se borra al leerlo. La denuncia la revisa el equipo de Inmersia; **la persona denunciada no sabe quién la denunció**.
+
+### 2.7 Datos analíticos (analytics)
 
 Usamos **PostHog** para entender cómo se usa la Plataforma: qué pantallas se visitan, qué libros se abren, en qué punto la gente abandona. Lo tenemos configurado **en modo sin cookies**, que es la versión más restrictiva que ofrece:
 
@@ -86,7 +104,7 @@ Como no se almacena nada en tu dispositivo, la normativa de cookies no nos oblig
 
 Tenemos previsto incorporar además **Sentry** (registro de errores) para detectar fallos. Antes de activarlo actualizaremos esta política.
 
-### 2.7 Uso de inteligencia artificial (previsto)
+### 2.8 Uso de inteligencia artificial (previsto)
 
 Actualmente Inmersia no utiliza inteligencia artificial para procesar tus datos. Si en el futuro incorporamos funcionalidades basadas en IA (recomendaciones más avanzadas, resúmenes, un asistente de lectura), podremos recurrir a proveedores externos.
 
@@ -100,6 +118,8 @@ Antes de activar cualquier funcionalidad de este tipo actualizaremos esta polít
 |---|---|
 | Cuenta, progreso, biblioteca, notas, subrayados, álbum y preferencias | Ejecución de un contrato (art. 6.1.b) |
 | Reseñas y comentarios del foro | Ejecución de un contrato (art. 6.1.b) |
+| Comunidades de lectura, comentarios en el libro, mensajitos y avance visible para los miembros | Ejecución de un contrato (art. 6.1.b) |
+| Denuncias y copia del contenido denunciado | Interés legítimo en la seguridad de la comunidad y la moderación de contenidos (art. 6.1.f) |
 | Nombre y apellido visibles en la comunidad | Ejecución de un contrato (art. 6.1.b) |
 | Mensajes de chat | Ejecución de un contrato y, para su retención temporal, interés legítimo en la seguridad y la moderación (art. 6.1.f) |
 | Fecha de nacimiento — comprobación de la edad mínima | Interés legítimo en no admitir a menores por debajo de la edad permitida (art. 6.1.f) |
@@ -119,6 +139,9 @@ Frente a cualquier tratamiento basado en interés legítimo tienes derecho de op
 |---|---|
 | Cuenta y todo lo asociado (progreso, notas, subrayados, biblioteca, álbum, reseñas) | Mientras la cuenta esté activa |
 | Comentarios del foro | Mientras la cuenta esté activa; puedes pedir que se eliminen antes |
+| Comunidades y comentarios en el libro | Mientras la cuenta esté activa. Si sales de una comunidad, tus comentarios se quedan en ella; puedes borrarlos tú antes de salir. Si borras tu cuenta, se borran con ella. Las comunidades que creaste siguen existiendo para sus miembros, sin tus datos |
+| Mensajitos | Hasta que quien lo recibe lo borra. Si al escribirlo marcas «Se borra cuando lo lea», se borra en cuanto la otra persona lo cierra. Se borran también si cualquiera de las dos cuentas se elimina |
+| Denuncias (con la copia del contenido denunciado) | Mientras estén pendientes de revisión y, una vez resueltas, **6 meses** desde que se resuelven. Un proceso automático diario borra las antiguas |
 | Mensajes de chat, sesiones de chat e historial de conversaciones | **Máximo 90 días** desde su envío. Un proceso automático diario borra todo lo anterior |
 | Eventos analíticos seudonimizados (PostHog) | Máximo 12 meses |
 | Datos agregados y anonimizados | Indefinido, porque ya no permiten identificarte |
@@ -144,7 +167,7 @@ Los correos de servicio (confirmación de cuenta, recuperación de contraseña) 
 
 ### 5.4 Analítica y errores
 
-**PostHog** (PostHog Inc., Estados Unidos) presta el servicio de analítica de producto como encargado del tratamiento. Usamos su nube europea: los datos se almacenan en Frankfurt (Alemania), sin cookies y sin perfiles de usuario, en los términos de la sección 2.6. Política de privacidad: [posthog.com/privacy](https://posthog.com/privacy).
+**PostHog** (PostHog Inc., Estados Unidos) presta el servicio de analítica de producto como encargado del tratamiento. Usamos su nube europea: los datos se almacenan en Frankfurt (Alemania), sin cookies y sin perfiles de usuario, en los términos de la sección 2.7. Política de privacidad: [posthog.com/privacy](https://posthog.com/privacy).
 
 **Sentry** (registro de errores) todavía no está activo. Cuando lo esté, actualizaremos este apartado.
 
@@ -173,7 +196,7 @@ Sobre tus datos personales tienes derecho a:
 - **Acceso** — obtener una copia de los datos que tenemos sobre ti.
 - **Rectificación** — corregir datos inexactos o incompletos. Nombre y apellido los puedes editar tú mismo en tu perfil.
 - **Supresión** — que borremos tus datos. En *Perfil → Legal* tienes el botón **Eliminar mi cuenta**, que ejecuta el borrado en el acto.
-- **Portabilidad** — recibir tus datos en un formato estructurado y legible por máquina. En *Perfil → Legal*, el botón **Descargar mis datos** te entrega un archivo JSON con tu perfil, tu biblioteca, tu progreso, tus notas, tus subrayados, tus reseñas y tus comentarios.
+- **Portabilidad** — recibir tus datos en un formato estructurado y legible por máquina. En *Perfil → Legal*, el botón **Descargar mis datos** te entrega un archivo JSON con tu perfil, tu biblioteca, tu progreso, tus notas, tus subrayados, tus reseñas, tus comentarios, tus comunidades, los mensajitos que enviaste y las denuncias que hiciste. No incluye los mensajes de chat, los mensajitos que recibiste ni la copia del texto que denunciaste, porque son textos de otras personas.
 - **Limitación** — pedir que restrinjamos el tratamiento.
 - **Oposición** — oponerte a los tratamientos basados en interés legítimo, incluido el análisis interno de la sección 2.4.
 - **Retirar el consentimiento** — cuando un tratamiento se base en él, sin que ello afecte a lo tratado antes.
@@ -188,7 +211,7 @@ También puedes reclamar ante una autoridad de control. La competente para nosot
 
 Inmersia está abierta a partir de los **14 años**.
 
-Como el chat privado uno a uno pone en contacto a dos personas sin supervisión, esa función concreta está reservada a los usuarios de **16 años o más**. El resto de la plataforma —lectura, cuaderno, álbum, reseñas y foro público, que sí está moderado— es accesible desde los 14.
+Como el chat privado uno a uno y los mensajitos de las comunidades ponen en contacto a dos personas sin supervisión, esas funciones están reservadas a los usuarios de **16 años o más**: un menor de 16 no puede enviar mensajitos ni recibirlos. El resto de la plataforma —lectura, cuaderno, álbum, reseñas, foro público y comentarios en las comunidades, que están moderados— es accesible desde los 14.
 
 La edad se comprueba con la fecha de nacimiento que declaras al registrarte. No recopilamos conscientemente datos de menores de 14 años; si detectamos una cuenta así, la eliminaremos con todos sus datos.
 
@@ -210,7 +233,7 @@ Inmersia **no usa cookies de rastreo, de terceros ni publicitarias**.
 
 Sí usamos el `localStorage` de tu navegador para cosas que solo tienen sentido en tu dispositivo: mantener la sesión iniciada, recordar tus preferencias de lectura y sonido, y el estado del tutorial. Esa información no sale de tu navegador y puedes borrarla vaciando los datos del sitio.
 
-Nuestra analítica (PostHog) está configurada expresamente para **no escribir cookies ni usar el almacenamiento del navegador**, por eso no verás un banner de consentimiento de cookies (sección 2.6). Si en el futuro incorporamos analítica que sí lo requiera, publicaremos un aviso y pediremos tu consentimiento antes de activarla.
+Nuestra analítica (PostHog) está configurada expresamente para **no escribir cookies ni usar el almacenamiento del navegador**, por eso no verás un banner de consentimiento de cookies (sección 2.7). Si en el futuro incorporamos analítica que sí lo requiera, publicaremos un aviso y pediremos tu consentimiento antes de activarla.
 
 ---
 
