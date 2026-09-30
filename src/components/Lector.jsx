@@ -24,6 +24,7 @@ import { NotebookIcon } from './lector/RecorderPlayer.jsx'
 import { Notebook }        from './lector/Notebook.jsx'
 import { theme, ClayButton, getReaderPalette } from './lector/clay.jsx'
 import SuperuserSoundsPanel from './lector/SuperuserSoundsPanel.jsx'
+import { useCapaEscritorio } from './comunidades/capa/CapaEscritorio.jsx'
 
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
 // Referencia estable para los capítulos sin subrayados: un [] nuevo en cada
@@ -461,6 +462,16 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     visibleSfx, handleNextPage, handleNextChapter, handlePrevPage, playSfx,
   ])
 
+  // Capa de comunidad (comentarios por párrafo y mensajitos). Nunca en modo
+  // invitado ni durante el tutorial.
+  const capa = useCapaEscritorio({
+    userId, libroId: book?.libro_id, capituloId: currentChapter?.id,
+    paginas: currentPaginas, pageIndex, doubleView,
+    deshabilitada: guestMode || onboarding.active,
+    medida: `${fontSize}|${readingFont}|${geom.pageW}|${geom.pageH}`,
+    noche: readingTheme === 'dark',
+  })
+
   const handleToggleView    = useCallback(() => setDoubleView(v => !v), [])
   const handleChapterSelect = useCallback((idx) => { setChapterIndex(idx); setPageIndex(0); setXrayOpen(false); setGoToLastPage(false) }, [])
 
@@ -609,6 +620,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   onLedColor={setLedColor}
                   esNoficcion={esNoficcion}
                   whiteNoise={whiteNoise}
+                  comunidadChip={capa.chip}
+                  renderCapa={capa.activa ? capa.renderHoja : null}
                 />
           )}
         </div>
@@ -737,6 +750,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
           onClose={() => setAdminPanelOpen(false)}
         />
       )}
+
+      {/* Capa de comunidad: hilo, mensajito o formulario abierto */}
+      {capa.flotante}
 
       {/* Onboarding (paso 'manual'): recuerda que las instrucciones están en el libro */}
       {tutorialManual && !manualHintVisto && (

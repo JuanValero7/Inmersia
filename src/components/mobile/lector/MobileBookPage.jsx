@@ -3,7 +3,7 @@ import { marcasDelParrafo } from '../../../utils/readerHelpers.js'
 const LINE = 1.72  // alto de línea (coincide con .lm-para en el CSS)
 
 export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaByParrafo, subrayados = [], isFirst, pageNum, fontSize, font,
-                    atStart, nextIsChapter, onPrev, onNext, hideArrows, onPlaySfx }) {
+                    atStart, nextIsChapter, onPrev, onNext, hideArrows, onPlaySfx, overlay = null }) {
   const lineH = Math.round(fontSize * LINE)
 
   return (
@@ -54,6 +54,8 @@ export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaB
           </div>
         </>
       )}
+      {/* capa de comunidad: superpuesta, por encima de las zonas de pasar página */}
+      {overlay}
     </div>
   )
 }

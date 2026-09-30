@@ -41,6 +41,7 @@ import { useAmbientPlayer } from '../../hooks/useAmbientPlayer.js'
 import { useWhiteNoise } from '../../hooks/useWhiteNoise.js'
 import { AMBIENTE_FICCION_ACTIVO } from '../lector/readerConstants.js'
 import MobileBookPage from './lector/MobileBookPage.jsx'
+import { useCapaMovil } from '../comunidades/capa/CapaMovil.jsx'
 import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, FotoAsomada, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
 import '../../styles/lector.mobile.css'
 
@@ -572,12 +573,24 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     }
   }
 
+  // Capa de comunidad (comentarios por párrafo y mensajitos). Nunca en modo
+  // invitado ni durante el tutorial. Elegir párrafo apaga el modo subrayado.
+  const capa = useCapaMovil({
+    userId, libroId: book?.libro_id, capituloId: currentChapter?.id,
+    paginas, pageIndex,
+    deshabilitada: guestMode || onboarding.active,
+    medida: `${fontSize}|${readingFont}`,
+    noche: readingTheme === 'dark',
+    onAntesDeElegir: () => { if (modoSubrayado) descartarSubrayado(); setCatOpen(false) },
+  })
+
   const CAT_ITEMS = [
     // Audio: en ficción está oculto (ver AMBIENTE_FICCION_ACTIVO); en no ficción
     // abre el ruido ambiental.
     ...(esNoficcion || AMBIENTE_FICCION_ACTIVO ? [{ key: 'audio', label: 'Audio', icon: <CassetteIcon />, act: () => setSheet('audio') }] : []),
     ...(!guestMode ? [{ key: 'cuaderno', label: 'Cuaderno', icon: <SpiralNotebookIcon />, act: openNotebook }] : []),
     ...(!guestMode ? [{ key: 'subrayar', label: modoSubrayado ? 'Apagar ✏' : 'Subrayar', icon: <HighlighterIcon active={modoSubrayado} />, act: activarModoSubrayado }] : []),
+    ...(capa.herramienta ? [capa.herramienta] : []),
   ]
 
   const page = paginas[pageIndex] || []
@@ -613,6 +626,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
           <span className="lm-ctrl-label">Cap. {currentChapter?.numero ?? chapterIndex + 1}{currentChapter?.titulo ? ` · ${currentChapter.titulo}` : ''}</span>
           <span className="chev">{tutorialManual ? '🔒' : '▼'}</span>
         </button>
+        {capa.chip}
         <button className="lm-ctrl xray" onClick={() => setSheet('xray')} title="X-ray">X-ray</button>
         <button className="lm-ctrl typo" onClick={() => setSheet('typo')} title="Texto">
           <span className="a-sm">A</span><span className="a-lg">A</span>
@@ -637,6 +651,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
                 onNext={atEndOfBook && !guestMode ? undefined : handleNext}
                 hideArrows={modoSubrayado}
                 onPlaySfx={playSfx}
+                overlay={capa.overlay}
               />
         )}
 
@@ -681,6 +696,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         )}
 
       </div>
+
+      {/* Capa de comunidad: aviso, banner de elegir párrafo y sus hojas */}
+      {capa.capas}
 
       {/* Sheet de confirmación de subrayado */}
       {pendingConfirm && (

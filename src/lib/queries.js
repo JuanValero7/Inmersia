@@ -31,6 +31,11 @@ export const queryKeys = {
   comunidadActiva: (userId) => ['comunidadActiva', userId],
   progresoComunidad: (id) => ['progresoComunidad', id],
   lecturasAnteriores: (id) => ['lecturasAnteriores', id],
+  // Capa de comunidad en el lector (ver src/hooks/useCapaComunidad.js)
+  comunidadesDelLibro: (userId, libroId, mias) => ['comunidadesDelLibro', userId, libroId, mias],
+  miembrosCapa: (comunidadId) => ['miembrosCapa', comunidadId],
+  comentariosCapa: (comunidadId, capituloId) => ['comentariosCapa', comunidadId, capituloId],
+  mensajitosCapa: (comunidadId, libroId, userId) => ['mensajitosCapa', comunidadId, libroId, userId],
 }
 
 // perfiles.nombre/apellido — Biblioteca (saludo) y Perfil (formulario)

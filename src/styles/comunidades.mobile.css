@@ -53,3 +53,53 @@
 .comm-sheet h2 { margin: 0; font-size: 20px; font-weight: 800; }
 .comm-sheet p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
 .comm-grab { width: 44px; height: 5px; border-radius: 5px; background: rgba(74,54,34,0.25); margin: 0 auto 4px; }
+
+/* =============================================================
+   CAPA DE COMUNIDAD EN EL LECTOR · móvil (CapaMovil.jsx)
+   Las piezas comunes (cl-*) vienen de comunidades.css; aquí solo
+   el chip, el aviso y el tamaño táctil de las hojas.
+   ============================================================= */
+
+/* chip solo-ícono en la fila de controles */
+.lm-ctrl.cl-chip-m { position: relative; padding: 6px 10px; flex-shrink: 0; }
+.lm-ctrl.cl-chip-m.on { background: var(--ink); color: #fdf6e6; }
+.lm-ctrl.cl-chip-m .cl-punto {
+  position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%;
+  background: #F2792A; border: 2px solid #fffdf8;
+}
+
+/* aviso la primera vez ("también leyó este libro") */
+.cl-aviso-m {
+  position: absolute; left: 12px; right: 12px; top: calc(max(env(safe-area-inset-top), 12px) + 108px); z-index: 60;
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 14px;
+  background: #4a3622; color: #fdf6e6; font-size: 12px; font-weight: 700; line-height: 1.35;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.3); animation: lm-fade .2s ease;
+}
+.cl-aviso-m b { color: #ffc58f; }
+.cl-aviso-m button {
+  flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; border: 0;
+  background: rgba(255,255,255,0.14); color: #fdf6e6; font-size: 12px;
+}
+
+/* hojas: siempre claras, también con la hoja en modo Noche */
+.lm-sheet.cl-sheet { background: #FBF5EC; }
+.cl-sheet .lm-sheet-title { color: #4a3622; }
+.cl-sheet-sub { display: block; font-style: normal; font-size: 11px; font-weight: 600; color: rgba(74,54,34,0.55); }
+.cl-sheet-body { padding: 2px 20px 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.cl-sheet-pie {
+  display: flex; gap: 9px; padding: 10px 20px 20px; border-top: 1.5px solid rgba(74,54,34,0.1); flex-shrink: 0;
+}
+.cl-sheet .cl-elegir { padding: 4px 0 8px; }
+.cl-sheet .cl-elegir .sub { font-size: 10.5px; font-weight: 600; color: rgba(74,54,34,0.55); line-height: 1.3; text-align: center; }
+.cl-sheet .cl-cuerpo { font-size: 13.5px; line-height: 1.6; }
+.cl-sheet .cl-ta { height: 110px; font-size: 14px; padding: 11px 13px; border-radius: 13px; }
+.cl-sheet .cl-cita { font-size: 14px; }
+.cl-sheet .cl-flecha { width: 36px; height: 36px; font-size: 16px; }
+.cl-sheet .cl-pick { padding: 5px 13px 5px 5px; font-size: 12.5px; }
+.cl-sheet .cl-fila-m { padding: 11px 12px; }
+.cl-sheet .cl-fila-t { font-size: 12.5px; }
+.cl-sheet .cl-opt { font-size: 13px; padding: 5px 0; }
+.cl-sheet .cl-pie { padding-top: 12px; }
+.cl-btn.grande { flex: 1; padding: 12px 4px; font-size: 13px; border-width: 2px; }
+.cl-sheet .cl-pie .cl-btn.primario { margin-left: 0; }
+.cl-sheet .cl-x, .cl-sheet .cl-mas { width: 34px; height: 34px; }

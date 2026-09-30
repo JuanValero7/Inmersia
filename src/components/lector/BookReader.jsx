@@ -244,7 +244,9 @@ function SideTurn({ side, onClick, kind, pal = getReaderPalette('light') }) {
   )
 }
 
-const Leaf = memo(function Leaf({ parrafos, side, pageNum, fontSize, readingFont, pageW, pageH, mediaByParrafo, subrayados, onPlaySfx, onTextSelect, onPrev, onNext, nextKind, chapterTitle, chapterNum, isFirst, empty, pal = getReaderPalette('light') }) {
+// `overlay`: capa superpuesta a la hoja (la de la comunidad). Va encima de
+// las zonas de pasar página, pero fuera del flujo del texto.
+const Leaf = memo(function Leaf({ parrafos, side, pageNum, fontSize, readingFont, pageW, pageH, mediaByParrafo, subrayados, onPlaySfx, onTextSelect, onPrev, onNext, nextKind, chapterTitle, chapterNum, isFirst, empty, overlay = null, pal = getReaderPalette('light') }) {
   const radius = side === 'left' ? '5px 2px 2px 5px' : side === 'right' ? '2px 5px 5px 2px' : '5px'
   const innerShadow = side === 'left' ? 'inset -16px 0 26px -14px rgba(60,35,12,0.38)' : side === 'right' ? 'inset 16px 0 26px -14px rgba(60,35,12,0.30)' : 'none'
   const pad = Math.round(pageW * 0.11)
@@ -259,6 +261,7 @@ const Leaf = memo(function Leaf({ parrafos, side, pageNum, fontSize, readingFont
       {pageNum && <div style={{ position: 'absolute', bottom: 20, [side === 'right' ? 'right' : 'left']: pad, fontSize: 11, color: pal.pageMeta, fontFamily: "'Playfair Display', serif" }}>{pageNum}</div>}
       {(side === 'left' || side === 'single') && onPrev && <SideTurn side="left" onClick={onPrev} kind="prev" pal={pal} />}
       {(side === 'right' || side === 'single') && onNext && <SideTurn side="right" onClick={onNext} kind={nextKind} pal={pal} />}
+      {overlay}
     </div>
   )
 })
@@ -272,6 +275,7 @@ export const BookReader = memo(function BookReader({
   xrayOpen = false, xrayItems = [], onToggleXray, onXrayItemClick, xrayLocked = false,
   ambient = null, ledColor = 'none', onLedColor = null, esNoficcion = false,
   whiteNoise = null, chapterLocked = false,
+  comunidadChip = null, renderCapa = null,
 }) {
   const [soundOpen, setSoundOpen] = useState(false)
   const soundRef = useRef(null)
@@ -330,6 +334,7 @@ export const BookReader = memo(function BookReader({
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 'auto' }}>
+          {comunidadChip}
           {/* X-ray */}
           <div ref={xrayRef} style={{ position: 'relative' }}>
             <button type="button" onClick={onToggleXray}
@@ -374,10 +379,10 @@ export const BookReader = memo(function BookReader({
 
       <div className="book-shadow" style={{ display: 'flex', position: 'relative', filter: bookFilter }}>
         {doubleView && <div style={edge('5px 0 0 5px')} />}
-        <Leaf parrafos={left} side={doubleView ? 'left' : 'single'} pageNum={pageIndex + 1} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onPrev={onPrevPage} onNext={!doubleView ? (isLast ? onNextChapter : onNextPage) : undefined} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={pageIndex === 0} chapterTitle={chapter.titulo} chapterNum={chapter.numero ?? chapterIndex + 1} pal={pal} />
+        <Leaf parrafos={left} side={doubleView ? 'left' : 'single'} pageNum={pageIndex + 1} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onPrev={onPrevPage} onNext={!doubleView ? (isLast ? onNextChapter : onNextPage) : undefined} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={pageIndex === 0} chapterTitle={chapter.titulo} chapterNum={chapter.numero ?? chapterIndex + 1} overlay={renderCapa?.(pageIndex, doubleView ? 'izq' : 'der')} pal={pal} />
         {doubleView && <div style={{ width: 20, height: pageH, background: 'linear-gradient(to right, rgba(0,0,0,0.34) 0%, rgba(90,55,20,0.12) 45%, rgba(0,0,0,0.28) 100%)', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.42)', flexShrink: 0 }} />}
         {doubleView && (
-          <Leaf parrafos={right} side="right" pageNum={showRight ? pageIndex + 2 : ''} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onNext={isLast ? onNextChapter : onNextPage} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={false} empty={!showRight} pal={pal} />
+          <Leaf parrafos={right} side="right" pageNum={showRight ? pageIndex + 2 : ''} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onNext={isLast ? onNextChapter : onNextPage} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={false} empty={!showRight} overlay={showRight ? renderCapa?.(pageIndex + 1, 'der') : null} pal={pal} />
         )}
         <div style={edge('0 5px 5px 0')} />
       </div>
