@@ -36,6 +36,8 @@ export const queryKeys = {
   miembrosCapa: (comunidadId) => ['miembrosCapa', comunidadId],
   comentariosCapa: (comunidadId, capituloId) => ['comentariosCapa', comunidadId, capituloId],
   mensajitosCapa: (comunidadId, libroId, userId) => ['mensajitosCapa', comunidadId, libroId, userId],
+  // Denuncias (ver src/hooks/useDenuncias.js)
+  denuncias: (pendientes) => ['denuncias', pendientes],
 }
 
 // perfiles.nombre/apellido — Biblioteca (saludo) y Perfil (formulario)

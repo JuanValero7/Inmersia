@@ -19,6 +19,7 @@ import {
 import { FilaResultado, IconoComunidad, IconoLupa, Sello, MetaComunidad, useDebounced } from './comunidadesShared.jsx'
 import { CrearComunidadModal } from './CrearComunidad.jsx'
 import '../../styles/comunidades.css'
+import { ModalDenunciaComunidad } from './DenunciarComunidad.jsx'
 
 // onVerComunidad(id, bienvenida?): abre el panel. `bienvenida` va tras
 // crear ({ privada, codigo }) para mostrar la tarjeta con el código.
@@ -34,7 +35,8 @@ export default function ComunidadesMenu({ user, onVerComunidad }) {
   // Cerrar al hacer clic fuera o con Escape.
   useEffect(() => {
     if (!abierto) return
-    const fuera = (e) => { if (cajaRef.current && !cajaRef.current.contains(e.target)) cerrar() }
+    // La ventanita de denunciar vive en un portal: no cuenta como "fuera".
+    const fuera = (e) => { if (cajaRef.current && !cajaRef.current.contains(e.target) && !e.target.closest?.('.dn-modal')) cerrar() }
     const esc = (e) => { if (e.key === 'Escape') cerrar() }
     document.addEventListener('mousedown', fuera)
     document.addEventListener('keydown', esc)
@@ -189,6 +191,7 @@ function Buscar({ user, onEntrar, onVolver }) {
   const [error, setError] = useState(null)
   const textoDebounced = useDebounced(texto)
   const { data: resultados = [], isLoading, isError } = useBuscarComunidadesQuery(textoDebounced)
+  const [denunciando, setDenunciando] = useState(null)
 
   const unirseA = async (id) => {
     setError(null)
@@ -199,6 +202,7 @@ function Buscar({ user, onEntrar, onVolver }) {
 
   return (
     <div className="com-block com-dd-vista">
+      {denunciando && <ModalDenunciaComunidad user={user} c={denunciando} onClose={() => setDenunciando(null)} />}
       <CabeceraVista titulo="Buscar comunidades" onVolver={onVolver} />
       <span className="com-input">
         <IconoLupa />
@@ -210,7 +214,7 @@ function Buscar({ user, onEntrar, onVolver }) {
           : isError ? <p className="com-dd-msg">No pudimos buscar. Revisa tu conexión.</p>
           : resultados.length === 0 ? <p className="com-dd-msg">{texto.trim() ? 'Ninguna comunidad pública coincide.' : 'Todavía no hay comunidades públicas.'}</p>
           : resultados.map(c => (
-              <FilaResultado key={c.id} c={c} onUnirse={unirseA} onOpen={onEntrar} pendiente={pendiente} enTope={enTope} />
+              <FilaResultado key={c.id} c={c} onUnirse={unirseA} onOpen={onEntrar} pendiente={pendiente} enTope={enTope} onDenunciar={setDenunciando} />
             ))}
       </div>
       {error && <p className="com-error" role="alert">{error}</p>}

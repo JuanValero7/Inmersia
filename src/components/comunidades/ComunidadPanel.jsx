@@ -20,6 +20,7 @@ import {
 } from './comunidadesShared.jsx'
 import { Campo, CamposFechaEncuentro, LibroElegido, SelectorLibro } from './CrearComunidad.jsx'
 import '../../styles/comunidades.css'
+import { FormDenunciaComunidad } from './DenunciarComunidad.jsx'
 
 const NOMBRE_MAX = 60
 const DESC_MAX = 500
@@ -47,6 +48,11 @@ export default function ComunidadPanel({ user, comunidadId, bienvenida = null, m
   else if (vista === 'codigo') cuerpo = <Codigo c={c} user={user} onVolver={volver} />
   else if (vista === 'miembros') cuerpo = <Miembros c={c} user={user} onVolver={volver} />
   else if (vista === 'salir') cuerpo = <Salir c={c} user={user} onVolver={volver} onFuera={onClose} />
+  else if (vista === 'denunciar') cuerpo = (
+    <Subvista titulo="Denunciar la comunidad" onVolver={volver}>
+      <FormDenunciaComunidad user={user} c={c} onCancelar={volver} onListo={volver} />
+    </Subvista>
+  )
 
   return createPortal(
     <div className={'cp-wrap ' + modo}>
@@ -127,7 +133,10 @@ function Resumen({ c, user, bienvenida, onVista, onLeerLibro }) {
       )}
 
       <footer className="cp-foot">
-        <button type="button" className="cp-salir" onClick={() => onVista('salir')}>Salir de la comunidad</button>
+        <span className="cp-foot-izq">
+          <button type="button" className="cp-salir" onClick={() => onVista('salir')}>Salir de la comunidad</button>
+          {c.rol !== 'moderador' && <button type="button" className="cp-denunciar" onClick={() => onVista('denunciar')}>Denunciar</button>}
+        </span>
         {c.libroId && <button type="button" className="com-btn solid" onClick={() => leer(c.libroId)}>Leer con el club</button>}
       </footer>
     </>

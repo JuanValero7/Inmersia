@@ -22,11 +22,13 @@ import { usePerfilData } from '../hooks/usePerfilData.js'
 import { descargarMisDatos } from '../lib/misDatos.js'
 import { useOnboarding } from '../context/onboarding.jsx'
 import LegalModal from './legal/LegalModal.jsx'
+import SecDenuncias from './comunidades/SecDenuncias.jsx'
+import { useDenunciasQuery } from '../hooks/useDenuncias.js'
 import { tint } from './lector/clay.jsx'
 import '../styles/perfil.css'
 
 // ── Color de barra por sección (acuarela derivada de la paleta) ──
-export const SEC_COLOR = { datos: '#7C8A4F', seguridad: '#2F4A6B', transac: '#d9a05a', historial: '#cf8ea4', legal: '#2B1616' }
+export const SEC_COLOR = { datos: '#7C8A4F', seguridad: '#2F4A6B', transac: '#d9a05a', historial: '#cf8ea4', legal: '#2B1616', denuncias: '#8a3a2a' }
 
 export function washBg(base) {
   return [
@@ -50,6 +52,7 @@ export const I = {
   logout:    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" strokeLinecap="round"/><polyline points="16 17 21 12 16 7" strokeLinecap="round" strokeLinejoin="round"/><line x1="21" y1="12" x2="9" y2="12" strokeLinecap="round"/></svg>,
   receipt:   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 3v18l2-1.4 2 1.4 2-1.4 2 1.4 2-1.4 2 1.4V3l-2 1.4L15 3l-2 1.4L11 3 9 4.4 7 3 5 4.4z" strokeLinejoin="round"/><path d="M9 9h6M9 13h6" strokeLinecap="round"/></svg>,
   legal:     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1"><path d="M12 3v18M7 6h10M4.5 6L2 11c0 1.7 1.3 3 3 3s3-1.3 3-3L5.5 6M18.5 6L16 11c0 1.7 1.3 3 3 3s3-1.3 3-3L19.5 6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  denuncias: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1"><path d="M5 21V4h11l-1.5 4L16 12H5" strokeLinejoin="round" strokeLinecap="round"/></svg>,
 }
 
 // "transac" e "historial" ocultas a pedido del usuario hasta que tengan datos reales
@@ -59,7 +62,12 @@ export const NAV = [
   { id: 'seguridad', label: 'Seguridad',     icon: I.seguridad },
   { id: 'legal',     label: 'Legal',         icon: I.legal },
 ]
-export const TITLES = { datos: 'Datos de perfil', seguridad: 'Seguridad', transac: 'Transacciones', historial: 'Historial de lectura', legal: 'Legal' }
+export const TITLES = { datos: 'Datos de perfil', seguridad: 'Seguridad', transac: 'Transacciones', historial: 'Historial de lectura', legal: 'Legal', denuncias: 'Denuncias' }
+
+// Solo el superusuario ve "Denuncias" (revisión de lo denunciado en las
+// comunidades, migración 060).
+export const NAV_DENUNCIAS = { id: 'denuncias', label: 'Denuncias', icon: I.denuncias }
+export function navDe(isSuperuser) { return isSuperuser ? [...NAV, NAV_DENUNCIAS] : NAV }
 
 // Datos de ejemplo — SOLO para previsualizar el layout. Reemplazar
 // por queries reales cuando definas las tablas de transacciones/historial.
@@ -384,7 +392,7 @@ export function SecLegal({ user, onSignOut }) {
 }
 
 // ════════════════════ Componente principal ══════════════════
-export default function Perfil({ user, gatoColor, onChangeGatoColor, onGoBack, onSignOut }) {
+export default function Perfil({ user, isSuperuser = false, gatoColor, onChangeGatoColor, onGoBack, onSignOut }) {
   const onboarding = useOnboarding()
   // Lógica de datos compartida con PerfilMobile (ver src/hooks/usePerfilData.js)
   const {
@@ -395,6 +403,7 @@ export default function Perfil({ user, gatoColor, onChangeGatoColor, onGoBack, o
   } = usePerfilData(user)
 
   const navBg = useMemo(() => washBg(SEC_COLOR[sec]), [sec])
+  const pendientes = useDenunciasQuery(true, isSuperuser).data?.length || 0
 
   return (
     <div className="pf-page">
@@ -432,9 +441,10 @@ export default function Perfil({ user, gatoColor, onChangeGatoColor, onGoBack, o
           <div className="pf-grain"></div>
           <div className="pf-vignette"></div>
           <div className="pf-nav-list">
-            {NAV.map(n => (
+            {navDe(isSuperuser).map(n => (
               <button key={n.id} className={clsx('pf-nav-item', sec === n.id && 'is-active')} onClick={() => setSec(n.id)}>
                 {n.icon}{n.label}
+                {n.id === 'denuncias' && pendientes > 0 && <span className="dn-nav-n">{pendientes}</span>}
               </button>
             ))}
           </div>
@@ -459,6 +469,7 @@ export default function Perfil({ user, gatoColor, onChangeGatoColor, onGoBack, o
             {sec === 'transac' && <SecTransac/>}
             {sec === 'historial' && <SecHistorial/>}
             {sec === 'legal' && <SecLegal user={user} onSignOut={onSignOut}/>}
+            {sec === 'denuncias' && isSuperuser && <SecDenuncias/>}
           </div>
         </section>
       </div>

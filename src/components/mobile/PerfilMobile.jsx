@@ -19,14 +19,17 @@
 import React, { useMemo } from 'react'
 import {
   SecDatos, SecSeguridad, SecTransac, SecHistorial, SecLegal,
-  NAV, TITLES, SEC_COLOR, washBg, I,
+  TITLES, SEC_COLOR, washBg, I, navDe,
 } from '../Perfil.jsx'                 // ← sub-vistas + helpers REUTILIZADOS (¡mayúscula!)
 import { usePerfilData } from '../../hooks/usePerfilData.js'  // ← lógica de datos compartida
 import { useOnboarding } from '../../context/onboarding.jsx'
+import SecDenuncias from '../comunidades/SecDenuncias.jsx'
+import { useDenunciasQuery } from '../../hooks/useDenuncias.js'
 import '../../styles/perfil.css'        // base .pf-* (lo usan las sub-vistas)
 import '../../styles/perfil.mobile.css'           // overrides + chrome mobile .pm-*
 
-export default function PerfilMobile({ user, gatoColor, onChangeGatoColor, onGoBack, onSignOut }) {
+export default function PerfilMobile({ user, isSuperuser = false, gatoColor, onChangeGatoColor, onGoBack, onSignOut }) {
+  const pendientes = useDenunciasQuery(true, isSuperuser).data?.length || 0
   const onboarding = useOnboarding()
   // — MISMA lógica de datos que Perfil.jsx (ver src/hooks/usePerfilData.js) —
   const {
@@ -78,9 +81,10 @@ export default function PerfilMobile({ user, gatoColor, onChangeGatoColor, onGoB
 
       {/* ── Selector de secciones ── */}
       <div className="pm-tabs">
-        {NAV.map(n => (
+        {navDe(isSuperuser).map(n => (
           <button key={n.id} type="button" className={'pm-tab' + (sec === n.id ? ' active' : '')} onClick={() => setSec(n.id)}>
             {n.icon}{n.label}
+            {n.id === 'denuncias' && pendientes > 0 && <span className="dn-nav-n">{pendientes}</span>}
           </button>
         ))}
       </div>
@@ -100,6 +104,7 @@ export default function PerfilMobile({ user, gatoColor, onChangeGatoColor, onGoB
           {sec === 'transac'   && <SecTransac />}
           {sec === 'historial' && <SecHistorial />}
           {sec === 'legal'     && <SecLegal user={user} onSignOut={onSignOut} />}
+          {sec === 'denuncias' && isSuperuser && <SecDenuncias />}
 
           <button type="button" className="pm-logout" style={{ marginTop: 24 }} onClick={onboarding.restart}>{I.datos} Repetir tutorial</button>
           <button type="button" className="pm-logout" style={{ marginTop: 12 }} onClick={onSignOut}>{I.logout} Cerrar sesión</button>

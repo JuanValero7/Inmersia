@@ -436,6 +436,7 @@ export default function App() {
             <Route path="/perfil" element={
               <Perfil
                 user={user}
+                isSuperuser={isSuperuser}
                 gatoColor={gatoColor}
                 onChangeGatoColor={updateGatoColor}
                 onGoBack={() => navigate('/biblioteca')}

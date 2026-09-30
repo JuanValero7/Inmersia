@@ -17,6 +17,7 @@ import { FilaMiComunidad, FilaResultado, IconoLupa, useDebounced } from '../comu
 import { CrearComunidadPantalla } from '../comunidades/CrearComunidad.jsx'
 import '../../styles/comunidades.css'
 import '../../styles/comunidades.mobile.css'
+import { ModalDenunciaComunidad } from '../comunidades/DenunciarComunidad.jsx'
 
 const TITULOS = { inicio: 'Comunidades', buscar: 'Buscar', crear: 'Crear comunidad' }
 
@@ -88,7 +89,7 @@ export default function ComunidadesMobile({ user, vistaInicial = null, onGoBack,
           </div>
         </div>
       ) : vista === 'buscar' ? (
-        <Buscar enTope={enTope} unirseApi={unirseApi} onOpen={entrar} />
+        <Buscar user={user} enTope={enTope} unirseApi={unirseApi} onOpen={entrar} />
       ) : (
         <CrearComunidadPantalla user={user} eligiendo={eligiendoLibro} setEligiendo={setEligiendoLibro}
           onCreada={({ id, privada, codigo }) => entrar(id, { privada, codigo })} />
@@ -102,12 +103,13 @@ export default function ComunidadesMobile({ user, vistaInicial = null, onGoBack,
   )
 }
 
-function Buscar({ enTope, unirseApi, onOpen }) {
+function Buscar({ user, enTope, unirseApi, onOpen }) {
   const { unirse, pendiente } = unirseApi
   const [texto, setTexto] = useState('')
   const [error, setError] = useState(null)
   const textoDebounced = useDebounced(texto)
   const { data: resultados = [], isLoading, isError } = useBuscarComunidadesQuery(textoDebounced)
+  const [denunciando, setDenunciando] = useState(null)
 
   const unirseA = async (id) => {
     setError(null)
@@ -118,6 +120,7 @@ function Buscar({ enTope, unirseApi, onOpen }) {
 
   return (
     <div className="comm-body">
+      {denunciando && <ModalDenunciaComunidad user={user} c={denunciando} onClose={() => setDenunciando(null)} />}
       <span className="com-input">
         <IconoLupa />
         <input value={texto} placeholder="Nombre de la comunidad o del libro" autoComplete="off"
@@ -128,7 +131,7 @@ function Buscar({ enTope, unirseApi, onOpen }) {
           : isError ? <p className="com-dd-msg">No pudimos buscar. Revisa tu conexión.</p>
           : resultados.length === 0 ? <p className="com-dd-msg">{texto.trim() ? 'Ninguna comunidad pública coincide.' : 'Todavía no hay comunidades públicas.'}</p>
           : resultados.map(c => (
-              <FilaResultado key={c.id} c={c} onUnirse={unirseA} onOpen={onOpen} pendiente={pendiente} enTope={enTope} />
+              <FilaResultado key={c.id} c={c} onUnirse={unirseA} onOpen={onOpen} pendiente={pendiente} enTope={enTope} onDenunciar={setDenunciando} />
             ))}
       </div>
       {error && <p className="com-error" role="alert">{error}</p>}

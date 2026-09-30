@@ -3,6 +3,7 @@
 // provisional de una comunidad. Los estilos van en comunidades.css.
 import { useState, useEffect } from 'react'
 import { imgUrl } from '../../lib/img.js'
+import { MasDenunciar } from './DenunciarComunidad.jsx'
 
 // Valor con retraso, para no lanzar una búsqueda por cada tecla.
 export function useDebounced(value, ms = 300) {
@@ -64,7 +65,8 @@ export function FilaMiComunidad({ c, onOpen }) {
 // Fila de resultado del buscador, con su botón a la derecha.
 //   · ya soy miembro → "Entrar"
 //   · llegué al tope → "Unirme" desactivado (el aviso va debajo de la lista)
-export function FilaResultado({ c, onUnirse, onOpen, pendiente, enTope }) {
+//   · onDenunciar → ⋯ con "Denunciar comunidad" (ver DenunciarComunidad.jsx)
+export function FilaResultado({ c, onUnirse, onOpen, pendiente, enTope, onDenunciar }) {
   return (
     <div className="com-res">
       <PortadaMini c={c} />
@@ -77,6 +79,7 @@ export function FilaResultado({ c, onUnirse, onOpen, pendiente, enTope }) {
         : <button type="button" className="com-btn sm" disabled={enTope || pendiente === c.id} onClick={() => onUnirse(c.id)}>
             {pendiente === c.id ? 'Uniendo…' : 'Unirme'}
           </button>}
+      {onDenunciar && <MasDenunciar onDenunciar={() => onDenunciar(c)} />}
     </div>
   )
 }
