@@ -19,6 +19,8 @@ import ResetPassword from './components/ResetPassword.jsx'
 import { LectorRoute } from './components/LectorRoute.jsx'
 import AvisoRed from './components/AvisoRed.jsx'
 import NoEncontrada from './components/NoEncontrada.jsx'
+// Carga diferida: lleva dentro el texto completo de los documentos legales.
+const PaginaLegal = lazy(() => import('./components/legal/PaginaLegal.jsx'))
 
 const VistaBiblioteca       = lazy(() => import('./components/Biblioteca.jsx'))
 // Los lectores se importan por una función con nombre que comparten el lazy()
@@ -364,6 +366,12 @@ export default function App() {
               ? <Navigate to="/biblioteca" replace />
               : <AuthRedirect openAuth={openAuth} />
           } />
+
+          {/* Documentos legales con dirección propia (los pide Google para el
+              inicio de sesión, y el Impressum tiene que estar a un enlace). */}
+          <Route path="/privacidad" element={<PaginaLegal doc="privacidad" />} />
+          <Route path="/terminos"   element={<PaginaLegal doc="terminos" />} />
+          <Route path="/impressum"  element={<PaginaLegal doc="impressum" />} />
 
           {/* Reset de contraseña (Supabase redirige aquí) */}
           <Route path="/reset-password" element={

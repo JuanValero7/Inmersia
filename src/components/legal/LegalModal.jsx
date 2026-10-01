@@ -2,6 +2,7 @@ import React from 'react'
 import { createPortal } from 'react-dom'
 import terminosRaw from '../../../Documentation/terminos-y-condiciones.md?raw'
 import privacidadRaw from '../../../Documentation/politica-de-privacidad.md?raw'
+import impressumRaw from '../../../Documentation/impressum.md?raw'
 
 // =============================================================
 // LegalModal — visor de Términos y Condiciones / Política de Privacidad.
@@ -14,9 +15,12 @@ import privacidadRaw from '../../../Documentation/politica-de-privacidad.md?raw'
 const INK = '#4a3622'
 const ACCENT = '#F2792A'
 
-const DOCS = {
+export const DOCS = {
   terminos:   { label: 'Términos y Condiciones', raw: terminosRaw },
   privacidad: { label: 'Política de Privacidad',  raw: privacidadRaw },
+  // Obligatorio en Alemania (§ 5 DDG) mientras el responsable sea Juan como
+  // persona física en Berlín. Va en alemán, que es lo que exige la norma.
+  impressum:  { label: 'Impressum',               raw: impressumRaw },
 }
 
 function parseMarkdown(md) {
@@ -101,7 +105,7 @@ function renderInline(text, onNavigate) {
   return out
 }
 
-function Doc({ raw, onNavigate }) {
+export function Doc({ raw, onNavigate }) {
   const blocks = React.useMemo(() => parseMarkdown(raw), [raw])
   return (
     <div style={{ color: INK, fontSize: 14.5, lineHeight: 1.65 }}>
