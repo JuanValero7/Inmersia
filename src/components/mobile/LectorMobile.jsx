@@ -32,6 +32,10 @@ import { useOnboarding } from '../../context/onboarding.jsx'
 import TutorialHint from '../onboarding/TutorialHint.jsx'
 import { TEXTO_MANUAL_HINT } from '../onboarding/textos.js'
 import { anotarMuestra } from '../../lib/progresoInvitado.js'
+import { MANUAL_LIBRO_ID } from '../../lib/constants.js'
+import { usePistas } from '../../context/pistas.jsx'
+import Pista from '../onboarding/Pista.jsx'
+import TiraPrediccion from '../lector/TiraPrediccion.jsx'
 import { paginarParrafosMobileDOM } from '../../utils/lectorPaginationMobile.js'
 import { offsetDeAnclaje, paginaDeAnclaje, palabrasAcumuladasPorPagina, etiquetaProgreso } from '../../utils/readerHelpers.js'
 import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTILIZADO (igual al de PC)
@@ -132,7 +136,10 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     document.addEventListener('mousedown', handleOutside)
     return () => document.removeEventListener('mousedown', handleOutside)
   }, [catOpen])
-  const [pendingChapter, setPendingChapter] = useState(null)
+  // Tira de predicción al terminar un capítulo (igual que el escritorio).
+  const [tiraCerrada, setTiraCerrada] = useState(null)   // capítulo cuya tira ya se cerró
+  const pistas = usePistas()
+  const marcarPista = pistas.marcar
   const [adminPanelOpen, setAdminPanelOpen] = useState(false)
   const [showPaywall,    setShowPaywall]    = useState(false)
 
@@ -510,10 +517,14 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   function handleNext() {
     setCatOpen(false)
     if (pageIndex < total - 1) { setPageIndex(p => p + 1); return }
-    // fin del capítulo → abrir cuaderno antes de avanzar (igual que el escritorio)
+    // fin del capítulo → se avanza sin abrir el Cuaderno: la predicción se
+    // ofreció ANTES, con la tira de la última página (ver `tira` más abajo)
     if (chapterIndex < capitulos.length - 1) {
       if (guestMode) { setChapterIndex(chapterIndex + 1); setPageIndex(0); return }
-      setPendingChapter(chapterIndex + 1); setNotebookOpen(true)
+      const next = chapterIndex + 1
+      persistChapterAdvance(next)
+      setGoToLastPage(false)
+      setChapterIndex(next); setPageIndex(0)
       return
     }
     if (guestMode) { anotarMuestra(book?.libro_id, chapterIndex + 1); setShowPaywall(true) }
@@ -525,14 +536,17 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     if (await submitResena()) setResenaOpen(false)
   }
 
-  async function handleCloseNotebook() {
+  function handleCloseNotebook() {
     setNotebookOpen(false)
-    if (pendingChapter !== null) {
-      await persistChapterAdvance(pendingChapter)
-      setGoToLastPage(false)
-      setChapterIndex(pendingChapter); setPageIndex(0); setPendingChapter(null)
-    }
   }
+  // Desde la tira el Cuaderno se abre en el capítulo que se está terminando
+  // (todavía es el actual) y la tira de ese capítulo ya no vuelve a salir.
+  function anotarDesdeTira() {
+    setTiraCerrada(chapterIndex)
+    setNotebookOpen(true)
+  }
+  // Sonido: tocar un texto que suena ya cuenta como haber visto su pista.
+  const tocarSfx = useCallback((m) => { marcarPista('sonido'); playSfx(m) }, [marcarPista, playSfx])
 
   // ── Modo subrayado mobile ──
   useEffect(() => {
@@ -605,6 +619,31 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
   const page = paginas[pageIndex] || []
 
+  // Pista de primera vez del lector: una sola a la vez, y nunca encima de otra
+  // capa (hojas, Cuaderno, muro, reseña) ni a la vez que la tira de predicción.
+  const esManual = book?.libro_id === MANUAL_LIBRO_ID
+  // Tira de predicción: en la ÚLTIMA página del capítulo, antes de pasar al
+  // siguiente (igual que el escritorio).
+  const tira = !guestMode && !esManual && !loading && total > 0 && atChapterEnd
+    && chapterIndex < capitulos.length - 1 && tiraCerrada !== chapterIndex
+    ? { capNum: capitulos[chapterIndex]?.numero ?? chapterIndex + 1 }
+    : null
+  const paginaSuena = page.some(p => (currentMedia[p.id] || []).some(m => m.origen === 'explicito' && m.tipo === 'audio'))
+  const capaAbierta = loading || error || sheet || imageOpen || notebookOpen || showPaywall || resenaOpen || catOpen || tira || modoSubrayado
+  const pistaLector = capaAbierta ? null : pistas.primera([
+    paginaSuena && 'sonido',
+    visibleImages.length > 0 && 'ilustracion',
+    !guestMode && CAT_ITEMS.length > 0 && 'herramientas',
+    !guestMode && !esManual && chapterIndex >= 1 && 'investigacion',
+    !guestMode && !esManual && chapterIndex >= 2 && 'foro',
+    !guestMode && !esManual && isLeido && chapterIndex === capitulos.length - 1 && 'fin_libro',
+  ])
+  const accionPista = {
+    investigacion: { label: 'Ver mi investigación', onClick: () => irCartelera() },
+    foro:          { label: 'Ir al Foro',           onClick: () => onGoForo() },
+    fin_libro:     { label: 'Abrir mi Cuaderno',    onClick: () => openNotebook() },
+  }
+
   // Pie de página: % del libro o del capítulo según Aa (null = número de página).
   // Las palabras por página solo se recuentan cuando cambia la paginación.
   const acumuladas = useMemo(() => palabrasAcumuladasPorPagina(paginas), [paginas])
@@ -616,10 +655,19 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     <div className={'lm-screen' + (readingTheme === 'dark' ? ' night' : '')} ref={screenRef}>
       {/* Header */}
       <header className="lm-header">
-        <div className="lm-title">
-          <h1>{book?.title || 'Libro'}</h1>
-          <p>{book?.author || ''}</p>
-        </div>
+        {/* El bloque del título es también el botón de volver (no hay sitio
+            para otro botón en la cabecera). Bloqueado durante el paso 'manual'
+            del tutorial, igual que el "Biblioteca" del NavSheet. */}
+        <button type="button" className="lm-title" onClick={() => onGoBack?.()} disabled={tutorialManual}
+          aria-label={guestMode ? 'Volver al catálogo' : 'Volver a la biblioteca'}>
+          {!tutorialManual && (
+            <svg className="lm-title-back" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+          )}
+          <span className="lm-title-txt">
+            <span className="lm-title-h">{book?.title || 'Libro'}</span>
+            <span className="lm-title-autor">{book?.author || ''}</span>
+          </span>
+        </button>
         {guestMode ? (
           <button type="button" className="lm-explore lm-create-account-btn" onClick={() => onRequestAuth?.('registro')} title="Crear cuenta">
             Crear cuenta
@@ -644,7 +692,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
           <span className="chev">{tutorialManual ? '🔒' : '▼'}</span>
         </button>
         {capa.chip}
-        <button className="lm-ctrl xray" onClick={() => setSheet('xray')} title="X-ray">X-ray</button>
+        <button className="lm-ctrl xray" onClick={() => setSheet('xray')} title="Fichas">Fichas</button>
         <button className="lm-ctrl typo" onClick={() => setSheet('typo')} title="Texto">
           <span className="a-sm">A</span><span className="a-lg">A</span>
         </button>
@@ -667,7 +715,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
                 onPrev={handlePrev}
                 onNext={atEndOfBook && !guestMode ? undefined : handleNext}
                 hideArrows={modoSubrayado}
-                onPlaySfx={playSfx}
+                onPlaySfx={tocarSfx}
                 overlay={capa.overlay}
               />
         )}
@@ -675,7 +723,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         {/* Mascota (gato) + bandeja horizontal de herramientas */}
         {!loading && !error && book?.libro_id && (
           <div className="lm-cat-dock">
-            <button className="lm-cat-btn" onClick={() => setCatOpen(o => !o)} title="Herramientas" aria-label="Herramientas">
+            <button className="lm-cat-btn" onClick={() => { if (!catOpen) marcarPista('herramientas'); setCatOpen(o => !o) }} title="Herramientas" aria-label="Herramientas">
               <img className="lm-cat-img" src={`/assets/lector/gato-${gatoColor}-6.webp`} alt="Mascota de Inmersia" onLoad={measureGeom} />
             </button>
             {catOpen && (
@@ -695,7 +743,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
                 Se muestra la última imagen revelada; si hay varias, el visor las
                 lista todas en sus miniaturas. */}
             {!catOpen && (
-              <FotoAsomada image={visibleImages[visibleImages.length - 1]} onOpen={() => setImageOpen(true)} />
+              <FotoAsomada image={visibleImages[visibleImages.length - 1]} onOpen={() => { marcarPista('ilustracion'); setImageOpen(true) }} />
             )}
           </div>
         )}
@@ -756,6 +804,10 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         gatoColor={gatoColor}
         onSubrayadoBorrado={olvidarSubrayado}
       />
+
+      {/* Tira de predicción (fin de capítulo) y pista de primera vez */}
+      {tira && <TiraPrediccion movil capNum={tira.capNum} onAnotar={anotarDesdeTira} onCerrar={() => setTiraCerrada(chapterIndex)} />}
+      {pistaLector && <Pista id={pistaLector} movil bottom={78} accion={accionPista[pistaLector]} />}
 
       {/* Paywall de invitado */}
       {showPaywall && (

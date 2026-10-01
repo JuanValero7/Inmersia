@@ -145,7 +145,9 @@ export function LectorRoute({ LectorCmp, user, isSuperuser, gatoColor, openAuth,
       guestMode={enMuestra}
       muestraMotivo={user ? 'sin-adquirir' : 'invitado'}
       onRequestAuth={(tab) => openAuth?.(tab || 'login')}
-      onGoBack={() => navigate(user ? '/biblioteca' : '/')}
+      // El invitado casi siempre llegó desde el catálogo (y desde ahí vuelve a la
+      // landing con su propio "Volver"); el usuario, a su Biblioteca.
+      onGoBack={() => navigate(user ? '/biblioteca' : '/tienda')}
       onGoTienda={() => navigate('/tienda')}
       onGoCartelera={(itemId) => { setCartelaJumpId(itemId || null); irA(`/investigacion/${book.slug || book.id}`) }}
       onGoForo={() => irA(`/foro/${book.slug || book.id}`)}

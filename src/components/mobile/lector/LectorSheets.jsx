@@ -29,7 +29,7 @@ export function XraySheet({ items, chapterNum, esNoficcion, onClose, onItemClick
       <div className="lm-sheet" onClick={e => e.stopPropagation()}>
         <div className="lm-grip" />
         <div className="lm-sheet-head">
-          <span className="lm-sheet-title">X-ray · cap. {chapterNum}</span>
+          <span className="lm-sheet-title">Fichas · cap. {chapterNum}</span>
           <button className="lm-close" onClick={onClose}><IcClose /></button>
         </div>
         <div style={{ overflowY: 'auto', padding: '4px 18px 28px' }}>

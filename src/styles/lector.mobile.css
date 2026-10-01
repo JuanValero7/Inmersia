@@ -45,13 +45,23 @@
   border: 2px solid var(--ink);
   box-shadow: 4px 6px 0 rgba(74,54,34,0.12), inset 0 1px 0 rgba(255,255,255,0.5);
 }
-.lm-title { flex: 1; min-width: 0; }
-.lm-title h1 {
+.lm-title {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none; padding: 0; margin: 0 0 0 -6px;
+  font: inherit; color: var(--ink); text-align: left; cursor: pointer;
+}
+.lm-title:disabled { cursor: default; margin-left: 0; }
+.lm-title-back { flex-shrink: 0; color: rgba(74,54,34,0.7); }
+.lm-title-txt { display: block; min-width: 0; }
+.lm-title-h {
+  display: block;
   font-size: 1.12rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.12;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink);
   margin: 0;
 }
-.lm-title p {
+.lm-title-autor {
+  display: block;
   color: rgba(74,54,34,0.58); font-size: 11.5px; font-weight: 600; margin: 2px 0 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }

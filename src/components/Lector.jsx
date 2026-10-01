@@ -14,6 +14,10 @@ import { useOnboarding } from '../context/onboarding.jsx'
 import TutorialHint from './onboarding/TutorialHint.jsx'
 import { TEXTO_MANUAL_HINT } from './onboarding/textos.js'
 import { anotarMuestra } from '../lib/progresoInvitado.js'
+import { MANUAL_LIBRO_ID } from '../lib/constants.js'
+import { usePistas } from '../context/pistas.jsx'
+import Pista from './onboarding/Pista.jsx'
+import TiraPrediccion from './lector/TiraPrediccion.jsx'
 import '../styles/lector.css'
 
 import { paginarParrafosDesktopDOM } from '../utils/lectorPagination.js'
@@ -113,7 +117,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const [goToLastPage,   setGoToLastPage]   = useState(false)
   const [doubleView,     setDoubleView]     = useState(true)
   const [notebookOpen,   setNotebookOpen]   = useState(false)
-  const [pendingChapter, setPendingChapter] = useState(null)
+  // Capítulo cuya tira de predicción ya se cerró (con × o al anotar).
+  const [tiraCerrada,    setTiraCerrada]    = useState(null)
   const [explorarOpen,   setExplorarOpen]   = useState(false)
   const [xrayOpen,       setXrayOpen]       = useState(false)
   const [showPaywall,    setShowPaywall]    = useState(false)
@@ -184,7 +189,6 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const [fontSize,    setFontSize]    = useLocalStorage('inm_lector_fontSize', 16)
   const [readingFont, setReadingFont] = useLocalStorage('inm_lector_font', READING_FONT_DEFAULT)
   const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
-  const [ledColor, setLedColor] = useLocalStorage('inm_lector_ledColor', 'none')
   // Cómo se ve el progreso en el pie: 'pagina' (como siempre), 'capitulo' o 'libro'.
   const [modoProgreso, setModoProgreso] = useLocalStorage('inm_lector_progreso', 'pagina')
   const pal = getReaderPalette(readingTheme)
@@ -404,8 +408,14 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
   const polaroidRef = useRef(null)
 
+  const pistas = usePistas()
+  const marcarPista = pistas.marcar   // estable (useCallback del controlador)
+  // persistChapterAdvance se recrea en cada render; por ref, para no rehacer el
+  // callback de avanzar (y el listener de teclado) en cada render.
+  const persistRef = useRef(persistChapterAdvance)
+  persistRef.current = persistChapterAdvance
   const handleNextPage = useCallback(() => {
-    if (polaroidRef.current?.interceptForward()) return
+    if (polaroidRef.current?.interceptForward()) { marcarPista('ilustracion'); return }
     const step = doubleView ? 2 : 1
     const next = pageIndex + step
     if (next < currentPaginas.length) {
@@ -414,17 +424,22 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       anotarMuestra(book?.libro_id, chapterIndex + 1)   // terminó la muestra
       setShowPaywall(true)
     }
-  }, [doubleView, pageIndex, currentPaginas.length, guestMode, chapterIndex, capitulos.length, book?.libro_id])
+  }, [doubleView, pageIndex, currentPaginas.length, guestMode, chapterIndex, capitulos.length, book?.libro_id, marcarPista])
+  // Fin de capítulo: se avanza sin abrir el Cuaderno. La predicción se ofrece
+  // ANTES, con la tira que aparece en la última página (ver `tira` más abajo).
   const handleNextChapter = useCallback(() => {
-    if (polaroidRef.current?.interceptForward()) return
+    if (polaroidRef.current?.interceptForward()) { marcarPista('ilustracion'); return }
     const next = chapterIndex + 1
     if (next >= capitulos.length) {
       if (guestMode) { anotarMuestra(book?.libro_id, next); setShowPaywall(true) }
       return
     }
     if (guestMode) { setChapterIndex(next); setPageIndex(0); return }
-    setPendingChapter(next); setNotebookOpen(true)
-  }, [chapterIndex, capitulos.length, guestMode, book?.libro_id])
+    persistRef.current(next)
+    setGoToLastPage(false)
+    setChapterIndex(next); setPageIndex(0)
+  }, [chapterIndex, capitulos, guestMode, book?.libro_id, marcarPista])
+
 
   // ── Teclado: flechas para paginar, espacio para SFX ─────────
   const sfxIndexRef = useRef(0)
@@ -501,18 +516,49 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     if (await submitResena()) setResenaOpen(false)
   }
 
-  async function handleCloseNotebook() {
+  function handleCloseNotebook() {
     setNotebookOpen(false)
-    if (pendingChapter !== null) {
-      await persistChapterAdvance(pendingChapter)
-      setGoToLastPage(false)
-      setChapterIndex(pendingChapter); setPageIndex(0); setPendingChapter(null)
-    }
   }
+  // Desde la tira el Cuaderno se abre en el capítulo que se está terminando
+  // (todavía es el actual) y la tira de ese capítulo ya no vuelve a salir.
+  function anotarDesdeTira() {
+    setTiraCerrada(chapterIndex)
+    setNotebookOpen(true)
+  }
+  // Sonido: tocar un texto que suena ya cuenta como haber visto su pista.
+  const tocarSfx = useCallback((m) => { marcarPista('sonido'); playSfx(m) }, [marcarPista, playSfx])
 
   const msgStyle = { color: theme.subText, fontFamily: "'Playfair Display',serif", fontSize: 14, textAlign: 'center', padding: 60 }
   const halfBook = geom.halfBook
   const cabenPolaroids = geom.huecoLateral >= POLAROID_ASOMA
+
+  const esManual = book?.libro_id === MANUAL_LIBRO_ID
+
+  // Tira de predicción: aparece en la ÚLTIMA página de cada capítulo, antes de
+  // pasar al siguiente. No en la muestra, ni en el Manual, ni en el último
+  // capítulo del libro. Avanzar no la espera: el siguiente toque pasa de capítulo.
+  const finDeCapitulo = currentPaginas.length > 0 && (doubleView
+    ? pageIndex >= currentPaginas.length - 2
+    : pageIndex >= currentPaginas.length - 1)
+  const tira = !guestMode && !esManual && !loading && finDeCapitulo
+    && chapterIndex < capitulos.length - 1 && tiraCerrada !== chapterIndex
+    ? { capNum: capitulos[chapterIndex]?.numero ?? chapterIndex + 1 }
+    : null
+
+  // Pista de primera vez del lector: una sola a la vez, y nunca encima de otra
+  // capa (Cuaderno, muro, reseña) ni a la vez que la tira de predicción.
+  const pistaLector = (loading || error || notebookOpen || showPaywall || resenaOpen || tira) ? null : pistas.primera([
+    visibleSfx.length > 0 && 'sonido',
+    cabenPolaroids && visibleImages.length > 0 && 'ilustracion',
+    !guestMode && !esManual && chapterIndex >= 1 && 'investigacion',
+    !guestMode && !esManual && chapterIndex >= 2 && 'foro',
+    !guestMode && !esManual && isLeido && chapterIndex === capitulos.length - 1 && 'fin_libro',
+  ])
+  const accionPista = {
+    investigacion: { label: 'Ver mi investigación', onClick: () => onGoCartelera() },
+    foro:          { label: 'Ir al Foro',           onClick: () => onGoForo() },
+    fin_libro:     { label: 'Abrir mi Cuaderno',    onClick: () => setNotebookOpen(true) },
+  }
 
   return (
     <div className="desk" style={{ position: 'relative', minHeight: '100vh', display: 'flex', flexDirection: 'column', background: pal.deskBg, fontFamily: "'Baloo 2', sans-serif" }}>
@@ -522,9 +568,19 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* TOP BAR */}
       <header style={{ position: 'relative', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '14px 24px 0' }}>
-        <div style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 14, padding: '9px 15px', display: 'flex', alignItems: 'center', overflow: 'hidden', boxShadow: `1.5px 2px 0 ${theme.ink}22`, flex: '1 1 auto', minWidth: 0, maxWidth: 320 }}>
+        {/* El recuadro del título es también el botón de volver: el invitado no
+            tiene Explorar, y sin esto solo le quedaba el atrás del navegador.
+            Durante el paso 'manual' del tutorial no se puede salir (mismo
+            criterio que el "Biblioteca" de Explorar). */}
+        <button type="button" onClick={() => onGoBack?.()} disabled={tutorialManual}
+          aria-label={guestMode ? 'Volver al catálogo' : 'Volver a la biblioteca'}
+          title={guestMode ? 'Volver al catálogo' : 'Volver a la biblioteca'}
+          style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, borderRadius: 14, padding: '9px 15px', display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden', boxShadow: `1.5px 2px 0 ${theme.ink}22`, flex: '1 1 auto', minWidth: 0, maxWidth: 320, cursor: tutorialManual ? 'default' : 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+          {!tutorialManual && (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a7355" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }} aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+          )}
           <span style={{ fontSize: 18, fontWeight: 700, color: '#8a7355', fontFamily: "'Baloo 2', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{book?.title}</span>
-        </div>
+        </button>
         <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexShrink: 0 }}>
           {isSuperuser && !loading && !error && book?.libro_id && (
             <button type="button" onClick={() => setAdminPanelOpen(v => !v)} title="Panel de media (superusuario)"
@@ -612,7 +668,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   doubleView={doubleView}
                   mediaByParrafo={currentMedia}
                   subrayados={currentSubrayados}
-                  onPlaySfx={playSfx}
+                  onPlaySfx={tocarSfx}
                   onPrevPage={handlePrevPage}
                   onNextPage={handleNextPage}
                   onNextChapter={handleNextChapter}
@@ -637,8 +693,6 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   onModoProgreso={setModoProgreso}
                   etiquetaProgreso={etiquetaPie}
                   ambient={currentAmbient}
-                  ledColor={ledColor}
-                  onLedColor={setLedColor}
                   esNoficcion={esNoficcion}
                   whiteNoise={whiteNoise}
                   comunidadChip={capa.chip}
@@ -712,6 +766,10 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
           <ClayButton variant="primary" onClick={handleSubrayar} style={{ padding: '5px 13px', fontSize: 12 }}>Subrayar</ClayButton>
         </div>
       )}
+
+      {/* Tira de predicción (fin de capítulo) y pista de primera vez */}
+      {tira && <TiraPrediccion capNum={tira.capNum} onAnotar={anotarDesdeTira} onCerrar={() => setTiraCerrada(chapterIndex)} />}
+      {pistaLector && <Pista id={pistaLector} accion={accionPista[pistaLector]} />}
 
       {/* Paywall de invitado */}
       {showPaywall && (

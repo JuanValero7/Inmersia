@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuaderno al final del capítulo · mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Crimson+Text:ital@0;1&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #4a3622; --accent: #F2792A; --cream: #fffdf8; --desk: #f7efe4;
+    --page: #f3e6c4; --page-ink: #3a2a18; --meta: #a08a68; --pred: #BE6173;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #efe6d6; font-family: 'Baloo 2', sans-serif; color: var(--ink); padding: 32px 16px 64px; }
+  h1 { font-size: 30px; margin: 0 0 6px; text-align: center; }
+  .intro { text-align: center; max-width: 760px; margin: 0 auto 36px; line-height: 1.5; color: #6b4c34; }
+  section.variante { max-width: 1520px; margin: 0 auto 56px; }
+  .v-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 0 0 6px; }
+  .v-head h2 { margin: 0; font-size: 22px; }
+  .tag { font-size: 12px; font-weight: 800; background: var(--ink); color: #fff; border-radius: 999px; padding: 2px 10px; }
+  .v-desc { margin: 0 0 16px; color: #6b4c34; line-height: 1.5; max-width: 980px; }
+  .fila { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+
+  /* ── Marco escritorio ── */
+  .desk { position: relative; width: 1080px; height: 640px; background: var(--desk); border: 2px solid var(--ink); border-radius: 18px; overflow: hidden; box-shadow: 3px 5px 0 rgba(74,54,34,.18); flex-shrink: 0; }
+  .desk .top { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px 0; }
+  .title-btn { display: flex; align-items: center; gap: 7px; background: var(--cream); border: 2px solid var(--ink); border-radius: 12px; padding: 6px 13px; font-weight: 700; color: #8a7355; font-size: 15px; min-width: 230px; }
+  .pill { border: 1.5px solid var(--ink); border-radius: 999px; padding: 2px 11px; font-size: 11.5px; font-weight: 700; background: var(--cream); }
+  .pill.big { border-width: 2px; padding: 6px 14px; font-size: 13px; }
+  .ctrls { display: flex; justify-content: space-between; padding: 12px 46px 0; }
+  .ctrls div { display: flex; gap: 7px; }
+  .book { position: absolute; left: 50%; top: 104px; transform: translateX(-50%); display: flex; filter: drop-shadow(0 14px 24px rgba(70,46,20,.35)); }
+  .leaf { width: 470px; height: 470px; background: linear-gradient(160deg, #fbf3dc, var(--page)); padding: 34px 40px; font-family: 'Crimson Text', serif; font-size: 15.5px; line-height: 1.75; color: var(--page-ink); text-align: justify; position: relative; }
+  .leaf p { margin: 0 0 .6em; text-indent: 1.2em; }
+  .spine { width: 14px; background: linear-gradient(90deg,#8f7a63,#bba68a,#8f7a63); }
+  .pnum { position: absolute; bottom: 14px; font-size: 11px; color: var(--meta); }
+  .fin { text-align: center; font-family: 'Crimson Text', serif; color: var(--meta); font-size: 15px; }
+  .gato { position: absolute; left: 10px; bottom: 6px; width: 92px; height: 46px; background: #2b2622; border-radius: 50% 50% 8px 8px; opacity: .9; }
+  .cuaderno-ico { position: absolute; right: 22px; bottom: 12px; text-align: center; font-size: 11px; font-weight: 700; }
+  .cuaderno-ico span { display: block; width: 34px; height: 40px; margin: 0 auto 3px; border: 2px solid var(--ink); border-radius: 5px; background: #fff7e6; }
+
+  /* ── Marco móvil ── */
+  .phone { position: relative; width: 360px; height: 740px; background: var(--desk); border: 2px solid var(--ink); border-radius: 34px; overflow: hidden; box-shadow: 3px 5px 0 rgba(74,54,34,.18); flex-shrink: 0; }
+  .m-head { margin: 14px 12px 0; display: flex; align-items: center; gap: 8px; background: #e7dcc2; border: 2px solid var(--ink); border-radius: 16px; padding: 8px 10px; }
+  .m-head .t { flex: 1; min-width: 0; }
+  .m-head b { display: block; font-size: 15px; line-height: 1.1; }
+  .m-head small { font-size: 10.5px; color: rgba(74,54,34,.6); font-weight: 600; }
+  .m-head .ic { width: 34px; height: 34px; border: 2px solid var(--ink); border-radius: 50%; background: var(--cream); display: grid; place-items: center; font-size: 15px; }
+  .m-ctrls { display: flex; gap: 6px; margin: 8px 12px 0; }
+  .m-ctrls .cap { flex: 1; background: var(--accent); color: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 5px 12px; font-weight: 700; font-size: 12.5px; }
+  .m-ctrls .pill { padding: 5px 12px; font-size: 12.5px; border-width: 2px; }
+  .m-page { position: absolute; left: 12px; right: 12px; top: 116px; bottom: 14px; background: linear-gradient(160deg, #fbf3dc, var(--page)); border-radius: 10px; padding: 22px 22px; font-family: 'Crimson Text', serif; font-size: 16.5px; line-height: 1.75; color: var(--page-ink); text-align: justify; box-shadow: 0 8px 18px rgba(70,46,20,.25); }
+  .m-page p { margin: 0 0 .6em; text-indent: 1.2em; }
+  .m-gato { position: absolute; left: 4px; bottom: 6px; width: 70px; height: 36px; background: #2b2622; border-radius: 50% 50% 8px 8px; opacity: .9; }
+
+  /* ── Tarjeta de predicción (variante A) ── */
+  .pred-card { background: var(--cream); border: 2px solid var(--ink); border-radius: 16px; padding: 16px 18px 14px; font-family: 'Baloo 2', sans-serif; text-align: left; box-shadow: 2px 3px 0 rgba(74,54,34,.2); }
+  .pred-card .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--pred); }
+  .pred-card h3 { font-family: 'Playfair Display', serif; font-size: 19px; margin: 4px 0 10px; color: #2c1a0e; line-height: 1.2; }
+  .pred-card .campo { border: 1.5px solid rgba(74,54,34,.45); border-radius: 10px; background: #fff; padding: 9px 11px; font-family: 'Crimson Text', serif; font-style: italic; font-size: 15px; color: #9a8468; min-height: 62px; }
+  .pred-card .acciones { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+  .btn { border: 2px solid var(--ink); border-radius: 999px; padding: 6px 15px; font-weight: 700; font-size: 13px; background: var(--accent); color: #fff; box-shadow: 1.5px 2px 0 rgba(74,54,34,.35); white-space: nowrap; }
+  .btn.sec { background: var(--cream); color: #000; }
+  .nota { font-size: 12px; color: #8a6a4a; font-weight: 600; }
+  .recuerdo { margin-top: 12px; border-top: 1.5px dashed rgba(74,54,34,.25); padding-top: 9px; font-size: 12.5px; color: #6b4c34; line-height: 1.4; }
+  .recuerdo i { font-family: 'Crimson Text', serif; font-size: 14px; color: #3a2a18; }
+
+  /* ── Tira inferior (variante B) ── */
+  .tira { position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px; display: flex; align-items: center; gap: 12px; background: var(--cream); border: 2px solid var(--ink); border-radius: 999px; padding: 7px 8px 7px 16px; box-shadow: 2px 4px 0 rgba(74,54,34,.22), 0 10px 24px rgba(0,0,0,.15); font-size: 13.5px; font-weight: 700; white-space: nowrap; z-index: 5; }
+  .tira .x { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid rgba(74,54,34,.35); display: grid; place-items: center; color: #9a6a4a; font-size: 15px; }
+  .tira .ico { color: var(--pred); font-size: 16px; }
+  .phone .tira { bottom: 64px; white-space: normal; width: calc(100% - 28px); border-radius: 18px; padding: 10px 10px 10px 14px; font-size: 13px; }
+  .phone .tira .txt { flex: 1; line-height: 1.25; }
+
+  /* ── Modal liviano (variante C) ── */
+  .velo { position: absolute; inset: 0; background: rgba(40,26,12,.38); display: grid; place-items: center; z-index: 6; }
+  .modal { width: 400px; }
+  .phone .modal { width: calc(100% - 36px); }
+  .modal .cerrar { float: right; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid rgba(74,54,34,.3); display: grid; place-items: center; color: #9a6a4a; font-size: 15px; margin: -4px -4px 0 0; }
+
+  .flecha { position: absolute; right: -2px; top: 50%; color: #b9a587; font-size: 22px; }
+  .leyenda { font-size: 12.5px; color: #6b4c34; margin: 8px 4px 0; max-width: 360px; line-height: 1.4; }
+</style>
+</head>
+<body>
+<h1>Cuaderno al final del capítulo</h1>
+<p class="intro">Tres formas de pedir la predicción sin bloquear la lectura. Hoy, al terminar cada capítulo, el Cuaderno se abre solo y el capítulo siguiente no arranca hasta cerrarlo. En las tres variantes de abajo la flecha → siempre sigue funcionando.</p>
+
+<!-- ═════════════ A ═════════════ -->
+<section class="variante">
+  <div class="v-head"><h2>A · Tarjeta en la página de cierre</h2><span class="tag">Recomendada</span></div>
+  <p class="v-desc">La hoja de "— fin del capítulo —", que hoy está vacía, pasa a llevar la tarjeta. Aparece en todos los capítulos porque está en el camino, pero no tapa nada: si pasas la página, sigues leyendo. Guardar escribe la predicción en el Cuaderno de ese capítulo. Debajo, de vez en cuando, se te recuerda una predicción anterior: ahí está la recompensa.</p>
+  <div class="fila">
+    <div class="desk">
+      <div class="top"><span class="title-btn">‹ El extraño caso del Dr. Jekyll y Mr. Hyde</span><span class="pill big">◎ Explorar</span></div>
+      <div class="ctrls"><div><span class="pill">Cap. 3 · Capítulo 3 ▾</span><span class="pill">A A</span></div><div><span class="pill">Fichas</span><span class="pill">▢ Una página</span></div></div>
+      <div class="book">
+        <div class="leaf">
+          <p>—No sé qué pensar —dijo el abogado—. Pero desde que conozco su nombre, ese hombre no se aparta de mi cabeza.</p>
+          <p>Jekyll palideció hasta los labios y una oscuridad le cubrió los ojos.</p>
+          <p>—Te lo ruego, Utterson: deja este asunto. Hay razones que no puedo explicar. En el momento en que yo lo decida, podré librarme de Mr. Hyde.</p>
+          <p>Utterson reflexionó un rato, mirando al fuego.</p>
+          <span class="pnum" style="left:40px">23</span>
+        </div>
+        <div class="spine"></div>
+        <div class="leaf" style="display:flex;flex-direction:column;justify-content:center;gap:16px">
+          <div class="fin">— fin del capítulo 3 —</div>
+          <div class="pred-card">
+            <div class="eyebrow">✎ Tu Cuaderno · Predicciones</div>
+            <h3>¿Qué crees que esconde Jekyll?</h3>
+            <div class="campo">Escribe tu predicción…</div>
+            <div class="acciones"><span class="nota">O pasa la página para seguir →</span><span class="btn">Guardar</span></div>
+            <div class="recuerdo">En el cap. 1 dijiste: <i>«Hyde le está chantajeando»</i>. ¿Sigues pensando lo mismo?</div>
+          </div>
+          <span class="pnum" style="right:40px">24</span>
+          <span class="flecha">›</span>
+        </div>
+      </div>
+      <div class="gato"></div>
+      <div class="cuaderno-ico"><span></span>Cuaderno</div>
+    </div>
+    <div>
+      <div class="phone">
+        <div class="m-head"><span>‹</span><div class="t"><b>El extraño caso del Dr…</b><small>Robert Louis Stevenson</small></div><span class="ic">◎</span></div>
+        <div class="m-ctrls"><span class="cap">Cap. 3 · Capítulo 3 ▾</span><span class="pill">Fichas</span><span class="pill">A A</span></div>
+        <div class="m-page">
+          <p>Utterson reflexionó un rato, mirando al fuego.</p>
+          <div class="fin" style="margin:14px 0 16px">— fin del capítulo 3 —</div>
+          <div class="pred-card">
+            <div class="eyebrow">✎ Tu Cuaderno · Predicciones</div>
+            <h3>¿Qué crees que esconde Jekyll?</h3>
+            <div class="campo">Escribe tu predicción…</div>
+            <div class="acciones"><span class="nota">O toca → para seguir</span><span class="btn">Guardar</span></div>
+            <div class="recuerdo">En el cap. 1 dijiste: <i>«Hyde le está chantajeando»</i>.</div>
+          </div>
+          <span class="flecha" style="right:2px">›</span>
+        </div>
+        <div class="m-gato"></div>
+      </div>
+      <p class="leyenda">En el móvil la tarjeta va en la última página del capítulo, debajo del texto. Si no cabe, ocupa una página propia.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ B ═════════════ -->
+<section class="variante">
+  <div class="v-head"><h2>B · Tira inferior descartable</h2></div>
+  <p class="v-desc">Al cambiar de capítulo aparece una tira flotante abajo. Tocarla abre el Cuaderno como hoy; la × la cierra. Si sigues leyendo, se va sola después de la primera página. Es la que menos estorba y también la que menos se usa: se ignora fácil.</p>
+  <div class="fila">
+    <div class="desk">
+      <div class="top"><span class="title-btn">‹ El extraño caso del Dr. Jekyll y Mr. Hyde</span><span class="pill big">◎ Explorar</span></div>
+      <div class="ctrls"><div><span class="pill">Cap. 4 · Capítulo 4 ▾</span><span class="pill">A A</span></div><div><span class="pill">Fichas</span><span class="pill">▢ Una página</span></div></div>
+      <div class="book">
+        <div class="leaf">
+          <div style="font-family:'Playfair Display',serif;font-size:10px;letter-spacing:.18em;color:var(--meta)">CAPÍTULO 4</div>
+          <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:28px;line-height:1.1;margin:4px 0 14px">El asesinato de Carew</div>
+          <p>Casi un año más tarde, en octubre de 18…, Londres se sobresaltó por un crimen de singular ferocidad, que se hizo aún más notable por la alta posición de la víctima.</p>
+          <span class="pnum" style="left:40px">1</span>
+        </div>
+        <div class="spine"></div>
+        <div class="leaf">
+          <p>Una criada que vivía sola en una casa no lejos del río había subido a acostarse a eso de las once. Aunque de madrugada cayó niebla sobre la ciudad, la primera parte de la noche estuvo despejada.</p>
+          <span class="pnum" style="right:40px">2</span>
+        </div>
+      </div>
+      <div class="tira"><span class="ico">✎</span>Terminaste el capítulo 3. ¿Qué crees que pasará?<span class="btn">Anotar predicción</span><span class="x">×</span></div>
+      <div class="gato"></div>
+    </div>
+    <div>
+      <div class="phone">
+        <div class="m-head"><span>‹</span><div class="t"><b>El extraño caso del Dr…</b><small>Robert Louis Stevenson</small></div><span class="ic">◎</span></div>
+        <div class="m-ctrls"><span class="cap">Cap. 4 · El asesinato… ▾</span><span class="pill">Fichas</span><span class="pill">A A</span></div>
+        <div class="m-page">
+          <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:26px;line-height:1.1;margin:0 0 14px">El asesinato de Carew</div>
+          <p>Casi un año más tarde, en octubre de 18…, Londres se sobresaltó por un crimen de singular ferocidad, que se hizo aún más notable por la alta posición de la víctima.</p>
+        </div>
+        <div class="tira"><span class="ico">✎</span><span class="txt">¿Qué crees que pasará después del cap. 3?</span><span class="btn">Anotar</span><span class="x">×</span></div>
+        <div class="m-gato"></div>
+      </div>
+      <p class="leyenda">En el móvil la tira va por encima del gato, para no tapar su bandeja de herramientas.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ C ═════════════ -->
+<section class="variante">
+  <div class="v-head"><h2>C · Modal liviano, solo en capítulos elegidos</h2></div>
+  <p class="v-desc">El Cuaderno deja de abrirse en cada capítulo. Sale un modal pequeño solo en los capítulos que marques como momento de predecir (los cliffhangers; un campo nuevo por capítulo en la BD). Tiene un solo campo y se cierra con "Ahora no" o con la flecha. Es el que más escritura consigue por aparición, pero hay que curar a mano qué capítulos lo llevan.</p>
+  <div class="fila">
+    <div class="desk">
+      <div class="top"><span class="title-btn">‹ El extraño caso del Dr. Jekyll y Mr. Hyde</span><span class="pill big">◎ Explorar</span></div>
+      <div class="ctrls"><div><span class="pill">Cap. 3 · Capítulo 3 ▾</span><span class="pill">A A</span></div><div><span class="pill">Fichas</span><span class="pill">▢ Una página</span></div></div>
+      <div class="book">
+        <div class="leaf"><p>—Te lo ruego, Utterson: deja este asunto. Hay razones que no puedo explicar.</p><p>Utterson reflexionó un rato, mirando al fuego.</p></div>
+        <div class="spine"></div>
+        <div class="leaf"><div class="fin" style="margin-top:200px">— fin del capítulo 3 —</div></div>
+      </div>
+      <div class="velo">
+        <div class="pred-card modal">
+          <span class="cerrar">×</span>
+          <div class="eyebrow">✎ Momento de predecir</div>
+          <h3>Jekyll quiere librarse de Hyde. ¿Lo conseguirá?</h3>
+          <div class="campo">Escribe tu predicción…</div>
+          <div class="acciones"><span class="btn sec">Ahora no</span><span class="btn">Guardar y seguir</span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="phone">
+        <div class="m-head"><span>‹</span><div class="t"><b>El extraño caso del Dr…</b><small>Robert Louis Stevenson</small></div><span class="ic">◎</span></div>
+        <div class="m-ctrls"><span class="cap">Cap. 3 · Capítulo 3 ▾</span><span class="pill">Fichas</span><span class="pill">A A</span></div>
+        <div class="m-page"><p>Utterson reflexionó un rato, mirando al fuego.</p><div class="fin" style="margin-top:30px">— fin del capítulo 3 —</div></div>
+        <div class="velo">
+          <div class="pred-card modal">
+            <span class="cerrar">×</span>
+            <div class="eyebrow">✎ Momento de predecir</div>
+            <h3>Jekyll quiere librarse de Hyde. ¿Lo conseguirá?</h3>
+            <div class="campo">Escribe tu predicción…</div>
+            <div class="acciones"><span class="btn sec">Ahora no</span><span class="btn">Guardar y seguir</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="leyenda">La pregunta puede ser genérica ("¿Qué crees que pasará?") o escrita por capítulo, si la cargas junto con la marca.</p>
+    </div>
+  </div>
+</section>
+</body>
+</html>

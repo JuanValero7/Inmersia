@@ -9,13 +9,6 @@ import { AMBIENTE_FICCION_ACTIVO } from './readerConstants.js'
 import WhiteNoisePlayer from './WhiteNoisePlayer.jsx'
 import '../../styles/lector.css'
 
-const LED_OPTIONS = [
-  { id: 'none',  label: 'Sin luz', hex: null,       rgb: null },
-  { id: 'blue',  label: 'Azul',    hex: '#3282ff',  rgb: '50,130,255' },
-  { id: 'red',   label: 'Rojo',    hex: '#dc3232',  rgb: '220,50,50' },
-  { id: 'green', label: 'Verde',   hex: '#28c850',  rgb: '40,200,80' },
-]
-
 // ── Contenido de una página (datos reales) ──────────────────
 const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, subrayados = [], onPlaySfx, onTextSelect, fontSize, readingFont, isFirst, chapterTitle, chapterNum, pal = getReaderPalette('light') }) {
   function handleMouseUp() {
@@ -122,7 +115,7 @@ function ChapterSelect({ chapters, chapterIndex, onChapterSelect, locked = false
 }
 
 // ── Control de tipografía (tamaño + fuente) ─────────────────
-function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, readingTheme = 'light', onReadingTheme, ledColor = 'none', onLedColor, modoProgreso = 'pagina', onModoProgreso }) {
+function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, readingTheme = 'light', onReadingTheme, modoProgreso = 'pagina', onModoProgreso }) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState({ top: 0, left: 0 })
   const btnRef = useRef(null)
@@ -204,23 +197,6 @@ function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, r
               </div>
             </>
           )}
-          {onLedColor && (
-            <>
-              <div style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.pageMeta, margin: '16px 0 9px' }}>Luz LED</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
-                {LED_OPTIONS.map(opt => {
-                  const active = ledColor === opt.id
-                  return (
-                    <button key={opt.id} type="button" onClick={() => onLedColor(opt.id)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 9px', cursor: 'pointer', border: `1.5px solid ${active && opt.hex ? opt.hex : theme.ink}`, borderRadius: 9, background: active ? (opt.hex ? `${opt.hex}22` : 'rgba(242,121,42,0.12)') : 'transparent' }}>
-                      <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: opt.hex ?? 'transparent', border: opt.hex ? 'none' : `1.5px solid ${theme.ink}`, boxShadow: active && opt.hex ? `0 0 5px ${opt.hex}` : 'none' }} />
-                      <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: active && opt.hex ? opt.hex : theme.pageMeta }}>{opt.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </>
-          )}
           {/* Progreso en el pie: % del libro, % del capítulo o número de página */}
           {onModoProgreso && (
             <>
@@ -291,7 +267,7 @@ export const BookReader = memo(function BookReader({
   onFontSize, onReadingFont, readingTheme = 'light', onReadingTheme,
   pageW = 470, pageH = 560, fontSize = 18, readingFont = "'Crimson Text', Georgia, serif",
   xrayOpen = false, xrayItems = [], onToggleXray, onXrayItemClick, xrayLocked = false,
-  ambient = null, ledColor = 'none', onLedColor = null, esNoficcion = false,
+  ambient = null, esNoficcion = false,
   whiteNoise = null, chapterLocked = false,
   comunidadChip = null, renderCapa = null,
   modoProgreso = 'pagina', onModoProgreso = null, etiquetaProgreso = null,
@@ -319,10 +295,6 @@ export const BookReader = memo(function BookReader({
   }, [xrayOpen])
   const xrayInitial = s => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
   const pal = getReaderPalette(readingTheme)
-  const ledOpt = LED_OPTIONS.find(o => o.id === ledColor)
-  const bookFilter = ledOpt?.rgb
-    ? `drop-shadow(0 0 8px rgba(${ledOpt.rgb},0.28)) drop-shadow(0 0 22px rgba(${ledOpt.rgb},0.13)) drop-shadow(0 16px 30px rgba(70,46,20,0.4))`
-    : 'drop-shadow(0 16px 30px rgba(70,46,20,0.4))'
   const total = paginas.length
   const isLast = doubleView ? pageIndex >= total - 2 : pageIndex >= total - 1
   const left = paginas[pageIndex] || []
@@ -340,7 +312,7 @@ export const BookReader = memo(function BookReader({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 12, padding: '0 6px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <ChapterSelect chapters={chapters || []} chapterIndex={chapterIndex} onChapterSelect={onChapterSelect} locked={chapterLocked} />
-          <TypographyControl fontSize={fontSize} onFontSize={onFontSize} readingFont={readingFont} onReadingFont={onReadingFont} readingTheme={readingTheme} onReadingTheme={onReadingTheme} ledColor={ledColor} onLedColor={onLedColor} modoProgreso={modoProgreso} onModoProgreso={onModoProgreso} />
+          <TypographyControl fontSize={fontSize} onFontSize={onFontSize} readingFont={readingFont} onReadingFont={onReadingFont} readingTheme={readingTheme} onReadingTheme={onReadingTheme} modoProgreso={modoProgreso} onModoProgreso={onModoProgreso} />
           {(esNoficcion || AMBIENTE_FICCION_ACTIVO) && (
           <div ref={soundRef} style={{ position: 'relative' }}>
             <button type="button" onClick={() => setSoundOpen(o => !o)}
@@ -363,7 +335,7 @@ export const BookReader = memo(function BookReader({
           <div ref={xrayRef} style={{ position: 'relative' }}>
             <button type="button" onClick={onToggleXray}
               style={{ whiteSpace: 'nowrap', fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: xrayOpen ? theme.ink : theme.navBg, color: xrayOpen ? '#fffdf8' : theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
-              X-ray
+              Fichas
             </button>
             {xrayOpen && (
               <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60, background: '#fffdf8', border: `2px solid ${theme.ink}`, borderRadius: 16, padding: '12px 16px', minWidth: 210, maxWidth: 290, maxHeight: 320, overflowY: 'auto', boxShadow: `2px 4px 0 ${theme.ink}22, 0 14px 30px rgba(0,0,0,0.22)`, fontFamily: "'Baloo 2', sans-serif" }}>
@@ -401,7 +373,7 @@ export const BookReader = memo(function BookReader({
         </div>
       </div>
 
-      <div className="book-shadow" style={{ display: 'flex', position: 'relative', filter: bookFilter }}>
+      <div className="book-shadow" style={{ display: 'flex', position: 'relative', filter: 'drop-shadow(0 16px 30px rgba(70,46,20,0.4))' }}>
         {doubleView && <div style={edge('5px 0 0 5px')} />}
         <Leaf parrafos={left} side={doubleView ? 'left' : 'single'} pageNum={pieIzq} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onPrev={onPrevPage} onNext={!doubleView ? (isLast ? onNextChapter : onNextPage) : undefined} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={pageIndex === 0} chapterTitle={chapter.titulo} chapterNum={chapter.numero ?? chapterIndex + 1} overlay={renderCapa?.(pageIndex, doubleView ? 'izq' : 'der')} pal={pal} />
         {doubleView && <div style={{ width: 20, height: pageH, background: 'linear-gradient(to right, rgba(0,0,0,0.34) 0%, rgba(90,55,20,0.12) 45%, rgba(0,0,0,0.28) 100%)', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.42)', flexShrink: 0 }} />}
