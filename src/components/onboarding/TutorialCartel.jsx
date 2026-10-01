@@ -13,7 +13,10 @@
 // como el cartel del tutorial no se puede descartar, dejaba al usuario sin
 // manera de llegar a Hechos. Subirlo tampoco servía: la bandeja del gato se
 // abre hacia arriba y volvía a chocar.
-export default function TutorialCartel({ emoji = '🔎', title, body, onClose, inline = false }) {
+// También es el cartel de las PISTAS de primera vez (ver onboarding/Pista.jsx):
+// `accion` ({ label, onClick }) agrega un botón —"Ir al Foro"— y `bottom` sube
+// el cartel cuando abajo hay algo que no debe tapar (el gato del lector móvil).
+export default function TutorialCartel({ emoji = '🔎', title, body, onClose, inline = false, accion = null, bottom = 24 }) {
   const tarjeta = (
       <div style={{
         pointerEvents: 'auto', position: 'relative', display: 'flex', alignItems: 'flex-start', gap: 14,
@@ -31,6 +34,12 @@ export default function TutorialCartel({ emoji = '🔎', title, body, onClose, i
             <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: '#2c1a0e', margin: '0 0 4px', lineHeight: 1.25 }}>{title}</p>
           )}
           <p style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 15, color: '#6b4c34', margin: 0, lineHeight: 1.45 }}>{body}</p>
+          {accion && (
+            <button type="button" onClick={accion.onClick}
+              style={{ marginTop: 10, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13.5, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '6px 16px', boxShadow: '1.5px 2px 0 rgba(74,54,34,0.35)' }}>
+              {accion.label}
+            </button>
+          )}
         </div>
         {onClose && (
           <button type="button" onClick={onClose} title="Entendido" aria-label="Cerrar pista"
@@ -45,7 +54,7 @@ export default function TutorialCartel({ emoji = '🔎', title, body, onClose, i
 
   if (inline) return tarjeta
   return (
-    <div style={{ position: 'fixed', left: 0, right: 0, bottom: 24, zIndex: 3100, display: 'flex', justifyContent: 'center', padding: '0 16px', pointerEvents: 'none' }}>
+    <div style={{ position: 'fixed', left: 0, right: 0, bottom, zIndex: 3100, display: 'flex', justifyContent: 'center', padding: '0 16px', pointerEvents: 'none' }}>
       {tarjeta}
     </div>
   )

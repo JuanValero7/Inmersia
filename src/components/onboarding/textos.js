@@ -17,7 +17,7 @@ export const TEXTO_MANUAL_HINT = {
 // que quien lee en computadora igual se entera de cómo se navega en el teléfono.
 // Por eso ya no existe `extraMovil`.
 export const TEXTO_INTRO_CARTELERA = {
-  title: 'Tu cartelera de investigación',
+  title: 'Tu investigación',
   body: 'Aquí queda guardado todo lo que vas descubriendo. Cada sección se llena a medida que progresas en el libro y va revelando sus imágenes secretas. Toca una sección para ver los detalles. Si estás desde tu celular, una vez estés en los detalles de una categoría toca a nuestra mascota para desplazarte entre ellas.',
   buttonLabel: 'Continuar',
 }
@@ -73,4 +73,76 @@ export const TEXTO_TIENDA_LIMITE = {
   title: 'Antes de entrar',
   body: 'En Inmersia puedes tener hasta 5 libros sin terminar a la vez. Al llegar a ese tope la tienda cierra sus puertas hasta que termines alguno.',
   buttonLabel: 'Entendido',
+}
+
+// ── Pistas de primera vez ───────────────────────────────────
+// Reemplazan al tour obligatorio: cada una sale UNA vez, la primera vez que el
+// usuario se encuentra con la función (ver context/pistas.jsx y Pista.jsx).
+// `bodyMovil` solo cuando la instrucción cambia en el teléfono.
+export const PISTAS = {
+  sonido: {
+    emoji: '🔊',
+    title: 'Este libro suena',
+    body: 'Toca el texto que brilla en naranja para escucharlo.',
+  },
+  ilustracion: {
+    emoji: '🖼️',
+    title: 'Nueva ilustración',
+    body: 'Las ilustraciones aparecen junto al libro a medida que avanzas. Pulsa → para verla en grande.',
+    bodyMovil: 'Las ilustraciones aparecen a medida que avanzas. Toca la foto que asoma para verla en grande.',
+  },
+  herramientas: {
+    emoji: '✏️',
+    title: 'Tus herramientas',
+    body: 'Toca al gato de abajo: ahí están tu Cuaderno y el subrayado.',
+  },
+  investigacion: {
+    emoji: '🔎',
+    title: 'Tu investigación ganó pistas',
+    body: 'Cada capítulo que lees suma personajes, lugares y hechos a tu tablero de Investigación.',
+  },
+  foro: {
+    emoji: '💬',
+    title: '¿Quieres comentarlo?',
+    body: 'Cada libro tiene su Foro, con comentarios y un chat en vivo con otros lectores. Lo encuentras en Explorar.',
+  },
+  fin_libro: {
+    emoji: '🎉',
+    title: '¡Terminaste el libro!',
+    body: 'Mira en tu Cuaderno qué predicciones acertaste, deja tu reseña con la estrella o cuéntalo en el Foro.',
+  },
+  investigacion_tablero: {
+    emoji: '🔎',
+    title: 'Tu tablero de investigación',
+    body: 'Toca una sección del tablero para ver sus detalles. Se van llenando a medida que lees.',
+  },
+  investigacion_secciones: {
+    emoji: '🧭',
+    title: 'Cambiar de sección',
+    body: 'Usa las lengüetas de arriba para pasar de una sección a otra. «Tablero» te devuelve al corcho.',
+    bodyMovil: 'Toca al gato de abajo para pasar de una sección a otra o volver al tablero.',
+  },
+  foro_pestanas: {
+    emoji: '💬',
+    title: 'El Foro del libro',
+    body: 'En Comentarios dejas tu opinión y respondes a otros. En Chat conversas en vivo con quien esté conectado.',
+  },
+  album: {
+    emoji: '🃏',
+    title: 'Ganaste barajitas',
+    body: 'Cada capítulo que lees desbloquea barajitas nuevas. Pégalas en tu Álbum.',
+  },
+  // Cierre del camino "Empezar a leer" (y de quien se registró desde un libro):
+  // la primera vez que vuelve a la Biblioteca. Hace de último paso del tour, que
+  // esta gente se saltó: dónde se buscan libros nuevos y el tope de 5.
+  tienda: {
+    emoji: '📚',
+    title: '¿Buscas tu próximo libro?',
+    body: 'Ve a la Tienda: ahí encuentras libros nuevos cuando quieras. Puedes tener hasta 5 sin terminar a la vez.',
+  },
+  comunidades: {
+    emoji: '👥',
+    title: 'Lee acompañado',
+    body: 'En Comunidades te unes a un grupo con un código de invitación o buscas uno público. Cuando lees con tu comunidad, ves sus notas dentro del libro.',
+  },
 }

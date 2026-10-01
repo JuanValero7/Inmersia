@@ -14,6 +14,7 @@ import AuthModal from './components/AuthModal.jsx'
 import { AuthModalProvider } from './context/authModal.jsx'
 import { evento } from './lib/analytics.js'
 import { useOnboardingController, OnboardingProvider } from './context/onboarding.jsx'
+import { usePistasController, PistasProvider } from './context/pistas.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
 import { LectorRoute } from './components/LectorRoute.jsx'
 import AvisoRed from './components/AvisoRed.jsx'
@@ -126,6 +127,7 @@ export default function App() {
   const navigate    = useNavigate()
   const queryClient = useQueryClient()
   const onboarding  = useOnboardingController(user, navigate)
+  const pistas      = usePistasController(user)
   const location    = useLocation()
   const isMobile    = useIsMobile()
   const isSuperuser = useSuperuser(user ?? null)
@@ -342,6 +344,7 @@ export default function App() {
   return (
     <AuthModalProvider openAuth={openAuth}>
       <OnboardingProvider value={onboarding}>
+      <PistasProvider value={pistas}>
       <Suspense fallback={Fallback}>
         <Routes>
 
@@ -404,6 +407,7 @@ export default function App() {
                 onSignOut={handleSignOut}
                 onOpenBook={handleOpenBook}
                 onGoTienda={() => navigate('/tienda')}
+                onGoCatalogo={() => navigate('/tienda', { state: { entrar: true } })}
                 onGoPerfil={() => navigate('/perfil')}
                 onGoAlbum={() => navigate('/album')}
                 onGoForo={(book) => irA(`/foro/${book.slug || book.id}`, book)}
@@ -527,6 +531,7 @@ export default function App() {
           </div>
         </div>
       )}
+      </PistasProvider>
       </OnboardingProvider>
     </AuthModalProvider>
   )
