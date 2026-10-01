@@ -109,7 +109,7 @@ export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 
             )}
           </div>
         )}
-        <p className="int-count">{list.length} {list.length === 1 ? 'aventura' : 'aventuras'}</p>
+        <p className="int-count">{list.length} {list.length === 1 ? 'libro' : 'libros'}</p>
 
         {/* Rejilla */}
         {loading ? (

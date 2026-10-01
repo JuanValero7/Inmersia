@@ -84,7 +84,7 @@ export default function CalleEscena({ pendientes = 0, limite = 5, bloqueado = fa
       <div className="closed-card">
         <span className="closed-mark">✦</span>
         <h2 className="closed-title">Cerrado</h2>
-        <p className="closed-text">Termina tus lecturas pendientes antes de adquirir nuevos mundos.</p>
+        <p className="closed-text">Termina tus lecturas pendientes antes de sumar libros nuevos.</p>
         <button className="closed-btn" onClick={back}>Volver a la calle</button>
       </div>
     </div>

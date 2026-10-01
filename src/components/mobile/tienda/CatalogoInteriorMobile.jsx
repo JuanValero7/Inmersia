@@ -131,7 +131,7 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
 
       <div className="interior-inner">
         <h1 className="int-title">Catálogo</h1>
-        <p className="int-sub">Elige tu próximo mundo</p>
+        <p className="int-sub">Elige tu próximo libro</p>
 
         <div className="int-search">
           <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round">
@@ -154,7 +154,7 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
             </button>
           </div>
         )}
-        <p className="int-count">{list.length} {list.length === 1 ? 'aventura' : 'aventuras'}</p>
+        <p className="int-count">{list.length} {list.length === 1 ? 'libro' : 'libros'}</p>
 
         {loading ? (
           <p className="int-count">Cargando catálogo…</p>

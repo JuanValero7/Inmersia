@@ -184,7 +184,7 @@ export default function PanelLibro({ libro, user, gatoColor = 'negro', yaAdquiri
               </button>
             )}
             {bloqueado && !yaAdquirido && (
-              <p className="bkp-bloqueado-msg">Termina tus lecturas pendientes antes de adquirir nuevos mundos.</p>
+              <p className="bkp-bloqueado-msg">Termina tus lecturas pendientes antes de sumar libros nuevos.</p>
             )}
           </>
         ) : (
@@ -192,6 +192,12 @@ export default function PanelLibro({ libro, user, gatoColor = 'negro', yaAdquiri
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
             Leer muestra
           </button>
+        )}
+        {/* Sin este aviso el muro de la muestra llegaba sin avisar. */}
+        {!user && (
+          <p style={{ textAlign: 'center', fontSize: 13, fontWeight: 600, color: '#8a6a4a', lineHeight: 1.4, margin: 0 }}>
+            Lee los dos primeros capítulos sin crear una cuenta.
+          </p>
         )}
       </div>
 
