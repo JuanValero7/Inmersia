@@ -10,6 +10,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useReadingStats } from './useReadingStats.js'
+import { capituloActualDesdePct } from '../components/cartelera/carteleraHelpers.js'
 
 // A partir de qué avance se cargan las estadísticas de lectura para la placa
 // del tablero "Datos"/"Resumen" (ver TableroDatos.jsx). Recién cerca del final
@@ -66,12 +67,7 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
 
       const pct = Math.max(0, Math.min(100, prog?.porcentaje ?? 0))
 
-      // capActual derivado de pct: inversa de round(pendingIdx / total * 100)
-      // donde pendingIdx (0-based) = número de capítulo (1-based) ya completado.
-      const totalChaps = chapsRes.count ?? 0
-      const capActual = (pct > 0 && totalChaps > 0)
-        ? Math.round(pct / 100 * totalChaps) + 1
-        : 0
+      const capActual = capituloActualDesdePct(pct, chapsRes.count ?? 0)
 
       // 2) En paralelo: items + imágenes + predicciones, filtrados en servidor
       let itemsQuery = supabase.from('cartelera_items')

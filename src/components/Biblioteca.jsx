@@ -45,9 +45,10 @@ import { TEXTO_ALBUM_HINT, TEXTO_TIENDA_FINAL } from './onboarding/textos.js'
  * @param {() => void} props.onGoPerfil
  * @param {() => void} props.onGoAlbum
  * @param {(libro: object) => void} props.onGoForo
+ * @param {(libro: object) => void} props.onGoInvestigacion   la Cartelera del libro (nota del hero)
  * @param {(libro: object) => void} props.onGoNotebook
  */
-function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSignOut, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoNotebook }) {
+function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSignOut, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoInvestigacion, onGoNotebook }) {
   // Lógica de datos compartida con BibliotecaMobile (ver src/hooks/useBiblioteca.js)
   const {
     loadingBooks, categories, books, featured, novedades, recomendaciones, displayName, inicial,
@@ -185,7 +186,7 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
           <div style={{ flex: 3, minWidth: 0 }}>
             {loadingBooks
               ? <SwimlaneSkeleton gatoColor={gatoColor} />
-              : <Swimlane featured={featured} onOpen={openBook} novedades={novedades} recomendaciones={recomendaciones} onOpenLibro={setSelectedLibro} onPreviewLibro={setReelLibro} gatoColor={gatoColor} />}
+              : <Swimlane featured={featured} onOpen={openBook} onGoInvestigacion={onGoInvestigacion} novedades={novedades} recomendaciones={recomendaciones} onOpenLibro={setSelectedLibro} onPreviewLibro={setReelLibro} gatoColor={gatoColor} />}
           </div>
           <div style={{ flex: 2, minWidth: 0 }}>
             {loadingBooks

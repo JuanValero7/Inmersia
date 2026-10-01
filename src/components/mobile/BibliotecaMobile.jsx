@@ -90,7 +90,7 @@ function HeroLaneSkeleton({ gatoColor }) {
   )
 }
 
-export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, isSuperuser, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoNotebook, onGoComunidades }) {
+export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, isSuperuser, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoInvestigacion, onGoNotebook, onGoComunidades }) {
   // Lógica de datos compartida con Biblioteca desktop (ver src/hooks/useBiblioteca.js)
   const {
     loadingBooks, categories, categoriasMap, books, featured, novedades, recomendaciones, displayName, inicial,
@@ -281,10 +281,13 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
                     <div className="bibm-hero-auth">{featured.author}</div>
                     {typeof featured.progress === 'number' && (
                       <div className="bibm-hero-prog">
-                        <div style={{ marginBottom: 6 }}>
-                          <span style={{ fontWeight: 700, fontSize: 14, color: INK }}>{Math.round(featured.progress * 100)}% <span style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(74,54,34,0.55)' }}>leído</span></span>
-                        </div>
-                        <div className="bibm-bar"><div style={{ width: `${Math.round(featured.progress * 100)}%` }} /></div>
+                        {featured.tiempoLeido && (
+                          <span className="bibm-hero-tiempo">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                            Llevas {featured.tiempoLeido}
+                          </span>
+                        )}
+                        <div className="bibm-bar" role="progressbar" aria-valuenow={Math.round(featured.progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Progreso de lectura"><div style={{ width: `${Math.round(featured.progress * 100)}%` }} /></div>
                       </div>
                     )}
                     <button className="bibm-btn bibm-hero-cta" onClick={(e) => openBook(featured, e.currentTarget.getBoundingClientRect())}>
@@ -296,6 +299,25 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
               ) : <div className="bibm-hero-empty">Cuando empieces a leer un libro aparecerá acá para que retomes donde lo dejaste.</div>}
             </div>
           </div>
+
+          {/* Solapa bajo el hero: lo último desbloqueado en la Cartelera.
+              Se SUMA debajo (asoma por detrás del borde) en vez de robarle
+              alto al hero, que no puede crecer. */}
+          {featured?.investigacion && (
+            <button className="bibm-hero-solapa" onClick={() => onGoInvestigacion(featured)}>
+              <span className="bibm-hero-solapa-ico">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+              </span>
+              <span className="bibm-hero-solapa-txt">
+                <span className="bibm-hero-solapa-kicker">Nuevo en la investigación</span>
+                <span className="bibm-hero-solapa-nombre">
+                  {featured.investigacion.nombre}
+                  {featured.investigacion.mas > 0 && ` y ${featured.investigacion.mas} ${featured.investigacion.mas === 1 ? 'ficha' : 'fichas'} más`}
+                </span>
+              </span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+          )}
 
           {/* Tira inferior: Últimos abiertos / Novedades / Para ti */}
           {(ultimosVisible.length > 0 || novedades.length > 0 || recomendaciones.length > 0) && (

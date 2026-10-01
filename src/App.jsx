@@ -400,6 +400,7 @@ export default function App() {
                 onGoPerfil={() => navigate('/perfil')}
                 onGoAlbum={() => navigate('/album')}
                 onGoForo={(book) => irA(`/foro/${book.slug || book.id}`, book)}
+                onGoInvestigacion={(book) => irA(`/investigacion/${book.slug || book.id}`, book)}
                 onGoNotebook={handleGoNotebook}
                 onGoComunidades={(vista) => navigate('/comunidades', { state: { from: location.pathname, vista } })}
               />

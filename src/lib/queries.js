@@ -16,6 +16,8 @@
 import { useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from './supabase.js'
+import { computeSesionStats } from '../hooks/useReadingStats.js'
+import { capituloActualDesdePct } from '../components/cartelera/carteleraHelpers.js'
 
 const STALE_TIME = 60_000
 
@@ -38,6 +40,9 @@ export const queryKeys = {
   mensajitosCapa: (comunidadId, libroId, userId) => ['mensajitosCapa', comunidadId, libroId, userId],
   // Denuncias (ver src/hooks/useDenuncias.js)
   denuncias: (pendientes) => ['denuncias', pendientes],
+  // Hero "Seguir leyendo" de la Biblioteca (ver useBiblioteca)
+  tiempoLibro: (userId, libroId) => ['tiempoLibro', userId, libroId],
+  investigacionReciente: (libroId, pct) => ['investigacionReciente', libroId, pct],
 }
 
 // perfiles.nombre/apellido — Biblioteca (saludo) y Perfil (formulario)
@@ -100,6 +105,50 @@ export function useBibliotecaUsuarioQuery(userId) {
       return data || []
     },
     enabled: !!userId,
+    staleTime: STALE_TIME,
+  })
+}
+
+// Tiempo leído de un libro (segundos), para el chip "Llevas…" del hero.
+// staleTime 0: se vuelve a pedir cada vez que se monta la Biblioteca, que es
+// justo al salir del lector, cuando el tiempo acaba de cambiar. Mientras
+// tanto se pinta el valor anterior de la caché.
+export function useTiempoLibroQuery(userId, libroId) {
+  return useQuery({
+    queryKey: queryKeys.tiempoLibro(userId, libroId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sesiones_lectura').select('started_at, ended_at, segundos_activos')
+        .eq('user_id', userId).eq('libro_id', libroId)
+      if (error) throw error
+      return computeSesionStats(data || []).totalSeg
+    },
+    enabled: !!userId && !!libroId,
+    staleTime: 0,
+  })
+}
+
+// Fichas de la Cartelera desbloqueadas con el último capítulo terminado
+// (capitulo_numero = capítulo actual − 1): la nota "Nuevo en la
+// investigación" del hero. No guarda qué vio el usuario: muestra siempre lo
+// último desbloqueado, y cambia al terminar el siguiente capítulo.
+// La clave lleva el porcentaje, así que solo se vuelve a pedir si avanzó.
+export function useInvestigacionRecienteQuery(libroId, pct) {
+  return useQuery({
+    queryKey: queryKeys.investigacionReciente(libroId, pct),
+    queryFn: async () => {
+      const { count, error: errCaps } = await supabase
+        .from('capitulos').select('id', { count: 'exact', head: true }).eq('libro_id', libroId)
+      if (errCaps) throw errCaps
+      const capitulo = capituloActualDesdePct(pct, count ?? 0) - 1
+      if (capitulo < 1) return { capitulo: 0, items: [] }
+      const { data, error } = await supabase
+        .from('cartelera_items').select('nombre, seccion')
+        .eq('libro_id', libroId).eq('capitulo_numero', capitulo)
+      if (error) throw error
+      return { capitulo, items: data || [] }
+    },
+    enabled: !!libroId && pct > 0,
     staleTime: STALE_TIME,
   })
 }

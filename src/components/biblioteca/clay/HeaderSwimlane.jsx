@@ -167,8 +167,43 @@ function RecomendacionSpotlight({ recomendaciones, idx, setIdx, onOpen, onPrevie
 // Debajo de este ancho de caja la portada de 300px (207 de ancho) más el
 // título de 42px no dejan sitio para el botón "Continuar" (~180px).
 const HERO_ANCHO_ESTRECHO = 560
+// La nota "Nuevo en la investigación" va colgada arriba a la derecha solo si
+// cabe junto al título: 207 (portada) + 24 + 48 + ~280 de título + 200 de
+// nota ≈ 760. Por debajo baja al flujo, bajo el botón.
+const HERO_ANCHO_NOTA_LATERAL = 760
+const NOTA_ANCHO = 196
 
-function HeroFeatured({ book, onOpen }) {
+// Nota de papel con lo último desbloqueado en la Cartelera (ver
+// resumirInvestigacion en useBiblioteca). `lateral`: colgada arriba a la
+// derecha e inclinada; si no, recta y en el flujo.
+function NotaInvestigacion({ investigacion, onClick, lateral }) {
+  const ink = INK;
+  const { nombre, mas, desglose } = investigacion;
+  return (
+    <button onClick={onClick}
+      style={{
+        ...(lateral
+          ? { position: 'absolute', top: 0, right: 10, zIndex: 2, transform: 'rotate(2.5deg)' }
+          : { position: 'relative', marginTop: 18 }),
+        width: NOTA_ANCHO, boxSizing: 'border-box', background: 'var(--paper)', border: `2px solid ${ink}`, borderRadius: '4px 14px 14px 4px',
+        padding: '14px 16px 12px', boxShadow: `3px 4px 0 ${ink}24`, display: 'flex', flexDirection: 'column', gap: 4,
+        fontFamily: 'inherit', color: ink, textAlign: 'left', cursor: 'pointer',
+      }}>
+      <span style={{ position: 'absolute', top: -9, left: 64, width: 64, height: 18, background: 'rgba(242,121,42,0.55)', transform: 'rotate(-4deg)' }} />
+      <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--brown-mid)' }}>Nuevo en la investigación</span>
+      <span style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.15 }}>
+        {nombre}{mas > 0 && ` y ${mas} ${mas === 1 ? 'ficha' : 'fichas'} más`}
+      </span>
+      <span style={{ fontFamily: "'Poppins', system-ui, sans-serif", fontSize: 12, fontWeight: 500, color: 'rgba(74,54,34,0.72)' }}>{desglose}</span>
+      <span style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, fontWeight: 700 }}>
+        Ver en la Cartelera
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </span>
+    </button>
+  );
+}
+
+function HeroFeatured({ book, onOpen, onGoInvestigacion }) {
   const ink = INK, accent = '#F2792A';
   const [hov, setHov] = React.useState(false);
   const [cajaRef, ancho] = useAnchoContenedor();
@@ -177,17 +212,23 @@ function HeroFeatured({ book, onOpen }) {
   const pct = hasProgress ? Math.round(book.progress * 100) : 0;
   // ancho 0 = todavía sin medir; asumimos holgado para no parpadear.
   const estrecho = ancho !== 0 && ancho < HERO_ANCHO_ESTRECHO;
+  const notaLateral = !!book.investigacion && (ancho === 0 || ancho >= HERO_ANCHO_NOTA_LATERAL);
   return (
-    <div ref={cajaRef} style={{ display: 'flex', gap: estrecho ? 26 : 48, alignItems: 'center', padding: '16px 14px 26px' }}>
+    <div ref={cajaRef} style={{ position: 'relative', display: 'flex', gap: estrecho ? 26 : 48, alignItems: 'center', padding: '16px 14px 26px' }}>
+      {notaLateral && <NotaInvestigacion investigacion={book.investigacion} onClick={() => onGoInvestigacion(book)} lateral />}
       <div onClick={(e) => onOpen(book, e.currentTarget.getBoundingClientRect())}
         onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
         style={{ cursor: 'pointer', flexShrink: 0, marginLeft: estrecho ? 0 : 24, transform: hov ? 'rotate(0deg) translateY(-5px)' : 'rotate(-6deg)', transformOrigin: 'center bottom', transition: 'transform .35s cubic-bezier(.2,.75,.3,1)', filter: `drop-shadow(5px 12px 16px ${ink}3a)` }}>
         <BookCover book={book} h={estrecho ? 220 : 300} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 800, fontSize: estrecho ? 30 : 42, lineHeight: 1.04, letterSpacing: '-0.015em', color: ink,
-          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{book.title}</div>
-        <div style={{ color: 'rgba(74,54,34,0.64)', fontSize: estrecho ? 16 : 19, marginTop: 10, fontWeight: 600 }}>{book.author}{cat ? ` · ${cat}` : ''}</div>
+        {/* Con la nota colgada, solo el título y el autor le dejan sitio: la
+            barra, el chip y el botón quedan por debajo de ella. */}
+        <div style={{ paddingRight: notaLateral ? NOTA_ANCHO + 10 : 0 }}>
+          <div style={{ fontWeight: 800, fontSize: estrecho ? 30 : 42, lineHeight: 1.04, letterSpacing: '-0.015em', color: ink,
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{book.title}</div>
+          <div style={{ color: 'rgba(74,54,34,0.64)', fontSize: estrecho ? 16 : 19, marginTop: 10, fontWeight: 600 }}>{book.author}{cat ? ` · ${cat}` : ''}</div>
+        </div>
 
         <div style={{ marginTop: estrecho ? 16 : 26, maxWidth: 520 }}>
           {hasProgress ? (
@@ -198,6 +239,13 @@ function HeroFeatured({ book, onOpen }) {
               <div style={{ height: 14, borderRadius: 9, background: 'rgba(74,54,34,0.16)', overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${pct}%`, borderRadius: 9, background: `linear-gradient(90deg, ${accent}, ${inmTint(accent, 0.2)})` }} />
               </div>
+              {book.tiempoLeido && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 14, background: 'rgba(255,253,247,0.85)',
+                  border: `2px solid ${ink}4d`, borderRadius: 999, padding: '5px 12px', fontSize: 14, fontWeight: 700, color: ink, whiteSpace: 'nowrap' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                  Llevas {book.tiempoLeido} aquí
+                </span>
+              )}
             </>
           ) : (
             <div style={{ fontSize: 17, color: 'rgba(74,54,34,0.6)', fontWeight: 600, lineHeight: 1.5 }}>
@@ -213,6 +261,9 @@ function HeroFeatured({ book, onOpen }) {
             {hasProgress ? 'Continuar' : 'Empezar a leer'}
           </button>
         </div>
+        {book.investigacion && !notaLateral && (
+          <NotaInvestigacion investigacion={book.investigacion} onClick={() => onGoInvestigacion(book)} />
+        )}
       </div>
     </div>
   );
@@ -255,7 +306,7 @@ const veloCrema = {
   background: 'linear-gradient(90deg, #f1e8d4 28%, rgba(241,232,212,0.55) 46%, rgba(241,232,212,0) 66%)',
 };
 
-function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOpenLibro, onPreviewLibro, gatoColor = 'negro' }) {
+function Swimlane({ featured, onOpen, onGoInvestigacion, novedades = [], recomendaciones = [], onOpenLibro, onPreviewLibro, gatoColor = 'negro' }) {
   const [tab, setTab] = React.useState('seguir');
   // Índice del libro en foco dentro de cada spotlight (Novedades /
   // Recomendaciones). Vive acá para que el fondo hero pueda cambiar al
@@ -306,7 +357,7 @@ function Swimlane({ featured, onOpen, novedades = [], recomendaciones = [], onOp
           <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             <div style={{ margin: 'auto 0', width: '100%' }}>
             {tab === 'seguir'
-              ? (featured ? <HeroFeatured book={featured} onOpen={onOpen} /> : <EmptyLane msg="Cuando empieces a leer un libro aparecerá acá para que retomes donde lo dejaste." />)
+              ? (featured ? <HeroFeatured book={featured} onOpen={onOpen} onGoInvestigacion={onGoInvestigacion} /> : <EmptyLane msg="Cuando empieces a leer un libro aparecerá acá para que retomes donde lo dejaste." />)
               : tab === 'novedades'
                 ? (novedades.length > 0
                     ? <NovedadesSpotlight novedades={novedades} idx={novIdx} setIdx={setNovIdx} onOpen={onOpenLibro} onPreview={onPreviewLibro} />

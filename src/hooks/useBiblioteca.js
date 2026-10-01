@@ -20,11 +20,40 @@
 // ─────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
-import { usePerfilQuery, useCatalogoLibrosQuery, useBibliotecaUsuarioQuery, useInvalidateBibliotecaUsuario } from '../lib/queries.js'
+import { usePerfilQuery, useCatalogoLibrosQuery, useBibliotecaUsuarioQuery, useInvalidateBibliotecaUsuario, useTiempoLibroQuery, useInvestigacionRecienteQuery } from '../lib/queries.js'
+import { formatSeg } from './useReadingStats.js'
+import { getSecciones } from '../components/cartelera/carteleraHelpers.js'
 import { MANUAL_LIBRO_ID, COLOR_BOOK_FALLBACK2 } from '../components/biblioteca/constants.js'
 
 const NOVEDADES_COUNT = 5
 const RECOMENDACIONES_COUNT = 5
+
+// Por debajo de esto el chip "Llevas…" del hero no sale: "Llevas 2 min" no
+// dice nada y se ve pobre.
+const MIN_SEG_TIEMPO_HERO = 5 * 60
+
+// Fichas del último capítulo terminado → lo que pinta la nota del hero:
+//   nombre    la primera, en el orden de las secciones (personajes primero)
+//   mas       cuántas otras hay ("Kaya y 2 fichas más")
+//   desglose  "1 personaje · 2 lugares"
+// null si ese capítulo no desbloqueó nada.
+function resumirInvestigacion(items, esNoficcion) {
+  if (!items?.length) return null
+  const secciones = getSecciones(esNoficcion)
+  const orden = (s) => { const i = secciones.findIndex(x => x.key === s); return i < 0 ? secciones.length : i }
+  const ordenados = [...items].sort((a, b) => orden(a.seccion) - orden(b.seccion))
+  const porSeccion = new Map()
+  ordenados.forEach(it => porSeccion.set(it.seccion, (porSeccion.get(it.seccion) || 0) + 1))
+  const desglose = [...porSeccion].map(([key, n]) => {
+    const sec = secciones.find(x => x.key === key)
+    if (!sec) return `${n} ${n === 1 ? 'ficha' : 'fichas'}`
+    // El plural es el label cuando ya lo es (Lugares); si no (Glosario,
+    // Resumen) se pluraliza el singular (términos, capítulos).
+    const plural = sec.label.endsWith('s') ? sec.label : `${sec.singular}s`
+    return `${n} ${(n === 1 ? sec.singular : plural).toLowerCase()}`
+  }).join(' · ')
+  return { nombre: ordenados[0].nombre, mas: ordenados.length - 1, desglose }
+}
 
 // PRNG determinístico (mulberry32) — misma seed siempre da el mismo orden,
 // así "Recomendaciones" no salta en cada render pero cambia día a día.
@@ -180,6 +209,23 @@ export function useBiblioteca(user, lastOpenedBookIds) {
     return nonManual[0] || books.find(b => b.id === MANUAL_LIBRO_ID) || null
   }, [books, lastOpenedBookIds])
 
+  // Datos extra del hero, solo para el libro destacado: tiempo leído (chip
+  // "Llevas…") y lo último desbloqueado en la Cartelera (nota "Nuevo en la
+  // investigación"). Se piden aquí para que desktop y móvil lean lo mismo.
+  const pctFeatured = typeof featured?.progress === 'number' ? Math.round(featured.progress * 100) : 0
+  const tiempoQuery = useTiempoLibroQuery(user.id, featured?.id)
+  const investigacionQuery = useInvestigacionRecienteQuery(featured?.id, pctFeatured)
+
+  const featuredConHero = useMemo(() => {
+    if (!featured) return null
+    const tiempoSeg = tiempoQuery.data ?? 0
+    return {
+      ...featured,
+      tiempoLeido: tiempoSeg >= MIN_SEG_TIEMPO_HERO ? formatSeg(tiempoSeg) : null,
+      investigacion: resumirInvestigacion(investigacionQuery.data?.items, !featured.es_ficcion),
+    }
+  }, [featured, tiempoQuery.data, investigacionQuery.data])
+
   const displayName = perfil?.nombre ? `${perfil.nombre} ${perfil.apellido || ''}`.trim() : (user?.email?.split('@')[0] || 'Lector')
   const inicial = displayName.charAt(0).toUpperCase()
 
@@ -208,7 +254,7 @@ export function useBiblioteca(user, lastOpenedBookIds) {
 
   return {
     rawBooks, loadingBooks, perfil, categories,
-    categoriasMap, books, featured,
+    categoriasMap, books, featured: featuredConHero,
     novedades, recomendaciones,
     displayName, inicial,
     fetchCategories, fetchUserBooks,
