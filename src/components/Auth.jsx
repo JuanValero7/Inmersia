@@ -13,7 +13,8 @@ const GATO_NARANJA  = '/assets/tienda/gato-naranja-4.webp'
 const GATO_BLANCO   = '/assets/tienda/gato-blanco-5.webp'
 const GATO_NEGRO    = '/assets/cartelera/gato-negro-2.webp'
 
-// Los valores tienen que coincidir con los que lee saludoBienvenida() (lib/genero.js).
+// El género ya no flexiona el saludo (ahora es "¡Hola, Ana!"); se sigue guardando
+// en user_metadata y en perfiles.genero (migración 043) hasta rehacer el registro.
 const GENEROS = [
   { value: 'masculino', label: 'Masculino' },
   { value: 'femenino',  label: 'Femenino'  },

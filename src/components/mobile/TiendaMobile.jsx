@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useTiendaData } from '../../hooks/useTiendaData.js'
 import { LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
 import { useOnboarding } from '../../context/onboarding.jsx'
+import { usePistas } from '../../context/pistas.jsx'
 import TutorialHint from '../onboarding/TutorialHint.jsx'
 import { TEXTO_TIENDA_LIMITE } from '../onboarding/textos.js'
 import CalleEscena from '../tienda/CalleEscena.jsx'
@@ -9,7 +11,9 @@ import CatalogoInteriorMobile from './tienda/CatalogoInteriorMobile.jsx'
 import '../../styles/tienda.css'
 
 export default function VistaTiendaMobile({ onGoBack, user, gatoColor, onOpenBook, isSuperuser = false }) {
-  const [subView,    setSubView]    = useState(!user ? 'catalogo' : 'calle')
+  // "Empezar a leer" (bienvenida) llega con state.entrar: se salta la fachada.
+  const location = useLocation()
+  const [subView,    setSubView]    = useState(!user || location.state?.entrar ? 'catalogo' : 'calle')
   const [filtroTipo, setFiltroTipo] = useState('todos')
 
   const { catalogo, loading, pendientes, accesoBloqueado, tieneLibro, libroLeido, comprar, comprarYLeer } =
@@ -20,6 +24,7 @@ export default function VistaTiendaMobile({ onGoBack, user, gatoColor, onOpenBoo
   // FACHADA, antes de cruzar la puerta, porque ese límite decide qué puede
   // llevarse de adentro. Al cerrarlo el tutorial termina (tienda → done).
   const onboarding = useOnboarding()
+  const pistas = usePistas()   // el aviso del tour equivale a la pista 'tienda'
   const showLimiteHint = onboarding.active && onboarding.step === 'tienda' && subView === 'calle'
 
   const handleEntrar = () => setSubView('catalogo')
@@ -40,7 +45,7 @@ export default function VistaTiendaMobile({ onGoBack, user, gatoColor, onOpenBoo
             title={TEXTO_TIENDA_LIMITE.title}
             body={TEXTO_TIENDA_LIMITE.body}
             buttonLabel={TEXTO_TIENDA_LIMITE.buttonLabel}
-            onClose={() => onboarding.advance('tienda')}   // tienda → done
+            onClose={() => { pistas.marcar('tienda'); onboarding.advance('tienda') }}   // tienda → done
           />
         )}
       </>

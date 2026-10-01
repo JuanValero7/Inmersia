@@ -12,6 +12,10 @@
 // Máquina de estados (lineal). Cada superficie lee `step` y restringe la
 // navegación a un único destino permitido:
 //   bienvenida → manual → investigacion → foro → album → tienda_final → tienda → done
+//
+// El tour es OPCIONAL: la bienvenida ofrece "Empezar a leer" (skip → catálogo)
+// o "Muéstrame cómo funciona" (manual → …). Y quien se registra desde un libro
+// no ve ni la bienvenida (ver más abajo).
 // ─────────────────────────────────────────────────────────────
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -63,8 +67,16 @@ export function useOnboardingController(user, navigate) {
         // —migración sin correr— data?.x es undefined y NO se dispara nada.)
         if (data?.onboarding_completado === false && !startedRef.current) {
           startedRef.current = true
-          setStep('bienvenida')
-          navigate('/biblioteca')
+          // Quien se registra desde el muro de la muestra estaba leyendo: se
+          // queda en el libro, sin bienvenida ni tour. Las funciones las va
+          // descubriendo al encontrárselas. El flag se marca igual, así que la
+          // bienvenida no aparece en la próxima sesión.
+          if (window.location.pathname.startsWith('/libro/')) {
+            setStep('done')
+          } else {
+            setStep('bienvenida')
+            navigate('/biblioteca')
+          }
           supabase.from('perfiles').update({ onboarding_completado: true }).eq('id', user.id)
             .then(({ error }) => { if (error) console.error('No se pudo marcar el onboarding:', error.message) })
         } else {

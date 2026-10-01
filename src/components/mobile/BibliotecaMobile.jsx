@@ -14,8 +14,9 @@ import { useCompraLibro, LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js
 import { SIN_CATEGORIA_ID, COLOR_DEFAULT, MANUAL_LIBRO_ID } from '../biblioteca/constants.js'
 import { INK, BookCover, Skel } from './biblioteca/bibmHelpers.jsx'
 import { imgUrl } from '../../lib/img.js'
-import { saludoBienvenida } from '../../lib/genero.js'
 import { useOnboarding } from '../../context/onboarding.jsx'
+import { usePistas } from '../../context/pistas.jsx'
+import Pista from '../onboarding/Pista.jsx'
 import WelcomePopup from '../onboarding/WelcomePopup.jsx'
 import TutorialHint from '../onboarding/TutorialHint.jsx'
 import { TEXTO_ALBUM_HINT, TEXTO_TIENDA_FINAL } from '../onboarding/textos.js'
@@ -90,7 +91,7 @@ function HeroLaneSkeleton({ gatoColor }) {
   )
 }
 
-export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, isSuperuser, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoInvestigacion, onGoNotebook, onGoComunidades }) {
+export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, isSuperuser, onOpenBook, onGoTienda, onGoCatalogo, onGoPerfil, onGoAlbum, onGoForo, onGoInvestigacion, onGoNotebook, onGoComunidades }) {
   // Lógica de datos compartida con Biblioteca desktop (ver src/hooks/useBiblioteca.js)
   const {
     loadingBooks, categories, categoriasMap, books, featured, novedades, recomendaciones, displayName, inicial,
@@ -177,11 +178,22 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
   const showWelcome    = onboarding.active && onboarding.step === 'bienvenida'
   const showAlbumHint  = onboarding.active && onboarding.step === 'album'
   const showTiendaHint = onboarding.active && onboarding.step === 'tienda_final'
+  // Pistas de primera vez de la Biblioteca (fuera del tour), en este orden: la
+  // Tienda (último aviso de "Empezar a leer"), el Álbum cuando ya leyó algo, y
+  // las Comunidades.
+  const pistas = usePistas()
+  const yaLeyoAlgo = books.some(b => b.id !== MANUAL_LIBRO_ID && (b.progress ?? 0) > 0)
+  const pistaBiblioteca = pistas.primera(['tienda', yaLeyoAlgo && 'album', 'comunidades'])
   const openManual = React.useCallback(() => {
     if (!manualBook) return
     onboarding.advance('bienvenida')   // bienvenida → manual
     onOpenBook(manualBook)
   }, [manualBook, onboarding, onOpenBook])
+  // "Empezar a leer": sin tour, directo a elegir su primer libro.
+  const empezarALeer = React.useCallback(() => {
+    onboarding.skip()
+    onGoCatalogo()
+  }, [onboarding, onGoCatalogo])
 
   // ── Filtrado + agrupado (derivados de UI) ──
   const searchedBooks = React.useMemo(() => books.filter(b => {
@@ -235,7 +247,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
       <div className="bibm-header-wrap">
         <div className="bibm-header">
           <div className="bibm-logo"><img src="/assets/inmersia-logo2.png" alt="Inmersia" /></div>
-          <button className="bibm-icon-btn bibm-com-btn" onClick={() => setHojaLeerComo(true)}
+          <button className="bibm-icon-btn bibm-com-btn" onClick={() => { pistas.marcar('comunidades'); setHojaLeerComo(true) }}
             title={activa ? `Leyendo con ${activa.nombre}` : 'Comunidades'}>
             {activa
               ? <Sello c={activa} tam="sm" />
@@ -260,7 +272,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
 
       {/* Contenido — una sola tira de scroll general */}
       <div className="bibm-noscroll bibm-scroll">
-        <div className="bibm-greeting">¡{saludoBienvenida(user?.user_metadata?.genero)}, {displayName.split(' ')[0]}!</div>
+        <div className="bibm-greeting">¡Hola, {displayName.split(' ')[0]}!</div>
 
         {loadingBooks ? <HeroLaneSkeleton gatoColor={gatoColor} /> : (<>
           {/* Hero "Seguir leyendo" con el gato — único elemento del hero */}
@@ -454,7 +466,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
           user={user}
           manualReady={!!manualBook}
           onOpenManual={openManual}
-          onSkip={onboarding.skip}
+          onStartReading={empezarALeer}
         />
       )}
 
@@ -476,6 +488,13 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
           buttonLabel={TEXTO_TIENDA_FINAL.buttonLabel}
           onClose={() => onboarding.advance('tienda_final')}   // tienda_final → tienda
         />
+      )}
+
+      {pistaBiblioteca && (
+        <Pista id={pistaBiblioteca} movil
+          accion={pistaBiblioteca === 'album' ? { label: 'Ir al Álbum', onClick: onGoAlbum }
+            : pistaBiblioteca === 'tienda' ? { label: 'Ir a la Tienda', onClick: onGoTienda }
+            : { label: 'Ver comunidades', onClick: () => setHojaLeerComo(true) }} />
       )}
     </div>
   )

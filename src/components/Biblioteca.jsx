@@ -15,8 +15,9 @@ import ComunidadesMenu from './comunidades/ComunidadesMenu.jsx'
 import ComunidadPanel from './comunidades/ComunidadPanel.jsx'
 import { useCatalogoLibrosQuery } from '../lib/queries.js'
 import { INK, Skel } from './biblioteca/clay/helpers.jsx'
-import { saludoBienvenida } from '../lib/genero.js'
 import { useOnboarding } from '../context/onboarding.jsx'
+import { usePistas } from '../context/pistas.jsx'
+import Pista from './onboarding/Pista.jsx'
 import WelcomePopup from './onboarding/WelcomePopup.jsx'
 import TutorialHint from './onboarding/TutorialHint.jsx'
 import { TEXTO_ALBUM_HINT, TEXTO_TIENDA_FINAL } from './onboarding/textos.js'
@@ -42,13 +43,14 @@ import { TEXTO_ALBUM_HINT, TEXTO_TIENDA_FINAL } from './onboarding/textos.js'
  * @param {() => void} props.onSignOut
  * @param {(libro: object) => void} props.onOpenBook
  * @param {() => void} props.onGoTienda
+ * @param {() => void} props.onGoCatalogo   entra directo al interior de la Tienda (sin la fachada)
  * @param {() => void} props.onGoPerfil
  * @param {() => void} props.onGoAlbum
  * @param {(libro: object) => void} props.onGoForo
  * @param {(libro: object) => void} props.onGoInvestigacion   la Cartelera del libro (nota del hero)
  * @param {(libro: object) => void} props.onGoNotebook
  */
-function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSignOut, onOpenBook, onGoTienda, onGoPerfil, onGoAlbum, onGoForo, onGoInvestigacion, onGoNotebook }) {
+function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSignOut, onOpenBook, onGoTienda, onGoCatalogo, onGoPerfil, onGoAlbum, onGoForo, onGoInvestigacion, onGoNotebook }) {
   // Lógica de datos compartida con BibliotecaMobile (ver src/hooks/useBiblioteca.js)
   const {
     loadingBooks, categories, books, featured, novedades, recomendaciones, displayName, inicial,
@@ -153,11 +155,22 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
   const showWelcome     = onboarding.active && onboarding.step === 'bienvenida';
   const showAlbumHint   = onboarding.active && onboarding.step === 'album';
   const showTiendaHint  = onboarding.active && onboarding.step === 'tienda_final';
+  // Pistas de primera vez de la Biblioteca (fuera del tour), en este orden: la
+  // Tienda (último aviso de "Empezar a leer"), el Álbum cuando ya leyó algo, y
+  // las Comunidades.
+  const pistas = usePistas()
+  const yaLeyoAlgo = books.some(b => b.id !== MANUAL_LIBRO_ID && (b.progress ?? 0) > 0)
+  const pistaBiblioteca = pistas.primera(['tienda', yaLeyoAlgo && 'album', 'comunidades'])
   const openManual = React.useCallback(() => {
     if (!manualBook) return;
     onboarding.advance('bienvenida');   // bienvenida → manual
     onOpenBook(manualBook);
   }, [manualBook, onboarding, onOpenBook]);
+  // "Empezar a leer": sin tour, directo a elegir su primer libro.
+  const empezarALeer = React.useCallback(() => {
+    onboarding.skip();
+    onGoCatalogo();
+  }, [onboarding, onGoCatalogo]);
 
   const handleGoTienda = () => {
     onGoTienda()
@@ -178,7 +191,7 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
         comunidades={<ComunidadesMenu user={user} onVerComunidad={(id, bienvenida) => setPanelComunidad({ id, bienvenida })} />} />
 
       <div style={{ padding: '26px 32px 56px' }}>
-        <div style={{ fontWeight: 800, fontSize: 32, letterSpacing: '-0.01em', color: headerInk }}>¡{saludoBienvenida(user?.user_metadata?.genero)}, {displayName.split(' ')[0]}!</div>
+        <div style={{ fontWeight: 800, fontSize: 32, letterSpacing: '-0.01em', color: headerInk }}>¡Hola, {displayName.split(' ')[0]}!</div>
 
         {/* Fila superior: hero (60%) + lateral con 2 últimos abiertos y
             accesos a Tienda/Álbum (40%). */}
@@ -286,7 +299,7 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
           user={user}
           manualReady={!!manualBook}
           onOpenManual={openManual}
-          onSkip={onboarding.skip}
+          onStartReading={empezarALeer}
         />
       )}
 
@@ -308,6 +321,13 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
           buttonLabel={TEXTO_TIENDA_FINAL.buttonLabel}
           onClose={() => onboarding.advance('tienda_final')}   // tienda_final → tienda
         />
+      )}
+
+      {pistaBiblioteca && (
+        <Pista id={pistaBiblioteca}
+          accion={pistaBiblioteca === 'album' ? { label: 'Ir al Álbum', onClick: onGoAlbum }
+            : pistaBiblioteca === 'tienda' ? { label: 'Ir a la Tienda', onClick: onGoTienda }
+            : null} />
       )}
     </div>
   );
