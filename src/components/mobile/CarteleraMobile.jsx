@@ -23,6 +23,8 @@ import { useOnboarding } from '../../context/onboarding.jsx'
 import TutorialHint from '../onboarding/TutorialHint.jsx'
 import TutorialCartel from '../onboarding/TutorialCartel.jsx'
 import { TEXTO_INTRO_CARTELERA, CARTEL_HECHOS } from '../onboarding/textos.js'
+import { usePistas } from '../../context/pistas.jsx'
+import Pista from '../onboarding/Pista.jsx'
 import '../../styles/cartelera.css'
 import '../../styles/cartelera.mobile.css'
 
@@ -267,7 +269,11 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
     onJumpConsumed?.()
   }, [jumpToItemId, bookLoading])
 
+  // Pistas de primera vez: en el tablero, "toca una sección"; dentro de una
+  // sección, "toca al gato para cambiar". Usarlo cuenta como haberla visto.
+  const pistas = usePistas()
   const openSection = (k) => {
+    pistas.marcar(view.kind === 'landing' ? 'investigacion_tablero' : 'investigacion_secciones')
     setView({ kind: 'board', key: k })
   }
 
@@ -325,10 +331,15 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
               title={CARTEL_HECHOS.title}
               body={CARTEL_HECHOS.body}
             />
+          ) : pistas.pendiente('investigacion_secciones') ? (
+            <Pista id="investigacion_secciones" movil inline />
           ) : null}
         />
       )}
       {explore && <ExploreSheet {...exploreProps} />}
+      {view.kind === 'landing' && !explore && pistas.pendiente('investigacion_tablero') && (
+        <Pista id="investigacion_tablero" movil bottom={96} />
+      )}
 
       {tutorialInvestigacion && !introVista && (
         <TutorialHint

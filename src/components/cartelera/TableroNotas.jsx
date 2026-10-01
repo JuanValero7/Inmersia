@@ -115,18 +115,18 @@ function fileStamp(pct) {
 }
 
 // Expediente central: carpeta SIEMPRE cerrada. Muestra la pestaña rotulada, un
-// clip, el sello por avance (uno de tres) y un contador de teorías anotadas. El
+// clip, el sello por avance (uno de tres) y un contador de predicciones anotadas. El
 // clic sobre ella abre las predicciones del Cuaderno (onOpenNotas), sin desplegar
 // nada aquí. Se mantiene simple a propósito.
 function FlatsheetContent({ items, pct = 0 }) {
   const stamp = fileStamp(pct)
   const n = items.length
-  const countTxt = n === 0 ? 'Aún sin teorías'
-    : n === 1 ? '1 teoría anotada' : `${n} teorías anotadas`
+  const countTxt = n === 0 ? 'Aún sin predicciones'
+    : n === 1 ? '1 predicción anotada' : `${n} predicciones anotadas`
   return (
     <>
       <span className="cart-file-peek" aria-hidden="true" />
-      <span className="cart-file-tab">Mis teorías</span>
+      <span className="cart-file-tab">Mis predicciones</span>
       <span className="cart-file-clip" aria-hidden="true" />
       <span className={`cart-file-stamp ${stamp.cls}`}>{stamp.txt}</span>
       <span className="cart-file-face">

@@ -19,6 +19,8 @@ import { useForoData } from '../../hooks/useForoData.js'     // ← lógica de d
 import { useBookBySlug } from '../../hooks/useBookBySlug.js'
 import { useOnboarding } from '../../context/onboarding.jsx'
 import { MANUAL_LIBRO_ID } from '../../lib/constants.js'
+import { usePistas } from '../../context/pistas.jsx'
+import Pista from '../onboarding/Pista.jsx'
 import '../../styles/foro.css'        // base (clases que usan las sub-vistas)
 import '../../styles/foro.mobile.css'  // overrides responsive del chrome
 
@@ -43,6 +45,9 @@ export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura
 
   // Estado de UI/chrome (no compartido)
   const [activeTab, setActiveTab] = useState('comentarios')
+  // Pista de primera vez: qué son Comentarios y Chat. Abrir el Chat cuenta como vista.
+  const pistas = usePistas()
+  const elegirPestana = (t) => { if (t === 'chat') pistas.marcar('foro_pestanas'); setActiveTab(t) }
   const [navOpen,   setNavOpen]   = useState(false)
 
   if (bookLoading) return (
@@ -82,7 +87,7 @@ export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura
           Comentarios
           {comentariosCount > 0 && <span className="foro-tab-badge">{comentariosCount}</span>}
         </button>
-        <button type="button" className={clsx('foro-tab', activeTab === 'chat' && 'active')} onClick={() => setActiveTab('chat')}>
+        <button type="button" className={clsx('foro-tab', activeTab === 'chat' && 'active')} onClick={() => elegirPestana('chat')}>
           Chat
           {hasSesion && <span className="foro-tab-dot" />}
         </button>
@@ -128,6 +133,7 @@ export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura
           </div>
         </div>
       )}
+      {pistas.pendiente('foro_pestanas') && <Pista id="foro_pestanas" movil bottom={96} />}
     </div>
   )
 }

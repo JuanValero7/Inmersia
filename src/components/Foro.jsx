@@ -8,6 +8,8 @@ import { useForoData } from '../hooks/useForoData.js'
 import { useBookBySlug } from '../hooks/useBookBySlug.js'
 import { useOnboarding } from '../context/onboarding.jsx'
 import { MANUAL_LIBRO_ID } from '../lib/constants.js'
+import { usePistas } from '../context/pistas.jsx'
+import Pista from './onboarding/Pista.jsx'
 
 export default function VistaForo({ book: bookProp, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera, isSuperuser = false }) {
   const { book, loading: bookLoading } = useBookBySlug(bookProp)
@@ -31,6 +33,9 @@ export default function VistaForo({ book: bookProp, user, onGoBack, onGoLectura,
 
   // Estado de UI/chrome (no compartido)
   const [activeTab, setActiveTab] = useState('comentarios')
+  // Pista de primera vez: qué son Comentarios y Chat. Abrir el Chat cuenta como vista.
+  const pistas = usePistas()
+  const elegirPestana = (t) => { if (t === 'chat') pistas.marcar('foro_pestanas'); setActiveTab(t) }
   const [navOpen,   setNavOpen]   = useState(false)
 
   useEffect(() => {
@@ -120,7 +125,7 @@ export default function VistaForo({ book: bookProp, user, onGoBack, onGoLectura,
         <button
           type="button"
           className={clsx('foro-tab', activeTab === 'chat' && 'active')}
-          onClick={() => setActiveTab('chat')}
+          onClick={() => elegirPestana('chat')}
         >
           Chat
           {hasSesion && <span className="foro-tab-dot" />}
@@ -149,6 +154,7 @@ export default function VistaForo({ book: bookProp, user, onGoBack, onGoLectura,
           onSesionChange={setHasSesion}
         />
       )}
+      {pistas.pendiente('foro_pestanas') && <Pista id="foro_pestanas" bottom={96} />}
     </div>
   )
 }

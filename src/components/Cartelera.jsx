@@ -16,6 +16,8 @@ import { useOnboarding } from '../context/onboarding.jsx'
 import { TEXTO_INTRO_CARTELERA, CARTEL_HECHOS } from './onboarding/textos.js'
 import TutorialHint from './onboarding/TutorialHint.jsx'
 import TutorialCartel from './onboarding/TutorialCartel.jsx'
+import { usePistas } from '../context/pistas.jsx'
+import Pista from './onboarding/Pista.jsx'
 import '../styles/cartelera.css'
 
 function Filters() {
@@ -103,6 +105,18 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
   const showIntro = tutorialInv && !introVista
   const showCartel = tutorialInv && introVista && view.kind === 'ficha'
 
+  // Pistas de primera vez (fuera del tour): en el tablero, "toca una sección";
+  // dentro de una, "usa las lengüetas". Usarlo cuenta como haberla visto.
+  const pistas = usePistas()
+  const pistaCartelera = pistas.primera([
+    view.kind === 'landing' && 'investigacion_tablero',
+    view.kind === 'ficha' && 'investigacion_secciones',
+  ])
+  const abrirSeccion = (k) => {
+    pistas.marcar(view.kind === 'landing' ? 'investigacion_tablero' : 'investigacion_secciones')
+    setView({ kind: 'ficha', key: k })
+  }
+
   useEffect(() => {
     if (!jumpToItemId || bookLoading) return
     setFichaInitItemId(jumpToItemId)
@@ -119,8 +133,8 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
   let content
   if (view.kind === 'landing') {
     content = <CarteleraLanding subtitle={book?.title} data={data} esNoficcion={esNoficcion}
-      onOpenSection={(k) => setView({ kind: 'ficha', key: k })}
-      onOpenList={(k) => setView({ kind: 'ficha', key: k })}
+      onOpenSection={abrirSeccion}
+      onOpenList={abrirSeccion}
       onGoLectura={onGoLectura} onGoForo={onGoForo} onGoBiblioteca={onGoBiblioteca} />
   } else {
     content = <Ficha key={view.key} section={secciones.find(s => s.key === view.key)} items={data.itemsBySeccion[view.key] || []}
@@ -131,7 +145,7 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
       onGoLectura={onGoLectura}
       onGoForo={onGoForo}
       onGoBiblioteca={onGoBiblioteca}
-      onOpenList={(k) => setView({ kind: 'ficha', key: k })} />
+      onOpenList={abrirSeccion} />
   }
 
   return (
@@ -155,6 +169,7 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
           body={CARTEL_HECHOS.body}
         />
       )}
+      {pistaCartelera && <Pista id={pistaCartelera} bottom={64} />}
     </div>
   )
 }
