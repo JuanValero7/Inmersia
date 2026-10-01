@@ -8,6 +8,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 
+// Gato que el visitante eligió en la landing, antes de tener cuenta. Al entrar
+// por primera vez, si la cuenta aún no tiene gato guardado, se queda con ese.
+// Lo escribe Landing.jsx; se borra al usarlo o al ver que la cuenta ya tenía uno.
+export const GATO_ELEGIDO_KEY = 'inm-gato-elegido'
+const COLORES = ['negro', 'blanco', 'naranja']
+
+function tomarGatoElegido() {
+  try {
+    const c = localStorage.getItem(GATO_ELEGIDO_KEY)
+    localStorage.removeItem(GATO_ELEGIDO_KEY)
+    return COLORES.includes(c) ? c : null
+  } catch { return null }
+}
+
 /**
  * Color del gato de compañía, persistido en preferencias_usuario.
  *
@@ -30,7 +44,16 @@ export function useGatoColor(user) {
         .select('gato_color')
         .eq('user_id', user.id)
         .maybeSingle()
-      if (activo && data?.gato_color) setGatoColor(data.gato_color)
+      if (!activo) return
+      const elegidoEnLanding = tomarGatoElegido()
+      if (data?.gato_color) { setGatoColor(data.gato_color); return }
+      if (elegidoEnLanding) {
+        setGatoColor(elegidoEnLanding)
+        const { error } = await supabase
+          .from('preferencias_usuario')
+          .upsert({ user_id: user.id, gato_color: elegidoEnLanding, updated_at: new Date().toISOString() })
+        if (error) console.error('useGatoColor (gato de la landing):', error.message)
+      }
     })()
     return () => { activo = false }
   }, [user?.id])

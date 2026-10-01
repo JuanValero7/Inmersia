@@ -2,70 +2,147 @@
 // ─────────────────────────────────────────────────────────────
 // Landing pública de Inmersia (escritorio).
 // Se muestra ANTES de <Auth> cuando no hay usuario. Sus botones
-// llaman a onAuth('login' | 'registro') para abrir el carnet de acceso.
+// llaman a onAuth('login' | 'registro') para abrir el pop-up de acceso.
 //
-// Variante móvil: components/mobile/LandingMobile.jsx
-// Todas las clases van prefijadas con `inm-` y el CSS está scopeado
-// bajo `.inm-landing`, así no colisiona con el resto de la app.
+// Variante móvil: components/mobile/LandingMobile.jsx (este mismo componente
+// con `mobile`). Clases prefijadas con `inm-` y CSS scopeado bajo `.inm-landing`.
+//
+// Los guías son los tres gatos de Inmersia: Yuri (naranja), Mancha (blanco) y
+// Katana (negro). En escritorio el visitante elige uno y lo ve en toda la
+// página; esa elección se guarda y pasa a su cuenta al registrarse (ver
+// hooks/useGatoColor.js). En móvil no hay selector: cada gato sale de un color.
+//
+// Maqueta aprobada: Documentation/landing/maqueta-gatos/index.html
 // ─────────────────────────────────────────────────────────────
-import { useRef, useEffect, useState } from 'react'
-import { FEATURES, WORLDS_IMG } from './landing/landingData.js'
-import { useReveal, usePortal } from './landing/useLandingScene.js'
+import { useRef, useEffect, useState, useMemo } from 'react'
+import {
+  WORLDS_IMG, GATOS, COLORES_GATO, COLOR_MOVIL, gatoSrc, FRASES, COMENTARIOS_LIBRO,
+  LECTOR, INVESTIGACION, ALBUM,
+} from './landing/landingData.js'
+import { usePortal } from './landing/useLandingScene.js'
+import { useGato, Gato } from './landing/Gato.jsx'
+import Estanteria from './landing/Estanteria.jsx'
+import Acertijo from './landing/Acertijo.jsx'
+import ChatGato from './landing/ChatGato.jsx'
 import LegalModal from './legal/LegalModal.jsx'
+import { useCatalogoLibrosQuery } from '../lib/queries.js'
+import { imgUrl } from '../lib/img.js'
+import { GATO_ELEGIDO_KEY } from '../hooks/useGatoColor.js'
+import { evento } from '../lib/analytics.js'
 import '../styles/landing.css'
 
-// El sufijo ?v= fuerza al navegador a descargar la versión nueva del logo
-// cuando reemplazamos el archivo manteniendo el mismo nombre (cache-busting).
-// Súbelo (v3 → v4 …) cada vez que cambies las imágenes.
+// El sufijo ?v= fuerza al navegador a descargar la versión nueva cuando se
+// reemplaza el archivo manteniendo el nombre (cache-busting).
 const LOGO = '/assets/inmersia-logo.png?v=4'
 const BOOK = '/assets/landing/libro2-cutout.webp?v=3'
-const GATO = '/assets/cartelera/gato-blanco-2.webp'
-// El cierre lleva el naranja para no repetir el mismo gato dos veces en una
-// misma página; es el mismo que ya se ve en la tienda, que es a donde lleva.
-const GATO_CIERRE = '/assets/tienda/gato-naranja-4.webp'
+
+const alAzar = (arr) => arr[Math.floor(Math.random() * arr.length)]
+
+// Prioridad de descarga del hero. React 18 no conoce `fetchPriority` (llega en
+// React 19) y no lo pinta; en minúscula pasa tal cual al DOM. Va en un objeto
+// para que react/no-unknown-property no lo marque.
+const PRIORIDAD = { alta: { fetchpriority: 'high' }, baja: { fetchpriority: 'low' } }
+
+function leerGatoElegido() {
+  try {
+    const c = localStorage.getItem(GATO_ELEGIDO_KEY)
+    return COLORES_GATO.includes(c) ? c : null
+  } catch { return null }
+}
 
 export default function Landing({ onAuth, onGoTienda, mobile = false }) {
-  const [legalDoc, setLegalDoc] = useState(null) // null | 'terminos' | 'privacidad'
+  const [legalDoc, setLegalDoc] = useState(null) // null | 'terminos' | 'privacidad' | 'impressum'
   const rootRef = useRef(null)
-  const queRef = useRef(null)
-  useReveal(rootRef)
+  const heroCtaRef = useRef(null)
+  const audioRef = useRef(null)
   usePortal(rootRef)
 
-  // Los mundos del portal rotan cada 5,2 s (ver usePortal), así que solo el
-  // primero hace falta para el primer pintado. Descargarlos los cinco de golpe
-  // costaba ~1,1 MB antes de que se viera nada — caro con datos móviles, que es
-  // como va a llegar casi todo el mundo desde Instagram. Los otros cuatro se
-  // piden en cuanto el navegador está ocioso, mucho antes del primer cambio.
-  //
-  // Se asigna el `src` por DOM y no por estado a propósito: usePortal gobierna
-  // la clase `active` de estos mismos <img> de forma imperativa, así que un
-  // re-render de React volvería a escribir className y se llevaría por delante
-  // la rotación en curso. Mismo criterio que useLandingScene.
-  useEffect(() => {
-    const cargar = () => {
-      rootRef.current?.querySelectorAll('.inm-world[data-src]:not([src])')
-        .forEach((el) => { el.src = el.dataset.src })
-    }
-    if ('requestIdleCallback' in window) {
-      const id = window.requestIdleCallback(cargar, { timeout: 2500 })
-      return () => window.cancelIdleCallback(id)
-    }
-    const t = setTimeout(cargar, 1200)
-    return () => clearTimeout(t)
-  }, [])
+  // ── Color de cada gato ──
+  const [elegido, setElegido] = useState(() => leerGatoElegido() ?? 'naranja')
+  const colorDe = (zona) => (mobile ? COLOR_MOVIL[zona] : elegido)
+  const nombreDe = (zona) => GATOS[colorDe(zona)]
+  const src = (zona, pose) => gatoSrc(colorDe(zona), pose)
 
-  // ¿Esta vista se pinta con su captura móvil? Solo en la variante móvil y si
-  // la vista tiene una (el álbum no la tiene: ver landingData.js).
-  const telefono = (f) => mobile && !!f.shotM
-
-  const go = (tab) => (e) => { e.preventDefault(); onAuth?.(tab) }
-  const scrollToQue = (e) => {
-    e.preventDefault()
-    const el = queRef.current
-    if (!el) return
-    const navH = rootRef.current?.querySelector('.inm-nav')?.offsetHeight ?? 0
-    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - navH - 8, behavior: 'smooth' })
+  // ── Estado de cada gato ──
+  const hero = useGato(FRASES.hero('')[0])
+  const estante = useGato(FRASES.estante()[0])
+  const lector = useGato(FRASES.lector()[0])
+  const investigacion = useGato(FRASES.investigacion()[0])
+  const album = useGato(FRASES.album()[0])
+  const faq = useGato(null)
+  const cierre = useGato(FRASES.cierre()[0])
+  const turno = useRef({})
+  const hablar = (zona, gato) => () => {
+    const lista = FRASES[zona](nombreDe(zona))
+    turno.current[zona] = ((turno.current[zona] ?? 0) + 1) % lista.length
+    gato.decir(lista[turno.current[zona]])
+    gato.mover('hop')
   }
+
+  const elegirGato = (c) => {
+    setElegido(c)
+    try { localStorage.setItem(GATO_ELEGIDO_KEY, c) } catch { /* sin almacenamiento: solo dura esta visita */ }
+    for (const g of [hero, estante, lector, investigacion, album, faq, cierre]) g.mover('hop')
+    hero.decir(`¡Hola! Soy ${GATOS[c]}.`)
+    evento('landing_gato', { color: c })
+  }
+
+  // ── Botones ──
+  const go = (tab, ubicacion) => (e) => { e?.preventDefault(); evento('landing_cta', { boton: tab, ubicacion }); onAuth?.(tab) }
+  // "Entra ahora" abre Crear cuenta. Al catálogo se llega desde la estantería.
+  const entrar = (ubicacion) => (e) => { e?.preventDefault(); evento('landing_cta', { boton: 'entrar', ubicacion }); onAuth?.('registro') }
+  const verLibros = (ubicacion) => (e) => { e?.preventDefault(); evento('landing_cta', { boton: 'libros', ubicacion }); onGoTienda?.() }
+  const abrirLibro = (libro) => { evento('landing_cta', { boton: 'libro', ubicacion: 'estanteria', libro: libro.slug }); onGoTienda?.(libro.slug) }
+
+  // ── Sonido (Lector) ──
+  const [sonando, setSonando] = useState(false)
+  const [poseLector, setPoseLector] = useState(2)
+  const alternarSonido = () => {
+    const a = audioRef.current
+    if (!a) return
+    if (a.paused) {
+      a.volume = 0.6
+      a.play().then(() => {
+        setSonando(true); setPoseLector(3)
+        lector.decir('¡Ese mar se oye de verdad!'); lector.mover('roll')
+      }).catch(() => lector.decir('Tu navegador no me deja sonar.'))
+    } else {
+      a.pause()
+      setSonando(false); setPoseLector(2)
+      lector.decir('Shh… sigue leyendo.')
+    }
+  }
+  useEffect(() => () => audioRef.current?.pause(), [])
+
+  // ── Barajita (Álbum) ──
+  const { data: catalogo = [] } = useCatalogoLibrosQuery()
+  const portadaBarajita = useMemo(
+    () => catalogo.find((l) => l.slug === ALBUM.barajita.slug)?.portada_url,
+    [catalogo],
+  )
+  const [volteada, setVolteada] = useState(false)
+  const voltear = () => {
+    const v = !volteada
+    setVolteada(v)
+    album.decir(v ? `¡${ALBUM.barajita.nombre.split(' ')[0]}! Esa me faltaba.` : 'Otra vez boca abajo…')
+    album.mover('hop')
+  }
+
+  // ── Cierre: el gato se despierta con los botones ──
+  const [poseCierre, setPoseCierre] = useState(5)
+  const despertar = () => { if (poseCierre !== 7) { setPoseCierre(7); cierre.decir('¿Vamos?') } }
+  const dormir = () => { setPoseCierre(5); cierre.decir('Zzz…') }
+
+  // ── Barra fija (móvil): aparece cuando el botón del hero sale de pantalla ──
+  const [barra, setBarra] = useState(false)
+  useEffect(() => {
+    if (!mobile || !heroCtaRef.current) return
+    const io = new IntersectionObserver(([e]) => setBarra(!e.isIntersecting), { threshold: 0 })
+    io.observe(heroCtaRef.current)
+    return () => io.disconnect()
+  }, [mobile])
+
+  const flecha = <span className="inm-arrow" aria-hidden="true">→</span>
 
   return (
     <div className={`inm-landing ${mobile ? 'inm-mobile' : ''}`.trim()} ref={rootRef}>
@@ -73,40 +150,47 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
         <div className="inm-wrap inm-nav-in">
           <img src={LOGO} alt="Inmersia" />
           <nav className="inm-nav-right">
-            <a className="inm-lnk" href="#login" onClick={go('login')}>Iniciar sesión</a>
-            <a className="inm-login-ico" href="#login" onClick={go('login')} aria-label="Iniciar sesión" title="Iniciar sesión">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <a className="inm-lnk" href="#login" onClick={go('login', 'nav')}>Iniciar sesión</a>
+            <a className="inm-login-ico" href="#login" onClick={go('login', 'nav')} aria-label="Iniciar sesión" title="Iniciar sesión">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
             </a>
-            <a className="inm-clay-btn" href="#registro" onClick={go('registro')}>Crear cuenta</a>
+            <a className="inm-clay-btn" href="#registro" onClick={go('registro', 'nav')}>Crear cuenta</a>
           </nav>
         </div>
       </header>
 
-      {/* ── HERO portal-libro ── */}
+      {/* ── HERO ── */}
       <section className="inm-hero">
         <div className="inm-wrap inm-hero-grid">
-          <div>
-            <h1 className="inm-hero-h">
-              Escapa de lo efímero y conecta con tu <em>imaginación</em>
-            </h1>
-            {/* En móvil el botón de registro vive aquí (la barra superior solo
-                deja el logo + iniciar sesión), entre el titular y el párrafo.
-                En escritorio no se renderiza: allí sigue en la barra. */}
-            {mobile && <a className="inm-clay-btn inm-hero-signup" href="#registro" onClick={go('registro')}>Crear cuenta</a>}
+          <div className="inm-hero-txt">
+            <h1 className="inm-hero-h">Lee los grandes libros <em>como nunca</em></h1>
             <p className="inm-hero-lede">
-              Inmersia convierte cada libro en un mundo para habitar, no en una pantalla más para
-              mirar. Con imágenes, sonido, pistas para investigar la trama y gente que lee contigo,
-              adéntrate en una nueva aventura.
+              Ilustraciones que aparecen en el momento justo, sonido que acompaña cada escena y pistas para investigar la trama.
             </p>
-            <div className="inm-hero-cta">
-              <a className="inm-quiet" href="#que-hace" onClick={scrollToQue}>¿Qué es Inmersia?</a>
+            <div className="inm-hero-cta" ref={heroCtaRef}>
+              <a className="inm-clay-btn inm-clay-lg" href="#registro" onClick={entrar('hero')}>Entra ahora {flecha}</a>
             </div>
+            <p className="inm-micro">Prueba los 2 primeros capítulos de cualquier libro sin cuenta</p>
+
+            {!mobile && (
+              <div className="inm-picker" role="group" aria-label="Elige a tu compañero de lectura">
+                <span className="inm-picker-l">Elige a tu compañero de lectura:</span>
+                <div className="inm-picker-opts">
+                  {COLORES_GATO.map((c) => (
+                    <button key={c} type="button" className="inm-pick" aria-pressed={elegido === c} onClick={() => elegirGato(c)}>
+                      <span className="inm-pick-face"><img src={gatoSrc(c, 7)} alt="" /></span>
+                      <span className="inm-pick-name">{GATOS[c]}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="inm-hero-art" data-reveal>
+          <div className="inm-hero-art">
             <div className="inm-portal-scene">
               <div className="inm-portal-wrap">
                 <div className="inm-portal">
@@ -114,94 +198,176 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
                     <img
                       key={w.src}
                       className={`inm-world ${i === 0 ? 'active' : ''} ${w.cls}`.trim()}
-                      src={i === 0 ? w.src : undefined}
-                      data-src={w.src}
+                      src={w.src}
+                      // El primero es parte del primer pintado; los otros tardan
+                      // 5 s en verse, así que no compiten con él.
+                      {...(i === 0 ? PRIORIDAD.alta : PRIORIDAD.baja)}
+                      loading={i === 0 ? 'eager' : 'lazy'}
                       decoding="async"
                       alt=""
                     />
                   ))}
-                  <div className="inm-portal-shine" />
                 </div>
               </div>
-              <div className="inm-chips">
-                <span className="inm-chip cA"><span className="inm-d" /><span className="inm-t" /></span>
-                <span className="inm-chip cB"><span className="inm-d" /><span className="inm-t" /></span>
-              </div>
-              <img className="inm-book" src={BOOK} alt="Libro abierto" />
+              <img className="inm-book" src={BOOK} alt="Libro abierto" {...PRIORIDAD.alta} />
+              <Gato
+                gato={hero} nombre={nombreDe('hero')} className="inm-cat-hero" cola="abajo-der"
+                src={src('hero', 1)} alt="Gato saltando hacia el libro"
+                onToca={hablar('hero', hero)}
+              />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── ESTANTERÍA ── */}
+      <section className="inm-shelf" aria-labelledby="inm-shelf-h">
+        <div className="inm-wrap">
+          <h2 className="inm-sec-h" id="inm-shelf-h">Elige tu próxima historia</h2>
+          <p className="inm-sec-p">Novela, cuento, filosofía y ensayo. Toca una portada para ver de qué va.</p>
+          <div className="inm-shelf-row">
+            <div className="inm-shelf-cat">
+              <Gato
+                gato={estante} nombre={nombreDe('estante')} className="inm-cat-estante" cola="abajo"
+                src={src('estante', 6)} alt="Gato tumbado mirando pasar los libros"
+                onToca={hablar('estante', estante)}
+              />
+            </div>
+            <Estanteria
+              onElegir={abrirLibro}
+              onMirar={(l) => estante.decir(`«${l.titulo}»… ${alAzar(COMENTARIOS_LIBRO)}`)}
+            />
+            <div className="inm-plank" aria-hidden="true" />
+          </div>
+          <div className="inm-shelf-foot">
+            <a className="inm-clay-btn inm-clay-bordo" href="/tienda" onClick={verLibros('estanteria')}>Ver todos los libros</a>
           </div>
         </div>
       </section>
 
       {/* ── MANIFIESTO ── */}
-      <section className="inm-manifesto inm-band">
+      <section className="inm-manifesto">
         <div className="inm-wrap">
-          <p className="inm-q" data-reveal>
-            Las redes no te robaron las ganas de leer.<br />
-            Solo te cambiaron <b>qué</b> lees.
-          </p>
-          <p className="inm-by" data-reveal>— y nosotros queremos devolverte la mejor parte</p>
+          <p className="inm-q">Las redes no te robaron las ganas de leer. Solo te cambiaron <b>qué</b> lees.</p>
+          <p className="inm-by">Y nosotros queremos devolverte la mejor parte.</p>
         </div>
       </section>
 
-      {/* ── INVITACIÓN AL CATÁLOGO ── */}
-      {/* Vive aquí, antes de las features, porque es el destino del enlace
-          "¿Qué es Inmersia?" del hero (queRef): quien hace clic aterriza en la
-          invitación y encuentra la explicación justo debajo. Antes este bloque
-          cerraba la página, donde casi nadie llegaba. */}
-      <section className="inm-band inm-closing inm-rule-top" ref={queRef}>
-        <div className="inm-wrap inm-closing-in">
-          <div className="inm-closing-hero" data-reveal>
-            <img className="inm-closing-cat" src={GATO} alt="" />
-            <div className="inm-closing-text">
-              <p className="inm-closing-msg">Motívate a una <em>nueva aventura</em>.</p>
-              <div className="inm-closing-ctas">
-                <a className="inm-clay-btn inm-clay-lg" href="/tienda" onClick={(e) => { e.preventDefault(); onGoTienda?.() }}>Explora nuestro catálogo</a>
+      {/* ── FUNCIONES ── */}
+      <section className="inm-feats" aria-labelledby="inm-feats-h">
+        <div className="inm-wrap">
+          <h2 className="inm-sec-h inm-feats-h" id="inm-feats-h">Lo que encuentras dentro de cada libro</h2>
+
+          {/* Lector */}
+          <div className="inm-feature">
+            <div className="inm-ftxt">
+              <p className="inm-eyebrow">{LECTOR.eyebrow}</p>
+              <h3>{LECTOR.title}</h3>
+              <ul>{LECTOR.bullets.map((b) => <li key={b}>{b}</li>)}</ul>
+              <button type="button" className={`inm-clay-btn inm-clay-ghost inm-sound ${sonando ? 'is-on' : ''}`} aria-pressed={sonando} onClick={alternarSonido}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M19 5a10 10 0 0 1 0 14" /></svg>
+                <span>{sonando ? 'Pausar el sonido' : 'Escucha cómo suena'}</span>
+              </button>
+              <audio ref={audioRef} src={LECTOR.sonido} preload="none" loop />
+            </div>
+            <div className="inm-fvis inm-fvis-lector">
+              <Shot desk={LECTOR.shot} phone={mobile ? LECTOR.shotM : null} alt="El Lector de Inmersia con Capitanes intrépidos" />
+              <Gato
+                gato={lector} nombre={nombreDe('lector')} className="inm-cat-lector" cola={mobile ? 'der' : 'izq'}
+                src={src('lector', poseLector)} alt="Gato asomado a un libro"
+                onToca={hablar('lector', lector)}
+              />
+            </div>
+          </div>
+
+          {/* Investigación (en móvil el acertijo baja por debajo de la captura: ver landing.mobile.css) */}
+          <div className="inm-feature flip inm-feature-inv">
+            <div className="inm-ftxt">
+              <p className="inm-eyebrow">{INVESTIGACION.eyebrow}</p>
+              <h3>{INVESTIGACION.title}</h3>
+              <ul>{INVESTIGACION.bullets.map((b) => <li key={b}>{b}</li>)}</ul>
+              <Acertijo
+                onVeredicto={(t, tono) => investigacion.decir(t, tono)}
+                onAcierto={() => investigacion.mover('hop')}
+                onFallo={() => investigacion.mover('nope')}
+              />
+            </div>
+            <div className="inm-fvis">
+              <Shot desk={INVESTIGACION.shot} phone={mobile ? INVESTIGACION.shotM : null} alt="El tablero de la Investigación" />
+              <Gato
+                gato={investigacion} nombre={nombreDe('investigacion')} className="inm-cat-inv" cola="abajo-der"
+                src={src('investigacion', 7)} alt="Gato enroscado, mirando con sospecha"
+                onToca={hablar('investigacion', investigacion)}
+              />
+            </div>
+          </div>
+
+          {/* Álbum */}
+          <div className="inm-feature">
+            <div className="inm-ftxt">
+              <p className="inm-eyebrow">{ALBUM.eyebrow}</p>
+              <h3>{ALBUM.title}</h3>
+              <ul>{ALBUM.bullets.map((b) => <li key={b}>{b}</li>)}</ul>
+              <div className="inm-card-row">
+                <button type="button" className={`inm-baraja ${volteada ? 'is-flipped' : ''}`} onClick={voltear} aria-label="Voltear la barajita">
+                  <span className="inm-baraja-in">
+                    <span className="inm-cara inm-dorso"><span>i</span></span>
+                    <span className="inm-cara inm-frente">
+                      {portadaBarajita && <img src={imgUrl(portadaBarajita, { width: 240 })} alt="" loading="lazy" />}
+                      <b>{ALBUM.barajita.nombre}</b>
+                      <small>{ALBUM.barajita.libro}</small>
+                    </span>
+                  </span>
+                </button>
+                <p className="inm-card-hint">Toca la barajita para darle la vuelta.</p>
               </div>
+            </div>
+            <div className="inm-fvis">
+              <Shot desk={ALBUM.shot} alt="El Álbum de Inmersia" />
+              <Gato
+                gato={album} nombre={nombreDe('album')} className="inm-cat-album" cola="abajo"
+                src={src('album', 4)} alt="Gato estirándose hacia el álbum"
+                onToca={hablar('album', album)}
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── ¿QUÉ ES INMERSIA? + DETALLE ── */}
-      <section className="inm-band inm-rule-top" id="que-hace">
-        <div className="inm-wrap">
-          <div className="inm-ov-head">
-            <h2 className="inm-sec-h" data-reveal>¿Qué es Inmersia?</h2>
+      {/* ── PREGUNTAS FRECUENTES (responde el gato) ── */}
+      <section className="inm-faq" aria-labelledby="inm-faq-h">
+        <div className="inm-wrap inm-faq-grid">
+          <div className="inm-faq-side">
+            <h2 className="inm-sec-h" id="inm-faq-h">Pregúntale a {nombreDe('faq')}</h2>
+            <p className="inm-sec-p">Las dudas de siempre, respondidas por quien más sabe de aquí.</p>
+            <Gato
+              gato={faq} nombre={nombreDe('faq')} className="inm-cat-faq"
+              src={src('faq', 3)} alt="Gato panza arriba, listo para responder"
+              onToca={() => faq.mover('hop')}
+            />
           </div>
-
-          {FEATURES.map((f) => (
-            <div className={`inm-feature ${f.flip ? 'flip' : ''}`.trim()} id={f.id} data-reveal key={f.id}>
-              <div className="inm-ftxt">
-                <div className="inm-idx">{f.idx}</div>
-                <h3>{f.title}</h3>
-                <ul>
-                  {f.bullets.map((b) => <li key={b}>{b}</li>)}
-                </ul>
-              </div>
-              <div className="inm-vis-wrap">
-                {/* Con captura vertical el marco se lee como un teléfono (sin la
-                    barra de puntos, que simula una ventana de escritorio). */}
-                <div className={`inm-shot ${telefono(f) ? 'inm-shot-phone' : ''}`.trim()}>
-                  {!telefono(f) && <span className="inm-bar"><i /><i /><i /></span>}
-                  <img src={telefono(f) ? f.shotM : f.shot} alt={`${f.idx} de Inmersia`} loading="lazy" />
-                </div>
-              </div>
-            </div>
-          ))}
+          <ChatGato nombre={nombreDe('faq')} avatar={src('faq', 7)} onPregunta={() => faq.mover('hop')} />
         </div>
       </section>
 
       {/* ── CIERRE ── */}
-      {/* Sin gato ni frase: el bloque emotivo ya se gastó arriba. Aquí solo las
-          dos salidas, para quien terminó de leer la página entera. */}
-      <section className="inm-band inm-closing inm-rule-top">
+      <section className="inm-closing">
         <div className="inm-wrap inm-closing-in">
-          <div className="inm-closing-hero" data-reveal>
-            <img className="inm-closing-cat" src={GATO_CIERRE} alt="" loading="lazy" />
-            <div className="inm-final-ctas">
-              <a className="inm-clay-btn inm-clay-lg" href="#registro" onClick={go('registro')}>Crear cuenta</a>
-              <a className="inm-clay-btn inm-clay-lg inm-clay-bordo" href="/tienda" onClick={(e) => { e.preventDefault(); onGoTienda?.() }}>Explora nuestro catálogo</a>
+          <div className="inm-closing-cat">
+            <Gato
+              gato={cierre} nombre={nombreDe('cierre')} className="inm-cat-cierre" cola="abajo-der"
+              src={src('cierre', poseCierre)} alt="Gato durmiendo junto a una pila de libros"
+              onToca={hablar('cierre', cierre)}
+            />
+          </div>
+          <div>
+            <h2 className="inm-closing-h">Tu próximo libro te está esperando.</h2>
+            <div className="inm-final-ctas" onMouseEnter={despertar} onMouseLeave={dormir} onFocus={despertar}>
+              {/* Escritorio: "Entra ahora" (registro) + el catálogo. Móvil: solo
+                  "Crear cuenta"; la barra fija de abajo ya lleva "Entra ahora". */}
+              {!mobile && <a className="inm-clay-btn inm-clay-lg" href="#registro" onClick={entrar('cierre')}>Entra ahora {flecha}</a>}
+              {!mobile && <a className="inm-clay-btn inm-clay-lg inm-clay-bordo" href="/tienda" onClick={verLibros('cierre')}>Ver todos los libros</a>}
+              {mobile && <a className="inm-clay-btn inm-clay-lg inm-clay-bordo" href="#registro" onClick={go('registro', 'cierre')}>Crear cuenta</a>}
             </div>
           </div>
         </div>
@@ -209,19 +375,43 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
 
       <footer className="inm-footer">
         <div className="inm-wrap inm-foot-in">
-          <img src={LOGO} alt="Inmersia" />
-          <p>© 2026 Inmersia</p>
-          {/* Los documentos legales tienen que ser accesibles SIN cuenta: hasta
-              ahora solo se abrían desde el registro y desde el perfil. */}
-          <nav className="inm-foot-legal">
+          <img src={LOGO} alt="Inmersia" loading="lazy" />
+          {/* Los documentos legales tienen que ser accesibles SIN cuenta. El
+              Impressum es obligatorio en Alemania (§ 5 DDG). */}
+          <nav className="inm-foot-legal" aria-label="Legal">
+            <span>© 2026 Inmersia</span>
             <button type="button" onClick={() => setLegalDoc('terminos')}>Términos y Condiciones</button>
-            <span aria-hidden="true">·</span>
             <button type="button" onClick={() => setLegalDoc('privacidad')}>Política de Privacidad</button>
+            <button type="button" onClick={() => setLegalDoc('impressum')}>Impressum</button>
           </nav>
         </div>
       </footer>
 
+      {mobile && (
+        <div className={`inm-sticky ${barra ? 'is-on' : ''}`} aria-hidden={!barra}>
+          <span className="inm-av"><img src={src('hero', 7)} alt="" /></span>
+          <a className="inm-clay-btn" href="#registro" onClick={entrar('barra')} tabIndex={barra ? undefined : -1}>Entra ahora {flecha}</a>
+        </div>
+      )}
+
       {legalDoc && <LegalModal initialDoc={legalDoc} onClose={() => setLegalDoc(null)} />}
+    </div>
+  )
+}
+
+// Captura en su marco: ventana de escritorio, o teléfono si hay captura móvil.
+function Shot({ desk, phone, alt }) {
+  if (phone) {
+    return (
+      <div className="inm-shot inm-shot-phone">
+        <img src={phone} alt={alt} loading="lazy" decoding="async" />
+      </div>
+    )
+  }
+  return (
+    <div className="inm-shot">
+      <span className="inm-bar"><i /><i /><i /></span>
+      <img src={desk} alt={alt} loading="lazy" decoding="async" />
     </div>
   )
 }

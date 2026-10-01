@@ -1,0 +1,1009 @@
+<title>La landing de los gatos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Poppins:wght@400;500;600&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --ink: #4a3622;
+  --ink-2: #6b4f34;
+  --ink-soft: rgba(74, 54, 34, 0.64);
+  --ink-faint: rgba(74, 54, 34, 0.16);
+  --orange: #f2792a;
+  --orange-ink: #b5613a;
+  --bordo: #750f29;
+  --cream: #fffdf8;
+  --bg: #fbf5ec;
+  --paper-warm: #fbefd5;
+  --teal: #5f8a72;
+  --red: #c1453a;
+  --wood: #c98b52;
+  --wood-dark: #a86d3a;
+  --desk: #2f241a;
+  --font-ui: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  --font-text: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+  --clay: 2px 2.8px 0 rgba(74, 54, 34, 0.33);
+  --clay-lg: 4px 6px 0 rgba(74, 54, 34, 0.16), 0 22px 50px rgba(40, 26, 12, 0.22);
+  --nav-h: 76px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-text); }
+body.phone { background: #e9dfcf; }
+img { display: block; max-width: 100%; }
+button { font: inherit; color: inherit; }
+
+/* ── Barra de la maqueta (no es parte de la landing) ── */
+.mock-bar { position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 200;
+  display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 999px;
+  background: var(--desk); color: #f3e7d3; font: 600 0.8rem var(--font-ui); box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+.mock-bar span { padding: 0 8px 0 10px; opacity: .75; letter-spacing: .04em; text-transform: uppercase; font-size: .7rem; }
+.mock-bar button { border: 0; background: transparent; color: inherit; padding: 6px 12px; border-radius: 999px; cursor: pointer; font-weight: 700; }
+.mock-bar button[aria-pressed="true"] { background: var(--orange); color: #fff; }
+.mock-bar button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+body.phone .mock-bar { left: 50%; transform: translateX(-50%); }
+
+/* ── Dispositivo: en modo teléfono la landing vive dentro de un marco ── */
+.device { position: relative; }
+.scroller { position: relative; }
+body.phone .device { width: 390px; max-width: calc(100% - 32px); height: min(820px, calc(100vh - 110px));
+  margin: 24px auto 0; border: 11px solid var(--desk); border-radius: 46px; overflow: hidden;
+  transform: translateZ(0); box-shadow: 0 30px 60px rgba(40, 26, 12, .3); background: var(--bg); }
+body.phone .scroller { height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+body.phone .scroller::-webkit-scrollbar { display: none; }
+
+/* ── Landing ── */
+.stage { container: lp / inline-size; background: var(--bg); overflow-x: clip; padding-top: var(--nav-h); min-height: 100%; }
+.wrap { width: min(1140px, 100% - 48px); margin-inline: auto; }
+
+.clay { display: inline-flex; align-items: center; justify-content: center; gap: .5em; font: 700 1.05rem var(--font-ui);
+  color: #fff; background: var(--orange); border: 2px solid var(--ink); border-radius: 16px; padding: .72em 1.45em;
+  cursor: pointer; text-decoration: none; text-shadow: 0 1px 1px rgba(0,0,0,.2); box-shadow: var(--clay);
+  transition: transform .12s ease, box-shadow .12s ease, filter .15s ease; }
+.clay:hover { transform: translate(-1px, -1px); filter: brightness(1.04); box-shadow: 3px 4px 0 rgba(74,54,34,.33); }
+.clay:active { transform: translate(1px, 1px); box-shadow: 1px 1.4px 0 rgba(74,54,34,.33); }
+.clay.lg { font-size: 1.18rem; padding: .85em 1.9em; }
+.clay.bordo { background: var(--bordo); }
+.clay.ghost { background: var(--cream); color: var(--ink); text-shadow: none; }
+.clay .arrow { transition: transform .15s ease; }
+.clay:hover .arrow { transform: translateX(3px); }
+.stage a:focus-visible, .stage button:focus-visible, .stage input:focus-visible {
+  outline: 3px solid var(--orange); outline-offset: 3px; border-radius: 8px; }
+.linkbtn { background: none; border: 0; padding: 4px 0; cursor: pointer; font: 700 .9rem var(--font-ui); color: var(--orange-ink);
+  text-decoration: underline; text-underline-offset: 3px; }
+
+/* nav */
+.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--bg); border-bottom: 1px solid var(--ink-faint);
+  padding-top: env(safe-area-inset-top, 0px); }
+.nav-in { height: var(--nav-h); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.nav-in img { height: 50px; width: auto; }
+.nav-right { display: flex; align-items: center; gap: 20px; }
+.lnk { font: 600 .95rem var(--font-ui); color: var(--ink); text-decoration: none; background: none; border: 0; cursor: pointer; padding: 8px 0; }
+.lnk:hover { color: var(--orange-ink); }
+.nav .clay { font-size: .92rem; padding: .48em 1.1em; border-radius: 12px; }
+.login-ico { display: none; width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--ink); background: var(--cream);
+  color: var(--ink); align-items: center; justify-content: center; padding: 0; cursor: pointer; box-shadow: var(--clay); }
+.login-ico svg { width: 21px; height: 21px; }
+.login-ico:active { transform: translate(1px, 1px); box-shadow: 1px 1.4px 0 rgba(74,54,34,.33); }
+
+/* gatos y bocadillos */
+.cat { position: absolute; margin: 0; z-index: 9; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+.cat img { width: 100%; height: auto; filter: drop-shadow(0 6px 6px rgba(40, 26, 12, .18)); }
+.cat.pop img { animation: cat-pop .6s cubic-bezier(.3, 1.6, .5, 1); }
+.cat.hop img { animation: cat-hop .5s ease; }
+.cat.roll img { animation: cat-roll .9s ease; }
+.cat.nope img { animation: cat-nope .5s ease; }
+@keyframes cat-pop { 0% { transform: translateY(14px) scale(.92); } 100% { transform: none; } }
+@keyframes cat-hop { 0%, 100% { transform: none; } 40% { transform: translateY(-14px) rotate(-4deg); } }
+@keyframes cat-roll { 0% { transform: none; } 30% { transform: translateY(-18px) rotate(-14deg); } 60% { transform: rotate(10deg); } 100% { transform: none; } }
+@keyframes cat-nope { 0%, 100% { transform: none; } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+.bubble { position: absolute; z-index: 10; background: var(--cream); border: 2px solid var(--ink); border-radius: 16px;
+  padding: 7px 12px; font: 700 .9rem/1.25 var(--font-ui); color: var(--ink); box-shadow: var(--clay);
+  width: max-content; max-width: 220px; text-align: left; pointer-events: none; }
+.bubble::after { content: ""; position: absolute; width: 12px; height: 12px; background: inherit;
+  border: 2px solid var(--ink); border-top: 0; border-left: 0; }
+.bubble.ok { background: #e3f0e6; }
+.bubble.bad { background: #f9e1dc; }
+.bubble.say { animation: bubble-say .45s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes bubble-say { 0% { transform: scale(.7); } 100% { transform: none; } }
+.t-down::after { left: 26px; bottom: -8px; transform: rotate(45deg); }
+.t-down-r::after { right: 26px; bottom: -8px; transform: rotate(45deg); }
+.t-right::after { right: -8px; top: 14px; transform: rotate(-45deg); }
+.t-left::after { left: -8px; top: 14px; transform: rotate(135deg); }
+
+/* HERO */
+.hero { padding: clamp(36px, 5vw, 72px) 0 clamp(40px, 5vw, 64px); }
+.hero-grid { display: grid; grid-template-columns: 1fr 0.9fr; gap: clamp(32px, 5vw, 72px); align-items: center; }
+.hero h1 { font: 800 clamp(2.5rem, 5vw, 4rem)/1.02 var(--font-ui); letter-spacing: -0.015em; margin: 0 0 .45em; text-wrap: balance; }
+.hero h1 em { font-style: italic; color: var(--orange); }
+.lede { font-size: clamp(1.08rem, 1.45vw, 1.28rem); line-height: 1.55; color: var(--ink-2); max-width: 40ch; margin: 0 0 1.5em; }
+.cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; }
+.micro { margin: 14px 0 0; font: 600 .9rem var(--font-ui); color: var(--ink-soft); display: flex; align-items: center; gap: 8px; }
+.micro::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--teal); flex-shrink: 0; }
+
+.picker { margin-top: 30px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.picker-l { font: 600 .9rem var(--font-ui); color: var(--ink-2); }
+.picker-opts { display: flex; gap: 14px; }
+.pick { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: 0; padding: 0; cursor: pointer; }
+.pick-face { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--ink); background: var(--cream); overflow: hidden;
+  box-shadow: var(--clay); transition: transform .15s ease; }
+.pick-face img, .av img { width: 100%; height: 100%; object-fit: cover; object-position: 24% 22%; transform: scale(1.7); transform-origin: 24% 22%; }
+.pick-name { font: 700 .82rem var(--font-ui); color: var(--ink-2); }
+.pick:hover .pick-face { transform: translateY(-2px); }
+.pick[aria-pressed="true"] .pick-face { outline: 3px solid var(--orange); outline-offset: 2px; }
+.pick[aria-pressed="true"] .pick-name { color: var(--ink); }
+
+/* portal (reducido) */
+.hero-art { position: relative; display: grid; place-items: center; }
+.portal-scene { position: relative; width: 100%; max-width: 440px; aspect-ratio: 1 / 1.04; }
+.portal-scene::before { content: ""; position: absolute; left: 50%; top: 40%; width: 92%; height: 86%; transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, rgba(242,121,42,.28), rgba(242,121,42,0) 72%); filter: blur(8px); }
+.portal-wrap { position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 64%; aspect-ratio: 1 / 1.34; z-index: 2; }
+.portal { position: absolute; inset: 0; border-radius: 50% 50% 32% 32% / 60% 60% 26% 26%; overflow: hidden; border: 3px solid var(--ink);
+  box-shadow: inset 0 0 30px rgba(0,0,0,.38), 0 0 0 6px rgba(255,253,248,.7), 0 20px 46px rgba(40,26,12,.32); background: #9cc3d8; }
+.world { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1s ease; }
+.world.on { opacity: 1; }
+.world.paris { transform: scale(1.4); object-position: center 40%; }
+.book { position: absolute; left: 50%; bottom: 10%; transform: translateX(-50%); width: 110%; max-width: none; z-index: 6;
+  filter: drop-shadow(0 10px 12px rgba(40,26,12,.28)); }
+.cat-hero { right: -12%; bottom: 20%; width: 40%; }
+.cat-hero .bubble { right: 30%; bottom: 96%; }
+
+/* ESTANTERÍA: una sola fila, como una cinta que no se acaba */
+.shelf { padding: clamp(44px, 6vw, 80px) 0 clamp(48px, 6vw, 80px); background: var(--paper-warm); border-top: 1px solid var(--ink-faint); }
+.sec-h { font: 800 clamp(2rem, 3.6vw, 2.9rem)/1.05 var(--font-ui); letter-spacing: -0.01em; margin: 0 0 .3em; text-wrap: balance; }
+.sec-p { margin: 0; color: var(--ink-2); font-size: 1.05rem; line-height: 1.55; max-width: 52ch; }
+.shelf-row { display: grid; grid-template-columns: 240px minmax(0, 1fr); align-items: end; margin-top: 34px; }
+.shelf-cat-slot { position: relative; height: 230px; }
+.cat-shelf { left: -6px; bottom: -4px; width: 236px; }
+.cat-shelf .bubble { left: 34%; bottom: 76%; max-width: 230px; }
+.marquee { overflow: hidden; padding: 16px 0 12px;
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 92%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 92%, transparent); }
+.track { display: flex; gap: 22px; width: max-content; animation: slide 55s linear infinite; }
+.marquee:hover .track, .marquee:focus-within .track { animation-play-state: paused; }
+@keyframes slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.plank { grid-column: 1 / -1; height: 16px; border: 2px solid var(--ink); border-radius: 5px;
+  background: linear-gradient(180deg, var(--wood) 0 55%, var(--wood-dark) 55%); box-shadow: 0 8px 14px rgba(40, 26, 12, .18); }
+.bk { width: 132px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 0; border: 0; background: none;
+  cursor: pointer; text-align: left; }
+.bk .cv { position: relative; aspect-ratio: 2 / 3; border-radius: 4px 8px 8px 4px; overflow: hidden; background: var(--ink-faint);
+  box-shadow: 0 1px 0 rgba(0,0,0,.08), 4px 8px 16px rgba(40, 26, 12, .22); transition: transform .2s ease, box-shadow .2s ease; }
+.bk .cv::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 6px; z-index: 1; background: linear-gradient(90deg, rgba(0,0,0,.18), transparent); }
+.bk img { width: 100%; height: 100%; object-fit: cover; }
+.bk b { font: 700 .9rem/1.15 var(--font-ui); color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; min-height: 2.3em; }
+.bk small { font: 500 .74rem/1.2 var(--font-text); color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: -4px; }
+.bk:hover .cv, .bk:focus-visible .cv { transform: translateY(-8px) rotate(-1.5deg); box-shadow: 6px 14px 22px rgba(40, 26, 12, .3); }
+.shelf-foot { margin-top: 28px; display: flex; justify-content: center; }
+
+/* MANIFIESTO */
+.manifesto { background: var(--bordo); color: #ede0cb; text-align: center; padding: clamp(56px, 7vw, 96px) 0; }
+.manifesto p { margin: 0 auto; font: 600 clamp(1.6rem, 3.3vw, 2.6rem)/1.3 var(--font-ui); max-width: 22ch; text-wrap: balance; }
+.manifesto b { color: var(--orange); }
+.manifesto small { display: block; margin-top: 24px; font: 400 .85rem var(--font-text); letter-spacing: .06em; color: rgba(237,224,203,.7); }
+
+/* FUNCIONES */
+.feats { padding: clamp(60px, 8vw, 110px) 0 clamp(40px, 6vw, 80px); }
+.feats-head { margin-bottom: clamp(40px, 5vw, 64px); }
+.feats-head .sec-h { max-width: 18ch; }
+.feat { display: grid; grid-template-columns: 1fr 1.05fr; gap: clamp(40px, 6vw, 88px); align-items: center; }
+.feat + .feat { margin-top: clamp(80px, 9vw, 130px); }
+.feat.flip .ftxt { order: 2; }
+.eyebrow { margin: 0 0 8px; font: 700 .85rem var(--font-ui); letter-spacing: .08em; text-transform: uppercase; color: var(--orange-ink);
+  display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ""; width: 22px; height: 2px; background: var(--orange); }
+.ftxt h3 { font: 800 clamp(1.7rem, 2.8vw, 2.35rem)/1.08 var(--font-ui); margin: 0 0 .5em; text-wrap: balance; }
+.ftxt ul { list-style: none; padding: 0; margin: 0; }
+.ftxt li { position: relative; padding: 9px 0 9px 26px; border-top: 1px solid var(--ink-faint); font: 600 1rem/1.4 var(--font-ui); }
+.ftxt li:first-child { border-top: 0; }
+.ftxt li::before { content: ""; position: absolute; left: 2px; top: 17px; width: 9px; height: 9px; border-radius: 50%; background: var(--orange); }
+.fvis { position: relative; display: grid; place-items: center; }
+.shot { width: 100%; max-width: 580px; border: 2px solid var(--ink); border-radius: 16px; overflow: hidden; box-shadow: var(--clay-lg); background: #fff; }
+.shot .bar { height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 14px; background: var(--paper-warm); border-bottom: 1px solid var(--ink-faint); }
+.shot .bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--ink-faint); }
+.shot .m { display: none; }
+
+.sound-btn { margin-top: 22px; }
+.sound-btn svg { width: 20px; height: 20px; }
+.sound-btn[aria-pressed="true"] { background: var(--teal); color: #fff; }
+.cat-lector { top: -70px; left: -54px; width: 150px; }
+.cat-lector .bubble { left: 86%; bottom: 72%; }
+
+/* acertijo */
+.riddle { margin-top: 22px; padding: 18px; background: var(--cream); border: 2px solid var(--ink); border-radius: 16px; box-shadow: var(--clay); }
+.riddle-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+.riddle-k { margin: 0; font: 700 .78rem var(--font-ui); letter-spacing: .08em; text-transform: uppercase; color: var(--orange-ink); }
+.riddle-n { font: 600 .8rem var(--font-ui); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.riddle-q { margin: 0 0 12px; font: 600 1.02rem/1.45 var(--font-text); color: var(--ink); }
+.riddle-row { display: flex; gap: 10px; }
+.riddle input { flex: 1; min-width: 0; font: 400 .95rem var(--font-text); color: var(--ink); padding: 10px 12px; border: 2px solid var(--ink-faint);
+  border-radius: 12px; background: #fff; }
+.riddle input:focus { border-color: var(--orange); outline: none; }
+.riddle input.ok { border-color: var(--teal); background: #f1f8f3; }
+.riddle input.bad { border-color: var(--red); }
+.riddle .clay { font-size: .95rem; padding: .5em 1em; border-radius: 12px; }
+.riddle-foot { margin-top: 10px; display: flex; gap: 18px; flex-wrap: wrap; }
+.cat-inv { right: -40px; bottom: -48px; width: 150px; }
+.cat-inv .bubble { right: 62%; bottom: 86%; }
+
+/* barajita */
+.card-row { margin-top: 24px; display: flex; align-items: center; gap: 16px; }
+.card-hint { font: 600 .9rem var(--font-ui); color: var(--ink-soft); max-width: 18ch; margin: 0; }
+.baraja { width: 120px; aspect-ratio: 5 / 7; perspective: 800px; border: 0; padding: 0; background: none; cursor: pointer; flex-shrink: 0; }
+.baraja-in { display: block; position: relative; width: 100%; height: 100%; transition: transform .7s cubic-bezier(.3, 1.3, .5, 1); transform-style: preserve-3d; }
+.baraja.flipped .baraja-in { transform: rotateY(180deg); }
+.cara { position: absolute; inset: 0; border: 2px solid var(--ink); border-radius: 12px; overflow: hidden; backface-visibility: hidden; box-shadow: var(--clay); }
+.cara.dorso { background: repeating-linear-gradient(45deg, var(--bordo) 0 8px, #861b37 8px 16px); display: grid; place-items: center; }
+.cara.dorso span { background: var(--cream); color: var(--bordo); font: 800 1.6rem var(--font-ui); width: 54px; height: 54px; border-radius: 50%;
+  display: grid; place-items: center; border: 2px solid var(--ink); }
+.cara.frente { transform: rotateY(180deg); background: var(--cream); display: flex; flex-direction: column; }
+.cara.frente img { flex: 1; min-height: 0; width: 100%; object-fit: cover; object-position: center 30%; }
+.cara.frente b { font: 800 .8rem/1.1 var(--font-ui); padding: 5px 6px 1px; }
+.cara.frente small { font: 500 .62rem var(--font-text); color: var(--ink-soft); padding: 0 6px 6px; }
+.cat-album { left: -46px; bottom: -40px; width: 190px; }
+.cat-album .bubble { left: 48%; bottom: 82%; }
+
+/* FAQ: responde el gato */
+.faq { padding: clamp(56px, 7vw, 96px) 0; border-top: 1px solid var(--ink-faint); }
+.faq-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: clamp(28px, 5vw, 72px); align-items: center; }
+.faq-side .sec-p { margin-bottom: 8px; }
+.cat-faq { position: relative; width: 230px; margin-top: 10px; }
+.chat { display: flex; flex-direction: column; gap: 14px; }
+.q { align-self: flex-end; max-width: 80%; background: var(--bordo); color: #f6e9d6; border: 2px solid var(--ink); border-radius: 18px 18px 4px 18px;
+  padding: 9px 16px; font: 700 1.02rem var(--font-ui); cursor: pointer; box-shadow: var(--clay); text-align: right;
+  transition: transform .12s ease; }
+.q:hover { transform: translate(-1px, -1px); }
+.a { display: flex; align-items: flex-end; gap: 10px; align-self: flex-start; max-width: 86%; margin-bottom: 8px; }
+.av { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; border: 2px solid var(--ink); background: var(--cream); flex-shrink: 0; }
+.msg { background: var(--cream); border: 2px solid var(--ink); border-radius: 18px 18px 18px 4px; padding: 9px 14px 11px; box-shadow: var(--clay); }
+.msg .who { display: block; font: 700 .76rem var(--font-ui); letter-spacing: .05em; color: var(--orange-ink); text-transform: uppercase; }
+.msg p { margin: 0; font: 500 1rem/1.45 var(--font-text); color: var(--ink); }
+.msg.say { animation: bubble-say .45s cubic-bezier(.3, 1.6, .5, 1); transform-origin: bottom left; }
+.typing { display: inline-flex; gap: 4px; padding: 6px 0 2px; }
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-soft); animation: dot 1s infinite ease-in-out; }
+.typing i:nth-child(2) { animation-delay: .15s; }
+.typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes dot { 0%, 80%, 100% { transform: none; opacity: .4; } 40% { transform: translateY(-4px); opacity: 1; } }
+
+/* CIERRE */
+.closing { background: var(--paper-warm); border-top: 1px solid var(--ink-faint); padding: clamp(56px, 7vw, 96px) 0; }
+.closing-in { display: grid; grid-template-columns: auto 1fr; gap: clamp(24px, 5vw, 64px); align-items: center; justify-content: center; }
+.closing-cat-slot { position: relative; width: clamp(220px, 28vw, 340px); aspect-ratio: 1400 / 1000; }
+.cat-sleep { left: 0; bottom: 0; width: 100%; }
+.cat-sleep .bubble { right: 4%; bottom: 74%; }
+.closing h2 { font: 800 clamp(2rem, 4.2vw, 3.3rem)/1.06 var(--font-ui); margin: 0 0 .5em; max-width: 15ch; text-wrap: balance; }
+.closing .cta-row { gap: 14px; }
+
+/* FOOTER */
+.footer { border-top: 1px solid var(--ink-faint); padding: 34px 0 44px; color: var(--ink-soft); }
+.foot-in { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+.foot-in img { height: 44px; width: auto; }
+.foot-links { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; font: 600 .88rem var(--font-ui); }
+.foot-links button, .foot-links a { background: none; border: 0; padding: 4px 0; cursor: pointer; color: inherit; font: inherit;
+  text-decoration: underline; text-underline-offset: 3px; }
+.foot-links button:hover, .foot-links a:hover { color: var(--orange-ink); }
+
+.sticky { display: none; }
+
+/* MODALES */
+.modal { position: fixed; inset: 0; z-index: 120; background: rgba(40, 26, 12, .45); display: grid; place-items: center; padding: 24px 16px; }
+.sheet-wrap { position: relative; width: min(420px, 100%); max-height: calc(100% - 20px); display: flex; flex-direction: column; }
+.sheet { position: relative; width: 100%; min-height: 0; overflow-y: auto; background: var(--cream);
+  border: 2px solid var(--ink); border-radius: 22px; box-shadow: var(--clay-lg); padding: 30px 24px 22px; }
+.forgot { display: flex; justify-content: flex-end; margin: -4px 0 14px; }
+.sheet h2 { font: 800 1.7rem/1.1 var(--font-ui); margin: 0 0 6px; text-align: center; }
+.sheet .sub { margin: 0 0 18px; text-align: center; color: var(--ink-2); font-size: .95rem; }
+.sheet .x { position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--ink);
+  background: var(--bg); cursor: pointer; font: 700 1.1rem var(--font-ui); }
+.google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; border-radius: 14px;
+  border: 2px solid var(--ink); background: #fff; font: 700 1rem var(--font-ui); cursor: pointer; box-shadow: var(--clay); }
+.google svg { width: 20px; height: 20px; }
+.or { display: flex; align-items: center; gap: 10px; margin: 16px 0; font: 600 .85rem var(--font-ui); color: var(--ink-soft); }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--ink-faint); }
+.field { margin-bottom: 12px; }
+.field label { display: block; font: 700 .88rem var(--font-ui); margin-bottom: 4px; }
+.field input { width: 100%; font: 400 .95rem var(--font-text); color: var(--ink); padding: 10px 12px; border: 2px solid var(--ink-faint); border-radius: 12px; background: #fff; }
+.field input:focus { border-color: var(--orange); outline: none; }
+.field small { display: block; margin-top: 4px; font-size: .78rem; color: var(--ink-soft); }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: .85rem; color: var(--ink-2); margin: 6px 0 16px; }
+.check input { margin-top: 3px; accent-color: var(--orange); }
+.sheet .clay { width: 100%; }
+.sheet .alt { margin: 14px 0 0; text-align: center; font-size: .9rem; color: var(--ink-2); }
+.impressum { padding-top: 28px; }
+.impressum h2 { text-align: left; }
+.impressum p { margin: 0 0 12px; line-height: 1.55; font-size: .95rem; }
+.impressum .ph { background: #fde9c9; padding: 0 4px; border-radius: 4px; }
+.impressum .note { font-size: .8rem; color: var(--ink-soft); }
+
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); z-index: 150;
+  background: var(--desk); color: #f3e7d3; padding: 10px 16px; border-radius: 12px; font: 600 .9rem var(--font-ui);
+  opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; max-width: calc(100% - 32px); text-align: center; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* ── MÓVIL (por ancho del contenedor, así el marco de teléfono también lo activa) ── */
+@container lp (max-width: 760px) {
+  .wrap { width: calc(100% - 36px); }
+  .nav-in img { height: 40px; }
+  .nav .clay, .nav .lnk { display: none; }
+  .login-ico { display: inline-flex; }
+  .only-desk { display: none; }
+  .hero { padding: 18px 0 36px; }
+  .hero-grid { grid-template-columns: 1fr; text-align: center; gap: 0; }
+  .hero-art { order: -1; margin-bottom: 10px; }
+  .portal-scene { max-width: 250px; }
+  .cat-hero { right: -16%; bottom: 22%; width: 42%; }
+  .cat-hero .bubble { font-size: .8rem; padding: 5px 10px; right: 20%; }
+  .hero h1 { font-size: clamp(2.2rem, 10.5cqi, 2.9rem); line-height: 1.06; }
+  .lede { margin-inline: auto; font-size: 1.05rem; }
+  .cta-row { justify-content: center; }
+  .micro { justify-content: center; text-align: left; }
+  .picker { display: none; }
+
+  .shelf .sec-h { font-size: min(1.75rem, 7.4cqi); }
+  .shelf-row { grid-template-columns: 1fr; margin-top: 18px; }
+  .shelf-cat-slot { height: 120px; }
+  .cat-shelf { width: 150px; left: 0; bottom: -6px; }
+  /* El bocadillo va entero a la derecha del gato, para no taparle la cara */
+  .cat-shelf .bubble { left: calc(100% + 12px); bottom: 26%; width: max-content; max-width: min(200px, calc(100cqi - 200px)); }
+  .cat-shelf .bubble::after { left: -8px; bottom: auto; top: 50%; transform: translateY(-50%) rotate(135deg); }
+  .plank { display: none; }
+  .bk { width: 104px; }
+  .track { gap: 16px; }
+
+  .feat, .feat.flip { grid-template-columns: 1fr; gap: 26px; }
+  .feat.flip .ftxt { order: 0; }
+  .feat + .feat { margin-top: 84px; }
+  .shot { max-width: 100%; }
+  .shot.has-m { width: min(240px, 66%); border-width: 3px; border-radius: 26px; }
+  .shot.has-m .bar, .shot.has-m .d { display: none; }
+  .shot.has-m .m { display: block; }
+  .fvis:has(.cat-lector) { margin-top: 56px; }
+  .cat-lector { top: -62px; left: auto; right: 0; width: 104px; }
+  .cat-lector .bubble { left: auto; right: 92%; bottom: 40%; max-width: 160px; }
+  .cat-lector .bubble::after { left: auto; right: -8px; transform: rotate(-45deg); }
+  .cat-inv { right: 0; bottom: -26px; width: 108px; }
+  .cat-inv .bubble { right: 58%; bottom: 84%; max-width: 160px; }
+  .cat-album { left: -6px; bottom: -34px; width: 130px; }
+  .cat-album .bubble { left: 40%; bottom: 84%; max-width: 170px; }
+  .riddle-row { flex-direction: column; }
+  /* Investigación: el acertijo baja por debajo de la captura */
+  .feat-inv { gap: 0; }
+  .feat-inv .ftxt { display: contents; }
+  .feat-inv .eyebrow { order: 1; }
+  .feat-inv h3 { order: 2; }
+  .feat-inv ul { order: 3; }
+  .feat-inv .fvis { order: 4; margin-top: 26px; }
+  .feat-inv .riddle { order: 5; margin-top: 52px; }
+
+  .faq-grid { grid-template-columns: 1fr; gap: 18px; }
+  .cat-faq { width: 150px; }
+  .closing-in { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .closing h2 { margin-inline: auto; }
+  .closing .cta-row { justify-content: center; flex-direction: column; align-items: stretch; width: min(320px, 100%); }
+  .closing-cat-slot { width: 230px; }
+  .foot-in { flex-direction: column; text-align: center; }
+  .foot-links { justify-content: center; }
+  .footer { padding-bottom: 110px; }
+
+  .sticky { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; align-items: center; gap: 12px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--ink-faint);
+    transform: translateY(110%); transition: transform .3s ease; }
+  .sticky.show { transform: none; }
+  .sticky .av { width: 44px; height: 44px; }
+  .sticky .clay { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track { animation: none; }
+  .marquee { overflow-x: auto; }
+  .cat.pop img, .cat.hop img, .cat.roll img, .cat.nope img, .bubble.say, .msg.say, .typing i { animation: none; }
+  .world { transition: none; }
+  .baraja-in { transition: none; }
+}
+</style>
+
+<div class="device">
+<div class="scroller" id="scroller">
+<div class="stage">
+
+  <header class="nav">
+    <div class="wrap nav-in">
+      <img src="img/inmersia-logo.png" alt="Inmersia">
+      <nav class="nav-right">
+        <button class="lnk" type="button" data-mock="login">Iniciar sesión</button>
+        <button class="login-ico" type="button" data-mock="login" aria-label="Iniciar sesión" title="Iniciar sesión">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </button>
+        <button class="clay" type="button" data-mock="registro">Crear cuenta</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-txt">
+        <h1>Lee los grandes libros <em>como nunca</em></h1>
+        <p class="lede">Ilustraciones que aparecen en el momento justo, sonido que acompaña cada escena y pistas para investigar la trama.</p>
+        <div class="cta-row">
+          <button class="clay lg" type="button" data-mock="tienda">Entra ahora <span class="arrow" aria-hidden="true">→</span></button>
+        </div>
+        <p class="micro">Prueba los 2 primeros capítulos de cualquier libro sin cuenta</p>
+        <div class="picker" role="group" aria-label="Elige a tu compañero de lectura">
+          <span class="picker-l">Elige a tu compañero de lectura:</span>
+          <div class="picker-opts">
+            <button class="pick" type="button" data-color="naranja" aria-pressed="true"><span class="pick-face"><img src="img/gatos/naranja-7.webp" alt=""></span><span class="pick-name">Yuri</span></button>
+            <button class="pick" type="button" data-color="blanco" aria-pressed="false"><span class="pick-face"><img src="img/gatos/blanco-7.webp" alt=""></span><span class="pick-name">Mancha</span></button>
+            <button class="pick" type="button" data-color="negro" aria-pressed="false"><span class="pick-face"><img src="img/gatos/negro-7.webp" alt=""></span><span class="pick-name">Katana</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-art">
+        <div class="portal-scene">
+          <div class="portal-wrap">
+            <div class="portal">
+              <img class="world on" src="img/mundo-mar.webp" alt="">
+              <img class="world" src="img/mundo-desierto.webp" alt="">
+              <img class="world paris" src="img/mundo-paris.webp" alt="">
+              <img class="world" src="img/mundo-jardin.webp" alt="">
+              <img class="world" src="img/mundo-bosque.webp" alt="">
+            </div>
+          </div>
+          <img class="book" src="img/libro2-cutout.webp" alt="Libro abierto">
+          <figure class="cat cat-hero" data-cat="hero">
+            <img data-pose="1" src="img/gatos/naranja-1.webp" alt="Gato saltando hacia el libro">
+            <span class="bubble t-down-r">¡Vamos adentro!</span>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ESTANTERÍA -->
+  <section class="shelf" aria-labelledby="shelf-h">
+    <div class="wrap">
+      <h2 class="sec-h" id="shelf-h">Elige tu próxima historia</h2>
+      <p class="sec-p">Novela, cuento, filosofía y ensayo. Toca una portada para ver de qué va.</p>
+      <div class="shelf-row">
+        <div class="shelf-cat-slot">
+          <figure class="cat cat-shelf" data-cat="shelf">
+            <img data-pose="6" src="img/gatos/naranja-6.webp" alt="Gato tumbado mirando pasar los libros">
+            <span class="bubble t-down">¿Cuál abrimos hoy?</span>
+          </figure>
+        </div>
+        <div class="marquee"><div class="track" id="track"></div></div>
+        <div class="plank" aria-hidden="true"></div>
+      </div>
+      <div class="shelf-foot">
+        <button class="clay bordo" type="button" data-mock="tienda">Ver todos los libros</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MANIFIESTO -->
+  <section class="manifesto">
+    <div class="wrap">
+      <p>Las redes no te robaron las ganas de leer. Solo te cambiaron <b>qué</b> lees.</p>
+      <small>Y nosotros queremos devolverte la mejor parte.</small>
+    </div>
+  </section>
+
+  <!-- FUNCIONES -->
+  <section class="feats" aria-labelledby="feats-h">
+    <div class="wrap">
+      <div class="feats-head">
+        <h2 class="sec-h" id="feats-h">Lo que encuentras dentro de cada libro</h2>
+      </div>
+
+      <div class="feat">
+        <div class="ftxt">
+          <p class="eyebrow">El Lector</p>
+          <h3>Una historia que se ve y se oye.</h3>
+          <ul>
+            <li>Ilustraciones que aparecen en los momentos clave</li>
+            <li>Sonido que acompaña cada escena</li>
+            <li>Letra, tamaño y fondo a tu gusto</li>
+          </ul>
+          <button class="clay ghost sound-btn" type="button" id="sound" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>
+            <span>Escucha cómo suena</span>
+          </button>
+        </div>
+        <div class="fvis">
+          <div class="shot has-m">
+            <span class="bar"><i></i><i></i><i></i></span>
+            <img class="d" src="img/shot-01-lector.webp" alt="El Lector de Inmersia con Capitanes intrépidos" loading="lazy">
+            <img class="m" src="img/shot-01-lector-m.webp" alt="El Lector de Inmersia en el móvil" loading="lazy">
+          </div>
+          <figure class="cat cat-lector" data-cat="lector">
+            <img data-pose="2" src="img/gatos/naranja-2.webp" alt="Gato asomado a un libro">
+            <span class="bubble t-left">Toca el botón y escucha el mar.</span>
+          </figure>
+        </div>
+      </div>
+
+      <div class="feat flip feat-inv">
+        <div class="ftxt">
+          <p class="eyebrow">La Investigación</p>
+          <h3>Cada capítulo desbloquea una pista.</h3>
+          <ul>
+            <li>Personajes, lugares y hechos en un tablero</li>
+            <li>Se desbloquea a medida que lees, sin spoilers</li>
+            <li>¿No es ficción? Glosario, datos y referencias</li>
+          </ul>
+          <form class="riddle" id="riddle-form" autocomplete="off">
+            <div class="riddle-top">
+              <p class="riddle-k">Pon a prueba tu olfato</p>
+              <span class="riddle-n" id="riddle-n">1 de 4</span>
+            </div>
+            <p class="riddle-q" id="riddle-q"></p>
+            <div class="riddle-row">
+              <input id="riddle-a" type="text" placeholder="Tu respuesta" aria-label="Tu respuesta">
+              <button class="clay" type="submit">Responder</button>
+            </div>
+            <div class="riddle-foot">
+              <button class="linkbtn" type="button" id="riddle-next">Otro acertijo</button>
+              <button class="linkbtn" type="button" id="riddle-reveal" hidden>Dime la respuesta</button>
+            </div>
+          </form>
+        </div>
+        <div class="fvis">
+          <div class="shot has-m">
+            <span class="bar"><i></i><i></i><i></i></span>
+            <img class="d" src="img/shot-03-investigacion.webp" alt="Tablero de la Investigación" loading="lazy">
+            <img class="m" src="img/shot-03-investigacion-m.webp" alt="La Investigación en el móvil" loading="lazy">
+          </div>
+          <figure class="cat cat-inv" data-cat="inv">
+            <img data-pose="7" src="img/gatos/naranja-7.webp" alt="Gato enroscado, mirando con sospecha">
+            <span class="bubble t-down-r">¿Lo resuelves?</span>
+          </figure>
+        </div>
+      </div>
+
+      <div class="feat">
+        <div class="ftxt">
+          <p class="eyebrow">El Álbum</p>
+          <h3>Un premio que se colecciona.</h3>
+          <ul>
+            <li>Cada libro llena una página de tu álbum</li>
+            <li>Barajitas de personajes, lugares y capítulos</li>
+            <li>Se ganan leyendo, capítulo a capítulo</li>
+          </ul>
+          <div class="card-row">
+            <button class="baraja" type="button" id="baraja" aria-label="Voltear la barajita">
+              <span class="baraja-in">
+                <span class="cara dorso"><span>i</span></span>
+                <span class="cara frente">
+                  <img src="img/portadas/capitanes-intrepidos.webp" alt="">
+                  <b>Harvey Cheyne</b>
+                  <small>Capitanes intrépidos</small>
+                </span>
+              </span>
+            </button>
+            <p class="card-hint">Toca la barajita para darle la vuelta.</p>
+          </div>
+        </div>
+        <div class="fvis">
+          <div class="shot">
+            <span class="bar"><i></i><i></i><i></i></span>
+            <img src="img/shot-06-album.webp" alt="El Álbum de Inmersia" loading="lazy">
+          </div>
+          <figure class="cat cat-album" data-cat="album">
+            <img data-pose="4" src="img/gatos/naranja-4.webp" alt="Gato estirándose hacia el álbum">
+            <span class="bubble t-down">Esa barajita es mía.</span>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ: responde el gato -->
+  <section class="faq" aria-labelledby="faq-h">
+    <div class="wrap faq-grid">
+      <div class="faq-side">
+        <h2 class="sec-h" id="faq-h">Pregúntale a <span data-name="faq">Yuri</span></h2>
+        <p class="sec-p">Las dudas de siempre, respondidas por quien más sabe de aquí.</p>
+        <figure class="cat cat-faq" data-cat="faq">
+          <img data-pose="3" src="img/gatos/naranja-3.webp" alt="Gato panza arriba, listo para responder">
+        </figure>
+      </div>
+      <div class="chat" id="chat">
+        <button class="q" type="button" data-q="0">¿Es gratis?</button>
+        <div class="a"><span class="av"><img data-key="faq" data-pose="7" src="img/gatos/naranja-7.webp" alt=""></span>
+          <div class="msg"><span class="who" data-name="faq">Yuri</span><p>Leer, sí. Lo demás… mi dueño tiene que comer.</p></div></div>
+        <button class="q" type="button" data-q="1">¿Necesito una cuenta?</button>
+        <div class="a"><span class="av"><img data-key="faq" data-pose="7" src="img/gatos/naranja-7.webp" alt=""></span>
+          <div class="msg"><span class="who" data-name="faq">Yuri</span><p>Para probar, no. Para disfrutar, sí.</p></div></div>
+        <button class="q" type="button" data-q="2">¿Para qué es la cuenta?</button>
+        <div class="a"><span class="av"><img data-key="faq" data-pose="7" src="img/gatos/naranja-7.webp" alt=""></span>
+          <div class="msg"><span class="who" data-name="faq">Yuri</span><p>Para guardar por dónde vas, tu Cuaderno, tus Predicciones y tu Álbum. Con Google te registras en un minuto.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CIERRE -->
+  <section class="closing">
+    <div class="wrap closing-in">
+      <div class="closing-cat-slot">
+        <figure class="cat cat-sleep" data-cat="sleep">
+          <img data-pose="5" src="img/gatos/naranja-5.webp" alt="Gato durmiendo junto a una pila de libros">
+          <span class="bubble t-down-r">Zzz…</span>
+        </figure>
+      </div>
+      <div>
+        <h2>Tu próximo libro te está esperando.</h2>
+        <div class="cta-row" id="closing-ctas">
+          <button class="clay lg only-desk" type="button" data-mock="tienda">Entra ahora <span class="arrow" aria-hidden="true">→</span></button>
+          <button class="clay lg bordo" type="button" data-mock="registro">Crear cuenta</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="wrap foot-in">
+      <img src="img/inmersia-logo.png" alt="Inmersia">
+      <nav class="foot-links" aria-label="Legal">
+        <span>© 2026 Inmersia</span>
+        <button type="button" data-mock="terminos">Términos y Condiciones</button>
+        <button type="button" data-mock="privacidad">Política de Privacidad</button>
+        <button type="button" data-mock="impressum">Impressum</button>
+        <a href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram</a>
+      </nav>
+    </div>
+  </footer>
+
+  <div class="sticky" id="sticky">
+    <span class="av"><img data-key="hero" data-pose="7" src="img/gatos/naranja-7.webp" alt=""></span>
+    <button class="clay" type="button" data-mock="tienda">Entra ahora <span class="arrow" aria-hidden="true">→</span></button>
+  </div>
+
+  <!-- Registro -->
+  <div class="modal" id="m-registro" hidden>
+    <div class="sheet-wrap">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="reg-h">
+      <button class="x" type="button" data-close aria-label="Cerrar">✕</button>
+      <h2 id="reg-h">Crea tu cuenta</h2>
+      <p class="sub">Guarda por dónde vas, tu Cuaderno y tu Álbum.</p>
+      <button class="google" type="button" data-mock="google">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        Continuar con Google
+      </button>
+      <div class="or">o con tu correo</div>
+      <form id="reg-form">
+        <div class="field"><label for="r-mail">Correo electrónico</label><input id="r-mail" type="email" placeholder="tu@correo.com" autocomplete="email"></div>
+        <div class="field"><label for="r-pass">Contraseña</label><input id="r-pass" type="password" placeholder="6 caracteres o más" autocomplete="new-password"></div>
+        <div class="field"><label for="r-fecha">Fecha de nacimiento</label><input id="r-fecha" type="date"><small>Hace falta tener 14 años o más.</small></div>
+        <label class="check"><input id="r-ok" type="checkbox"> <span>Acepto los Términos y Condiciones y la Política de Privacidad.</span></label>
+        <button class="clay lg" type="submit">Crear cuenta</button>
+      </form>
+      <p class="alt">¿Ya tienes cuenta? <button class="linkbtn" type="button" data-mock="login">Inicia sesión</button></p>
+    </div>
+    </div>
+  </div>
+
+  <!-- Iniciar sesión -->
+  <div class="modal" id="m-login" hidden>
+    <div class="sheet-wrap">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="log-h">
+      <button class="x" type="button" data-close aria-label="Cerrar">✕</button>
+      <h2 id="log-h">¡Qué bueno verte!</h2>
+      <p class="sub">Tu libro sigue abierto donde lo dejaste.</p>
+      <button class="google" type="button" data-mock="google">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        Continuar con Google
+      </button>
+      <div class="or">o con tu correo</div>
+      <form id="log-form">
+        <div class="field"><label for="l-mail">Correo electrónico</label><input id="l-mail" type="email" placeholder="tu@correo.com" autocomplete="email"></div>
+        <div class="field"><label for="l-pass">Contraseña</label><input id="l-pass" type="password" placeholder="Tu contraseña" autocomplete="current-password"></div>
+        <div class="forgot"><button class="linkbtn" type="button" data-mock="olvido">¿Olvidaste tu contraseña?</button></div>
+        <button class="clay lg" type="submit">Iniciar sesión</button>
+      </form>
+      <p class="alt">¿No tienes cuenta? <button class="linkbtn" type="button" data-mock="registro">Crea una</button></p>
+    </div>
+    </div>
+  </div>
+
+  <!-- Impressum -->
+  <div class="modal" id="m-impressum" hidden>
+    <div class="sheet impressum" role="dialog" aria-modal="true" aria-labelledby="imp-h">
+      <button class="x" type="button" data-close aria-label="Cerrar">✕</button>
+      <h2 id="imp-h">Impressum</h2>
+      <p><b>Angaben gemäß § 5 DDG</b></p>
+      <p><span class="ph">[Nombre legal completo]</span><br><span class="ph">[Calle y número]</span><br><span class="ph">[Código postal]</span> Berlin<br>Deutschland</p>
+      <p><b>Kontakt</b><br>E-Mail: legal@inmersia.io</p>
+      <p><b>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</b><br><span class="ph">[Nombre legal completo]</span>, Anschrift wie oben</p>
+      <p class="note">Maqueta: los datos entre corchetes se rellenan con los reales. Cuando exista la OÜ estonia, este bloque cambia.</p>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="mock-bar" role="group" aria-label="Vista de la maqueta">
+  <span>Maqueta</span>
+  <button type="button" data-view="desk" aria-pressed="true">Escritorio</button>
+  <button type="button" data-view="phone" aria-pressed="false">Móvil</button>
+</div>
+
+<audio id="olas" src="img/olas.mp3" preload="none" loop></audio>
+
+<script>
+(() => {
+  const BOOKS = __BOOKS__;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const store = {
+    get(k, s = localStorage) { try { return s.getItem(k); } catch { return null; } },
+    set(k, v, s = localStorage) { try { s.setItem(k, v); } catch {} },
+  };
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  /* ── Gatos: Yuri (naranja), Mancha (blanco), Katana (negro) ── */
+  const NAMES = { naranja: 'Yuri', blanco: 'Mancha', negro: 'Katana' };
+  let color = store.get('inm-mock-gato');
+  if (!NAMES[color]) color = 'naranja';
+  // En móvil no hay selector: cada gato de la página sale de un color distinto
+  const MOBILE = { hero: 'naranja', shelf: 'blanco', lector: 'negro', inv: 'naranja', album: 'blanco', faq: 'negro', sleep: 'naranja' };
+  const stage = document.querySelector('.stage');
+  const isMobile = () => stage.clientWidth <= 760;
+  const keyOf = (el) => el.dataset.key || el.closest('[data-cat]')?.dataset.cat;
+  const colorOf = (el) => (isMobile() && MOBILE[keyOf(el)]) || color;
+  const src = (pose, el) => `img/gatos/${el ? colorOf(el) : color}-${pose}.webp`;
+  const setPose = (img, pose) => { img.dataset.pose = pose; img.src = src(pose, img); };
+  const name = (key = 'hero') => NAMES[(isMobile() && MOBILE[key]) || color];
+  const replay = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+  function say(cat, text, mood) {
+    const b = cat.querySelector('.bubble');
+    if (!b) return;
+    b.textContent = text;
+    b.classList.toggle('ok', mood === 'ok');
+    b.classList.toggle('bad', mood === 'bad');
+    replay(b, 'say');
+  }
+  function applyColor(c, animate) {
+    color = c;
+    store.set('inm-mock-gato', c);
+    $$('img[data-pose]').forEach((img) => { img.src = src(img.dataset.pose, img); });
+    $$('[data-name]').forEach((el) => { el.textContent = NAMES[colorOf(el)]; });
+    $$('.pick').forEach((p) => p.setAttribute('aria-pressed', String(p.dataset.color === c)));
+    if (animate) $$('.cat').forEach((cat) => replay(cat, 'hop'));
+  }
+  $$('.pick').forEach((p) => p.addEventListener('click', () => {
+    applyColor(p.dataset.color, true);
+    say($('[data-cat="hero"]'), `¡Hola! Soy ${name()}.`);
+  }));
+  applyColor(color, false);
+  let wasMobile = isMobile();
+  new ResizeObserver(() => { const m = isMobile(); if (m !== wasMobile) { wasMobile = m; applyColor(color, false); } }).observe(stage);
+
+  const LINES = {
+    hero: () => ['¡Vamos adentro!', `Soy ${name()}. Te acompaño mientras lees.`, 'Cada libro es un mundo. Literal.'],
+    heroM: () => ['¡Vamos adentro!', `Soy ${name()}.`],
+    shelf: () => ['¿Cuál abrimos hoy?', 'Yo voto por uno de piratas.', 'No paran de llegar libros.'],
+    lector: () => ['Toca el botón y escucha el mar.', 'Las ilustraciones salen solas, en el momento justo.', 'Shh… estoy leyendo.'],
+    inv: () => ['¿Lo resuelves?', 'Cada capítulo, una pista nueva.', 'Sin spoilers, prometido.'],
+    album: () => ['Esa barajita es mía.', 'Me faltan dos para llenar la página.', '¿Me la cambias?'],
+    sleep: () => ['Zzz…', 'Cinco minutitos más…', 'Zzz… capítulo 1… zzz…'],
+    faq: () => [],
+  };
+  const turn = {};
+  $$('.cat').forEach((cat) => cat.addEventListener('click', () => {
+    const k = cat.dataset.cat;
+    const l = LINES[k] ? LINES[k]() : [];
+    if (l.length) { turn[k] = ((turn[k] ?? 0) + 1) % l.length; say(cat, l[turn[k]]); }
+    replay(cat, 'hop');
+  }));
+
+  const seen = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (!e.isIntersecting) return;
+      replay(e.target, 'pop');
+      const b = e.target.querySelector('.bubble'); if (b) replay(b, 'say');
+      seen.unobserve(e.target);
+    });
+  }, { threshold: 0.5 });
+  $$('.cat').forEach((c) => seen.observe(c));
+
+  /* ── Portal ── */
+  const worlds = $$('.world');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduce) {
+    let w = 0;
+    setInterval(() => { worlds[w].classList.remove('on'); w = (w + 1) % worlds.length; worlds[w].classList.add('on'); }, 5200);
+  }
+
+  /* ── Estantería: 15 libros al azar por sesión, en una cinta sin fin ── */
+  const MAX = 15;
+  let sel = null;
+  try { sel = JSON.parse(store.get('inm-mock-estante', sessionStorage) || 'null'); } catch {}
+  if (!Array.isArray(sel) || sel.length !== Math.min(MAX, BOOKS.length) || sel.some((i) => !BOOKS[i])) {
+    const all = BOOKS.map((_, i) => i);
+    for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [all[i], all[j]] = [all[j], all[i]]; }
+    sel = all.slice(0, MAX);
+    store.set('inm-mock-estante', JSON.stringify(sel), sessionStorage);
+  }
+  const card = (i, dup) => {
+    const b = BOOKS[i];
+    return `<button class="bk" type="button" data-i="${i}"${dup ? ' tabindex="-1" aria-hidden="true"' : ''}>`
+      + `<span class="cv"><img src="img/portadas/${b.s}.webp" alt="" loading="lazy"></span>`
+      + `<b>${b.t}</b><small>${b.a}</small></button>`;
+  };
+  $('#track').innerHTML = sel.map((i) => card(i, false)).join('') + sel.map((i) => card(i, true)).join('');
+  const shelfCat = $('[data-cat="shelf"]');
+  const PICKS = ['buena elección.', 'ese me lo leí dos veces.', 'ese tiene un final…', 'perfecto para hoy.'];
+  let hoverT;
+  $('#track').addEventListener('mouseover', (e) => {
+    const c = e.target.closest('.bk'); if (!c) return;
+    clearTimeout(hoverT);
+    hoverT = setTimeout(() => say(shelfCat, `«${BOOKS[c.dataset.i].t}»… ${pick(PICKS)}`), 160);
+  });
+  $('#track').addEventListener('click', (e) => {
+    const c = e.target.closest('.bk'); if (!c) return;
+    toast(`Aquí se abriría la ficha de «${BOOKS[c.dataset.i].t}».`);
+  });
+
+  /* ── Sonido ── */
+  const audio = $('#olas');
+  const soundBtn = $('#sound');
+  const lectorCat = $('[data-cat="lector"]');
+  const lectorImg = lectorCat.querySelector('img');
+  soundBtn.addEventListener('click', () => {
+    if (audio.paused) {
+      audio.volume = 0.6;
+      audio.play().then(() => {
+        soundBtn.setAttribute('aria-pressed', 'true');
+        soundBtn.querySelector('span').textContent = 'Pausar el sonido';
+        setPose(lectorImg, 3); replay(lectorCat, 'roll');
+        say(lectorCat, '¡Ese mar se oye de verdad!');
+      }).catch(() => toast('El navegador no dejó reproducir el sonido.'));
+    } else {
+      audio.pause();
+      soundBtn.setAttribute('aria-pressed', 'false');
+      soundBtn.querySelector('span').textContent = 'Escucha cómo suena';
+      setPose(lectorImg, 2);
+      say(lectorCat, 'Shh… sigue leyendo.');
+    }
+  });
+
+  /* ── Acertijos: el gato corrige ── */
+  const RIDDLES = [
+    { q: 'Tiene ciudades, pero no casas; ríos, pero no agua; bosques, pero no árboles. ¿Qué es?',
+      ok: ['mapa', 'mapas', 'atlas', 'plano'], hint: 'Ningún explorador sale sin él.', a: 'Un mapa' },
+    { q: 'Cuanto más le quitas, más grande se hace. ¿Qué es?',
+      ok: ['agujero', 'hoyo', 'hueco', 'pozo', 'foso', 'zanja', 'hoyo en la tierra'], hint: 'Piensa en una pala.', a: 'Un agujero' },
+    { q: 'Un hombre entra en un bar y pide un vaso de agua. El camarero saca una pistola y le apunta. El hombre le da las gracias y se va. ¿Por qué?',
+      ok: ['hipo'], hint: 'El hombre no tenía sed. Tenía otro problema, y el susto se lo quitó.', a: 'Tenía hipo' },
+    { q: 'Tengo hojas y no soy árbol, tengo lomo y no soy caballo. ¿Qué soy?',
+      ok: ['libro', 'libros'], hint: 'Ahora mismo estás rodeado de ellos.', a: 'Un libro' },
+  ];
+  const norm = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-zñ0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  let ri = 0, fails = 0;
+  const invCat = $('[data-cat="inv"]');
+  const rq = $('#riddle-q'), ra = $('#riddle-a'), rn = $('#riddle-n'), reveal = $('#riddle-reveal');
+  function showRiddle(i) {
+    ri = i; fails = 0;
+    rq.textContent = RIDDLES[i].q;
+    rn.textContent = `${i + 1} de ${RIDDLES.length}`;
+    ra.value = ''; ra.classList.remove('ok', 'bad');
+    reveal.hidden = true;
+  }
+  showRiddle(0);
+  $('#riddle-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = norm(ra.value);
+    if (!v) { say(invCat, 'Escribe algo, aunque sea una corazonada.'); return; }
+    const r = RIDDLES[ri];
+    const words = v.split(' ');
+    const hit = r.ok.some((k) => words.includes(k) || v === k);
+    if (hit) {
+      ra.classList.add('ok'); ra.classList.remove('bad');
+      say(invCat, pick(['¡Correcto! Tienes madera de detective.', '¡Exacto! Ni Holmes lo habría dicho mejor.', '¡Bien! Me quito el sombrero. Si tuviera.']), 'ok');
+      replay(invCat, 'hop');
+      reveal.hidden = true;
+    } else {
+      fails++;
+      ra.classList.add('bad'); ra.classList.remove('ok');
+      replay(invCat, 'nope');
+      if (fails === 1) say(invCat, `Mmm… no. Pista: ${r.hint}`, 'bad');
+      else if (fails === 2) say(invCat, 'Tampoco. Dale otra vuelta.', 'bad');
+      else { say(invCat, 'Si quieres, te digo la respuesta.', 'bad'); reveal.hidden = false; }
+    }
+  });
+  $('#riddle-next').addEventListener('click', () => {
+    showRiddle((ri + 1) % RIDDLES.length);
+    say(invCat, pick(['A ver este.', 'Este es más difícil.', 'Otro, a ver qué tal.']));
+  });
+  reveal.addEventListener('click', () => {
+    say(invCat, `Era: ${RIDDLES[ri].a.toLowerCase()}. El siguiente lo sacas.`);
+    reveal.hidden = true;
+  });
+
+  /* ── Barajita ── */
+  const albumCat = $('[data-cat="album"]');
+  $('#baraja').addEventListener('click', (e) => {
+    const on = e.currentTarget.classList.toggle('flipped');
+    say(albumCat, on ? '¡Harvey! Esa me faltaba.' : 'Otra vez boca abajo…');
+    replay(albumCat, 'hop');
+  });
+
+  /* ── FAQ: el gato vuelve a responder al tocar la pregunta ── */
+  const faqCat = $('[data-cat="faq"]');
+  $$('.q').forEach((q) => q.addEventListener('click', () => {
+    const msg = q.nextElementSibling.querySelector('.msg');
+    const p = msg.querySelector('p');
+    const text = p.dataset.text || p.textContent;
+    p.dataset.text = text;
+    p.innerHTML = '<span class="typing" aria-label="Escribiendo"><i></i><i></i><i></i></span>';
+    replay(faqCat, 'hop');
+    setTimeout(() => { p.textContent = text; replay(msg, 'say'); }, 700);
+  }));
+  const chatSeen = new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting) return;
+    $$('.msg').forEach((m, i) => setTimeout(() => replay(m, 'say'), i * 220));
+    chatSeen.disconnect();
+  }, { threshold: 0.4 });
+  chatSeen.observe($('#chat'));
+
+  /* ── Cierre: el gato se despierta con los botones ── */
+  const sleepCat = $('[data-cat="sleep"]');
+  const sleepImg = sleepCat.querySelector('img');
+  const ctas = $('#closing-ctas');
+  const wake = () => { if (sleepImg.dataset.pose !== '7') { setPose(sleepImg, 7); say(sleepCat, '¿Vamos?'); } };
+  const nap = () => { setPose(sleepImg, 5); say(sleepCat, 'Zzz…'); };
+  ctas.addEventListener('mouseenter', wake);
+  ctas.addEventListener('focusin', wake);
+  ctas.addEventListener('mouseleave', nap);
+
+  /* ── Barra fija en móvil ── */
+  const sticky = $('#sticky');
+  new IntersectionObserver(([e]) => sticky.classList.toggle('show', !e.isIntersecting), { threshold: 0 }).observe($('.hero .cta-row'));
+
+  /* ── Acciones de la maqueta ── */
+  const toastEl = $('#toast');
+  let toastT;
+  function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('on'), 2600); }
+  let lastFocus = null;
+  function openModal(id) {
+    $$('.modal').forEach((m) => { m.hidden = true; });
+    lastFocus = document.activeElement;
+    const m = $(id); m.hidden = false;
+    const first = m.querySelector('.google, input, .x'); if (first) first.focus();
+  }
+  function closeModals() { $$('.modal').forEach((m) => { m.hidden = true; }); if (lastFocus) lastFocus.focus(); }
+  const ACT = {
+    tienda: () => toast('Aquí se abriría la Tienda.'),
+    login: () => openModal('#m-login'),
+    olvido: () => toast('Aquí te mandaríamos un correo para cambiar la contraseña.'),
+    registro: () => openModal('#m-registro'),
+    google: () => toast('Aquí saldría la ventana de Google.'),
+    terminos: () => toast('Aquí se abrirían los Términos y Condiciones.'),
+    privacidad: () => toast('Aquí se abriría la Política de Privacidad.'),
+    impressum: () => openModal('#m-impressum'),
+  };
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-mock]');
+    if (a) { e.preventDefault(); ACT[a.dataset.mock]?.(); return; }
+    if (e.target.closest('[data-close]') || e.target.classList.contains('modal')) closeModals();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModals(); });
+  $('#reg-form').addEventListener('submit', (e) => { e.preventDefault(); closeModals(); toast('Aquí se crearía la cuenta.'); });
+  $('#log-form').addEventListener('submit', (e) => { e.preventDefault(); closeModals(); toast('Aquí entrarías a tu Biblioteca.'); });
+
+  /* ── Escritorio / Móvil ── */
+  function setView(v) {
+    document.body.classList.toggle('phone', v === 'phone');
+    $$('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+    store.set('inm-mock-vista', v);
+    window.scrollTo(0, 0); $('#scroller').scrollTop = 0;
+  }
+  $$('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+  setView(store.get('inm-mock-vista') === 'phone' ? 'phone' : 'desk');
+})();
+</script>

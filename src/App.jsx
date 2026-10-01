@@ -357,7 +357,8 @@ export default function App() {
               ? <Navigate to="/biblioteca" replace />
               : <LandingView
                   onAuth={openAuth}
-                  onGoTienda={() => navigate('/tienda')}
+                  // Con `libro` (slug) la Tienda abre directamente su ficha: viene de la estantería.
+                  onGoTienda={(libro) => navigate('/tienda', libro ? { state: { libro } } : undefined)}
                 />
           } />
 

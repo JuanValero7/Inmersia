@@ -1,62 +1,89 @@
 /* src/styles/landing.mobile.css
    ─────────────────────────────────────────────────────────────
-   Ajustes específicos de la landing en móvil. Scopeado bajo
-   .inm-mobile (lo añade LandingMobile.jsx vía la prop `mobile`).
-   La landing base ya es responsive; aquí solo afinamos densidad,
-   targets táctiles y el tamaño del portal en pantallas chicas.
+   Ajustes de la landing en móvil. Scopeado bajo .inm-mobile (lo añade
+   LandingMobile.jsx vía la prop `mobile`).
+   En móvil: icono de persona para iniciar sesión, portal pequeño arriba,
+   sin selector de gato (cada gato sale de un color), acertijo debajo de la
+   captura y barra fija inferior con "Entra ahora".
    ───────────────────────────────────────────────────────────── */
 
 .inm-mobile { font-size: 17px; --inm-nav-h: 76px; }
+.inm-mobile .inm-wrap { width: calc(100% - 36px); }
 
-/* Hero apilado y centrado, portal más contenido */
-.inm-mobile .inm-hero { padding: 28px 0 36px; }
-.inm-mobile .inm-hero-grid { grid-template-columns: 1fr; text-align: center; gap: 26px; }
-.inm-mobile .inm-hero-art { order: -1; margin-bottom: 6px; }
-.inm-mobile .inm-hero-h { font-size: clamp(2rem, 8.5vw, 2.8rem); line-height: 1.22; margin-bottom: 0.7em; }
-.inm-mobile .inm-hero-h br.inm-dbr { display: none; }
-.inm-mobile .inm-hero-lede { margin-inline: auto; margin-bottom: 1.8em; }
-.inm-mobile .inm-hero-cta { justify-content: center; }
-.inm-mobile .inm-portal-scene { max-width: min(360px, 82vw); }
-
-/* La nav móvil: solo logo + Iniciar sesión. «Crear cuenta» baja al hero
-   (ver .inm-hero-signup): la barra respira y el registro queda donde el
-   lector ya está leyendo, justo antes de «¿Qué es Inmersia?». */
-.inm-mobile .inm-nav-in img { height: auto; width: min(210px, 52vw); }
-.inm-mobile .inm-nav-right { gap: 12px; }
-.inm-mobile .inm-nav-right .inm-lnk { display: inline-flex; align-items: center; min-height: 44px; }
-.inm-mobile .inm-nav-right .inm-login-ico { display: none; }    /* ya cabe el texto */
+/* Nav: logo + icono de persona */
+.inm-mobile .inm-nav-in img { height: auto; width: min(200px, 50vw); }
+.inm-mobile .inm-nav-right .inm-lnk,
 .inm-mobile .inm-nav .inm-clay-btn { display: none; }
+.inm-mobile .inm-login-ico { display: inline-flex; }
 
-/* «Crear cuenta» va dentro del bloque de texto, entre el titular y el párrafo */
-.inm-mobile .inm-hero-signup { font-size: 1.02rem; margin-bottom: 1.5em; }
+/* Hero: portal pequeño arriba, texto centrado */
+.inm-mobile .inm-hero { padding: 18px 0 36px; }
+.inm-mobile .inm-hero-grid { grid-template-columns: 1fr; text-align: center; gap: 0; }
+.inm-mobile .inm-hero-art { order: -1; margin-bottom: 10px; }
+.inm-mobile .inm-portal-scene { max-width: 250px; }
+.inm-mobile .inm-cat-hero { right: -16%; bottom: 22%; width: 42%; }
+.inm-mobile .inm-cat-hero .inm-bubble { font-size: .8rem; padding: 5px 10px; right: 20%; }
+.inm-mobile .inm-hero-h { font-size: clamp(2.2rem, 10.5vw, 2.9rem); line-height: 1.06; }
+.inm-mobile .inm-hero-lede { margin-inline: auto; font-size: 1.05rem; }
+.inm-mobile .inm-hero-cta { justify-content: center; }
+.inm-mobile .inm-micro { justify-content: center; text-align: left; }
 
 /* Targets táctiles cómodos (≥ 44px) */
-.inm-mobile .inm-clay-btn { padding: 0.85em 1.5em; min-height: 48px; }
-.inm-mobile .inm-quiet { display: inline-flex; min-height: 44px; align-items: center; }
+.inm-mobile .inm-clay-btn { min-height: 48px; }
 
-/* Secciones más compactas */
-.inm-mobile .inm-band { padding: 52px 0; }
-.inm-mobile .inm-feature, .inm-mobile .inm-feature.flip { grid-template-columns: 1fr; gap: 22px; }
-.inm-mobile .inm-feature + .inm-feature { margin-top: 48px; }
-/* Apilado: primero el texto que explica la vista, la captura debajo. El
-   `order: 0 !important` anula el `.flip` del escritorio, que en una sola
-   columna mandaría el texto al fondo. */
-.inm-mobile .inm-feature .inm-ftxt { order: 0 !important; }
-.inm-mobile .inm-feature .inm-vis-wrap { order: 1; }
-.inm-mobile .inm-ftxt p { max-width: none; }
-/* Capturas móviles: el recuadro deja de leerse como una ventana de escritorio
-   (Landing.jsx no pinta la barra de puntos en esta variante) y pasa a ser un
-   teléfono — más estrecho, con las esquinas bien redondeadas. Las vistas sin
-   captura móvil conservan el marco ancho. */
+/* Estantería: título en una línea, gato arriba con el bocadillo a su derecha */
+.inm-mobile .inm-shelf .inm-sec-h { font-size: min(1.75rem, 7.4vw); }
+.inm-mobile .inm-shelf-row { grid-template-columns: 1fr; margin-top: 18px; }
+.inm-mobile .inm-shelf-cat { height: 120px; }
+.inm-mobile .inm-cat-estante { width: 150px; left: 0; bottom: -6px; }
+.inm-mobile .inm-cat-estante .inm-bubble { left: calc(100% + 12px); bottom: 26%; max-width: min(200px, calc(100vw - 220px)); }
+.inm-mobile .inm-cat-estante .inm-bubble::after { left: -8px; bottom: auto; top: 50%; transform: translateY(-50%) rotate(135deg); }
+.inm-mobile .inm-plank { display: none; }
+.inm-mobile .inm-marquee { min-height: 230px; }
+.inm-mobile .inm-bk { width: 104px; }
+.inm-mobile .inm-track { gap: 16px; }
+
+/* Funciones apiladas: texto arriba, captura (en marco de teléfono) debajo */
+.inm-mobile .inm-feature, .inm-mobile .inm-feature.flip { grid-template-columns: 1fr; gap: 26px; }
+.inm-mobile .inm-feature.flip .inm-ftxt { order: 0; }
+.inm-mobile .inm-feature + .inm-feature { margin-top: 84px; }
 .inm-mobile .inm-shot { max-width: 100%; }
-.inm-mobile .inm-shot-phone { width: min(252px, 68vw); max-width: none;
-  border-width: 3px; border-radius: 26px; }
+.inm-mobile .inm-shot-phone { width: min(240px, 66vw); border-width: 3px; border-radius: 26px; }
+.inm-mobile .inm-fvis-lector { margin-top: 56px; }
+.inm-mobile .inm-cat-lector { top: -62px; left: auto; right: 0; width: 104px; }
+.inm-mobile .inm-cat-lector .inm-bubble { left: auto; right: 92%; bottom: 40%; max-width: 160px; }
+.inm-mobile .inm-cat-inv { right: 0; bottom: -26px; width: 108px; }
+.inm-mobile .inm-cat-inv .inm-bubble { right: 58%; bottom: 84%; max-width: 160px; }
+.inm-mobile .inm-cat-album { left: -6px; bottom: -34px; width: 130px; }
+.inm-mobile .inm-cat-album .inm-bubble { left: 40%; bottom: 84%; max-width: 170px; }
+.inm-mobile .inm-riddle-row { flex-direction: column; }
 
-/* Manifiesto y cierre */
-.inm-mobile .inm-q { max-width: 18ch; }
-.inm-mobile .inm-closing-msg { max-width: 16ch; text-align: center; }
-.inm-mobile .inm-closing-cat { height: clamp(150px, 42vw, 220px); }
-.inm-mobile .inm-closing-text, .inm-mobile .inm-closing-ctas { align-items: center; }
+/* Investigación: el acertijo baja por debajo de la captura. `display: contents`
+   saca los hijos de .inm-ftxt a la rejilla para poder reordenarlos. */
+.inm-mobile .inm-feature-inv { gap: 0; }
+.inm-mobile .inm-feature-inv .inm-ftxt { display: contents; }
+.inm-mobile .inm-feature-inv .inm-eyebrow { order: 1; }
+.inm-mobile .inm-feature-inv h3 { order: 2; }
+.inm-mobile .inm-feature-inv ul { order: 3; }
+.inm-mobile .inm-feature-inv .inm-fvis { order: 4; margin-top: 26px; }
+.inm-mobile .inm-feature-inv .inm-riddle { order: 5; margin-top: 52px; }
 
-/* Footer en columna */
+/* Preguntas frecuentes y cierre */
+.inm-mobile .inm-faq-grid { grid-template-columns: 1fr; gap: 18px; }
+.inm-mobile .inm-cat-faq { width: 150px; }
+.inm-mobile .inm-closing-in { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+.inm-mobile .inm-closing-h { margin-inline: auto; }
+.inm-mobile .inm-final-ctas { justify-content: center; flex-direction: column; align-items: stretch; width: min(320px, 100%); }
+.inm-mobile .inm-closing-cat { width: 230px; }
+
+/* Footer en columna (con hueco para la barra fija) */
 .inm-mobile .inm-foot-in { flex-direction: column; text-align: center; gap: 10px; }
+.inm-mobile .inm-foot-legal { justify-content: center; }
+.inm-mobile .inm-footer { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+
+/* Barra fija inferior: aparece cuando el botón del hero sale de pantalla */
+.inm-mobile .inm-sticky { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; align-items: center; gap: 12px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--inm-bg); border-top: 1px solid var(--inm-ink-faint);
+  transform: translateY(110%); transition: transform .3s ease; }
+.inm-mobile .inm-sticky.is-on { transform: none; }
+.inm-mobile .inm-sticky .inm-clay-btn { flex: 1; }

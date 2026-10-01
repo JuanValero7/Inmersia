@@ -6,6 +6,7 @@ const LOGO = '/assets/inmersia-logo.png'
 import { CAT_COLOR } from './tiendaHelpers.jsx'
 import { Pagination, BookCard, TIPOS } from './catalogoShared.jsx'
 import { useCatalogoFiltro } from '../../hooks/useCatalogoFiltro.js'
+import { useFichaPedida } from '../../hooks/useFichaPedida.js'
 import PanelLibro from './PanelLibro.jsx'
 import LibroReel from './LibroReel.jsx'
 
@@ -29,6 +30,7 @@ export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 
   const [sel,         setSel]         = useState(null)
   const [reelLibro,   setReelLibro]   = useState(null)
   const [showFilters, setShowFilters] = useState(false)
+  useFichaPedida(catalogo, setSel)
 
   const {
     selCats, toggleCat, qInput, q, handleQChange, handleQKeyDown,
