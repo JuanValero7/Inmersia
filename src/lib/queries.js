@@ -43,6 +43,10 @@ export const queryKeys = {
   // Hero "Seguir leyendo" de la Biblioteca (ver useBiblioteca)
   tiempoLibro: (userId, libroId) => ['tiempoLibro', userId, libroId],
   investigacionReciente: (libroId, pct) => ['investigacionReciente', libroId, pct],
+  // Tienda (ver Documentation/tienda/plan-implementacion.md)
+  salas: () => ['salas'],
+  libroResumen: (libroId) => ['libroResumen', libroId],
+  libroReels: (libroId) => ['libroReels', libroId],
 }
 
 // perfiles.nombre/apellido — Biblioteca (saludo) y Perfil (formulario)
@@ -70,7 +74,7 @@ export function usePerfilQuery(userId) {
 // en esta lista— salen el listón "Nuevo" de la Tienda y las Novedades de la
 // Biblioteca.
 const CATALOGO_LIBROS_COLS =
-  'id, slug, titulo, autor, paginas, descripcion, color, portada_url, metadata, anio, categorias, moods, es_ficcion, visible, created_at, orden'
+  'id, slug, titulo, autor, paginas, descripcion, color, portada_url, metadata, anio, anio_texto, categorias, moods, es_ficcion, visible, created_at, orden'
 
 export function useCatalogoLibrosQuery() {
   return useQuery({
@@ -86,6 +90,63 @@ export function useCatalogoLibrosQuery() {
       return data || []
     },
     staleTime: STALE_TIME,
+  })
+}
+
+// Salas de la Tienda (migración 066) con los ids de sus libros en orden.
+// Pocas filas y casi estáticas: se cachean igual que el catálogo y la ficha
+// las usa para decir en qué sala está un libro.
+export function useSalasQuery() {
+  return useQuery({
+    queryKey: queryKeys.salas(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('salas')
+        .select('id, slug, nombre, linea, color, tipo, orden, desde, hasta, imagen_url, sala_libros(libro_id, orden)')
+        .order('orden', { ascending: true })
+      if (error) throw error
+      return (data || []).map(s => ({
+        ...s,
+        libros: [...(s.sala_libros || [])].sort((a, b) => a.orden - b.orden).map(x => x.libro_id),
+      }))
+    },
+    staleTime: STALE_TIME,
+  })
+}
+
+// Lo que trae un libro (vista libros_resumen, migraciones 067 y 069):
+// capítulos, palabras, ilustraciones, momentos con sonido, fichas y primera
+// línea. Se pide por libro al abrir la ficha (~85 ms).
+export function useLibroResumenQuery(libroId) {
+  return useQuery({
+    queryKey: queryKeys.libroResumen(libroId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('libros_resumen').select('*').eq('libro_id', libroId).maybeSingle()
+      if (error) throw error
+      return data || null
+    },
+    enabled: !!libroId,
+    staleTime: 10 * 60_000,
+  })
+}
+
+// Escenas del avance de un libro (libro_reels): las usan la ficha (imagen de
+// cabecera y número de escenas) y la historia.
+export function useLibroReelsQuery(libroId) {
+  return useQuery({
+    queryKey: queryKeys.libroReels(libroId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('libro_reels')
+        .select('id, orden, imagen_url, audio_url, titulo, subtexto')
+        .eq('libro_id', libroId)
+        .order('orden')
+      if (error) throw error
+      return data || []
+    },
+    enabled: !!libroId,
+    staleTime: 10 * 60_000,
   })
 }
 

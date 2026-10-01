@@ -1,0 +1,52 @@
+/* ════════════════════════════════════════════════════════════════
+   FICHA DE LIBRO · móvil (FichaLibroMobile, .flm-*)
+   Las piezas .fp-* vienen de ficha.css; aquí solo el armazón y los
+   ajustes de tamaño para el teléfono.
+   ════════════════════════════════════════════════════════════════ */
+
+.flm{position:fixed;inset:0;z-index:330;background:var(--papel);animation:flm-sube .3s cubic-bezier(.2,.9,.3,1);}
+@keyframes flm-sube{from{transform:translateY(40%);opacity:0}}
+.flm-scroll{position:absolute;inset:0 0 calc(96px + env(safe-area-inset-bottom,0px)) 0;overflow-y:auto;overscroll-behavior:contain;}
+
+.flm-cabecera{position:relative;height:250px;background-size:cover;background-position:50% 30%;}
+.flm-cabecera::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(27,21,26,.35) 0%,rgba(27,21,26,0) 35%,var(--papel) 100%);}
+.flm-sala{position:absolute;z-index:2;left:14px;top:calc(18px + env(safe-area-inset-top,0px));padding:5px 12px;border-radius:999px;
+  background:rgba(27,21,26,.72);color:#f0b27a;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;}
+.flm-cerrar{position:absolute;z-index:3;right:12px;top:calc(12px + env(safe-area-inset-top,0px));width:44px;height:44px;
+  border-radius:999px;border:2.5px solid var(--ink);background:var(--papel);color:var(--ink);display:grid;place-items:center;}
+.flm-avance{position:absolute;z-index:3;right:16px;bottom:58px;display:flex;align-items:center;gap:8px;height:44px;
+  padding:0 16px 0 5px;border-radius:999px;border:none;background:rgba(27,21,26,.78);color:#fff6e4;
+  font-family:'Baloo 2',cursive;font-weight:700;font-size:14px;}
+.flm-avance i{width:34px;height:34px;border-radius:999px;background:var(--acento);display:grid;place-items:center;color:#fff;}
+
+.flm-fila{position:relative;z-index:2;display:flex;gap:14px;padding:0 16px;margin-top:-96px;align-items:flex-end;}
+.flm-titulo{margin:0;font-family:'Baloo 2',cursive;font-weight:800;font-size:25px;line-height:1.02;text-wrap:balance;}
+.flm-autor{margin:4px 0 0;font-size:13px;color:var(--marron);font-weight:500;}
+
+.flm-bloque{padding:0 16px;margin-top:18px;}
+.flm .fp-etiquetas{margin-top:0;}
+.flm .fp-etiqueta{font-size:12px;padding:3px 11px;}
+.flm .fp-inicio blockquote{font-size:17px;line-height:1.45;}
+.flm-trae{padding:0;}
+.flm-trae .fp-h{padding:0 16px;font-size:17px;}
+.flm-sinopsis{padding-bottom:28px;}
+.flm-sinopsis .fp-h{font-size:17px;}
+
+/* «Lo que trae» se desliza en horizontal en el teléfono */
+.fp-teselas-desliza{display:flex;gap:10px;overflow-x:auto;padding:0 16px 4px;scroll-snap-type:x mandatory;scrollbar-width:none;}
+.fp-teselas-desliza::-webkit-scrollbar{display:none;}
+.fp-teselas-desliza .fp-tesela{flex:0 0 122px;scroll-snap-align:start;padding:12px;}
+.fp-teselas-desliza .fp-tesela b{font-size:20px;}
+.fp-teselas-desliza .fp-tesela span{font-size:11px;}
+
+.flm-barra{position:absolute;left:0;right:0;bottom:0;padding:10px 16px calc(14px + env(safe-area-inset-bottom,0px));
+  background:var(--papel);border-top:2px solid var(--linea);display:flex;flex-direction:column;gap:4px;}
+.flm-barra-fila{display:flex;gap:10px;}
+.flm-barra .fp-btn-leer{flex-grow:1;width:auto;height:52px;font-size:17px;}
+.flm-guardar{width:52px;height:52px;flex-shrink:0;border-radius:999px;border:2.5px solid var(--ink);background:var(--papel);
+  color:var(--ink);display:grid;place-items:center;}
+.flm-guardar:disabled{opacity:.55;}
+.flm .fp-aviso{font-size:11px;}
+
+@media (prefers-reduced-motion:reduce){ .flm{animation:none;} }

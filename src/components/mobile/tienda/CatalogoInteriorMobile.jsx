@@ -7,8 +7,7 @@ import { CAT_COLOR } from '../../tienda/tiendaHelpers.jsx'
 import { Pagination, BookCard, TIPOS } from '../../tienda/catalogoShared.jsx'
 import { useCatalogoFiltro } from '../../../hooks/useCatalogoFiltro.js'
 import { useFichaPedida } from '../../../hooks/useFichaPedida.js'
-import PanelLibro from '../../tienda/PanelLibro.jsx'
-import LibroReel from '../../tienda/LibroReel.jsx'
+import FichaLibroMobile from './FichaLibroMobile.jsx'
 
 function FilterOverlay({ availableCats, selCats, onToggle, onClear, onClose, filtroTipo, onFiltroTipo }) {
   const [entering, setEntering] = useState(true)
@@ -71,10 +70,9 @@ function FilterOverlay({ availableCats, selCats, onToggle, onClear, onClose, fil
   )
 }
 
-export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoColor = 'negro', tieneLibro, libroLeido, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo, bloqueado = false }) {
+export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoColor = 'negro', tieneLibro, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo, bloqueado = false }) {
   const openAuth = useOpenAuth()
   const [sel,         setSel]         = useState(null)
-  const [reelLibro,   setReelLibro]   = useState(null)
   const [showFilters, setShowFilters] = useState(false)
   useFichaPedida(catalogo, setSel)
 
@@ -103,11 +101,6 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
   }, [])
 
   const reset = () => { resetFiltro(onFiltroTipo); setShowFilters(false) }
-
-  function handleReelClose() {
-    if (!sel) setSel(reelLibro)
-    setReelLibro(null)
-  }
 
   const activeCount = selCats.size + (filtroTipo !== 'todos' ? 1 : 0)
 
@@ -164,7 +157,7 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
           <>
             <div className="int-grid" ref={gridRef}>
               {paginatedList.map(b => (
-                <BookCard key={b.id} libro={b} adquirido={tieneLibro(b.id)} onOpen={setReelLibro} />
+                <BookCard key={b.id} libro={b} adquirido={tieneLibro(b.id)} onOpen={setSel} />
               ))}
             </div>
             <Pagination page={page} total={list.length} onChange={goToPage} />
@@ -192,24 +185,20 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
         />
       )}
 
-      <div className={clsx('bkp-scrim', sel && 'show')} onClick={closePanel} />
+      {/* Ficha del libro a pantalla completa (el avance se abre desde ella) */}
       {sel && (
-        <PanelLibro
+        <FichaLibroMobile
           key={sel.id}
           libro={sel}
           user={user}
-          gatoColor={gatoColor}
           yaAdquirido={tieneLibro(sel.id)}
-          yaLeido={libroLeido(sel.id)}
           bloqueado={bloqueado}
           onComprar={() => { onComprar(sel); closePanel() }}
-          onClose={closePanel}
-          onPreview={() => setReelLibro(sel)}
           onEmpezarLeer={() => { onEmpezarLeer(sel); setSel(null) }}
+          onCerrar={closePanel}
+          origen="catalogo"
         />
       )}
-
-      {reelLibro && <LibroReel libro={reelLibro} onClose={handleReelClose} />}
     </div>
   )
 }

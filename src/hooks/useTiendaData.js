@@ -52,7 +52,6 @@ export function useTiendaData(user, isSuperuser, onOpenBook) {
   const pendientes      = userLibros.filter(l => !l.leido).length
   const accesoBloqueado = !isSuperuser && pendientes >= LIMITE_PENDIENTES
   const tieneLibro = id => userLibros.some(l => l.libro_id === id)
-  const libroLeido = id => userLibros.some(l => l.libro_id === id && l.leido)
 
   const { comprar: comprarLibro, comprarYLeer: comprarYLeerLibro } = useCompraLibro(user, isSuperuser, onOpenBook)
 
@@ -69,5 +68,5 @@ export function useTiendaData(user, isSuperuser, onOpenBook) {
     return { error }
   }
 
-  return { catalogo, loading, pendientes, accesoBloqueado, tieneLibro, libroLeido, comprar, comprarYLeer }
+  return { catalogo, loading, pendientes, accesoBloqueado, tieneLibro, comprar, comprarYLeer }
 }

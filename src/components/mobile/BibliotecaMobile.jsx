@@ -24,9 +24,8 @@ import { MobileCategoryBrowser } from './biblioteca/BibCategoryBrowserMobile.jsx
 import { UltimosAbiertosMobile, LibroCardsMobile } from './biblioteca/UltimosAbiertosMobile.jsx'
 import BibBookSheet from './biblioteca/BibBookSheet.jsx'
 import { FilterScreen, ManageScreen } from './biblioteca/BibScreensMobile.jsx'
-import PanelLibro from '../tienda/PanelLibro.jsx'
-import LibroReel from '../tienda/LibroReel.jsx'
-import '../../styles/tienda.css' // estilos de PanelLibro/LibroReel (.bkp-*, .reel-*) — sin esto renderizan sin overlay/estilos
+import FichaLibroMobile from './tienda/FichaLibroMobile.jsx'
+import '../../styles/tienda.css' // base de las portadas .book-* que usan las tarjetas de Novedades / Para ti
 import '../../styles/biblioteca.mobile.css'
 import LeerComoSheet from '../comunidades/LeerComoSheet.jsx'
 import ComunidadPanel from '../comunidades/ComunidadPanel.jsx'
@@ -104,7 +103,6 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
   // Estado de UI/chrome (no compartido)
   const [selectedBook, setSelectedBook] = React.useState(null)
   const [selectedLibro, setSelectedLibro] = React.useState(null) // libro de Novedades/Para ti (aún no adquirido)
-  const [reelLibro, setReelLibro] = React.useState(null)
 
   // Comunidades: hoja "Leer como" y panel "Ver comunidad". Al volver de
   // /comunidades tras unirse o crear, llega { verComunidad, bienvenida } en
@@ -121,7 +119,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
   }, [location.state, location.pathname, navigate])
 
   // "Leer con el club": si el libro ya es mío se abre; si no, su ficha del
-  // catálogo con "Empezar a leer" (el mismo PanelLibro de Novedades).
+  // catálogo con "Comenzar a leer" (la misma ficha de la Tienda).
   const { data: catalogo = [] } = useCatalogoLibrosQuery()
   const leerLibroDeComunidad = React.useCallback((libroId) => {
     setPanelComunidad(null)
@@ -163,14 +161,6 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
     if (!error) { await fetchUserBooks(); setSelectedLibro(null) }
   }
 
-  // Al cerrar el Preview: si se abrió desde la lista (todavía sin panel), abre
-  // el PanelLibro — mismo recorrido que CatalogoInteriorMobile.handleReelClose.
-  // Si ya había un panel abierto (Preview lanzado desde su botón interno), no
-  // vuelve a abrirlo.
-  function handleReelClose() {
-    if (!selectedLibro) setSelectedLibro(reelLibro)
-    setReelLibro(null)
-  }
 
   // ── Onboarding ──
   const onboarding = useOnboarding()
@@ -346,12 +336,12 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
               )}
               {laneTab === 'novedades' && (
                 novedades.length > 0
-                  ? <LibroCardsMobile libros={novedades.slice(0, 3)} onOpen={setReelLibro} badge="Recién llegado" />
+                  ? <LibroCardsMobile libros={novedades.slice(0, 3)} onOpen={setSelectedLibro} badge="Recién llegado" />
                   : <div className="bibm-lane-empty">Pronto verás acá los libros recién llegados a la biblioteca. <span className="bibm-soon">Próximamente</span></div>
               )}
               {laneTab === 'recom' && (
                 recomendaciones.length > 0
-                  ? <LibroCardsMobile libros={recomendaciones.slice(0, 3)} onOpen={setReelLibro} badge="Para ti" />
+                  ? <LibroCardsMobile libros={recomendaciones.slice(0, 3)} onOpen={setSelectedLibro} badge="Para ti" />
                   : <div className="bibm-lane-empty">Estamos preparando recomendaciones a tu medida. <span className="bibm-soon">Próximamente</span></div>
               )}
             </div>
@@ -434,21 +424,18 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
           modo="hoja" onClose={() => setPanelComunidad(null)} onLeerLibro={leerLibroDeComunidad} />
       )}
       {selectedLibro && (
-        <PanelLibro
+        <FichaLibroMobile
           key={selectedLibro.id}
           libro={selectedLibro}
           user={user}
-          gatoColor={gatoColor}
           yaAdquirido={false}
-          yaLeido={false}
           bloqueado={!isSuperuser && pendientes >= LIMITE_PENDIENTES}
           onComprar={() => handleComprarLibro(selectedLibro)}
-          onClose={() => setSelectedLibro(null)}
-          onPreview={() => setReelLibro(selectedLibro)}
           onEmpezarLeer={() => handleEmpezarLeerLibro(selectedLibro)}
+          onCerrar={() => setSelectedLibro(null)}
+          origen="biblioteca"
         />
       )}
-      {reelLibro && <LibroReel libro={reelLibro} onClose={handleReelClose} />}
 
       {/* Pantallas */}
       {screen === 'filter' && (

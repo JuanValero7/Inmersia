@@ -6,8 +6,9 @@ import '../styles/tienda.css'
 import '../styles/biblioteca.css'
 import BibBookModal from './biblioteca/BibBookModal.jsx'
 import ManageCategoriasModal from './biblioteca/ManageCategoriasModal.jsx'
-import PanelLibro from './tienda/PanelLibro.jsx'
-import LibroReel from './tienda/LibroReel.jsx'
+import FichaLibro from './tienda/FichaLibro.jsx'
+import { AvanceLibro } from './tienda/Historia.jsx'
+import { evento } from '../lib/analytics.js'
 import { InmHeader, Swimlane, SwimlaneSkeleton } from './biblioteca/clay/HeaderSwimlane.jsx'
 import { CategoriasHome, CategoriasHomeSkeleton } from './biblioteca/clay/CategoriasHome.jsx'
 import { LateralHome, LateralHomeSkeleton } from './biblioteca/clay/LateralHome.jsx'
@@ -63,12 +64,12 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
   // Estado de UI/chrome (no compartido)
   const [selectedBook, setSelectedBook] = React.useState(null);
   const [selectedLibro, setSelectedLibro] = React.useState(null); // libro de Novedades/Recomendaciones (aún no adquirido)
-  const [reelLibro, setReelLibro] = React.useState(null); // preview (LibroReel) del panel de arriba
+  const [reelLibro, setReelLibro] = React.useState(null); // avance (AvanceLibro) lanzado desde Novedades/Recomendaciones
   const [panelComunidad, setPanelComunidad] = React.useState(null); // { id, bienvenida } del panel "Ver comunidad"
 
   // "Leer con el club" / lecturas anteriores del panel de una comunidad:
   // si el libro ya es mío se abre; si no, su ficha del catálogo con
-  // "Empezar a leer" (el mismo PanelLibro de Novedades).
+  // "Comenzar a leer" (la misma FichaLibro de la Tienda).
   const { data: catalogo = [] } = useCatalogoLibrosQuery();
   const leerLibroDeComunidad = React.useCallback((libroId) => {
     setPanelComunidad(null);
@@ -94,6 +95,11 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
   const handleEmpezarLeerLibro = async (libro) => {
     const { error } = await comprarYLeerLibro(libro, { pendientes, tieneLibro: () => false });
     if (!error) { await fetchUserBooks(); setSelectedLibro(null); }
+  };
+  const bloqueadoCompra = !isSuperuser && pendientes >= LIMITE_PENDIENTES;
+  const abrirAvance = (libro) => {
+    evento('avance_abierto', { libro: libro.slug, origen: 'biblioteca' });
+    setReelLibro(libro);
   };
 
   // ── Wrappers que sincronizan estado de UI tras las primitivas del hook ──
@@ -199,7 +205,7 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
           <div style={{ flex: 3, minWidth: 0 }}>
             {loadingBooks
               ? <SwimlaneSkeleton gatoColor={gatoColor} />
-              : <Swimlane featured={featured} onOpen={openBook} onGoInvestigacion={onGoInvestigacion} novedades={novedades} recomendaciones={recomendaciones} onOpenLibro={setSelectedLibro} onPreviewLibro={setReelLibro} gatoColor={gatoColor} />}
+              : <Swimlane featured={featured} onOpen={openBook} onGoInvestigacion={onGoInvestigacion} novedades={novedades} recomendaciones={recomendaciones} onOpenLibro={setSelectedLibro} onPreviewLibro={abrirAvance} gatoColor={gatoColor} />}
           </div>
           <div style={{ flex: 2, minWidth: 0 }}>
             {loadingBooks
@@ -268,18 +274,16 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
           onCreate={createCategoria} onUpdate={updateCategoria} onDelete={deleteCategoria} />
       )}
       {selectedLibro && (
-        <PanelLibro
+        <FichaLibro
           key={selectedLibro.id}
           libro={selectedLibro}
           user={user}
-          gatoColor={gatoColor}
           yaAdquirido={false}
-          yaLeido={false}
-          bloqueado={!isSuperuser && pendientes >= LIMITE_PENDIENTES}
+          bloqueado={bloqueadoCompra}
           onComprar={() => handleComprarLibro(selectedLibro)}
-          onClose={() => setSelectedLibro(null)}
-          onPreview={() => setReelLibro(selectedLibro)}
           onEmpezarLeer={() => handleEmpezarLeerLibro(selectedLibro)}
+          onCerrar={() => setSelectedLibro(null)}
+          origen="biblioteca"
         />
       )}
       {panelComunidad && (
@@ -287,10 +291,11 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
           modo="lateral" onClose={() => setPanelComunidad(null)} onLeerLibro={leerLibroDeComunidad} />
       )}
       {reelLibro && (
-        <LibroReel
+        <AvanceLibro
           libro={reelLibro}
-          onClose={() => setReelLibro(null)}
-          onFinish={() => { setSelectedLibro(reelLibro); setReelLibro(null); }}
+          onCerrar={() => setReelLibro(null)}
+          onComenzar={() => { const libro = reelLibro; setReelLibro(null); handleEmpezarLeerLibro(libro); }}
+          comenzarDeshabilitado={bloqueadoCompra}
         />
       )}
 

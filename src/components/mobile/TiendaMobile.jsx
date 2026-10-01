@@ -16,7 +16,7 @@ export default function VistaTiendaMobile({ onGoBack, user, gatoColor, onOpenBoo
   const [subView,    setSubView]    = useState(!user || location.state?.entrar ? 'catalogo' : 'calle')
   const [filtroTipo, setFiltroTipo] = useState('todos')
 
-  const { catalogo, loading, pendientes, accesoBloqueado, tieneLibro, libroLeido, comprar, comprarYLeer } =
+  const { catalogo, loading, pendientes, accesoBloqueado, tieneLibro, comprar, comprarYLeer } =
     useTiendaData(user, isSuperuser, onOpenBook)
 
   // ── Tutorial (paso 'tienda') ──
@@ -59,7 +59,6 @@ export default function VistaTiendaMobile({ onGoBack, user, gatoColor, onOpenBoo
       user={user}
       gatoColor={gatoColor}
       tieneLibro={tieneLibro}
-      libroLeido={libroLeido}
       onComprar={comprar}
       onEmpezarLeer={comprarYLeer}
       onVolver={onGoBack}

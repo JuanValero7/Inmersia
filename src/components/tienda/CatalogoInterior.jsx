@@ -7,28 +7,26 @@ import { CAT_COLOR } from './tiendaHelpers.jsx'
 import { Pagination, BookCard, TIPOS } from './catalogoShared.jsx'
 import { useCatalogoFiltro } from '../../hooks/useCatalogoFiltro.js'
 import { useFichaPedida } from '../../hooks/useFichaPedida.js'
-import PanelLibro from './PanelLibro.jsx'
-import LibroReel from './LibroReel.jsx'
+import FichaLibro from './FichaLibro.jsx'
 
 // =============================================================
 // CatalogoInterior · interior de la tienda (estilo storybook)
 // Versión desktop. Buscador + filtros por categoría + rejilla de
-// portadas, y panel lateral de detalle.
+// portadas. Tocar un libro abre su ficha (FichaLibro); el avance se
+// abre desde la ficha.
 //
 // Props:
 //   catalogo    · filas de `libros` (+ _nuevo)
 //   loading     · cargando catálogo
 //   user        · usuario auth (para el panel)
 //   tieneLibro  · (id) => bool
-//   libroLeido  · (id) => bool
 //   onComprar   · (libro) => void
 //   onVolver()  · regresar a la calle
 // =============================================================
 
-export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 'negro', tieneLibro, libroLeido, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo, bloqueado = false }) {
+export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 'negro', tieneLibro, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo, bloqueado = false }) {
   const openAuth = useOpenAuth()
   const [sel,         setSel]         = useState(null)
-  const [reelLibro,   setReelLibro]   = useState(null)
   const [showFilters, setShowFilters] = useState(false)
   useFichaPedida(catalogo, setSel)
 
@@ -38,11 +36,6 @@ export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 
   } = useCatalogoFiltro(catalogo, filtroTipo, tieneLibro)
 
   const reset = () => { resetFiltro(onFiltroTipo); setShowFilters(false) }
-
-  function handleReelClose() {
-    if (!sel) setSel(reelLibro)
-    setReelLibro(null)
-  }
 
   return (
     <div className="interior show">
@@ -120,7 +113,7 @@ export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 
           <>
             <div className="int-grid" ref={gridRef}>
               {paginatedList.map(b => (
-                <BookCard key={b.id} libro={b} adquirido={tieneLibro(b.id)} onOpen={setReelLibro} />
+                <BookCard key={b.id} libro={b} adquirido={tieneLibro(b.id)} onOpen={setSel} />
               ))}
             </div>
             <Pagination page={page} total={list.length} onChange={goToPage} />
@@ -136,25 +129,20 @@ export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 
         )}
       </div>
 
-      {/* Panel lateral de detalle */}
-      <div className={clsx('bkp-scrim', sel && 'show')} onClick={() => setSel(null)} />
+      {/* Ficha del libro (el avance se abre desde ella) */}
       {sel && (
-        <PanelLibro
+        <FichaLibro
           key={sel.id}
           libro={sel}
           user={user}
-          gatoColor={gatoColor}
           yaAdquirido={tieneLibro(sel.id)}
-          yaLeido={libroLeido(sel.id)}
           bloqueado={bloqueado}
           onComprar={() => { onComprar(sel); setSel(null) }}
-          onClose={() => setSel(null)}
-          onPreview={() => setReelLibro(sel)}
           onEmpezarLeer={() => { onEmpezarLeer(sel); setSel(null) }}
+          onCerrar={() => setSel(null)}
+          origen="catalogo"
         />
       )}
-
-      {reelLibro && <LibroReel libro={reelLibro} onClose={handleReelClose} />}
     </div>
   )
 }
