@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ACCENT, INK } from '../../lector/clay.jsx'
-import { READING_FONTS } from '../../lector/readerConstants.js'
+import { READING_FONTS, MODOS_PROGRESO } from '../../lector/readerConstants.js'
 import { TIPOS_RUIDO, AMBIENCIAS } from '../../../hooks/useWhiteNoise.js'
 
 const IcClose = () => (
@@ -77,7 +77,7 @@ export function ChapterSheet({ chapters, current, onPick, onClose }) {
   )
 }
 
-export function TypoSheet({ fontSize, onFontSize, readingFont, onReadingFont, readingTheme = 'light', onReadingTheme, onClose }) {
+export function TypoSheet({ fontSize, onFontSize, readingFont, onReadingFont, readingTheme = 'light', onReadingTheme, modoProgreso = 'pagina', onModoProgreso, onClose }) {
   const MIN = 16, MAX = 24
   return (
     <div className="lm-backdrop" onClick={onClose}>
@@ -111,6 +111,18 @@ export function TypoSheet({ fontSize, onFontSize, readingFont, onReadingFont, re
                 </button>
               ))}
             </div>
+          </>)}
+          {onModoProgreso && (<>
+            <div className="lm-typo-label lm-typo-label-sep">Progreso</div>
+            <div className="lm-progreso-row">
+              {MODOS_PROGRESO.map(m => (
+                <button key={m.id} className={'lm-progreso-card' + (modoProgreso===m.id?' active':'')} onClick={() => onModoProgreso(m.id)}>
+                  <span className="mu">{m.muestra}</span>
+                  <span className="nm">{m.nombre}</span>
+                </button>
+              ))}
+            </div>
+            <div className="lm-progreso-ayuda">{MODOS_PROGRESO.find(m => m.id === modoProgreso)?.ayuda}</div>
           </>)}
         </div>
       </div>

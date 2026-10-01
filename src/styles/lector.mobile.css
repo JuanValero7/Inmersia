@@ -399,7 +399,7 @@
 .lm-chap-row.active .lm-reading-badge { background: rgba(255,255,255,0.25); }
 
 /* tipografía */
-.lm-typo-body { padding: 4px 22px 18px; }
+.lm-typo-body { padding: 4px 22px 18px; overflow-y: auto; min-height: 0; }
 .lm-typo-label { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 11px; }
 .lm-size-row { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
 .lm-size-btn {
@@ -438,6 +438,21 @@
 .lm-theme-card.dark .sw  { background: #1d1813; color: #e9ddc7; }
 .lm-theme-card .nm { font-size: 12px; font-weight: 700; color: #000; }
 .lm-theme-card.active .nm { color: var(--accent); }
+
+/* ── Progreso en el pie (libro / capítulo / página) ── */
+.lm-typo-label-sep { margin-top: 20px; }
+.lm-progreso-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.lm-progreso-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-height: 60px; padding: 9px 6px; cursor: pointer; border-radius: 13px;
+  border: 2px solid var(--ink); background: var(--cream); font-family: inherit;
+  box-shadow: 1.4px 1.8px 0 rgba(74,54,34,0.13);
+}
+.lm-progreso-card.active { border-color: var(--accent); background: rgba(242,121,42,0.12); box-shadow: 1.4px 1.8px 0 rgba(242,121,42,0.3); }
+.lm-progreso-card .mu { font-family: 'Playfair Display', serif; font-size: 19px; line-height: 1.1; color: var(--ink); }
+.lm-progreso-card .nm { font-size: 12px; font-weight: 700; line-height: 1.15; color: #000; }
+.lm-progreso-card.active .nm { color: var(--accent); }
+.lm-progreso-ayuda { margin-top: 9px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
 
 /* ══ Modo nocturno (solo hoja + fondo del lector) ══ */
 .lm-screen.night {

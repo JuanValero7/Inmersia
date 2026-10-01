@@ -33,7 +33,7 @@ import TutorialHint from '../onboarding/TutorialHint.jsx'
 import { TEXTO_MANUAL_HINT } from '../onboarding/textos.js'
 import { anotarMuestra } from '../../lib/progresoInvitado.js'
 import { paginarParrafosMobileDOM } from '../../utils/lectorPaginationMobile.js'
-import { offsetDeAnclaje, paginaDeAnclaje } from '../../utils/readerHelpers.js'
+import { offsetDeAnclaje, paginaDeAnclaje, palabrasAcumuladasPorPagina, etiquetaProgreso } from '../../utils/readerHelpers.js'
 import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTILIZADO (igual al de PC)
 import { INK, ACCENT } from '../lector/clay.jsx'
 import SuperuserSoundsPanel from '../lector/SuperuserSoundsPanel.jsx'
@@ -138,7 +138,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
   // Lógica de datos compartida con el Lector de escritorio (ver src/hooks/useLectorData.js)
   const {
-    userId, capitulos, chapterCache, loading, loadingCap, error,
+    userId, capitulos, palabrasLibro, chapterCache, loading, loadingCap, error,
     isLeido, setIsLeido, subrayadosPorCap, olvidarSubrayado,
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
@@ -185,6 +185,8 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const [fontSize,    setFontSize]    = useLocalStorage('inm_lector_fontSize', 16)
   const [readingFont, setReadingFont] = useLocalStorage('inm_lector_font', READING_FONT_DEFAULT)
   const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
+  // Cómo se ve el progreso en el pie: 'pagina' (como siempre), 'capitulo' o 'libro'.
+  const [modoProgreso, setModoProgreso] = useLocalStorage('inm_lector_progreso', 'pagina')
 
   // ── Estado de UI no compartido ──
   const [modoSubrayado,  setModoSubrayado]  = useState(false)
@@ -603,6 +605,13 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
   const page = paginas[pageIndex] || []
 
+  // Pie de página: % del libro o del capítulo según Aa (null = número de página).
+  // Las palabras por página solo se recuentan cuando cambia la paginación.
+  const acumuladas = useMemo(() => palabrasAcumuladasPorPagina(paginas), [paginas])
+  const etiquetaPie = etiquetaProgreso({
+    modo: modoProgreso, capitulos, chapterIndex, acumuladas, ultimaPagina: pageIndex, palabrasLibro,
+  })
+
   return (
     <div className={'lm-screen' + (readingTheme === 'dark' ? ' night' : '')} ref={screenRef}>
       {/* Header */}
@@ -652,7 +661,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
             : <MobileBookPage
                 chapter={currentChapter} chapterIndex={chapterIndex}
                 parrafos={page} mediaByParrafo={currentMedia} subrayados={currentSubrayados}
-                isFirst={pageIndex===0} pageNum={pageIndex+1}
+                isFirst={pageIndex===0} pageNum={etiquetaPie ?? pageIndex+1}
                 fontSize={fontSize} font={readingFont}
                 atStart={atStart} nextIsChapter={atChapterEnd && !atEndOfBook}
                 onPrev={handlePrev}
@@ -723,7 +732,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       {/* Sheets */}
       {sheet==='xray'     && <XraySheet items={xrayItems} chapterNum={currentChapter?.numero ?? chapterIndex + 1} esNoficcion={esNoficcion} bloqueado={onboarding.active} onClose={() => setSheet(null)} onItemClick={(itemId) => { setSheet(null); irCartelera(itemId) }} />}
       {sheet==='chapters' && <ChapterSheet chapters={capitulos} current={chapterIndex} onPick={pickChapter} onClose={()=>setSheet(null)} />}
-      {sheet==='typo' && <TypoSheet fontSize={fontSize} onFontSize={setFontSize} readingFont={readingFont} onReadingFont={setReadingFont} readingTheme={readingTheme} onReadingTheme={setReadingTheme} onClose={()=>setSheet(null)} />}
+      {sheet==='typo' && <TypoSheet fontSize={fontSize} onFontSize={setFontSize} readingFont={readingFont} onReadingFont={setReadingFont} readingTheme={readingTheme} onReadingTheme={setReadingTheme} modoProgreso={modoProgreso} onModoProgreso={setModoProgreso} onClose={()=>setSheet(null)} />}
       {sheet==='audio' && (book?.es_ficcion === false
         ? <WhiteNoiseSheet noise={whiteNoise} onClose={() => setSheet(null)} />
         : <AudioSheet ambient={currentAmbient} playing={ambientPlaying} volume={ambientVol} onToggle={toggleAmbient} onVolume={setVol} onClose={() => setSheet(null)} />

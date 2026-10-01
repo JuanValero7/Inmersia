@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { offsetDeAnclaje, paginaDeAnclaje, marcasDelParrafo } from './readerHelpers.js'
+import { describe, it, test, expect } from 'vitest'
+import { offsetDeAnclaje, paginaDeAnclaje, marcasDelParrafo, contarPalabras, palabrasAcumuladasPorPagina, etiquetaProgreso } from './readerHelpers.js'
 
 // Fragmenta un texto en trozos de ~n caracteres cortando por palabra,
 // simulando lo que hace el paginador con un párrafo largo.
@@ -128,5 +128,51 @@ describe('marcasDelParrafo', () => {
     expect(segmentos).toBe(null)
     expect(sfxSinAnclar).toEqual([suelto])
     expect(anclados).toBe(0)
+  })
+})
+
+// ── Progreso de lectura (selector de Aa) ──
+describe('contarPalabras', () => {
+  test('cuenta por espacios, sin contar espacios de sobra', () => {
+    expect(contarPalabras('  Hola   mundo\ncruel ')).toBe(3)
+    expect(contarPalabras('')).toBe(0)
+    expect(contarPalabras(null)).toBe(0)
+  })
+})
+
+describe('palabrasAcumuladasPorPagina', () => {
+  test('acumula hasta el final de cada página y salta los separadores', () => {
+    const paginas = [
+      [{ tipo: 'texto', contenido: 'uno dos tres' }],
+      [{ tipo: 'separador', contenido: '' }, { tipo: 'dialogo', contenido: 'cuatro cinco' }],
+    ]
+    expect(palabrasAcumuladasPorPagina(paginas)).toEqual([3, 5])
+  })
+})
+
+describe('etiquetaProgreso', () => {
+  const capitulos = [{ numero: 1, palabras: 100 }, { numero: 2, palabras: 300 }]
+  const acumuladas = [100, 200, 300]   // capítulo 2 en tres páginas
+  const base = { capitulos, chapterIndex: 1, acumuladas, palabrasLibro: 400 }
+
+  test('modo página → null (el pie enseña el número como siempre)', () => {
+    expect(etiquetaProgreso({ ...base, modo: 'pagina', ultimaPagina: 0 })).toBeNull()
+  })
+
+  test('% del capítulo hasta el final de la página a la vista', () => {
+    expect(etiquetaProgreso({ ...base, modo: 'capitulo', ultimaPagina: 0 })).toBe('Cap. 2 · 33 %')
+    expect(etiquetaProgreso({ ...base, modo: 'capitulo', ultimaPagina: 2 })).toBe('Cap. 2 · 100 %')
+  })
+
+  test('% del libro con las palabras de los capítulos anteriores', () => {
+    // 100 del cap. 1 + 1/3 de 300 del cap. 2 = 200 de 400
+    expect(etiquetaProgreso({ ...base, modo: 'libro', ultimaPagina: 0 })).toBe('50 %')
+    expect(etiquetaProgreso({ ...base, modo: 'libro', ultimaPagina: 2 })).toBe('100 %')
+  })
+
+  test('sin palabras en la base, el % del libro va por capítulos', () => {
+    const sinPalabras = { ...base, capitulos: [{ numero: 1 }, { numero: 2 }], palabrasLibro: null }
+    // capítulo 2 de 2, a un tercio: (1 + 1/3) / 2 = 66 %
+    expect(etiquetaProgreso({ ...sinPalabras, modo: 'libro', ultimaPagina: 0 })).toBe('66 %')
   })
 })

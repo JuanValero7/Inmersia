@@ -17,7 +17,7 @@ import { anotarMuestra } from '../lib/progresoInvitado.js'
 import '../styles/lector.css'
 
 import { paginarParrafosDesktopDOM } from '../utils/lectorPagination.js'
-import { offsetDeAnclaje, paginaDeAnclaje } from '../utils/readerHelpers.js'
+import { offsetDeAnclaje, paginaDeAnclaje, palabrasAcumuladasPorPagina, etiquetaProgreso } from '../utils/readerHelpers.js'
 import { BookReader }      from './lector/BookReader.jsx'
 import { PolaroidStack }   from './lector/PolaroidStack.jsx'
 import { NotebookIcon } from './lector/RecorderPlayer.jsx'
@@ -120,7 +120,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
   // Lógica de datos compartida con LectorMobile (ver src/hooks/useLectorData.js)
   const {
-    userId, capitulos, chapterCache, loading, loadingCap, error,
+    userId, capitulos, palabrasLibro, chapterCache, loading, loadingCap, error,
     isLeido, setIsLeido, subrayadosPorCap, olvidarSubrayado,
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
@@ -185,6 +185,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const [readingFont, setReadingFont] = useLocalStorage('inm_lector_font', READING_FONT_DEFAULT)
   const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
   const [ledColor, setLedColor] = useLocalStorage('inm_lector_ledColor', 'none')
+  // Cómo se ve el progreso en el pie: 'pagina' (como siempre), 'capitulo' o 'libro'.
+  const [modoProgreso, setModoProgreso] = useLocalStorage('inm_lector_progreso', 'pagina')
   const pal = getReaderPalette(readingTheme)
 
   const [pendingSelection,  setPendingSelection]  = useState(null)
@@ -242,6 +244,14 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     [subrayadosPorCap, currentCapNum])
 
   const [currentPaginas, setCurrentPaginas] = useState([[]])
+
+  // Pie de página: % del libro o del capítulo según Aa (null = número de página).
+  // En doble página cuenta hasta el final de la de la derecha.
+  const acumuladas = useMemo(() => palabrasAcumuladasPorPagina(currentPaginas), [currentPaginas])
+  const etiquetaPie = etiquetaProgreso({
+    modo: modoProgreso, capitulos, chapterIndex, acumuladas, palabrasLibro,
+    ultimaPagina: doubleView ? Math.min(pageIndex + 1, currentPaginas.length - 1) : pageIndex,
+  })
 
   // Paginación DOM real: misma técnica que el mobile (offsetHeight + búsqueda
   // binaria). Reemplaza el sistema previo de measuredHeights + estimación, que
@@ -623,6 +633,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   onReadingFont={setReadingFont}
                   readingTheme={readingTheme}
                   onReadingTheme={setReadingTheme}
+                  modoProgreso={modoProgreso}
+                  onModoProgreso={setModoProgreso}
+                  etiquetaProgreso={etiquetaPie}
                   ambient={currentAmbient}
                   ledColor={ledColor}
                   onLedColor={setLedColor}

@@ -4,6 +4,15 @@
 // gato en móvil. No afecta a la no ficción, que usa el ruido ambiental.
 export const AMBIENTE_FICCION_ACTIVO = false
 
+// Modos del pie de página (ver etiquetaProgreso en utils/readerHelpers.js).
+// La muestra es un símbolo y no un número: un número de ejemplo se confundía
+// con el progreso real.
+export const MODOS_PROGRESO = [
+  { id: 'libro',    muestra: '%',    nombre: 'Del libro',    corto: 'Libro',    ayuda: 'Cuánto llevas del libro entero.' },
+  { id: 'capitulo', muestra: '%',    nombre: 'Del capítulo', corto: 'Capítulo', ayuda: 'Cuánto llevas del capítulo que estás leyendo.' },
+  { id: 'pagina',   muestra: '#',    nombre: 'Página',       corto: 'Página',   ayuda: 'El número de página dentro del capítulo.' },
+]
+
 export const READING_FONTS = [
   { label: 'Clásica', css: "'Crimson Text', Georgia, serif" },
   { label: 'Moderna', css: "'Lora', Georgia, serif" },

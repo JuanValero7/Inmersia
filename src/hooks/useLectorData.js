@@ -62,6 +62,7 @@ function agruparSubrayados(filas) {
  */
 export function useLectorData(book, setChapterIndex, setPageIndex, muestra = false) {
   const [capitulos, setCapitulos] = useState([])
+  const [palabrasLibro, setPalabrasLibro] = useState(null)   // para el "% del libro"
   // El caché es estado porque el render lo lee (currentChapData), pero
   // fetchChapter NO puede depender de él: cambiaría de identidad en cada
   // capítulo y obligaría a los efectos que lo consumen a excluirlo con un
@@ -158,7 +159,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
         // de progreso en la misma respuesta (FK ultimo_parrafo_id → parrafos.id),
         // evitando un viaje extra secuencial a `parrafos`.
         const [{ data: capsTodos, error: e }, { data: prog }] = await Promise.all([
-          supabase.from('capitulos').select('id, numero, titulo')
+          supabase.from('capitulos').select('id, numero, titulo, palabras')
             .eq('libro_id', book.libro_id).order('numero'),
           userId
             ? supabase.from('progreso_lectura')
@@ -172,6 +173,11 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
         // la lista VISIBLE: el índice de restauración de progreso y el tope que
         // dispara el paywall se calculan sobre ella.
         const caps = muestra ? capsTodos.slice(0, CAPITULOS_MUESTRA) : capsTodos
+        // Total del libro ENTERO (también en muestra, para que el "% del
+        // libro" no llegue al 100 % con los dos capítulos de prueba). null si
+        // a algún capítulo le faltan las palabras (migración 062).
+        const palabrasTodas = capsTodos.every(c => c.palabras > 0)
+          ? capsTodos.reduce((s, c) => s + c.palabras, 0) : null
 
         // pendingRestore = { parrafoId, offset }: el offset (caracteres dentro
         // del párrafo) afina la restauración cuando el párrafo es largo y está
@@ -185,7 +191,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
           }
         }
         if (cancelled) return
-        setCapitulos(caps); setChapterIndex(startChapter); setPageIndex(0)
+        setCapitulos(caps); setPalabrasLibro(palabrasTodas); setChapterIndex(startChapter); setPageIndex(0)
         setPendingRestore(pendingAnchor)
         if (!pendingAnchor) restoredRef.current = true
       } catch (err) {
@@ -427,7 +433,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
 
   return {
     // datos
-    userId, capitulos, chapterCache, loading, loadingCap, error,
+    userId, capitulos, palabrasLibro, chapterCache, loading, loadingCap, error,
     isLeido, setIsLeido, subrayadosPorCap, olvidarSubrayado,
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,

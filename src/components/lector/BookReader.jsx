@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { theme, tint, getReaderPalette } from './clay.jsx'
-import { READING_FONTS } from './readerConstants.js'
+import { READING_FONTS, MODOS_PROGRESO } from './readerConstants.js'
 import { marcasDelParrafo } from '../../utils/readerHelpers.js'
 import { RecorderPlayer } from './RecorderPlayer.jsx'
 import { AMBIENTE_FICCION_ACTIVO } from './readerConstants.js'
@@ -122,7 +122,7 @@ function ChapterSelect({ chapters, chapterIndex, onChapterSelect, locked = false
 }
 
 // ── Control de tipografía (tamaño + fuente) ─────────────────
-function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, readingTheme = 'light', onReadingTheme, ledColor = 'none', onLedColor }) {
+function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, readingTheme = 'light', onReadingTheme, ledColor = 'none', onLedColor, modoProgreso = 'pagina', onModoProgreso }) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState({ top: 0, left: 0 })
   const btnRef = useRef(null)
@@ -221,6 +221,24 @@ function TypographyControl({ fontSize, onFontSize, readingFont, onReadingFont, r
               </div>
             </>
           )}
+          {/* Progreso en el pie: % del libro, % del capítulo o número de página */}
+          {onModoProgreso && (
+            <>
+              <div style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.pageMeta, margin: '16px 0 9px' }}>Progreso</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                {MODOS_PROGRESO.map(m => {
+                  const active = modoProgreso === m.id
+                  return (
+                    <button key={m.id} type="button" onClick={() => onModoProgreso(m.id)} title={m.ayuda}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '7px 4px', cursor: 'pointer', border: `1.5px solid ${active ? theme.accent : theme.ink}`, borderRadius: 11, background: active ? 'rgba(242,121,42,0.12)' : 'transparent' }}>
+                      <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, lineHeight: 1.1, color: theme.navText }}>{m.muestra}</span>
+                      <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 10.5, lineHeight: 1.15, color: active ? theme.accent : theme.pageMeta }}>{m.corto}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </>
+          )}
         </div>,
         document.body
       )}
@@ -276,6 +294,7 @@ export const BookReader = memo(function BookReader({
   ambient = null, ledColor = 'none', onLedColor = null, esNoficcion = false,
   whiteNoise = null, chapterLocked = false,
   comunidadChip = null, renderCapa = null,
+  modoProgreso = 'pagina', onModoProgreso = null, etiquetaProgreso = null,
 }) {
   const [soundOpen, setSoundOpen] = useState(false)
   const soundRef = useRef(null)
@@ -309,6 +328,11 @@ export const BookReader = memo(function BookReader({
   const left = paginas[pageIndex] || []
   const right = paginas[pageIndex + 1] || []
   const showRight = doubleView && right.length > 0
+  // Pie de página. Con un modo de % (etiquetaProgreso), el porcentaje sale una
+  // sola vez: en la página derecha, o en la izquierda si la derecha es la hoja
+  // vacía de fin de capítulo. Sin él, el número de cada página, como siempre.
+  const pieIzq = etiquetaProgreso ? (showRight ? '' : etiquetaProgreso) : pageIndex + 1
+  const pieDer = etiquetaProgreso ? (showRight ? etiquetaProgreso : '') : (showRight ? pageIndex + 2 : '')
   const edge = (radius) => ({ width: 7, alignSelf: 'stretch', margin: '3px 0', background: `repeating-linear-gradient(0deg, ${pal.pageEdge}, ${pal.pageEdge} 1px, ${tint(pal.pageEdge,-0.12)} 2px, ${tint(pal.pageEdge,-0.12)} 3px)`, borderRadius: radius, flexShrink: 0 })
 
   return (
@@ -316,7 +340,7 @@ export const BookReader = memo(function BookReader({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 12, padding: '0 6px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <ChapterSelect chapters={chapters || []} chapterIndex={chapterIndex} onChapterSelect={onChapterSelect} locked={chapterLocked} />
-          <TypographyControl fontSize={fontSize} onFontSize={onFontSize} readingFont={readingFont} onReadingFont={onReadingFont} readingTheme={readingTheme} onReadingTheme={onReadingTheme} ledColor={ledColor} onLedColor={onLedColor} />
+          <TypographyControl fontSize={fontSize} onFontSize={onFontSize} readingFont={readingFont} onReadingFont={onReadingFont} readingTheme={readingTheme} onReadingTheme={onReadingTheme} ledColor={ledColor} onLedColor={onLedColor} modoProgreso={modoProgreso} onModoProgreso={onModoProgreso} />
           {(esNoficcion || AMBIENTE_FICCION_ACTIVO) && (
           <div ref={soundRef} style={{ position: 'relative' }}>
             <button type="button" onClick={() => setSoundOpen(o => !o)}
@@ -379,10 +403,10 @@ export const BookReader = memo(function BookReader({
 
       <div className="book-shadow" style={{ display: 'flex', position: 'relative', filter: bookFilter }}>
         {doubleView && <div style={edge('5px 0 0 5px')} />}
-        <Leaf parrafos={left} side={doubleView ? 'left' : 'single'} pageNum={pageIndex + 1} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onPrev={onPrevPage} onNext={!doubleView ? (isLast ? onNextChapter : onNextPage) : undefined} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={pageIndex === 0} chapterTitle={chapter.titulo} chapterNum={chapter.numero ?? chapterIndex + 1} overlay={renderCapa?.(pageIndex, doubleView ? 'izq' : 'der')} pal={pal} />
+        <Leaf parrafos={left} side={doubleView ? 'left' : 'single'} pageNum={pieIzq} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onPrev={onPrevPage} onNext={!doubleView ? (isLast ? onNextChapter : onNextPage) : undefined} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={pageIndex === 0} chapterTitle={chapter.titulo} chapterNum={chapter.numero ?? chapterIndex + 1} overlay={renderCapa?.(pageIndex, doubleView ? 'izq' : 'der')} pal={pal} />
         {doubleView && <div style={{ width: 20, height: pageH, background: 'linear-gradient(to right, rgba(0,0,0,0.34) 0%, rgba(90,55,20,0.12) 45%, rgba(0,0,0,0.28) 100%)', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.42)', flexShrink: 0 }} />}
         {doubleView && (
-          <Leaf parrafos={right} side="right" pageNum={showRight ? pageIndex + 2 : ''} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onNext={isLast ? onNextChapter : onNextPage} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={false} empty={!showRight} overlay={showRight ? renderCapa?.(pageIndex + 1, 'der') : null} pal={pal} />
+          <Leaf parrafos={right} side="right" pageNum={pieDer} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onNext={isLast ? onNextChapter : onNextPage} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={false} empty={!showRight} overlay={showRight ? renderCapa?.(pageIndex + 1, 'der') : null} pal={pal} />
         )}
         <div style={edge('0 5px 5px 0')} />
       </div>

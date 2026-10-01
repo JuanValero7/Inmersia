@@ -49,6 +49,68 @@ export function paginaDeAnclaje(paginas, parrafoId, offset = 0) {
   return last
 }
 
+// ── Progreso de lectura (selector de Aa: libro / capítulo / página) ──
+// Se mide en PALABRAS, no en páginas, para que no dependa de la letra ni de
+// la pantalla. contarPalabras es la misma regla que contar_palabras() de la
+// migración 062 (que rellena capitulos.palabras): si se cambia una, la otra.
+export function contarPalabras(texto) {
+  const t = (texto || '').trim()
+  return t ? t.split(/\s+/).length : 0
+}
+
+// Palabras acumuladas hasta el FINAL de cada página del capítulo:
+// acumuladas[i] = palabras de las páginas 0..i. Los separadores no cuentan.
+export function palabrasAcumuladasPorPagina(paginas) {
+  let total = 0
+  return paginas.map(pagina => {
+    for (const f of pagina) if (f.tipo !== 'separador') total += contarPalabras(f.contenido)
+    return total
+  })
+}
+
+const PCT = ' %'
+
+/**
+ * Texto del pie de página según el modo de progreso elegido en Aa.
+ *
+ * @param {object} o
+ * @param {'libro'|'capitulo'|'pagina'} o.modo
+ * @param {Array<{numero?: number, palabras?: number|null}>} o.capitulos   lista visible
+ * @param {number} o.chapterIndex
+ * @param {number[]} o.acumuladas   palabrasAcumuladasPorPagina del capítulo actual
+ * @param {number} o.ultimaPagina   índice de la última página a la vista
+ * @param {number|null} o.palabrasLibro   total del libro entero (null si falta algún capítulo)
+ * @returns {string|null}   null en modo página: el pie muestra el número como siempre
+ */
+export function etiquetaProgreso({ modo, capitulos, chapterIndex, acumuladas, ultimaPagina, palabrasLibro }) {
+  if (modo !== 'libro' && modo !== 'capitulo') return null
+  const n = acumuladas.length
+  if (!n) return null
+  const totalCap = acumuladas[n - 1]
+  // Fracción leída del capítulo hasta el final de la página a la vista; si el
+  // capítulo no tiene texto contable, por páginas.
+  const frac = totalCap > 0 ? acumuladas[Math.min(ultimaPagina, n - 1)] / totalCap : (ultimaPagina + 1) / n
+
+  if (modo === 'capitulo') {
+    const num = capitulos[chapterIndex]?.numero ?? chapterIndex + 1
+    return `Cap. ${num} · ${Math.round(frac * 100)}${PCT}`
+  }
+
+  // Libro: palabras de los capítulos anteriores + la parte leída del actual.
+  // Sin palabras en la base (migración 062 sin correr), por capítulos.
+  let pct
+  if (palabrasLibro > 0) {
+    let antes = 0
+    for (let i = 0; i < chapterIndex; i++) antes += capitulos[i]?.palabras || 0
+    const actual = capitulos[chapterIndex]?.palabras || 0
+    pct = (antes + frac * actual) / palabrasLibro * 100
+  } else {
+    pct = (chapterIndex + frac) / Math.max(1, capitulos.length) * 100
+  }
+  // Hacia abajo: el 100 % solo cuando de verdad se terminó.
+  return `${Math.floor(pct)}${PCT}`
+}
+
 // ── Marcas sobre el texto de un párrafo (SFX + subrayados del usuario) ──
 // Un fragmento de párrafo puede llevar dos marcas distintas encima: los tramos
 // con sonido anclado (texto_ref) y los subrayados guardados por el usuario, que
