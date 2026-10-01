@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation, Navigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useTiendaData } from '../../hooks/useTiendaData.js'
 import { LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
 import { useOnboarding } from '../../context/onboarding.jsx'
@@ -8,16 +8,27 @@ import TutorialHint from '../onboarding/TutorialHint.jsx'
 import { TEXTO_TIENDA_LIMITE } from '../onboarding/textos.js'
 import CalleEscena from '../tienda/CalleEscena.jsx'
 import CatalogoInteriorMobile from './tienda/CatalogoInteriorMobile.jsx'
+import TiendaPrincipalMobile from './tienda/TiendaPrincipalMobile.jsx'
+import CabeceraTiendaMobile from './tienda/CabeceraTiendaMobile.jsx'
 import '../../styles/tienda.css'
 
-// Hasta la fase 4 del plan de la tienda, el móvil conserva su recorrido de
-// siempre (calle → catálogo). De las rutas nuevas solo entiende
-// /tienda/catalogo (directo al catálogo); /tienda/:sala vuelve a /tienda.
+// =============================================================
+// VistaTiendaMobile · la Tienda en el teléfono (cáscara de datos y rutas)
+//   /tienda            → TiendaPrincipalMobile (portada, salas, carriles)
+//   /tienda/catalogo   → CatalogoInteriorMobile (todo el catálogo)
+//   /tienda/:sala      → la sala (fase 5 del plan; por ahora un aviso)
+// Datos compartidos con escritorio: useTiendaData.
+//
+// LA CALLE solo aparece al llegar desde la Biblioteca (state.calle),
+// igual que en escritorio (Tienda.jsx): nunca es destino de Atrás.
+// =============================================================
+
 export default function VistaTiendaMobile({ vista = 'principal', onGoBack, user, gatoColor, onOpenBook, isSuperuser = false }) {
-  // "Empezar a leer" (bienvenida) llega con state.entrar: se salta la fachada.
   const location = useLocation()
-  const [subView,    setSubView]    = useState(vista === 'catalogo' || !user || location.state?.entrar ? 'catalogo' : 'calle')
-  const [filtroTipo, setFiltroTipo] = useState('todos')
+  const navigate = useNavigate()
+  const porLaCalle = vista === 'principal' && !!user && !!location.state?.calle && !location.state?.entrar
+  const [enCalle, setEnCalle] = useState(porLaCalle)
+  const [filtroTipo, setFiltroTipo] = useState('todos') // catálogo completo
 
   const { catalogo, loading, pendientes, accesoBloqueado, tieneLibro, comprar, comprarYLeer } =
     useTiendaData(user, isSuperuser, onOpenBook)
@@ -28,20 +39,22 @@ export default function VistaTiendaMobile({ vista = 'principal', onGoBack, user,
   // llevarse de adentro. Al cerrarlo el tutorial termina (tienda → done).
   const onboarding = useOnboarding()
   const pistas = usePistas()   // el aviso del tour equivale a la pista 'tienda'
-  const showLimiteHint = onboarding.active && onboarding.step === 'tienda' && subView === 'calle'
+  const showLimiteHint = onboarding.active && onboarding.step === 'tienda' && enCalle
 
-  const handleEntrar = () => setSubView('catalogo')
+  // Al cruzar la puerta se borra la marca de la calle del historial.
+  const entrar = () => {
+    setEnCalle(false)
+    navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: {} })
+  }
 
-  if (vista === 'sala') return <Navigate to="/tienda" replace />
-
-  if (subView === 'calle') {
+  if (enCalle) {
     return (
       <>
         <CalleEscena
           pendientes={pendientes}
           limite={LIMITE_PENDIENTES}
           bloqueado={accesoBloqueado}
-          onEntrar={handleEntrar}
+          onEntrar={entrar}
           onGoBack={onGoBack}
         />
         {showLimiteHint && (
@@ -57,19 +70,48 @@ export default function VistaTiendaMobile({ vista = 'principal', onGoBack, user,
     )
   }
 
+  if (vista === 'catalogo') {
+    return (
+      <CatalogoInteriorMobile
+        catalogo={catalogo}
+        loading={loading}
+        user={user}
+        gatoColor={gatoColor}
+        tieneLibro={tieneLibro}
+        onComprar={comprar}
+        onEmpezarLeer={comprarYLeer}
+        onVolver={() => navigate('/tienda')}
+        filtroTipo={filtroTipo}
+        onFiltroTipo={setFiltroTipo}
+        bloqueado={accesoBloqueado}
+      />
+    )
+  }
+
+  if (vista === 'sala') {
+    // Fase 5 del plan: la sala con sus baldas y la historia a pantalla completa.
+    return (
+      <div className="tpm">
+        <CabeceraTiendaMobile etiquetaAtras="Tienda" onAtras={() => navigate('/tienda')} />
+        <p className="tp-vacio">Las salas llegan al teléfono en el siguiente paso.</p>
+      </div>
+    )
+  }
+
   return (
-    <CatalogoInteriorMobile
+    <TiendaPrincipalMobile
       catalogo={catalogo}
       loading={loading}
       user={user}
       gatoColor={gatoColor}
       tieneLibro={tieneLibro}
+      bloqueado={accesoBloqueado}
       onComprar={comprar}
       onEmpezarLeer={comprarYLeer}
-      onVolver={onGoBack}
-      filtroTipo={filtroTipo}
-      onFiltroTipo={setFiltroTipo}
-      bloqueado={accesoBloqueado}
+      onSalir={onGoBack}
+      onIrCatalogo={() => navigate('/tienda/catalogo')}
+      onIrSala={(slug) => navigate(`/tienda/${slug}`)}
+      porLaCalle={porLaCalle}
     />
   )
 }

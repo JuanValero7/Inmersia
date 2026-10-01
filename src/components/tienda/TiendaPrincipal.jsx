@@ -1,14 +1,13 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import clsx from 'clsx'
-import { useSalasQuery, useLibrosPalabrasQuery } from '../../lib/queries.js'
 import { useCatalogoFiltro } from '../../hooks/useCatalogoFiltro.js'
 import { useFichaEnUrl } from '../../hooks/useFichaEnUrl.js'
-import { seLeeEnUnaTarde } from '../../utils/formato.js'
+import { usePortadaTienda } from '../../hooks/usePortadaTienda.js'
 import { imgUrl } from '../../lib/img.js'
 import { evento } from '../../lib/analytics.js'
 import { CAT_COLOR } from './tiendaHelpers.jsx'
 import { BookCard, CoverCard, Pagination, TIPOS } from './catalogoShared.jsx'
-import { SalaCard, esVisitable } from './salaPiezas.jsx'
+import { SalaCard } from './salaPiezas.jsx'
 import FichaLibro from './FichaLibro.jsx'
 import CabeceraTienda from './CabeceraTienda.jsx'
 import '../../styles/tienda-principal.css'
@@ -67,8 +66,7 @@ function Carril({ titulo, subtitulo, libros, tieneLibro, onAbrir }) {
 }
 
 export default function TiendaPrincipal({ catalogo, loading, user, gatoColor = 'negro', tieneLibro, bloqueado = false, onComprar, onEmpezarLeer, onSalir, onIrCatalogo, onIrSala, porLaCalle = false }) {
-  const { data: salas = [] } = useSalasQuery()
-  const { data: palabras = {} } = useLibrosPalabrasQuery()
+  const { temporada, temporadaLibros, salas: salasPasillo, librosDe, carriles } = usePortadaTienda(catalogo)
   const { libro: fichaLibro, abrir, cerrar } = useFichaEnUrl(catalogo)
   const [tipo, setTipo] = useState('todos')
   const [verFiltros, setVerFiltros] = useState(false)
@@ -79,22 +77,6 @@ export default function TiendaPrincipal({ catalogo, loading, user, gatoColor = '
   const origenVista = useRef(porLaCalle ? 'calle' : user ? 'directa' : 'invitado')
   useEffect(() => { evento('tienda_vista', { origen: origenVista.current }) }, [])
 
-  const porId = useMemo(() => new Map(catalogo.map(l => [l.id, l])), [catalogo])
-  const librosDe = (sala) => sala.libros.map(id => porId.get(id)).filter(Boolean)
-
-  const temporada = salas.find(s => s.tipo === 'temporada' && esVisitable(s))
-  const salasPasillo = salas.filter(s => s.tipo === 'sala')
-
-  // Carriles con reglas fijas (decisión 4): el catálogo ya viene en el orden curado.
-  const carriles = useMemo(() => [
-    { clave: 'empezar', titulo: 'Para empezar', subtitulo: 'Puertas de entrada, elegidas a mano.',
-      libros: catalogo.slice(0, MAX_POR_CARRIL) },
-    { clave: 'tarde', titulo: 'Se leen en una tarde', subtitulo: 'Historias completas en dos horas o menos.',
-      libros: catalogo.filter(l => seLeeEnUnaTarde(palabras[l.id])).slice(0, MAX_POR_CARRIL) },
-    { clave: 'nuevos', titulo: 'Recién llegados', subtitulo: 'Lo último que entró en la tienda.',
-      libros: [...catalogo].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')).slice(0, MAX_POR_CARRIL) },
-  ].filter(c => c.libros.length), [catalogo, palabras])
-
   const elegirTipo = (k) => { setTipo(k); evento('tienda_filtro', { tipo: k, categorias: [...filtro.selCats] }) }
   const alternarCategoria = (c) => {
     const nuevas = new Set(filtro.selCats)
@@ -103,8 +85,6 @@ export default function TiendaPrincipal({ catalogo, loading, user, gatoColor = '
     evento('tienda_filtro', { tipo, categorias: [...nuevas] })
   }
   const limpiar = () => { filtro.resetFiltro(setTipo); setVerFiltros(false) }
-
-  const temporadaLibros = temporada ? librosDe(temporada) : []
 
   return (
     <div className="tp">
@@ -193,7 +173,7 @@ export default function TiendaPrincipal({ catalogo, loading, user, gatoColor = '
             )}
 
             {carriles.map(c => (
-              <Carril key={c.clave} titulo={c.titulo} subtitulo={c.subtitulo} libros={c.libros} tieneLibro={tieneLibro} onAbrir={abrir} />
+              <Carril key={c.clave} titulo={c.titulo} subtitulo={c.subtitulo} libros={c.libros.slice(0, MAX_POR_CARRIL)} tieneLibro={tieneLibro} onAbrir={abrir} />
             ))}
 
             <section className="tp-todo">

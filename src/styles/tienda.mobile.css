@@ -1,0 +1,111 @@
+/* ════════════════════════════════════════════════════════════════
+   TIENDA · móvil (TiendaPrincipalMobile.jsx y CabeceraTiendaMobile.jsx, .tpm-*)
+   Reutiliza de tienda-principal.css los chips (.tp-chip), la tarjeta
+   de sala (.sp-*), el libro del carril (.tp-libro, .tp-check) y, de
+   tienda.css, la rejilla del catálogo (.int-grid, 2 columnas en móvil).
+   ════════════════════════════════════════════════════════════════ */
+
+.tpm{min-height:100vh;min-height:100dvh;background:var(--bg-warm);color:var(--ink);font-family:'Poppins',system-ui,sans-serif;
+  padding-bottom:calc(48px + env(safe-area-inset-bottom,0px));}
+.tpm *{box-sizing:border-box;}
+.tpm h1,.tpm h2{font-family:'Baloo 2',cursive;text-wrap:balance;}
+
+/* ── Fila fija de arriba (también la usa el catálogo) ── */
+.tpm-cab{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:2.5px solid var(--ink);
+  padding-top:env(safe-area-inset-top,0px);}
+.tpm-cab-fila{height:60px;display:flex;align-items:center;gap:8px;padding:0 12px;}
+.tpm-logo{height:22px;margin:0 auto;}
+.tpm-hueco{width:44px;flex-shrink:0;}
+.tpm-pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 13px;border-radius:999px;
+  border:2.5px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer;white-space:nowrap;
+  font-family:'Baloo 2',cursive;font-weight:700;font-size:14px;box-shadow:2px 3px 0 rgba(74,54,34,.16);}
+.tpm-pill svg{display:inline-block;}
+.tpm-pill:disabled{opacity:.5;cursor:default;}
+.tpm-pill-naranja{background:var(--accent);color:#fff;}
+.tpm-icono{width:44px;height:44px;flex-shrink:0;border-radius:999px;display:grid;place-items:center;cursor:pointer;
+  border:2.5px solid var(--ink);background:var(--paper);color:var(--ink);}
+.tpm-buscador{flex-grow:1;min-width:0;display:flex;align-items:center;gap:8px;height:44px;padding:0 14px;border-radius:999px;
+  border:2.5px solid var(--ink);background:#fff;color:var(--brown-soft);}
+.tpm-buscador:focus-within{box-shadow:0 0 0 3px rgba(242,121,42,.32);}
+/* 16px: con menos, iOS hace zoom al enfocar */
+.tpm-buscador input{flex-grow:1;min-width:0;border:none;outline:none;background:transparent;font:inherit;font-size:16px;color:var(--ink);}
+.tpm-buscador input::placeholder{color:#a88a6c;}
+.tpm-cancelar{height:44px;padding:0 4px;border:none;background:transparent;color:var(--ink);cursor:pointer;
+  font-family:inherit;font-weight:600;font-size:14px;}
+
+/* ── Chips (se desplazan con la página) ── */
+.tpm-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:12px 12px 0;}
+.tpm .tp-chip{height:36px;padding:0 12px;font-size:14px;}
+.tpm .tp-sep{margin:0 2px;height:22px;}
+
+/* ── Portada de temporada ── */
+.tpm-hero{position:relative;margin:16px 16px 0;height:372px;border-radius:22px;overflow:hidden;border:2.5px solid var(--ink);
+  box-shadow:3px 4px 0 rgba(74,54,34,.2);background-color:#2a1d14;background-size:cover;background-position:60% 25%;}
+.tpm-hero::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(27,21,26,.05) 0%,rgba(27,21,26,.35) 32%,rgba(27,21,26,.95) 68%);}
+.tpm-hero-portadas{position:absolute;z-index:2;right:16px;top:18px;display:flex;align-items:flex-end;}
+.tpm-hero-portadas .book:nth-child(1){width:70px;transform:rotate(-8deg);margin-right:-14px;}
+.tpm-hero-portadas .book:nth-child(2){width:88px;z-index:2;}
+.tpm-hero-portadas .book-title{font-size:10px;}
+.tpm-hero-portadas .book-scribble{font-size:8px;}
+.tpm-hero-txt{position:absolute;z-index:2;left:18px;right:18px;bottom:18px;color:#fbf0dc;display:flex;flex-direction:column;
+  align-items:flex-start;gap:8px;}
+.tpm-hero h1{margin:0;font-weight:800;font-size:38px;line-height:.98;}
+.tpm-hero p{margin:0;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:16px;line-height:1.4;color:#f5e6cc;}
+.tpm-hero .tpm-pill{margin-top:4px;}
+
+/* ── Secciones: carrusel de salas y carriles ── */
+.tpm-sec{margin-top:30px;}
+.tpm-sec-cab{padding:0 16px;margin-bottom:10px;}
+.tpm-sec-cab h2{margin:0;font-weight:800;font-size:22px;line-height:1.1;}
+.tpm-sec-cab p{margin:2px 0 0;font-size:12.5px;color:var(--brown-soft);}
+.tpm-pista{display:flex;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory;scroll-padding-inline:16px;padding-inline:16px;}
+.tpm-pista::-webkit-scrollbar{display:none;}
+.tpm-pista>*{scroll-snap-align:start;}
+.tpm-salas{gap:12px;padding-bottom:8px;}
+/* 252 px: en un teléfono de 390 asoma la siguiente sala */
+.tpm-salas .sp-sala{flex:0 0 252px;min-height:112px;padding:14px 16px;gap:14px;border-radius:20px;}
+.tpm-salas .sp-portal{width:46px;height:68px;border-radius:23px 23px 6px 6px;border-width:2.5px;}
+.tpm-salas .sp-portal::after{right:7px;width:5px;height:5px;}
+.tpm-salas .sp-sala-texto b{font-size:19px;}
+.tpm-salas .sp-sala-texto span{font-size:12px;}
+.tpm-carril{gap:14px;padding-top:6px;padding-bottom:12px;}
+.tpm-carril .tp-libro:hover{transform:none;}
+
+/* ── Todo el catálogo ── */
+.tpm-todo{margin:30px 16px 0;padding:18px;border-radius:20px;background:var(--paper);border:2.5px solid var(--ink);
+  display:flex;flex-direction:column;gap:12px;box-shadow:3px 4px 0 rgba(74,54,34,.16);}
+.tpm-todo-fila{display:flex;align-items:center;gap:12px;}
+.tpm-todo img{height:52px;}
+.tpm-todo h2{margin:0;font-weight:800;font-size:20px;line-height:1.1;}
+.tpm-todo p{margin:0;font-size:13px;color:var(--brown-soft);}
+.tpm-todo .tpm-pill{width:100%;height:46px;font-size:16px;}
+
+/* ── Resultados de buscar o filtrar ── */
+.tpm-resultados{padding:14px 16px 40px;}
+.tpm-resultados-cab{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.tpm-resultados-cab h2{margin:0;flex-grow:1;font-weight:800;font-size:19px;line-height:1.15;}
+
+/* ── Hoja de filtros ── */
+.tpm-velo{position:fixed;inset:0;z-index:320;background:rgba(42,29,20,.55);animation:tpm-fundido .2s;}
+@keyframes tpm-fundido{from{opacity:0}}
+.tpm-hoja{position:absolute;left:0;right:0;bottom:0;max-height:86%;display:flex;flex-direction:column;background:var(--paper);
+  border-top:2.5px solid var(--ink);border-radius:24px 24px 0 0;color:var(--ink);font-family:'Poppins',system-ui,sans-serif;
+  animation:tpm-sube .28s cubic-bezier(.2,.9,.3,1);}
+@keyframes tpm-sube{from{transform:translateY(40%);opacity:0}}
+.tpm-hoja-cab{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;}
+.tpm-hoja-cab h2{margin:0;flex-grow:1;font-family:'Baloo 2',cursive;font-weight:800;font-size:22px;}
+.tpm-hoja-cuerpo{overflow-y:auto;padding:4px 16px 12px;}
+.tpm-hoja-sec{margin:12px 0 8px;font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--brown-soft);}
+.tpm-hoja-chips{display:flex;flex-wrap:wrap;gap:8px;}
+.tpm-hoja .tp-chip{height:36px;padding:0 12px;font-size:14px;}
+.tpm-hoja-pie{display:flex;gap:10px;padding:12px 16px calc(18px + env(safe-area-inset-bottom,0px));border-top:2px solid #e3d3b5;}
+.tpm-hoja-pie .tpm-pill{flex:1;height:46px;font-size:15px;}
+
+/* ── Catálogo completo con la fila fija ── */
+.interior .tpm-cab{z-index:5;}
+.interior:has(.tpm-cab) .interior-inner{padding-top:20px;}
+
+@media (prefers-reduced-motion:reduce){
+  .tpm-velo,.tpm-hoja{animation:none;}
+}

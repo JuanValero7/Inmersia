@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import clsx from 'clsx'
 import { useOpenAuth } from '../../../context/authModal.jsx'
 import { CAT_COLOR } from '../../tienda/tiendaHelpers.jsx'
@@ -6,8 +7,7 @@ import { Pagination, BookCard, TIPOS } from '../../tienda/catalogoShared.jsx'
 import { useCatalogoFiltro } from '../../../hooks/useCatalogoFiltro.js'
 import { useFichaEnUrl } from '../../../hooks/useFichaEnUrl.js'
 import FichaLibroMobile from './FichaLibroMobile.jsx'
-
-const LOGO = '/assets/inmersia-logo.png'
+import CabeceraTiendaMobile from './CabeceraTiendaMobile.jsx'
 
 function FilterOverlay({ availableCats, selCats, onToggle, onClear, onClose, filtroTipo, onFiltroTipo }) {
   const [entering, setEntering] = useState(true)
@@ -72,6 +72,7 @@ function FilterOverlay({ availableCats, selCats, onToggle, onClear, onClose, fil
 
 export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoColor = 'negro', tieneLibro, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo, bloqueado = false }) {
   const openAuth = useOpenAuth()
+  const location = useLocation()
   const [showFilters, setShowFilters] = useState(false)
   // La ficha vive en la URL (?libro=): el botón Atrás de Android la cierra
   // sin salir de la tienda, porque abrirla apila una entrada en el historial.
@@ -80,7 +81,10 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
   const {
     selCats, toggleCat, clearCats, q, handleQChange, handleQKeyDown,
     availableCats, list, paginatedList, page, goToPage, gridRef, resetFiltro,
-  } = useCatalogoFiltro(catalogo, filtroTipo, tieneLibro, { donde: 'catalogo_movil' })
+  } = useCatalogoFiltro(catalogo, filtroTipo, tieneLibro, {
+    qInicial: new URLSearchParams(location.search).get('q') || '',
+    donde: 'catalogo_movil',
+  })
 
   const reset = () => { resetFiltro(onFiltroTipo); setShowFilters(false) }
 
@@ -89,22 +93,13 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
   return (
     <div className="interior show">
       <div className="interior-bg" style={{ '--intbg-gato-url': `url('/assets/tienda/gato-${gatoColor}-5.webp')` }} />
-      {user ? (
-        <div className="int-back-row">
-          <button className="int-back" onClick={onVolver}>Biblioteca</button>
-        </div>
-      ) : (
-        <header className="tienda-guest-nav">
-          <div className="tienda-guest-nav-in">
-            <button className="tienda-guest-volver" onClick={onVolver}>← Volver</button>
-            <img src={LOGO} alt="Inmersia" className="tienda-guest-logo" />
-            <nav className="tienda-guest-actions">
-              <button className="tienda-guest-lnk" onClick={() => openAuth('login')}>Iniciar sesión</button>
-              <button className="tienda-guest-btn" onClick={() => openAuth('registro')}>Crear cuenta</button>
-            </nav>
-          </div>
-        </header>
-      )}
+      <CabeceraTiendaMobile
+        etiquetaAtras="Tienda"
+        onAtras={onVolver}
+        derecha={!user && (
+          <button type="button" className="tpm-pill tpm-pill-naranja" onClick={() => openAuth('registro')}>Crear cuenta</button>
+        )}
+      />
 
       <div className="interior-inner">
         <h1 className="int-title">Catálogo</h1>

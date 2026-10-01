@@ -1,6 +1,6 @@
 # Tienda nueva: plan de implementación (escritorio y móvil)
 
-Estado al 1 oct 2026. El diseño está cerrado y aprobado por Juan en dos prototipos navegables. **F0–F3 hechas (escritorio completo); falta el móvil (F4–F5) y el cierre (F6).** Este documento es la guía para programarlo: qué se construye, en qué orden, qué archivos cambian y qué falta decidir.
+Estado al 1 oct 2026. El diseño está cerrado y aprobado por Juan en dos prototipos navegables. **F0–F4 hechas (escritorio completo y principal + catálogo en móvil); faltan las salas en móvil (F5) y el cierre (F6).** Este documento es la guía para programarlo: qué se construye, en qué orden, qué archivos cambian y qué falta decidir.
 
 ## Referencias
 - **Prototipo escritorio:** https://claude.ai/artifact/2qkUWTuEPtTLGSqhfpzbid
@@ -334,16 +334,39 @@ Con esto se arma el embudo: tienda → sala/ficha → historia → comenzar a le
   - **Arreglo de la medición:** el texto del lomo va en un `span` interior con `writing-mode` vertical. Dentro de un elemento vertical, el `cqi` de `--cw` se mide contra otro eje y el lomo salía más alto que las portadas.
   - **Falta probar con sesión:** guardar desde la historia (el aviso N de 5) y el límite de 5.
 
-## 9. Para retomar (siguiente sesión: F4, el móvil: principal, catálogo y ficha)
-- **Sin commit:** todo lo de F0–F3 está sin commit, porque Juan aún no lo ha pedido. `git status` muestra el trabajo.
-- **Qué falta:** `TiendaMobile.jsx` sigue con el recorrido viejo. `/tienda/:sala` redirige a `/tienda` en móvil hasta la F5. La F4 es la sección 1.2 (móvil) y el prototipo móvil:
-  - fila fija con Atrás, logo y lupa;
-  - chips y `HojaFiltros`;
-  - portada de temporada, carrusel de salas y 2 carriles de 6.
+- **F4 hecha (sin commit) el 1 oct:** la tienda principal y el catálogo en el móvil.
+  - **Archivos nuevos:**
+    - `hooks/usePortadaTienda.js`: temporada, salas y carriles para escritorio y móvil. Escritorio muestra 3 × 8 y el móvil 2 × 6.
+    - `mobile/tienda/TiendaPrincipalMobile.jsx`, que incluye la `HojaFiltros`.
+    - `mobile/tienda/CabeceraTiendaMobile.jsx`: Atrás, logo y un hueco a la derecha. La usará también la sala móvil.
+    - `styles/tienda.mobile.css` (`.tpm-*`).
+  - **Archivos tocados:**
+    - `TiendaMobile.jsx`: ahora es una cáscara igual que la de escritorio. La calle solo sale con `state.calle`. `/tienda/:sala` muestra un aviso provisional hasta la F5.
+    - `CatalogoInteriorMobile.jsx`: cabecera nueva (Atrás «Tienda», más «Crear cuenta» si es invitado) y lectura de `?q=`.
+    - `TiendaPrincipal.jsx`: usa `usePortadaTienda`.
+    - `tienda.css`: se borró `.tienda-guest-*`. `.int-back` se queda porque lo usa la calle.
+    - Respaldo en `Inmersia_respaldos/2026-10-01_tienda-F4/`.
+  - **Verificado:** eslint sin errores, 77 tests y build. En el navegador, como invitado en 390 × 844, sin desborde:
+    - la fila de arriba se queda fija al bajar;
+    - la lupa enfoca el buscador; «fantasma» da 3 y Cancelar vuelve;
+    - en la hoja, Terror da «Ver 5 libros»;
+    - la ficha se abre desde un carril y el Atrás del navegador la cierra;
+    - una sala muestra el aviso, el catálogo vuelve a la tienda y `?q=platon` da 1.
+  - **Escritorio, sin cambios tras el ajuste:** temporada, 4 salas y 3 carriles de 8.
+
+## 9. Para retomar (siguiente sesión: F5, las salas y la historia en el móvil)
+- **Sin commit:** todo lo de F0–F4 está sin commit, porque Juan aún no lo ha pedido.
+- **Qué falta:** la vista `sala` de `TiendaMobile.jsx` es un aviso provisional. La F5 la sustituye por `SalaMobile.jsx` (sección 1.3 móvil y prototipo móvil):
+  - baldas con portadas de ≈71 px solo con la ilustración y las **etiquetas** de papel colgando;
+  - numerador;
+  - «Otras salas» como fila deslizable con las tarjetas de la principal;
+  - la historia a pantalla completa con X, Ficha y Añadir en la columna derecha y «Comenzar a leer»;
+  - gestos: hacia arriba, el libro siguiente; hacia abajo, el anterior; un rebote en el último;
+  - el Atrás de Android cierra primero la historia o la ficha.
 - **Se reutiliza:**
-  - `useCatalogoFiltro` (búsqueda amplia, `?q=`);
-  - `useSalasQuery`, `esVisitable`, `SalaCard` y `Portal`;
-  - `useLibrosPalabrasQuery` y `seLeeEnUnaTarde`;
-  - `useFichaEnUrl` y `FichaLibroMobile`.
+  - `armarEstanterias`, `secuenciaVisual`, `estanteriaDe` y la posición del lomo en `sessionStorage` (hoy está en `SalaVista.jsx`, y conviene moverla a `utils/estanteria.js`);
+  - `Historia` (prop `lateral`), `useHistoria`, `PanelHistoria` y `AccionesHistoria` de `SalaVista`;
+  - `CabeceraTiendaMobile` y `SalaCard`;
+  - la variante `.hist-velo-movil` de `historia.css`.
 - **Pendiente pequeño:** el aviso «quedó en tu biblioteca · N de 5» de la principal y el catálogo (hoy solo está en la sala).
 - **Pendiente para el final (Juan, 1 oct):** en pantallas anchas (≈2000 px o más) la sala deja un gran hueco vacío a la derecha de las baldas, entre los libros y el panel. Las portadas tienen un tope de 140 px (`--cw` en `sala.css`) y las baldas ocupan todo el ancho. Se resuelve al terminar las fases.
