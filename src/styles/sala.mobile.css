@@ -1,0 +1,108 @@
+/* ════════════════════════════════════════════════════════════════
+   SALA · móvil (SalaMobile.jsx)
+   .sm-*  la sala: título, baldas con etiquetas de papel, numerador,
+          otras salas (tarjetas .tpm-salas de tienda.mobile.css)
+   .smh-* la historia a pantalla completa (núcleo .hist-* en historia.css)
+   Capas: historia 310 · ficha (.flm) 330 · aviso 340 · registro 3000.
+   ════════════════════════════════════════════════════════════════ */
+
+.sm{min-height:100vh;min-height:100dvh;color:#fbf0dc;font-family:'Poppins',system-ui,sans-serif;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  /* 4 portadas + 1 lomo (28) + 4 huecos (8) + márgenes: entran en el ancho */
+  --cw:min(calc((100vw - 108px) / 4), 90px);}
+.sm *{box-sizing:border-box;}
+.sm-sin-sala{background:#241812;}
+.sm-estado{margin:0;padding:60px 16px;text-align:center;color:#f5e9d6;}
+
+.sm-titulo{padding:16px 16px 0;}
+.sm-titulo h1{margin:0;font-family:'Baloo 2',cursive;font-weight:800;font-size:29px;line-height:1.05;color:#fff;
+  text-shadow:0 2px 10px rgba(0,0,0,.35);text-wrap:balance;}
+.sm-titulo span{font-size:13px;opacity:.85;}
+.sm-ayuda{margin:6px 16px 0;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:15px;opacity:.85;}
+
+/* ── Baldas ── */
+.sm-estanterias{display:flex;flex-direction:column;gap:20px;padding:22px 16px 0;}
+.sm-balda-libros{display:flex;align-items:flex-end;gap:8px;padding:0 8px;height:calc(var(--cw) * 1.5 + 22px);}
+.sm-tabla{height:14px;border-radius:2px;background:linear-gradient(180deg,#ecd6a8 0%,#c9a574 35%,#9c7a4c 100%);
+  box-shadow:0 2px 0 #7a5e38,0 12px 16px -8px rgba(0,0,0,.55);}
+.sm-libro{position:relative;flex-shrink:0;border:none;background:transparent;padding:0;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;transition:transform .28s cubic-bezier(.34,1.3,.5,1);}
+.sm-libro.sel{transform:translateY(-14px);}
+.sm-libro.sel .sm-portada,.sm-libro.sel .sm-lomo{outline:3px solid var(--accent);outline-offset:3px;}
+.sm-portada{position:relative;display:block;width:var(--cw);aspect-ratio:2/3;border-radius:2px 6px 6px 2px;overflow:hidden;
+  box-shadow:2px 3px 0 rgba(0,0,0,.18),0 12px 18px -10px rgba(40,25,10,.7);}
+.sm-portada img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.sm-portada::before{content:"";position:absolute;z-index:1;left:0;top:0;bottom:0;width:7%;
+  background:linear-gradient(90deg,rgba(0,0,0,.35),rgba(255,255,255,.12) 60%,rgba(0,0,0,.1));}
+.sm-check{position:absolute;z-index:2;right:4px;bottom:4px;width:20px;height:20px;border-radius:999px;display:grid;place-items:center;
+  background:#eef3e0;color:#4a7a3e;font-weight:800;font-size:11px;border:1.5px solid var(--ink);}
+.sm-lomo{display:flex;align-items:center;justify-content:center;height:calc(var(--cw) * 1.42);padding:6px 0;overflow:hidden;
+  border-radius:2px 3px 3px 2px;font-family:'Baloo 2',cursive;font-weight:700;font-size:10px;color:#fff8ea;
+  box-shadow:inset 2px 0 0 rgba(255,255,255,.14),inset -3px 0 0 rgba(0,0,0,.2),2px 3px 0 rgba(0,0,0,.22);}
+.sm-lomo-txt{writing-mode:vertical-rl;max-height:100%;overflow:hidden;text-align:center;line-height:1.05;}
+
+/* Etiquetas de papel colgando de la balda, una por portada (el lomo deja su hueco) */
+.sm-etiquetas{display:flex;align-items:flex-start;gap:8px;padding:0 8px;margin-top:-3px;}
+.sm-etiqueta-hueco{width:28px;flex-shrink:0;}
+.sm-etiqueta{position:relative;flex-shrink:0;width:var(--cw);padding:4px 3px 3px;border:1.5px solid #5e4024;border-radius:3px;
+  background:#fbf3e4;color:#3a2a1a;cursor:pointer;transform-origin:50% 0;box-shadow:0 3px 6px rgba(0,0,0,.35);
+  font-family:'Baloo 2',cursive;font-weight:700;font-size:10px;line-height:1.1;text-align:center;-webkit-tap-highlight-color:transparent;}
+.sm-etiqueta::before{content:"";position:absolute;left:50%;top:-5px;width:6px;height:6px;margin-left:-3px;border-radius:99px;background:#7a5e38;}
+.sm-etiqueta span{display:-webkit-box;-webkit-line-clamp:3;line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:33px;}
+
+.sm-numerador{display:flex;align-items:center;justify-content:center;gap:12px;height:52px;margin-top:14px;
+  font-family:'Baloo 2',cursive;font-weight:700;font-size:15px;}
+.sm-numerador button{width:40px;height:40px;border-radius:999px;display:grid;place-items:center;cursor:pointer;
+  border:1.5px solid rgba(251,240,220,.5);background:rgba(255,255,255,.08);color:#fbf0dc;}
+.sm-numerador button:disabled{opacity:.3;cursor:default;}
+
+.sm-otras{padding:22px 0 26px;}
+.sm-otras h2{margin:0 0 10px;padding:0 16px;font-family:'Baloo 2',cursive;font-weight:700;font-size:16px;opacity:.9;}
+.sm-otras .sp-sala{border-color:rgba(255,240,210,.55);}
+
+/* ── Aviso al guardar ── */
+.sm-aviso{position:fixed;left:16px;right:16px;bottom:calc(110px + env(safe-area-inset-bottom,0px));z-index:340;
+  padding:12px 16px;border-radius:16px;background:#2a1d14;color:#fff6e4;border:2px solid rgba(255,240,210,.35);
+  font-weight:600;font-size:13.5px;text-align:center;opacity:0;transform:translateY(12px);pointer-events:none;
+  transition:opacity .25s,transform .25s;}
+.sm-aviso.on{opacity:1;transform:none;}
+
+/* ── Historia a pantalla completa ── */
+.smh{position:fixed;inset:0;z-index:310;background:#000;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;}
+.smh-marco{position:absolute;inset:0;transition:transform .3s cubic-bezier(.2,.8,.2,1);}
+.smh-marco.smh-rebote{animation:smh-rebote .4s;}
+@keyframes smh-rebote{30%{transform:translateY(-28px)}}
+.smh .hist{border-radius:0;box-shadow:none;}
+.smh .hist-escena{pointer-events:none;}
+.smh .hist-segs{top:calc(14px + env(safe-area-inset-top,0px));}
+.smh .hist-cerrar{top:calc(28px + env(safe-area-inset-top,0px));right:10px;}
+.smh .hist-pie{bottom:calc(14px + env(safe-area-inset-bottom,0px));}
+/* El texto deja sitio a la columna de Ficha / Añadir */
+.smh .hist-titulo,.smh .hist-sub,.smh .hist-libro{margin-right:86px;}
+.smh .hist-lateral{right:6px;bottom:calc(150px + env(safe-area-inset-bottom,0px));}
+.smh .hist-btn-leer{height:54px;}
+.hist.smh-entra-sube{animation:smh-sube .38s cubic-bezier(.2,.8,.2,1);}
+.hist.smh-entra-baja{animation:smh-baja .38s cubic-bezier(.2,.8,.2,1);}
+@keyframes smh-sube{from{transform:translateY(70%)}}
+@keyframes smh-baja{from{transform:translateY(-70%)}}
+
+.smh-accion{width:84px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0;border:none;background:transparent;
+  color:#fff;cursor:pointer;font-family:'Poppins',system-ui,sans-serif;font-size:10.5px;font-weight:600;line-height:1.2;text-align:center;
+  text-shadow:0 1px 4px rgba(0,0,0,.6);-webkit-tap-highlight-color:transparent;}
+.smh-accion i{width:48px;height:48px;border-radius:999px;display:grid;place-items:center;font-style:normal;
+  background:rgba(20,14,10,.5);border:1px solid rgba(255,255,255,.2);}
+.smh-accion i svg{display:block;}
+.smh-accion.on i{background:var(--accent);border-color:var(--accent);}
+.smh-accion:disabled{cursor:default;}
+.smh-limite{margin:0;font-size:12px;line-height:1.4;text-align:center;color:#f0b27a;}
+.smh-desliza{height:40px;border:none;background:transparent;color:#e3d2b8;cursor:pointer;
+  font:500 13px/40px 'Poppins',system-ui,sans-serif;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.smh-desliza svg{display:inline-block;vertical-align:-3px;margin-right:4px;}
+.smh-desliza:disabled{opacity:.55;cursor:default;}
+.smh-estado{border-radius:0;height:100%;}
+.smh-estado .hist-btn-leer,.smh-estado .smh-desliza{width:100%;max-width:340px;}
+
+@media (prefers-reduced-motion:reduce){
+  .sm-libro,.sm-aviso,.smh-marco{transition:none;}
+  .smh-marco.smh-rebote,.hist.smh-entra-sube,.hist.smh-entra-baja{animation:none;}
+}

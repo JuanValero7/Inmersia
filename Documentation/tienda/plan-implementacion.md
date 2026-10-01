@@ -1,6 +1,6 @@
 # Tienda nueva: plan de implementación (escritorio y móvil)
 
-Estado al 1 oct 2026. El diseño está cerrado y aprobado por Juan en dos prototipos navegables. **F0–F4 hechas (escritorio completo y principal + catálogo en móvil); faltan las salas en móvil (F5) y el cierre (F6).** Este documento es la guía para programarlo: qué se construye, en qué orden, qué archivos cambian y qué falta decidir.
+Estado al 1 oct 2026. El diseño está cerrado y aprobado por Juan en dos prototipos navegables. **F0–F5 hechas (escritorio y móvil completos); falta el cierre (F6) y el hueco de la sala en pantallas anchas.** Este documento es la guía para programarlo: qué se construye, en qué orden, qué archivos cambian y qué falta decidir.
 
 ## Referencias
 - **Prototipo escritorio:** https://claude.ai/artifact/2qkUWTuEPtTLGSqhfpzbid
@@ -354,19 +354,39 @@ Con esto se arma el embudo: tienda → sala/ficha → historia → comenzar a le
     - una sala muestra el aviso, el catálogo vuelve a la tienda y `?q=platon` da 1.
   - **Escritorio, sin cambios tras el ajuste:** temporada, 4 salas y 3 carriles de 8.
 
-## 9. Para retomar (siguiente sesión: F5, las salas y la historia en el móvil)
-- **Sin commit:** todo lo de F0–F4 está sin commit, porque Juan aún no lo ha pedido.
-- **Qué falta:** la vista `sala` de `TiendaMobile.jsx` es un aviso provisional. La F5 la sustituye por `SalaMobile.jsx` (sección 1.3 móvil y prototipo móvil):
-  - baldas con portadas de ≈71 px solo con la ilustración y las **etiquetas** de papel colgando;
-  - numerador;
-  - «Otras salas» como fila deslizable con las tarjetas de la principal;
-  - la historia a pantalla completa con X, Ficha y Añadir en la columna derecha y «Comenzar a leer»;
-  - gestos: hacia arriba, el libro siguiente; hacia abajo, el anterior; un rebote en el último;
-  - el Atrás de Android cierra primero la historia o la ficha.
-- **Se reutiliza:**
-  - `armarEstanterias`, `secuenciaVisual`, `estanteriaDe` y la posición del lomo en `sessionStorage` (hoy está en `SalaVista.jsx`, y conviene moverla a `utils/estanteria.js`);
-  - `Historia` (prop `lateral`), `useHistoria`, `PanelHistoria` y `AccionesHistoria` de `SalaVista`;
-  - `CabeceraTiendaMobile` y `SalaCard`;
-  - la variante `.hist-velo-movil` de `historia.css`.
+- **F5 hecha (sin commit) el 1 oct:** las salas y la historia en el móvil.
+  - **Archivos nuevos:**
+    - `mobile/tienda/SalaMobile.jsx` y `styles/sala.mobile.css`.
+    - `hooks/useSala.js`: sala por slug, vuelta a `/tienda` si no existe, `sala_abierta`, estanterías con el lomo en `sessionStorage`, secuencia y otras salas. Lo usan escritorio y móvil.
+    - `hooks/useAvisoGuardar.js`: el aviso «quedó en tu biblioteca · N de 5».
+  - **Archivos tocados:**
+    - `useFichaEnUrl.js`: ahora se apoya en un `useLibroEnUrl(libros, param)` genérico, con `abrir`, `cambiar` (reemplaza la entrada) y `cerrar`.
+    - `SalaVista.jsx`: usa `useSala` y `useAvisoGuardar`.
+    - `salaPiezas.jsx`: incluye `Lomo`, compartido.
+    - `Historia.jsx`: incluye `PrecargaHistoria`.
+    - `TiendaMobile.jsx`: monta `SalaMobile` con `key={slug}`.
+    - Respaldo en `Inmersia_respaldos/2026-10-01_tienda-F5/`.
+  - **Comportamiento:**
+    - La historia vive en `?historia=<slug>` y la ficha encima, en `?libro=`. Atrás cierra la ficha, después la historia y después sale de la sala.
+    - Deslizar reemplaza la entrada del historial, así que no lo llena.
+    - El arrastre vertical cambia de libro a partir de 60 px; en los extremos rebota.
+    - Los botones no arrancan un arrastre, salvo las zonas de toque de escena. El clic que llega al soltar se descarta.
+    - La sala se abre siempre arriba (`scrollTo(0, 0)`), porque se llega con la portada desplazada.
+  - **Verificado:** eslint sin errores, 77 tests y build. Como invitado, con la emulación de iPhone 13:
+    - portadas de 71 px, 7 etiquetas, sin desborde;
+    - la etiqueta abre la historia y el toque derecho pasa a la escena 1;
+    - deslizar hacia arriba lleva a Canterville y hacia abajo vuelve; en el primero, rebote;
+    - Ficha y Atrás ×3: ficha → historia → sala, con el libro resaltado, → tienda;
+    - en el jardín, deslizar pasa a la estantería 2 y se mantiene al cerrar;
+    - «Otras salas».
+  - **Escritorio, sin cambios tras el ajuste:** repetida la prueba de la F3.
+
+## 9. Para retomar (siguiente sesión: F6, el cierre)
+- **Sin commit:** todo lo de F0–F5 está sin commit, porque Juan aún no lo ha pedido.
+- **Lo que queda de la F6:**
+  - **Biblioteca y borrado:** se adelantaron en la F1 (`PanelLibro`, `LibroReel`, `.bkp-*` y `.reel-*` ya no existen). Hay que comprobar que no queda CSS huérfano en `tienda.css`, por ejemplo `.int-back` cuando la calle deje de usarlo.
+  - **Analítica:** ya se registran `tienda_vista`, `tienda_busqueda`, `tienda_filtro`, `sala_abierta`, `historia_vista`, `historia_desliza`, `ficha_abierta`, `cta_comenzar` y `avance_abierto`. Falta comprobarlos en PostHog.
+  - **Revisión de pantallas:** `scripts/revisar-pantallas.mjs` en 860–1440 px y en móvil.
+  - **Probar con sesión:** guardar con el aviso «N de 5», el límite de 5 y el tutorial (paso `tienda` en la calle).
 - **Pendiente pequeño:** el aviso «quedó en tu biblioteca · N de 5» de la principal y el catálogo (hoy solo está en la sala).
 - **Pendiente para el final (Juan, 1 oct):** en pantallas anchas (≈2000 px o más) la sala deja un gran hueco vacío a la derecha de las baldas, entre los libros y el panel. Las portadas tienen un tope de 140 px (`--cw` en `sala.css`) y las baldas ocupan todo el ancho. Se resuelve al terminar las fases.

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTiendaData } from '../../hooks/useTiendaData.js'
 import { LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
 import { useOnboarding } from '../../context/onboarding.jsx'
@@ -9,14 +9,14 @@ import { TEXTO_TIENDA_LIMITE } from '../onboarding/textos.js'
 import CalleEscena from '../tienda/CalleEscena.jsx'
 import CatalogoInteriorMobile from './tienda/CatalogoInteriorMobile.jsx'
 import TiendaPrincipalMobile from './tienda/TiendaPrincipalMobile.jsx'
-import CabeceraTiendaMobile from './tienda/CabeceraTiendaMobile.jsx'
+import SalaMobile from './tienda/SalaMobile.jsx'
 import '../../styles/tienda.css'
 
 // =============================================================
 // VistaTiendaMobile · la Tienda en el teléfono (cáscara de datos y rutas)
 //   /tienda            → TiendaPrincipalMobile (portada, salas, carriles)
 //   /tienda/catalogo   → CatalogoInteriorMobile (todo el catálogo)
-//   /tienda/:sala      → la sala (fase 5 del plan; por ahora un aviso)
+//   /tienda/:sala      → SalaMobile (baldas e historia a pantalla completa)
 // Datos compartidos con escritorio: useTiendaData.
 //
 // LA CALLE solo aparece al llegar desde la Biblioteca (state.calle),
@@ -26,6 +26,7 @@ import '../../styles/tienda.css'
 export default function VistaTiendaMobile({ vista = 'principal', onGoBack, user, gatoColor, onOpenBook, isSuperuser = false }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const { sala: salaSlug } = useParams()
   const porLaCalle = vista === 'principal' && !!user && !!location.state?.calle && !location.state?.entrar
   const [enCalle, setEnCalle] = useState(porLaCalle)
   const [filtroTipo, setFiltroTipo] = useState('todos') // catálogo completo
@@ -89,12 +90,22 @@ export default function VistaTiendaMobile({ vista = 'principal', onGoBack, user,
   }
 
   if (vista === 'sala') {
-    // Fase 5 del plan: la sala con sus baldas y la historia a pantalla completa.
+    // key: pasar a otra sala desde «Otras salas» monta una sala nueva.
     return (
-      <div className="tpm">
-        <CabeceraTiendaMobile etiquetaAtras="Tienda" onAtras={() => navigate('/tienda')} />
-        <p className="tp-vacio">Las salas llegan al teléfono en el siguiente paso.</p>
-      </div>
+      <SalaMobile
+        key={salaSlug}
+        slug={salaSlug}
+        catalogo={catalogo}
+        loading={loading}
+        user={user}
+        tieneLibro={tieneLibro}
+        pendientes={pendientes}
+        bloqueado={accesoBloqueado}
+        onComprar={comprar}
+        onEmpezarLeer={comprarYLeer}
+        onVolver={() => navigate('/tienda')}
+        onIrSala={(slug) => navigate(`/tienda/${slug}`)}
+      />
     )
   }
 

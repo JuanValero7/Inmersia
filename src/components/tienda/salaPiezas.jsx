@@ -1,8 +1,12 @@
 // =============================================================
-// Piezas de las salas de la Tienda: el portal (la puerta con luz) y
-// la tarjeta de sala. Las usan la tienda principal y el pasillo de
-// cada sala. Estilos en styles/tienda-principal.css (.sp-*).
+// Piezas de las salas de la Tienda: el portal (la puerta con luz),
+// la tarjeta de sala y el lomo de un libro en la balda. Las usan la
+// tienda principal y las salas, en escritorio y en móvil. Estilos en
+// styles/tienda-principal.css (.sp-*); el lomo, en sala.css y
+// sala.mobile.css.
 // =============================================================
+
+import { CAT_COLOR } from './tiendaHelpers.jsx'
 
 // Mezcla `hex` hacia `destino` (0 = hex, 1 = destino). Devuelve rgb().
 export function mezclar(hex, destino, t) {
@@ -63,5 +67,21 @@ export function SalaCard({ sala, numLibros, onAbrir, compacta = false }) {
         <span>{sala.genero ? `${sala.genero} · ` : ''}{numLibros} {numLibros === 1 ? 'libro' : 'libros'}</span>
       </span>
     </button>
+  )
+}
+
+/**
+ * Un libro de lomo en la balda, con el color de su primera categoría
+ * oscurecido. El texto vertical va en un span interior: dentro de un
+ * elemento con writing-mode vertical, el cqi del ancho de las portadas
+ * (--cw) se mediría contra otro eje y el lomo saldría más alto.
+ * @param {{ libro: object, ancho: number, className: string }} props
+ */
+export function Lomo({ libro, ancho, className }) {
+  const color = CAT_COLOR[libro.categorias?.[0]] || '#8b4d2a'
+  return (
+    <span className={className} style={{ width: ancho, background: mezclar(color, '#2a1d14', 0.2) }}>
+      <span className={`${className}-txt`}>{libro.titulo}</span>
+    </span>
   )
 }

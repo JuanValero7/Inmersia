@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { useHistoria, ANCHO_ESCENA } from '../../hooks/useHistoria.js'
 import { useLibroReelsQuery } from '../../lib/queries.js'
-import { imgUrl } from '../../lib/img.js'
+import { imgUrl, preloadImages } from '../../lib/img.js'
 import '../../styles/historia.css'
 
 // =============================================================
@@ -84,6 +84,18 @@ export default function Historia({ libro, escenas, pausada = false, onCerrar, la
       </div>
     </div>
   )
+}
+
+/**
+ * Precarga la primera escena de un libro (el siguiente al deslizar), para
+ * que la historia nueva no espere a la red. No pinta nada.
+ */
+export function PrecargaHistoria({ libroId }) {
+  const { data: escenas } = useLibroReelsQuery(libroId)
+  useEffect(() => {
+    if (escenas?.[0]) preloadImages([imgUrl(escenas[0].imagen_url, { width: ANCHO_ESCENA })])
+  }, [escenas])
+  return null
 }
 
 const IconoPlay = () => (

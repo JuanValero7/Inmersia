@@ -1,18 +1,16 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
-import { useSalasQuery, useLibroReelsQuery } from '../../lib/queries.js'
+import { useLibroReelsQuery } from '../../lib/queries.js'
 import { useFichaEnUrl } from '../../hooks/useFichaEnUrl.js'
-import { LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
-import { armarEstanterias, secuenciaVisual, estanteriaDe } from '../../utils/estanteria.js'
-import { ANCHO_ESCENA } from '../../hooks/useHistoria.js'
-import { imgUrl, preloadImages } from '../../lib/img.js'
+import { useSala } from '../../hooks/useSala.js'
+import { useAvisoGuardar } from '../../hooks/useAvisoGuardar.js'
+import { estanteriaDe } from '../../utils/estanteria.js'
 import { evento } from '../../lib/analytics.js'
-import { CAT_COLOR } from './tiendaHelpers.jsx'
 import { CoverCard } from './catalogoShared.jsx'
-import { SalaCard, esVisitable, mezclar } from './salaPiezas.jsx'
+import { SalaCard, Lomo, mezclar } from './salaPiezas.jsx'
 import { useAccionesFicha } from './fichaPiezas.jsx'
-import Historia from './Historia.jsx'
+import Historia, { PrecargaHistoria } from './Historia.jsx'
 import FichaLibro from './FichaLibro.jsx'
 import CabeceraTienda from './CabeceraTienda.jsx'
 import '../../styles/sala.css'
@@ -32,6 +30,7 @@ import '../../styles/sala.css'
 // La ficha se abre encima y vive en la URL (?libro=, ver useFichaEnUrl);
 // mientras está abierta la historia se pausa.
 // Tienda.jsx la monta con key={slug}: cambiar de sala = sala nueva.
+// Datos de la sala: useSala, el mismo hook que el móvil (SalaMobile).
 // =============================================================
 
 const IconoBuscar = () => (
@@ -59,39 +58,6 @@ const IconoArriba = () => (
 // del trackpad; durante la pausa se ignoran los eventos que siguen llegando.
 const RUEDA_MIN_DELTA = 18
 const RUEDA_PAUSA_MS = 700
-
-// Dónde va el lomo de cada balda: se sortea una vez y se guarda en
-// sessionStorage, así la estantería no «salta» durante la visita.
-function posicionLomo(slug, clave, huecos) {
-  const k = `inmersia:lomo:${slug}:${clave}`
-  try {
-    const guardada = sessionStorage.getItem(k)
-    if (guardada != null) return Number(guardada)
-  } catch { /* sin almacenamiento: se sortea en cada visita */ }
-  const pos = Math.floor(Math.random() * huecos)
-  try { sessionStorage.setItem(k, String(pos)) } catch { /* idem */ }
-  return pos
-}
-
-// El lomo: ancho según el título (no todos los libros son igual de gruesos)
-// y color de su primera categoría, oscurecido.
-function Lomo({ libro }) {
-  const color = CAT_COLOR[libro.categorias?.[0]] || '#8b4d2a'
-  return (
-    <span className="sv-lomo" style={{ width: 34 + (libro.titulo.length % 4) * 4, background: mezclar(color, '#2a1d14', 0.2) }}>
-      <span className="sv-lomo-txt">{libro.titulo}</span>
-    </span>
-  )
-}
-
-// Las escenas del libro que sigue, para que «Desliza» no espere a la red.
-function PrecargaSiguiente({ libroId }) {
-  const { data: escenas } = useLibroReelsQuery(libroId)
-  useEffect(() => {
-    if (escenas?.[0]) preloadImages([imgUrl(escenas[0].imagen_url, { width: ANCHO_ESCENA })])
-  }, [escenas])
-  return null
-}
 
 // Lo de abajo de la historia: Comenzar a leer, Ficha + Guardar y Desliza.
 function AccionesHistoria({ libro, user, yaAdquirido, bloqueado, onComenzar, onGuardar, onFicha, siguiente, onDeslizar }) {
@@ -149,29 +115,8 @@ function PanelHistoria({ libro, sala, sentido, pausada, children }) {
  */
 export default function SalaVista({ slug, catalogo, loading, user, gatoColor = 'negro', tieneLibro, pendientes, bloqueado = false, onComprar, onEmpezarLeer, onVolver, onIrSala }) {
   const navigate = useNavigate()
-  const { data: salas, isError } = useSalasQuery()
+  const { sala, isError, libros, estanterias, secuencia, indiceDe, otras, librosDe } = useSala(slug, catalogo)
   const { libro: fichaLibro, abrir: abrirFicha, cerrar: cerrarFicha } = useFichaEnUrl(catalogo)
-  const sala = salas?.find(s => s.slug === slug && esVisitable(s)) || null
-
-  // Una sala que no existe (o una temporada fuera de fecha) vuelve a la tienda.
-  useEffect(() => {
-    if (salas && !sala) navigate('/tienda', { replace: true })
-  }, [salas, sala, navigate])
-
-  const salaSlug = sala?.slug
-  useEffect(() => { if (salaSlug) evento('sala_abierta', { sala: salaSlug }) }, [salaSlug])
-
-  const porId = useMemo(() => new Map(catalogo.map(l => [l.id, l])), [catalogo])
-  const librosDe = useCallback((s) => s.libros.map(id => porId.get(id)).filter(Boolean), [porId])
-  const libros = useMemo(() => (sala ? librosDe(sala) : []), [sala, librosDe])
-
-  const estanterias = useMemo(
-    () => armarEstanterias(libros, (clave, huecos) => posicionLomo(slug, clave, huecos)),
-    [libros, slug]
-  )
-  const secuencia = useMemo(() => secuenciaVisual(estanterias), [estanterias])
-  const indiceDe = useMemo(() => new Map(secuencia.map((l, i) => [l.id, i])), [secuencia])
-
   const [sel, setSel] = useState(-1)
   const [pagina, setPagina] = useState(0)
   const [sentido, setSentido] = useState('')   // 'sube' | 'baja': hacia dónde entra la historia
@@ -227,21 +172,7 @@ export default function SalaVista({ slug, catalogo, loading, user, gatoColor = '
   }, [fichaAbierta])
 
   // Aviso al guardar («quedó en tu biblioteca · N de 5»).
-  const [aviso, setAviso] = useState('')
-  useEffect(() => {
-    if (!aviso) return
-    const t = setTimeout(() => setAviso(''), 2800)
-    return () => clearTimeout(t)
-  }, [aviso])
-  const guardar = async (libro) => {
-    const { error } = await onComprar(libro)
-    if (error === 'bloqueado') setAviso(`Ya tienes ${LIMITE_PENDIENTES} lecturas pendientes. Termina una para sumar otra.`)
-    else if (error) setAviso('No pudimos guardarlo. Inténtalo otra vez.')
-    else {
-      const n = pendientes + 1
-      setAviso(`«${libro.titulo}» quedó en tu biblioteca${n <= LIMITE_PENDIENTES ? ` · ${n} de ${LIMITE_PENDIENTES}` : ''}`)
-    }
-  }
+  const { aviso, guardar } = useAvisoGuardar(onComprar, pendientes)
 
   // Buscador: busca en toda la tienda, en el catálogo completo.
   const [q, setQ] = useState('')
@@ -251,10 +182,6 @@ export default function SalaVista({ slug, catalogo, loading, user, gatoColor = '
   }
 
   // Pasillo: las demás salas visitables. Flechas solo si no caben.
-  const otras = useMemo(
-    () => (salas || []).filter(s => s.slug !== slug && esVisitable(s)),
-    [salas, slug]
-  )
   // La pista se guarda en estado (no en un ref): aparece cuando la sala
   // termina de cargar, y es entonces cuando hay que medirla.
   const [pista, setPista] = useState(null)
@@ -322,7 +249,7 @@ export default function SalaVista({ slug, catalogo, loading, user, gatoColor = '
                       <button key={libro.id} type="button" className={clsx('sv-libro', i === sel && 'sel')}
                         onClick={() => elegir(i)} aria-pressed={i === sel}
                         aria-label={`${libro.titulo}, ${libro.autor}${propio ? ' (ya está en tu biblioteca)' : ''}`}>
-                        {lomo ? <Lomo libro={libro} /> : <CoverCard libro={libro} />}
+                        {lomo ? <Lomo libro={libro} className="sv-lomo" ancho={34 + (libro.titulo.length % 4) * 4} /> : <CoverCard libro={libro} />}
                         {propio && !lomo && <span className="tp-check" aria-hidden="true">✓</span>}
                       </button>
                     )
@@ -379,7 +306,7 @@ export default function SalaVista({ slug, catalogo, loading, user, gatoColor = '
               </div>
             )}
           </div>
-          {siguiente && <PrecargaSiguiente libroId={siguiente.id} />}
+          {siguiente && <PrecargaHistoria libroId={siguiente.id} />}
         </aside>
       </div>
 
