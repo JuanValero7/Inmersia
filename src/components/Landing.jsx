@@ -142,6 +142,7 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
     return () => io.disconnect()
   }, [mobile])
 
+  const abrirLegal = (doc) => (e) => { e.preventDefault(); setLegalDoc(doc) }
   const flecha = <span className="inm-arrow" aria-hidden="true">→</span>
 
   return (
@@ -377,12 +378,16 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
         <div className="inm-wrap inm-foot-in">
           <img src={LOGO} alt="Inmersia" loading="lazy" />
           {/* Los documentos legales tienen que ser accesibles SIN cuenta. El
-              Impressum es obligatorio en Alemania (§ 5 DDG). */}
+              Impressum es obligatorio en Alemania (§ 5 DDG). Son enlaces de
+              verdad (a /privacidad, /terminos, /impressum) porque Google
+              comprueba que la portada enlace la política de privacidad para
+              verificar la marca; al hacer clic se abren en la ventana de siempre. */}
           <nav className="inm-foot-legal" aria-label="Legal">
             <span>© 2026 Inmersia</span>
-            <button type="button" onClick={() => setLegalDoc('terminos')}>Términos y Condiciones</button>
-            <button type="button" onClick={() => setLegalDoc('privacidad')}>Política de Privacidad</button>
-            <button type="button" onClick={() => setLegalDoc('impressum')}>Impressum</button>
+            <a href="/terminos" onClick={abrirLegal('terminos')}>Términos y Condiciones</a>
+            <a href="/privacidad" onClick={abrirLegal('privacidad')}>Política de Privacidad</a>
+            <a href="/impressum" onClick={abrirLegal('impressum')}>Impressum</a>
+            <a href="https://www.instagram.com/inmersia.io/" target="_blank" rel="noopener noreferrer">Instagram</a>
           </nav>
         </div>
       </footer>

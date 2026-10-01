@@ -315,9 +315,8 @@
 .inm-foot-in { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
 .inm-foot-in img { height: 44px; width: auto; }
 .inm-foot-legal { display: flex; align-items: center; gap: 6px 16px; flex-wrap: wrap; font-family: var(--inm-font-ui); font-weight: 600; font-size: 0.88rem; }
-.inm-foot-legal button { background: none; border: none; padding: 4px 0; cursor: pointer;
-  color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 3px; }
-.inm-foot-legal button:hover { color: var(--inm-accent-2); }
+.inm-foot-legal a { padding: 4px 0; color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.inm-foot-legal a:hover { color: var(--inm-accent-2); }
 
 /* Barra fija inferior: solo existe en móvil (ver landing.mobile.css) */
 .inm-sticky { display: none; }

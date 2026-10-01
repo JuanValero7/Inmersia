@@ -225,6 +225,9 @@ function bloqueCatalogo(lista, titulo, intro) {
         <ul>
           ${items}
         </ul>
+        <!-- Google comprueba que la portada enlace la política de privacidad
+             para verificar la marca del inicio de sesión. -->
+        <p><a href="${ORIGEN}/privacidad">Política de Privacidad</a> · <a href="${ORIGEN}/terminos">Términos y Condiciones</a> · <a href="${ORIGEN}/impressum">Impressum</a></p>
       </article>
     </div>`
 }
