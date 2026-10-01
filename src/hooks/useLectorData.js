@@ -205,35 +205,74 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
     setChapterCache(chapterCacheRef.current)
   }, [])
 
-  // Traer un capítulo (párrafos + media + ambiente), con caché
+  // Peticiones de capítulo en vuelo, por id: si la precarga del siguiente
+  // capítulo todavía no terminó cuando el usuario llega a él, se espera esa
+  // misma petición en vez de lanzar otra.
+  const enVueloRef = useRef({})
+
+  // Traer un capítulo, con caché. Los párrafos y la media (sonidos, imágenes)
+  // se piden a la vez, pero el capítulo se da por cargado con los PÁRRAFOS: la
+  // paginación solo necesita el texto, y media_por_parrafo es la consulta más
+  // lenta de la apertura (2-3 veces los párrafos, a veces 1 s). La media se
+  // suma al caché cuando llega y el render la recoge solo. Si falla no tumba el
+  // capítulo: se lee sin sonidos.
   const fetchChapter = useCallback(async (cap) => {
     if (!cap) return null
     const cacheado = chapterCacheRef.current[cap.id]
     if (cacheado) return cacheado
-    const [{ data: parrafos, error: e1 }, { data: mediaRows, error: e2 }] = await Promise.all([
-      supabase.from('parrafos')
+    if (enVueloRef.current[cap.id]) return enVueloRef.current[cap.id]
+
+    const mediaReq = supabase.from('media_por_parrafo')
+      .select('parrafo_id, media_id, slug, tipo, url, titulo, descripcion, metadata, origen')
+      .eq('capitulo_id', cap.id)
+
+    const promesa = (async () => {
+      const { data: parrafos, error: e1 } = await supabase.from('parrafos')
         .select('id, capitulo_id, numero, contenido, tipo, escena_tags, tiene_interactivo')
-        .eq('capitulo_id', cap.id).order('numero'),
-      supabase.from('media_por_parrafo')
-        .select('parrafo_id, media_id, slug, tipo, url, titulo, descripcion, metadata, origen')
-        .eq('capitulo_id', cap.id),
-    ])
-    if (e1) throw e1; if (e2) throw e2
-    const mediaByParrafo = {}
-    for (const m of (mediaRows || [])) {
-      if (!mediaByParrafo[m.parrafo_id]) mediaByParrafo[m.parrafo_id] = []
-      mediaByParrafo[m.parrafo_id].push(m)
-    }
-    const seen = new Set(); const ambients = []
-    for (const p of (parrafos || [])) {
-      for (const m of (mediaByParrafo[p.id] || [])) {
-        if (m.origen === 'tag' && m.tipo === 'audio' && !seen.has(m.slug)) { seen.add(m.slug); ambients.push(m) }
-      }
-    }
-    const entry = { parrafos: parrafos || [], mediaByParrafo, ambient: ambients[0] || null }
-    actualizarCache(prev => ({ ...prev, [cap.id]: entry }))
-    return entry
+        .eq('capitulo_id', cap.id).order('numero')
+      if (e1) throw e1
+      const entry = { parrafos: parrafos || [], mediaByParrafo: {}, ambient: null }
+      actualizarCache(prev => ({ ...prev, [cap.id]: entry }))
+
+      mediaReq.then(({ data: mediaRows, error: e2 }) => {
+        if (e2) { console.error('media_por_parrafo:', e2.message); return }
+        const mediaByParrafo = {}
+        for (const m of (mediaRows || [])) {
+          if (!mediaByParrafo[m.parrafo_id]) mediaByParrafo[m.parrafo_id] = []
+          mediaByParrafo[m.parrafo_id].push(m)
+        }
+        // El ambiente es el primer audio de etiqueta en el orden del texto.
+        let ambient = null
+        for (const p of entry.parrafos) {
+          ambient = (mediaByParrafo[p.id] || []).find(m => m.origen === 'tag' && m.tipo === 'audio') || null
+          if (ambient) break
+        }
+        actualizarCache(prev => prev[cap.id]
+          ? { ...prev, [cap.id]: { ...prev[cap.id], mediaByParrafo, ambient } }
+          : prev)
+      })
+      return entry
+    })()
+
+    enVueloRef.current[cap.id] = promesa
+    try { return await promesa }
+    finally { delete enVueloRef.current[cap.id] }
   }, [actualizarCache])
+
+  // Precarga en segundo plano del capítulo que sigue al `chapterIndex`, cuando
+  // el navegador está libre: así pasar de capítulo no espera a la red. No
+  // enciende el spinner ni muestra errores (si falla, se pedirá al llegar).
+  const precargarSiguiente = useCallback((chapterIndex) => {
+    const sig = capitulos[chapterIndex + 1]
+    if (!sig || chapterCacheRef.current[sig.id] || enVueloRef.current[sig.id]) return () => {}
+    const lanzar = () => { fetchChapter(sig).catch(() => {}) }
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(lanzar, { timeout: 4000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const id = setTimeout(lanzar, 1500)
+    return () => clearTimeout(id)
+  }, [capitulos, fetchChapter])
 
   // Mirar el caché sin disparar la petición. Estable, para que los efectos que
   // cargan el capítulo actual solo se reejecuten cuando cambia el capítulo.
@@ -393,7 +432,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
     // operaciones
-    fetchChapter, peekChapter, playSfx, persistChapterAdvance, subrayar,
+    fetchChapter, peekChapter, precargarSiguiente, playSfx, persistChapterAdvance, subrayar,
     // superusuario
     quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
     // reseña

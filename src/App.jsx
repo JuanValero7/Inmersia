@@ -20,7 +20,14 @@ import AvisoRed from './components/AvisoRed.jsx'
 import NoEncontrada from './components/NoEncontrada.jsx'
 
 const VistaBiblioteca       = lazy(() => import('./components/Biblioteca.jsx'))
-const VistaLectura          = lazy(() => import('./components/Lector.jsx'))
+// Los lectores se importan por una función con nombre que comparten el lazy()
+// y la precarga de abajo. Con dos import() literales distintos, Vite compiló
+// la precarga con la lista de archivos del lector de ESCRITORIO para las dos
+// ramas: en el móvil bajaba el lector de escritorio entero y se dejaba el CSS
+// del de móvil, que llegaba recién al abrir el libro.
+const importarLector        = () => import('./components/Lector.jsx')
+const importarLectorMobile  = () => import('./components/mobile/LectorMobile.jsx')
+const VistaLectura          = lazy(importarLector)
 const VistaTienda           = lazy(() => import('./components/Tienda.jsx'))
 const VistaTiendaMobile     = lazy(() => import('./components/mobile/TiendaMobile.jsx'))
 const CartelaView           = lazy(() => import('./components/Cartelera.jsx'))
@@ -30,7 +37,7 @@ const VistaForoMobile       = lazy(() => import('./components/mobile/ForoMobile.
 const VistaPerfilMobile     = lazy(() => import('./components/mobile/PerfilMobile.jsx'))
 const VistaBibliotecaMobile = lazy(() => import('./components/mobile/BibliotecaMobile.jsx'))
 const CarteleraMobile       = lazy(() => import('./components/mobile/CarteleraMobile.jsx'))
-const VistaLecturaMobile    = lazy(() => import('./components/mobile/LectorMobile.jsx'))
+const VistaLecturaMobile    = lazy(importarLectorMobile)
 const Landing               = lazy(() => import('./components/Landing.jsx'))
 const LandingMobile         = lazy(() => import('./components/mobile/LandingMobile.jsx'))
 const VistaAlbum            = lazy(() => import('./components/Album.jsx'))
@@ -187,10 +194,10 @@ export default function App() {
   // invitados (pueden leer 2 capítulos desde la landing/tienda).
   useEffect(() => {
     if (!authReady || inLector) return
-    const prefetch = () => {
-      if (lectorEsMobile) import('./components/mobile/LectorMobile.jsx')
-      else import('./components/Lector.jsx')
-    }
+    // Con ahorro de datos o en 2G no se precarga: el lector se baja al abrirlo.
+    const conexion = navigator.connection
+    if (conexion?.saveData || /2g/.test(conexion?.effectiveType || '')) return
+    const prefetch = () => { (lectorEsMobile ? importarLectorMobile : importarLector)().catch(() => {}) }
     if ('requestIdleCallback' in window) {
       const id = window.requestIdleCallback(prefetch, { timeout: 4000 })
       return () => window.cancelIdleCallback(id)

@@ -124,7 +124,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     isLeido, setIsLeido, subrayadosPorCap, olvidarSubrayado,
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
-    fetchChapter, peekChapter, playSfx, persistChapterAdvance, subrayar,
+    fetchChapter, peekChapter, precargarSiguiente, playSfx, persistChapterAdvance, subrayar,
     quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
     miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
   } = useLectorData(book, setChapterIndex, setPageIndex, guestMode)
@@ -222,6 +222,14 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     })()
     return () => { cancelled = true }
   }, [chapterIndex, capitulos, fetchChapter, peekChapter])
+
+  // Con el capítulo actual ya en pantalla, se trae el siguiente en segundo
+  // plano para que pasar de capítulo no espere a la red.
+  const capituloCargado = !!(capitulos[chapterIndex] && chapterCache[capitulos[chapterIndex].id])
+  useEffect(() => {
+    if (!capituloCargado) return
+    return precargarSiguiente(chapterIndex)
+  }, [capituloCargado, chapterIndex, precargarSiguiente])
 
   const currentChapter  = capitulos[chapterIndex] || null
   const currentChapData = currentChapter ? chapterCache[currentChapter.id] : null
