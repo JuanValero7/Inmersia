@@ -15,7 +15,7 @@
 .img-root *,.interior *,.closed *{box-sizing:border-box;}
 
 /* Tipografía: títulos en Baloo 2; el resto (texto, botones, chips) hereda Poppins */
-.int-title,.closed-title,.bk-title,.book-title,.int-filter-ov-title{
+.int-title,.closed-title,.book-title,.int-filter-ov-title{
   font-family:'Baloo 2',cursive;
 }
 
@@ -150,36 +150,23 @@
 .bk-card:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(242,121,42,0.6),2px 3px 0 rgba(74,54,34,0.16);}
 .bk-card-owned{opacity:.72;}
 .bk-inner{position:relative;border:1.5px solid rgba(74,54,34,0.6);border-radius:11px;overflow:hidden;background:#fffdf8;}
-.bk-stage{position:relative;height:196px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:23px;}
-.bk-glow{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);width:128px;height:128px;border-radius:999px;
+.bk-stage{position:relative;height:270px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:23px;}
+.bk-glow{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);width:180px;height:180px;border-radius:999px;
   pointer-events:none;mix-blend-mode:multiply;opacity:.5;}
-.bk-podium{position:absolute;left:50%;bottom:19px;transform:translateX(-50%);width:100px;height:12px;border-radius:50%;
+.bk-podium{position:absolute;left:50%;bottom:19px;transform:translateX(-50%);width:136px;height:12px;border-radius:50%;
   background:radial-gradient(50% 100% at 50% 30%,rgba(74,54,34,0.36),rgba(74,54,34,0.06) 65%,transparent);}
 .bk-shelf{position:absolute;left:0;right:0;bottom:0;height:20px;z-index:2;
   background:linear-gradient(180deg,#d8a86a,#c98f4f);border-top:2px solid var(--ink);}
 .bk-shelf::before{content:"";position:absolute;top:5px;left:0;right:0;height:2px;background:var(--ink);opacity:.3;}
 .bk-shelf::after{content:"";position:absolute;bottom:0;left:0;right:0;height:36%;background:#9c6a36;opacity:.55;}
-.bk-badge{position:absolute;top:10px;left:10px;z-index:3;width:25px;height:25px;border-radius:999px;
-  display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;
-  border:2px solid var(--ink);box-shadow:1.2px 1.6px 0 rgba(74,54,34,0.3);}
 .bk-ribbon{position:absolute;top:15px;right:-32px;width:128px;transform:rotate(45deg);z-index:6;text-align:center;
   background:#F2792A;color:#fff;font-weight:800;font-size:10.5px;
   letter-spacing:.14em;text-transform:uppercase;padding:5px 0;text-shadow:0 1px 1px rgba(0,0,0,0.25);
   border-top:1.5px solid rgba(74,54,34,0.55);border-bottom:1.5px solid rgba(74,54,34,0.55);
   box-shadow:0 2px 7px rgba(74,54,34,0.35);}
-.bk-foot{display:flex;align-items:center;gap:10px;padding:13px 13px 14px;background:#fbf6ea;
-  border-top:1.5px solid rgba(74,54,34,0.16);}
-.bk-meta{min-width:0;flex:1;}
-.bk-title{display:block;font-weight:800;font-size:13.5px;color:#4a3622;line-height:1.2;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.bk-author{display:block;font-size:11.5px;color:#9a7850;margin-top:2px;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.bk-fab{flex-shrink:0;width:34px;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center;
-  background:var(--cream);border:2px solid var(--ink);color:#9a6238;font-size:17px;font-weight:800;line-height:1;
-  box-shadow:1.4px 1.8px 0 rgba(74,54,34,0.3);transition:background .12s,transform .12s,color .12s;}
-.bk-card:hover .bk-fab{background:#F2792A;color:#fff;transform:translateY(-1px);}
-.bk-fab.owned{background:#eef3e0;color:#4a7a3e;}
-.bk-card:hover .bk-fab.owned{background:#4a7a3e;color:#fff;}
+.bk-check{position:absolute;top:10px;left:10px;z-index:3;width:28px;height:28px;border-radius:999px;
+  display:flex;align-items:center;justify-content:center;background:#eef3e0;color:#4a7a3e;font-size:14px;font-weight:800;
+  border:2px solid var(--ink);box-shadow:1.2px 1.6px 0 rgba(74,54,34,0.3);}
 
 /* paginación */
 .pg-bar{display:flex;align-items:center;justify-content:center;gap:6px;padding:28px 0 12px;flex-wrap:wrap;}
@@ -275,13 +262,10 @@
   .int-chip{flex:0 0 auto;}
   .int-count{margin:12px 0 16px;}
   .int-grid{grid-template-columns:repeat(2,1fr);gap:14px;}
-  .bk-stage{height:158px;padding-bottom:20px;}
-  .bk-glow{width:108px;height:108px;}
-  .bk-podium{width:84px;}
-  .bk-foot{padding:11px 11px 12px;}
-  .bk-title{font-size:13px;}
-  .bk-author{font-size:11px;}
-  .bk-fab{width:30px;height:30px;font-size:16px;}
+  .bk-stage{height:205px;padding-bottom:20px;}
+  .bk-glow{width:130px;height:130px;}
+  .bk-podium{width:96px;}
+  .bk-check{top:8px;left:8px;width:24px;height:24px;font-size:12px;}
 
   /* Aviso "Cerrado" */
   .closed-title{font-size:34px;}
@@ -352,14 +336,14 @@
   .book-scribble.book-scribble-xs{ font-size:8px; }
 }
 
-/* ── Variante grande, para el panel lateral de detalle (PanelLibro.jsx) ── */
-.book-lg{ width:142px; }
+/* ── Variante grande: tarjetas del catálogo y carriles de la tienda ── */
+.book-lg{ width:150px; }
 .book-lg .book-title{ font-size:15px; }
 .book-lg .book-scribble{ font-size:13px; }
 .book-lg .book-scribble.book-scribble-sm{ font-size:11.5px; }
 .book-lg .book-scribble.book-scribble-xs{ font-size:10px; }
 @media(max-width:640px){
-  .book-lg{ width:118px; }
+  .book-lg{ width:108px; }
   .book-lg .book-title{ font-size:13px; }
   .book-lg .book-scribble{ font-size:11.5px; }
   .book-lg .book-scribble.book-scribble-sm{ font-size:10px; }

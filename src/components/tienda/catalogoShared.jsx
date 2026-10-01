@@ -2,7 +2,7 @@
 // (desktop) y CatalogoInteriorMobile.jsx (mobile) — antes duplicadas idénticas
 // en ambos archivos.
 import clsx from 'clsx'
-import { CAT_COLOR, itint, autorSizeClass } from './tiendaHelpers.jsx'
+import { itint, autorSizeClass } from './tiendaHelpers.jsx'
 import CoverTitle from '../CoverTitle.jsx'
 import { imgUrl } from '../../lib/img.js'
 
@@ -42,10 +42,11 @@ export function Pagination({ page, total, onChange }) {
   )
 }
 
-export function CoverCard({ libro }) {
-  const c = libro.color || '#F2792A'
+// `grande`: la portada de las tarjetas del catálogo y de los carriles (150 px).
+export function CoverCard({ libro, grande = false }) {
+  const c = libro.color || 'var(--accent)'
   return (
-    <div className="book" style={{ '--cov': c }}>
+    <div className={clsx('book', grande && 'book-lg')} style={{ '--cov': c }}>
       <div className="book-cover">
         {libro.portada_url
           ? <img className="book-art-img" src={imgUrl(libro.portada_url, { width: 300 })} alt={libro.titulo} loading="lazy" />
@@ -59,27 +60,23 @@ export function CoverCard({ libro }) {
   )
 }
 
+// Tarjeta del catálogo: solo el libro. Título y autor ya van en la portada,
+// así que no se repiten debajo (plan de la tienda, 1.5).
 export function BookCard({ libro, adquirido, onOpen }) {
   const c = libro.color || '#F2792A'
-  const catCol = CAT_COLOR[libro.categorias?.[0]] || '#F2792A'
   return (
     <button className={clsx('bk-card', adquirido && 'bk-card-owned')} type="button"
-      title={`${libro.titulo} — ${libro.autor}`} onClick={() => onOpen(libro)}>
+      title={`${libro.titulo} — ${libro.autor}`}
+      aria-label={`${libro.titulo}, ${libro.autor}${adquirido ? ' (ya está en tu biblioteca)' : ''}`}
+      onClick={() => onOpen(libro)}>
       {libro._nuevo && <span className="bk-ribbon">Nuevo</span>}
       <div className="bk-inner">
-        <span className="bk-badge" style={{ background: catCol }} title={libro.categorias?.[0]}>✦</span>
+        {adquirido && <span className="bk-check" aria-hidden="true">✓</span>}
         <div className="bk-stage" style={{ background: `linear-gradient(180deg, ${itint(c, 0.82)}, ${itint(c, 0.66)})` }}>
           <span className="bk-glow" style={{ background: `radial-gradient(circle, ${itint(c, 0.28)}, transparent 66%)` }} />
           <span className="bk-podium" />
-          <CoverCard libro={libro} />
+          <CoverCard libro={libro} grande />
           <span className="bk-shelf" />
-        </div>
-        <div className="bk-foot">
-          <div className="bk-meta">
-            <span className="bk-title">{libro.titulo}</span>
-            <span className="bk-author">{libro.autor}</span>
-          </div>
-          <span className={clsx('bk-fab', adquirido && 'owned')} aria-hidden="true">{adquirido ? '✓' : '›'}</span>
         </div>
       </div>
     </button>

@@ -8,20 +8,11 @@ import { useMemo } from 'react'
 import { useCatalogoLibrosQuery, useBibliotecaUsuarioQuery } from '../lib/queries.js'
 import { useCompraLibro, LIMITE_PENDIENTES } from './useCompraLibro.js'
 
-const NUEVOS = 5   // cuántos libros recientes llevan el listón "Nuevo"
-
-// Los N libros de alta más reciente. Antes era `libros.slice(0, NUEVOS)`, que
-// solo funcionaba porque el catálogo venía ordenado por fecha: desde que manda
-// el orden curado (libros.orden, migración 047) esa versión marcaba como
-// "Nuevo" a los cinco primeros del estante — hoy El Principito y compañía.
-function idsMasNuevos(libros, n) {
-  return new Set(
-    [...libros]
-      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
-      .slice(0, n)
-      .map(l => l.id)
-  )
-}
+// El listón "Nuevo" marca los libros que entraron en los últimos 30 días.
+// Antes eran "los 5 más recientes", y en octubre de 2026 eso ponía "Nuevo" a
+// tratados de julio (revisión de la tienda, 1 oct).
+const DIAS_NUEVO = 30
+const esNuevo = (creado, ahora) => !!creado && (ahora - new Date(creado)) / 864e5 <= DIAS_NUEVO
 
 /**
  * Catálogo de la Tienda más el estado de compra (que tiene ya el usuario, cuantas
@@ -37,9 +28,8 @@ export function useTiendaData(user, isSuperuser, onOpenBook) {
   const bibliotecaQuery = useBibliotecaUsuarioQuery(user?.id)
 
   const catalogo = useMemo(() => {
-    const libros = catalogoQuery.data || []
-    const nuevosIds = idsMasNuevos(libros, NUEVOS)
-    return libros.map(l => ({ ...l, _nuevo: nuevosIds.has(l.id) }))
+    const ahora = Date.now()
+    return (catalogoQuery.data || []).map(l => ({ ...l, _nuevo: esNuevo(l.created_at, ahora) }))
   }, [catalogoQuery.data])
 
   const userLibros = useMemo(

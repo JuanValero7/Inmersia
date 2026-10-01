@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, Navigate } from 'react-router-dom'
 import { useTiendaData } from '../../hooks/useTiendaData.js'
 import { LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
 import { useOnboarding } from '../../context/onboarding.jsx'
@@ -10,10 +10,13 @@ import CalleEscena from '../tienda/CalleEscena.jsx'
 import CatalogoInteriorMobile from './tienda/CatalogoInteriorMobile.jsx'
 import '../../styles/tienda.css'
 
-export default function VistaTiendaMobile({ onGoBack, user, gatoColor, onOpenBook, isSuperuser = false }) {
+// Hasta la fase 4 del plan de la tienda, el móvil conserva su recorrido de
+// siempre (calle → catálogo). De las rutas nuevas solo entiende
+// /tienda/catalogo (directo al catálogo); /tienda/:sala vuelve a /tienda.
+export default function VistaTiendaMobile({ vista = 'principal', onGoBack, user, gatoColor, onOpenBook, isSuperuser = false }) {
   // "Empezar a leer" (bienvenida) llega con state.entrar: se salta la fachada.
   const location = useLocation()
-  const [subView,    setSubView]    = useState(!user || location.state?.entrar ? 'catalogo' : 'calle')
+  const [subView,    setSubView]    = useState(vista === 'catalogo' || !user || location.state?.entrar ? 'catalogo' : 'calle')
   const [filtroTipo, setFiltroTipo] = useState('todos')
 
   const { catalogo, loading, pendientes, accesoBloqueado, tieneLibro, comprar, comprarYLeer } =
@@ -28,6 +31,8 @@ export default function VistaTiendaMobile({ onGoBack, user, gatoColor, onOpenBoo
   const showLimiteHint = onboarding.active && onboarding.step === 'tienda' && subView === 'calle'
 
   const handleEntrar = () => setSubView('catalogo')
+
+  if (vista === 'sala') return <Navigate to="/tienda" replace />
 
   if (subView === 'calle') {
     return (

@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { useOpenAuth } from '../../../context/authModal.jsx'
-
-const LOGO = '/assets/inmersia-logo.png'
 import { CAT_COLOR } from '../../tienda/tiendaHelpers.jsx'
 import { Pagination, BookCard, TIPOS } from '../../tienda/catalogoShared.jsx'
 import { useCatalogoFiltro } from '../../../hooks/useCatalogoFiltro.js'
-import { useFichaPedida } from '../../../hooks/useFichaPedida.js'
+import { useFichaEnUrl } from '../../../hooks/useFichaEnUrl.js'
 import FichaLibroMobile from './FichaLibroMobile.jsx'
+
+const LOGO = '/assets/inmersia-logo.png'
 
 function FilterOverlay({ availableCats, selCats, onToggle, onClear, onClose, filtroTipo, onFiltroTipo }) {
   const [entering, setEntering] = useState(true)
@@ -72,33 +72,15 @@ function FilterOverlay({ availableCats, selCats, onToggle, onClear, onClose, fil
 
 export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoColor = 'negro', tieneLibro, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo, bloqueado = false }) {
   const openAuth = useOpenAuth()
-  const [sel,         setSel]         = useState(null)
   const [showFilters, setShowFilters] = useState(false)
-  useFichaPedida(catalogo, setSel)
+  // La ficha vive en la URL (?libro=): el botón Atrás de Android la cierra
+  // sin salir de la tienda, porque abrirla apila una entrada en el historial.
+  const { libro: sel, abrir, cerrar } = useFichaEnUrl(catalogo)
 
   const {
-    selCats, toggleCat, clearCats, qInput, q, handleQChange, handleQKeyDown,
+    selCats, toggleCat, clearCats, q, handleQChange, handleQKeyDown,
     availableCats, list, paginatedList, page, goToPage, gridRef, resetFiltro,
-  } = useCatalogoFiltro(catalogo, filtroTipo, tieneLibro)
-
-  // Intercepta el botón "Atrás" de Android cuando el panel está abierto.
-  // pushState agrega una entrada fake; al presionar back el browser la consume,
-  // dispara popstate y handlePop cierra el panel sin salir de /tienda.
-  useEffect(() => {
-    if (!sel) return
-    window.history.pushState({ _inmPanel: sel.id }, '')
-    const handlePop = () => { setSel(null) }
-    window.addEventListener('popstate', handlePop)
-    return () => { window.removeEventListener('popstate', handlePop) }
-  }, [sel])
-
-  // Cierra el panel y limpia la entrada fake del historial.
-  // Solo se usa cuando el usuario cierra sin navegar (× o backdrop).
-  // Para navegación al lector no se llama go(-1): el navigate ya se encarga.
-  const closePanel = useCallback(() => {
-    setSel(null)
-    window.history.go(-1)
-  }, [])
+  } = useCatalogoFiltro(catalogo, filtroTipo, tieneLibro, { donde: 'catalogo_movil' })
 
   const reset = () => { resetFiltro(onFiltroTipo); setShowFilters(false) }
 
@@ -132,10 +114,10 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
           <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round">
             <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.5" y2="16.5" />
           </svg>
-          <input type="text" placeholder="Buscar por título o autor… (Enter)" value={qInput}
+          <input type="text" placeholder="Buscar por título o autor…" value={q} aria-label="Buscar en el catálogo"
             onChange={e => handleQChange(e.target.value)}
             onKeyDown={handleQKeyDown} />
-          {qInput && <button className="int-search-clear" onClick={() => handleQChange('')} aria-label="Limpiar">×</button>}
+          {q && <button className="int-search-clear" onClick={() => handleQChange('')} aria-label="Limpiar">×</button>}
         </div>
 
         {availableCats.length > 0 && (
@@ -157,7 +139,7 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
           <>
             <div className="int-grid" ref={gridRef}>
               {paginatedList.map(b => (
-                <BookCard key={b.id} libro={b} adquirido={tieneLibro(b.id)} onOpen={setSel} />
+                <BookCard key={b.id} libro={b} adquirido={tieneLibro(b.id)} onOpen={abrir} />
               ))}
             </div>
             <Pagination page={page} total={list.length} onChange={goToPage} />
@@ -193,9 +175,9 @@ export default function CatalogoInteriorMobile({ catalogo, loading, user, gatoCo
           user={user}
           yaAdquirido={tieneLibro(sel.id)}
           bloqueado={bloqueado}
-          onComprar={() => { onComprar(sel); closePanel() }}
-          onEmpezarLeer={() => { onEmpezarLeer(sel); setSel(null) }}
-          onCerrar={closePanel}
+          onComprar={() => { onComprar(sel); cerrar() }}
+          onEmpezarLeer={() => onEmpezarLeer(sel)}
+          onCerrar={cerrar}
           origen="catalogo"
         />
       )}

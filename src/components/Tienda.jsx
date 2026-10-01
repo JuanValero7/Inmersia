@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useTiendaData } from '../hooks/useTiendaData.js'
 import { LIMITE_PENDIENTES } from '../hooks/useCompraLibro.js'
 import { useOnboarding } from '../context/onboarding.jsx'
@@ -8,22 +8,28 @@ import TutorialHint from './onboarding/TutorialHint.jsx'
 import { TEXTO_TIENDA_LIMITE } from './onboarding/textos.js'
 import CalleEscena from './tienda/CalleEscena.jsx'
 import CatalogoInterior from './tienda/CatalogoInterior.jsx'
+import TiendaPrincipal from './tienda/TiendaPrincipal.jsx'
 import '../styles/tienda.css'
 
 // =============================================================
-// VistaTienda · Tienda Inmersia (estilo "Calle con imágenes")
-// Cáscara de datos + orquestación. La lógica real (fetch de catálogo,
-// bloqueo por lecturas pendientes, alta de compra) vive en useTiendaData,
+// VistaTienda · la Tienda en escritorio (cáscara de datos y rutas)
+//   /tienda            → TiendaPrincipal (portada, salas, carriles)
+//   /tienda/catalogo   → CatalogoInterior (todo el catálogo)
+//   /tienda/:sala      → la sala (fase 3 del plan)
+// La lógica de datos (catálogo, pendientes, compra) vive en useTiendaData,
 // compartido con TiendaMobile.jsx.
-// La fachada (CalleEscena) y el interior (CatalogoInterior + PanelLibro)
-// son solo presentación.
+//
+// LA CALLE (CalleEscena) solo aparece al llegar desde la Biblioteca, que
+// navega con state.calle. Volver de una sala o del catálogo a /tienda no
+// la muestra otra vez: la calle nunca es destino del botón Atrás.
 // =============================================================
 
-export default function VistaTienda({ onGoBack, user, gatoColor, onOpenBook, isSuperuser = false }) {
-  // "Empezar a leer" (bienvenida) llega con state.entrar: se salta la fachada.
+export default function VistaTienda({ vista = 'principal', onGoBack, user, gatoColor, onOpenBook, isSuperuser = false }) {
   const location = useLocation()
-  const [subView,    setSubView]    = useState(!user || location.state?.entrar ? 'catalogo' : 'calle')   // 'calle' | 'catalogo'
-  const [filtroTipo, setFiltroTipo] = useState('todos') // 'todos' | 'ficcion' | 'noficcion'
+  const navigate = useNavigate()
+  const porLaCalle = vista === 'principal' && !!user && !!location.state?.calle && !location.state?.entrar
+  const [enCalle, setEnCalle] = useState(porLaCalle)
+  const [filtroTipo, setFiltroTipo] = useState('todos') // catálogo completo: 'todos' | 'ficcion' | 'noficcion'
 
   const { catalogo, loading, pendientes, accesoBloqueado, tieneLibro, comprar, comprarYLeer } =
     useTiendaData(user, isSuperuser, onOpenBook)
@@ -34,18 +40,23 @@ export default function VistaTienda({ onGoBack, user, gatoColor, onOpenBook, isS
   // llevarse de adentro. Al cerrarlo el tutorial termina (tienda → done).
   const onboarding = useOnboarding()
   const pistas = usePistas()   // el aviso del tour equivale a la pista 'tienda'
-  const showLimiteHint = onboarding.active && onboarding.step === 'tienda' && subView === 'calle'
+  const showLimiteHint = onboarding.active && onboarding.step === 'tienda' && enCalle
 
-  const handleEntrar = () => setSubView('catalogo')
+  // Al cruzar la puerta se borra la marca de la calle del historial: recargar
+  // o volver a esta entrada no vuelve a enseñar la fachada.
+  const entrar = () => {
+    setEnCalle(false)
+    navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: {} })
+  }
 
-  if (subView === 'calle') {
+  if (enCalle) {
     return (
       <>
         <CalleEscena
           pendientes={pendientes}
           limite={LIMITE_PENDIENTES}
           bloqueado={accesoBloqueado}
-          onEntrar={handleEntrar}
+          onEntrar={entrar}
           onGoBack={onGoBack}
         />
         {showLimiteHint && (
@@ -61,19 +72,50 @@ export default function VistaTienda({ onGoBack, user, gatoColor, onOpenBook, isS
     )
   }
 
+  if (vista === 'catalogo') {
+    return (
+      <CatalogoInterior
+        catalogo={catalogo}
+        loading={loading}
+        user={user}
+        gatoColor={gatoColor}
+        tieneLibro={tieneLibro}
+        onComprar={comprar}
+        onEmpezarLeer={comprarYLeer}
+        onVolver={() => navigate('/tienda')}
+        filtroTipo={filtroTipo}
+        onFiltroTipo={setFiltroTipo}
+        bloqueado={accesoBloqueado}
+      />
+    )
+  }
+
+  if (vista === 'sala') {
+    // Fase 3 del plan: la sala con su estantería y su historia.
+    return (
+      <div className="tp" style={{ display: 'grid', placeItems: 'center', gap: 16, textAlign: 'center', padding: 24 }}>
+        <div>
+          <p style={{ fontFamily: "'Baloo 2', cursive", fontSize: 26, fontWeight: 800, margin: '0 0 8px' }}>La sala llega en el siguiente paso</p>
+          <button type="button" className="tp-pill" onClick={() => navigate('/tienda')}>Volver a la tienda</button>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <CatalogoInterior
+    <TiendaPrincipal
       catalogo={catalogo}
       loading={loading}
       user={user}
       gatoColor={gatoColor}
       tieneLibro={tieneLibro}
+      bloqueado={accesoBloqueado}
       onComprar={comprar}
       onEmpezarLeer={comprarYLeer}
-      onVolver={onGoBack}
-      filtroTipo={filtroTipo}
-      onFiltroTipo={setFiltroTipo}
-      bloqueado={accesoBloqueado}
+      onSalir={onGoBack}
+      onIrCatalogo={() => navigate('/tienda/catalogo')}
+      onIrSala={(slug) => navigate(`/tienda/${slug}`)}
+      porLaCalle={porLaCalle}
     />
   )
 }

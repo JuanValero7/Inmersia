@@ -364,7 +364,7 @@ export default function App() {
               : <LandingView
                   onAuth={openAuth}
                   // Con `libro` (slug) la Tienda abre directamente su ficha: viene de la estantería.
-                  onGoTienda={(libro) => navigate('/tienda', libro ? { state: { libro } } : undefined)}
+                  onGoTienda={(libro) => navigate(libro ? `/tienda?libro=${encodeURIComponent(libro)}` : '/tienda')}
                 />
           } />
 
@@ -386,16 +386,23 @@ export default function App() {
             <ResetPassword onDone={() => navigate('/biblioteca', { replace: true })} />
           } />
 
-          {/* Tienda — pública para explorar; comprar y leer requiere auth */}
-          <Route path="/tienda" element={
-            <Tienda
-              onGoBack={() => navigate(user ? '/biblioteca' : '/')}
-              user={user}
-              gatoColor={gatoColor}
-              onOpenBook={handleOpenBook}
-              isSuperuser={isSuperuser}
-            />
-          } />
+          {/* Tienda — pública para explorar; comprar y leer requiere auth.
+              Principal, catálogo completo y salas (ver Documentation/tienda).
+              La `key` hace que cambiar de vista monte una Tienda nueva: si no,
+              React reutilizaría la misma y se quedaría con el estado de la otra. */}
+          {[['/tienda', 'principal'], ['/tienda/catalogo', 'catalogo'], ['/tienda/:sala', 'sala']].map(([path, vista]) => (
+            <Route key={path} path={path} element={
+              <Tienda
+                key={vista}
+                vista={vista}
+                onGoBack={() => navigate(user ? '/biblioteca' : '/')}
+                user={user}
+                gatoColor={gatoColor}
+                onOpenBook={handleOpenBook}
+                isSuperuser={isSuperuser}
+              />
+            } />
+          ))}
 
           {/* Lector — público para invitados (máx. 2 caps por RLS) y completo para usuarios */}
           <Route path="/libro/:slug" element={
@@ -422,7 +429,9 @@ export default function App() {
                 isSuperuser={isSuperuser}
                 onSignOut={handleSignOut}
                 onOpenBook={handleOpenBook}
-                onGoTienda={() => navigate('/tienda')}
+                // Desde la Biblioteca se entra por la calle (la fachada); el resto
+                // de entradas a /tienda van directas a la tienda principal.
+                onGoTienda={() => navigate('/tienda', { state: { calle: true } })}
                 onGoCatalogo={() => navigate('/tienda', { state: { entrar: true } })}
                 onGoPerfil={() => navigate('/perfil')}
                 onGoAlbum={() => navigate('/album')}

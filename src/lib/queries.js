@@ -46,6 +46,7 @@ export const queryKeys = {
   // Tienda (ver Documentation/tienda/plan-implementacion.md)
   salas: () => ['salas'],
   libroResumen: (libroId) => ['libroResumen', libroId],
+  librosPalabras: () => ['librosPalabras'],
   libroReels: (libroId) => ['libroReels', libroId],
 }
 
@@ -102,7 +103,7 @@ export function useSalasQuery() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('salas')
-        .select('id, slug, nombre, linea, color, tipo, orden, desde, hasta, imagen_url, sala_libros(libro_id, orden)')
+        .select('id, slug, nombre, genero, linea, color, tipo, orden, desde, hasta, imagen_url, sala_libros(libro_id, orden)')
         .order('orden', { ascending: true })
       if (error) throw error
       return (data || []).map(s => ({
@@ -127,6 +128,20 @@ export function useLibroResumenQuery(libroId) {
       return data || null
     },
     enabled: !!libroId,
+    staleTime: 10 * 60_000,
+  })
+}
+
+// Palabras de cada libro (libros_resumen): el carril «Se leen en una tarde»
+// de la Tienda. Solo esa columna: la vista no calcula las demás (~60 ms).
+export function useLibrosPalabrasQuery() {
+  return useQuery({
+    queryKey: queryKeys.librosPalabras(),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('libros_resumen').select('libro_id, palabras')
+      if (error) throw error
+      return Object.fromEntries((data || []).map(r => [r.libro_id, r.palabras]))
+    },
     staleTime: 10 * 60_000,
   })
 }

@@ -1,19 +1,19 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import clsx from 'clsx'
-import { useOpenAuth } from '../../context/authModal.jsx'
-
-const LOGO = '/assets/inmersia-logo.png'
 import { CAT_COLOR } from './tiendaHelpers.jsx'
 import { Pagination, BookCard, TIPOS } from './catalogoShared.jsx'
 import { useCatalogoFiltro } from '../../hooks/useCatalogoFiltro.js'
-import { useFichaPedida } from '../../hooks/useFichaPedida.js'
+import { useFichaEnUrl } from '../../hooks/useFichaEnUrl.js'
 import FichaLibro from './FichaLibro.jsx'
+import CabeceraTienda from './CabeceraTienda.jsx'
 
 // =============================================================
 // CatalogoInterior · interior de la tienda (estilo storybook)
-// Versión desktop. Buscador + filtros por categoría + rejilla de
-// portadas. Tocar un libro abre su ficha (FichaLibro); el avance se
-// abre desde la ficha.
+// Versión desktop (/tienda/catalogo). Buscador + filtros por categoría +
+// rejilla de portadas. Tocar un libro abre su ficha (FichaLibro), que
+// vive en la URL (?libro=); el avance se abre desde la ficha. La búsqueda
+// puede llegar ya escrita desde una sala (?q=).
 //
 // Props:
 //   catalogo    · filas de `libros` (+ _nuevo)
@@ -21,41 +21,28 @@ import FichaLibro from './FichaLibro.jsx'
 //   user        · usuario auth (para el panel)
 //   tieneLibro  · (id) => bool
 //   onComprar   · (libro) => void
-//   onVolver()  · regresar a la calle
+//   onVolver()  · volver a la tienda principal
 // =============================================================
 
 export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 'negro', tieneLibro, onComprar, onVolver, onEmpezarLeer, filtroTipo = 'todos', onFiltroTipo, bloqueado = false }) {
-  const openAuth = useOpenAuth()
-  const [sel,         setSel]         = useState(null)
+  const location = useLocation()
   const [showFilters, setShowFilters] = useState(false)
-  useFichaPedida(catalogo, setSel)
+  const { libro: sel, abrir, cerrar } = useFichaEnUrl(catalogo)
 
   const {
-    selCats, toggleCat, qInput, q, handleQChange, handleQKeyDown,
+    selCats, toggleCat, q, handleQChange, handleQKeyDown,
     availableCats, list, paginatedList, page, goToPage, gridRef, resetFiltro,
-  } = useCatalogoFiltro(catalogo, filtroTipo, tieneLibro)
+  } = useCatalogoFiltro(catalogo, filtroTipo, tieneLibro, {
+    qInicial: new URLSearchParams(location.search).get('q') || '',
+    donde: 'catalogo',
+  })
 
   const reset = () => { resetFiltro(onFiltroTipo); setShowFilters(false) }
 
   return (
     <div className="interior show">
       <div className="interior-bg" style={{ '--intbg-gato-url': `url('/assets/tienda/gato-${gatoColor}-5.webp')` }} />
-      {user ? (
-        <div className="int-back-row">
-          <button className="int-back" onClick={onVolver}>Biblioteca</button>
-        </div>
-      ) : (
-        <header className="tienda-guest-nav">
-          <div className="tienda-guest-nav-in">
-            <button className="tienda-guest-volver" onClick={onVolver}>← Volver</button>
-            <img src={LOGO} alt="Inmersia" className="tienda-guest-logo" />
-            <nav className="tienda-guest-actions">
-              <button className="tienda-guest-lnk" onClick={() => openAuth('login')}>Iniciar sesión</button>
-              <button className="tienda-guest-btn" onClick={() => openAuth('registro')}>Crear cuenta</button>
-            </nav>
-          </div>
-        </header>
-      )}
+      <CabeceraTienda etiquetaAtras="Tienda" onAtras={onVolver} user={user} />
 
       <div className="interior-inner">
         <h1 className="int-title">Catálogo</h1>
@@ -66,10 +53,10 @@ export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 
           <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round">
             <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.5" y2="16.5" />
           </svg>
-          <input type="text" placeholder="Buscar por título o autor… (Enter)" value={qInput}
+          <input type="text" placeholder="Buscar por título o autor…" value={q} aria-label="Buscar en el catálogo"
             onChange={e => handleQChange(e.target.value)}
             onKeyDown={handleQKeyDown} />
-          {qInput && <button className="int-search-clear" onClick={() => handleQChange('')} aria-label="Limpiar">×</button>}
+          {q && <button className="int-search-clear" onClick={() => handleQChange('')} aria-label="Limpiar">×</button>}
         </div>
 
         {/* Filtro por tipo */}
@@ -113,7 +100,7 @@ export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 
           <>
             <div className="int-grid" ref={gridRef}>
               {paginatedList.map(b => (
-                <BookCard key={b.id} libro={b} adquirido={tieneLibro(b.id)} onOpen={setSel} />
+                <BookCard key={b.id} libro={b} adquirido={tieneLibro(b.id)} onOpen={abrir} />
               ))}
             </div>
             <Pagination page={page} total={list.length} onChange={goToPage} />
@@ -137,9 +124,9 @@ export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 
           user={user}
           yaAdquirido={tieneLibro(sel.id)}
           bloqueado={bloqueado}
-          onComprar={() => { onComprar(sel); setSel(null) }}
-          onEmpezarLeer={() => { onEmpezarLeer(sel); setSel(null) }}
-          onCerrar={() => setSel(null)}
+          onComprar={() => { onComprar(sel); cerrar() }}
+          onEmpezarLeer={() => onEmpezarLeer(sel)}
+          onCerrar={cerrar}
           origen="catalogo"
         />
       )}

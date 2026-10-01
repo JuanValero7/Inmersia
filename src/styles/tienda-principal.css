@@ -1,0 +1,118 @@
+/* ════════════════════════════════════════════════════════════════
+   TIENDA PRINCIPAL · escritorio (TiendaPrincipal.jsx, .tp-*)
+   + piezas de sala (salaPiezas.jsx, .sp-*), que también usa el pasillo.
+   La tarjeta de resultados (.bk-card) y la rejilla (.int-grid) son las
+   del catálogo, en tienda.css.
+   ════════════════════════════════════════════════════════════════ */
+
+.tp{min-height:100vh;background:var(--bg-warm);color:var(--ink);font-family:'Poppins',system-ui,sans-serif;}
+.tp *{box-sizing:border-box;}
+.tp h1,.tp h2{font-family:'Baloo 2',cursive;text-wrap:balance;}
+
+/* ── Cabecera ── */
+.tp-cab{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:2.5px solid var(--ink);}
+.tp-cab-in{max-width:1240px;min-height:76px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:20px;}
+.tp-logo{height:28px;}
+.tp-cab-hueco{flex-grow:1;}
+/* El catálogo completo (.interior, en tienda.css) usa la misma cabecera:
+   ya no hace falta el hueco arriba que dejaba el botón fijo de antes. */
+.interior .tp-cab{position:sticky;top:0;}
+.interior:has(.tp-cab) .interior-inner{padding-top:28px;}
+.tp-pill{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:44px;padding:0 18px;border-radius:999px;
+  border:2.5px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer;white-space:nowrap;
+  font-family:'Baloo 2',cursive;font-weight:700;font-size:16px;box-shadow:2px 3px 0 rgba(74,54,34,.16);transition:transform .15s;}
+.tp-pill:hover{transform:translateY(-1px);}
+.tp-pill-plana{border-color:transparent;box-shadow:none;background:transparent;}
+.tp-pill-naranja{background:var(--accent);color:#fff;}
+.tp-pill-grande{height:50px;padding:0 26px;font-size:17px;font-weight:800;}
+.tp-buscador{flex-grow:1;min-width:0;display:flex;align-items:center;gap:10px;height:48px;padding:0 16px 0 18px;border-radius:999px;
+  border:2.5px solid var(--ink);background:#fff;color:var(--brown-soft);box-shadow:2px 3px 0 rgba(74,54,34,.12);}
+.tp-buscador:focus-within{box-shadow:0 0 0 3px rgba(242,121,42,.32),2px 3px 0 rgba(74,54,34,.12);}
+.tp-buscador input{flex-grow:1;min-width:0;border:none;outline:none;background:transparent;font:inherit;font-size:15px;color:var(--ink);}
+.tp-buscador input::placeholder{color:#a88a6c;}
+.tp-limpiar-q{border:none;background:transparent;color:var(--brown-soft);font-size:22px;line-height:1;cursor:pointer;padding:0 4px;}
+
+/* ── Chips y panel de categorías ── */
+.tp-chips{max-width:1240px;margin:0 auto;padding:16px 24px 0;display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.tp-chip{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px;border-radius:999px;border:2px solid var(--ink);
+  background:var(--paper);color:var(--ink);cursor:pointer;font-family:'Baloo 2',cursive;font-weight:700;font-size:15px;
+  box-shadow:1.6px 2px 0 rgba(74,54,34,.14);}
+.tp-chip:hover{transform:translateY(-1px);}
+.tp-chip.on{background:var(--accent);color:#fff;}
+.tp-sep{width:2px;height:24px;background:#e3d3b5;margin:0 4px;}
+.tp-punto{width:9px;height:9px;border-radius:99px;box-shadow:0 0 0 1.5px rgba(74,54,34,.3);}
+.tp-chip.on .tp-punto{box-shadow:0 0 0 1.5px rgba(255,255,255,.7);}
+.tp-panel-filtros{max-width:1192px;margin:12px auto 0;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:14px 16px;
+  border-radius:18px;background:var(--paper);border:2px solid #e3d3b5;}
+.tp-panel-lbl{font-family:'Baloo 2',cursive;font-weight:700;font-size:15px;margin-right:6px;}
+.tp-enlace{border:none;background:none;padding:0 6px;cursor:pointer;color:#c95f1a;font:inherit;font-weight:600;font-size:14px;
+  text-decoration:underline;text-underline-offset:3px;}
+
+.tp-main{max-width:1240px;margin:0 auto;padding:0 24px 80px;}
+.tp-vacio{padding:60px 16px;text-align:center;color:var(--brown-soft);}
+
+/* ── Resultados (misma rejilla que el catálogo) ── */
+.tp-resultados{max-width:1000px;margin:26px auto 0;}
+.tp-resultados-cab{display:flex;align-items:center;gap:14px;margin-bottom:20px;}
+.tp-resultados-cab h2{margin:0;flex-grow:1;font-weight:800;font-size:26px;}
+
+/* ── Portada de temporada ── */
+.tp-hero{position:relative;margin-top:24px;height:340px;border-radius:24px;overflow:hidden;border:2.5px solid var(--ink);
+  box-shadow:3px 5px 0 rgba(74,54,34,.2);background-color:#2a1d14;background-size:cover;background-position:70% 30%;}
+.tp-hero::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(27,21,26,.95) 0%,rgba(27,21,26,.82) 40%,rgba(27,21,26,.12) 76%,rgba(27,21,26,.3) 100%);}
+.tp-hero-txt{position:absolute;z-index:2;left:48px;top:46px;max-width:500px;color:#fbf0dc;display:flex;flex-direction:column;
+  align-items:flex-start;gap:12px;}
+.tp-eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#f0b27a;}
+.tp-hero h1{margin:0;font-weight:800;font-size:58px;line-height:.98;}
+.tp-hero p{margin:0;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:19px;line-height:1.45;color:#f5e6cc;max-width:44ch;}
+.tp-hero-portadas{position:absolute;z-index:2;right:64px;bottom:-22px;display:flex;align-items:flex-end;}
+.tp-hero-portadas .book:nth-child(1){width:140px;transform:rotate(-8deg) translateY(6px);margin-right:-30px;}
+.tp-hero-portadas .book:nth-child(2){width:170px;z-index:2;}
+.tp-hero-portadas .book:nth-child(3){width:140px;transform:rotate(8deg) translateY(6px);margin-left:-30px;}
+
+/* ── Secciones: salas y carriles ── */
+.tp-sec{margin-top:44px;}
+.tp-sec-cab{display:flex;align-items:flex-end;gap:12px;margin-bottom:12px;}
+.tp-sec-txt{flex-grow:1;}
+.tp-sec-txt h2{margin:0;font-weight:800;font-size:28px;line-height:1.1;}
+.tp-sec-txt p{margin:2px 0 0;font-size:14px;color:var(--brown-soft);}
+.tp-flecha{width:44px;height:44px;border-radius:999px;display:grid;place-items:center;border:2.5px solid var(--ink);
+  background:var(--paper);color:var(--ink);cursor:pointer;}
+.tp-salas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;}
+.tp-pista{display:flex;gap:22px;overflow-x:auto;padding:12px 4px 18px;scrollbar-width:none;scroll-snap-type:x proximity;}
+.tp-pista::-webkit-scrollbar{display:none;}
+.tp-libro{position:relative;flex-shrink:0;border:none;background:transparent;padding:0;cursor:pointer;scroll-snap-align:start;
+  transition:transform .22s cubic-bezier(.34,1.3,.5,1);}
+.tp-libro:hover{transform:translateY(-6px) rotate(-1deg);}
+.tp-check{position:absolute;z-index:3;right:6px;bottom:8px;width:26px;height:26px;border-radius:999px;display:grid;place-items:center;
+  background:#eef3e0;color:#4a7a3e;font-weight:800;font-size:13px;border:2px solid var(--ink);}
+
+.tp-todo{margin-top:46px;padding:26px 34px;border-radius:22px;background:var(--paper);border:2.5px solid var(--ink);
+  display:flex;align-items:center;gap:26px;box-shadow:3px 4px 0 rgba(74,54,34,.16);}
+.tp-todo img{height:88px;}
+.tp-todo-txt{flex-grow:1;}
+.tp-todo-txt h2{margin:0;font-weight:800;font-size:26px;}
+.tp-todo-txt p{margin:2px 0 0;color:var(--brown-soft);}
+
+/* ── Piezas de sala ── */
+.sp-sala{display:flex;align-items:center;gap:16px;min-height:132px;padding:16px 18px;border-radius:22px;border:2.5px solid var(--ink);
+  color:#fff8ea;text-align:left;cursor:pointer;box-shadow:3px 4px 0 rgba(74,54,34,.2);transition:transform .2s;font-family:inherit;}
+.sp-sala:hover{transform:translateY(-4px);}
+.sp-sala-texto b{display:block;font-family:'Baloo 2',cursive;font-weight:800;font-size:21px;line-height:1.08;}
+.sp-sala-texto span{display:block;font-size:13px;opacity:.92;margin-top:3px;}
+.sp-portal{position:relative;flex-shrink:0;width:60px;height:88px;border-radius:30px 30px 8px 8px;border:3px solid rgba(255,240,210,.9);}
+.sp-portal::after{content:"";position:absolute;right:9px;top:52%;width:6px;height:6px;border-radius:99px;background:rgba(80,50,20,.55);}
+.sp-sala-compacta{min-height:84px;padding:10px 18px 10px 12px;gap:12px;border-radius:16px;border-color:rgba(255,240,210,.45);box-shadow:none;}
+.sp-sala-compacta .sp-portal{width:40px;height:60px;border-radius:20px 20px 6px 6px;border-width:2px;}
+.sp-sala-compacta .sp-portal::after{display:none;}
+.sp-sala-compacta .sp-sala-texto b{font-size:16px;white-space:nowrap;}
+.sp-sala-compacta .sp-sala-texto span{font-size:12px;white-space:nowrap;}
+
+@media (max-width:1100px){ .tp-salas{grid-template-columns:repeat(2,minmax(0,1fr));} }
+@media (max-width:900px){
+  .tp-hero h1{font-size:42px;}
+  .tp-hero-portadas{display:none;}
+  .tp-hero-txt{left:28px;right:28px;}
+}
+@media (prefers-reduced-motion:reduce){ .tp-libro,.sp-sala,.tp-pill,.tp-chip{transition:none;} }
