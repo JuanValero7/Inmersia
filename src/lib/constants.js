@@ -14,4 +14,4 @@ export const CAPITULOS_MUESTRA = 2
 // Se guarda en el metadata del usuario al registrarse (ver Auth.jsx) para poder
 // demostrar QUÉ versión aceptó cada quien. Al publicar un cambio significativo,
 // actualizar esta constante junto con la fecha de los dos documentos.
-export const LEGAL_VERSION = '2026-08-31'
+export const LEGAL_VERSION = '2026-10-01'

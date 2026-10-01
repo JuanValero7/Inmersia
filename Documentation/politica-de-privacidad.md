@@ -1,6 +1,6 @@
 # Política de Privacidad de Inmersia
 
-**Última actualización:** 30 de septiembre de 2026
+**Última actualización:** 1 de octubre de 2026
 
 ---
 
@@ -26,12 +26,15 @@ Cuando la sociedad esté constituida, actualizaremos esta política con sus dato
 | Dato | Finalidad |
 |---|---|
 | Correo electrónico | Identificación, inicio de sesión, comunicaciones de servicio |
-| Contraseña (hash) | Autenticación segura — nunca almacenamos tu contraseña en texto plano |
-| Nombre y apellido | Firmar tu actividad dentro de la comunidad (ver 2.5) |
+| Contraseña (hash) | Autenticación segura — nunca almacenamos tu contraseña en texto plano. No existe si entras con Google |
+| Nombre | Firmar tu actividad dentro de la comunidad (ver 2.5) |
 | Fecha de nacimiento | Comprobar la edad mínima y análisis interno de uso (ver 2.4) |
-| Género | Análisis interno de uso y recomendaciones de lectura (ver 2.4) |
 
-Los cinco son obligatorios: sin ellos no podemos crear la cuenta.
+Los cuatro son obligatorios: sin ellos no podemos crear la cuenta. El **apellido** es opcional: puedes añadirlo en tu perfil, y entonces firma tu actividad junto a tu nombre.
+
+Las cuentas creadas antes del 1 de octubre de 2026 declararon además su **género**, que se conserva en esas cuentas (ver 2.4). Desde esa fecha ya no lo pedimos.
+
+**Si entras con Google**, Google nos envía tu nombre, tu correo electrónico y la dirección de tu foto de perfil. Usamos el nombre y el correo como en la tabla anterior; la foto queda guardada en tu cuenta de autenticación, pero no la mostramos. La fecha de nacimiento y la aceptación de estos documentos te las pedimos en tu primer ingreso, antes de que puedas usar la plataforma. Google sabrá que usaste su servicio para entrar en Inmersia (ver 5.6).
 
 ### 2.2 Datos que generas usando la plataforma
 
@@ -54,11 +57,11 @@ Los cinco son obligatorios: sin ellos no podemos crear la cuenta.
 
 ### 2.3 Datos de visitantes sin cuenta
 
-Puedes leer una muestra de dos capítulos sin registrarte. En ese caso no creamos ningún perfil: solo se guardan preferencias locales en tu navegador (ver sección 10) y quedan los registros técnicos habituales de nuestros proveedores de alojamiento, que incluyen la dirección IP (ver sección 5).
+Puedes leer una muestra de dos capítulos sin registrarte. En ese caso no creamos ningún perfil: solo se guardan preferencias locales en tu navegador, como el gato que eliges en la página de inicio (ver sección 10) y quedan los registros técnicos habituales de nuestros proveedores de alojamiento, que incluyen la dirección IP (ver sección 5).
 
 ### 2.4 Análisis interno y recomendaciones
 
-Cruzamos los datos anteriores —incluidos la fecha de nacimiento y el género— para entender qué se lee en Inmersia, cómo se lee y qué recomendar a cada lector. Este análisis es **interno**: no se vende, no se cede a terceros y no se usa para publicidad.
+Cruzamos los datos anteriores —incluidos la fecha de nacimiento y, en las cuentas que lo declararon, el género— para entender qué se lee en Inmersia, cómo se lee y qué recomendar a cada lector. Este análisis es **interno**: no se vende, no se cede a terceros y no se usa para publicidad.
 
 Puedes oponerte a este tratamiento en cualquier momento escribiendo a legal@inmersia.io (ver sección 7). La cuenta sigue funcionando igual si te opones.
 
@@ -151,7 +154,7 @@ Frente a cualquier tratamiento basado en interés legítimo tienes derecho de op
 
 ## 5. Proveedores que tratan datos por nosotros
 
-Todos ellos actúan como encargados del tratamiento, siguiendo nuestras instrucciones y sin poder usar tus datos para fines propios.
+Salvo Google en el inicio de sesión (5.6), todos ellos actúan como encargados del tratamiento, siguiendo nuestras instrucciones y sin poder usar tus datos para fines propios.
 
 ### 5.1 Supabase
 
@@ -175,7 +178,11 @@ Los correos de servicio (confirmación de cuenta, recuperación de contraseña) 
 
 Inmersia es gratuita hoy. Si en el futuro incorporamos pagos, usaremos un procesador externo (Stripe o similar) y te informaremos antes de que empiece a tratar tus datos.
 
-### 5.6 No vendemos datos
+### 5.6 Inicio de sesión con Google
+
+Si eliges **Continuar con Google**, Google (Google Ireland Limited) verifica tu identidad y nos envía los datos descritos en 2.1. Para este paso Google actúa como responsable independiente, con su propia política de privacidad: [policies.google.com/privacy](https://policies.google.com/privacy). Si entras con correo y contraseña, Google no interviene.
+
+### 5.7 No vendemos datos
 
 Inmersia **no vende, alquila ni cede** tus datos personales a terceros con fines publicitarios.
 
@@ -231,7 +238,7 @@ Ningún sistema es infalible. Si se produjera una brecha que afecte a tus derech
 
 Inmersia **no usa cookies de rastreo, de terceros ni publicitarias**.
 
-Sí usamos el `localStorage` de tu navegador para cosas que solo tienen sentido en tu dispositivo: mantener la sesión iniciada, recordar tus preferencias de lectura y sonido, y el estado del tutorial. Esa información no sale de tu navegador y puedes borrarla vaciando los datos del sitio.
+Sí usamos el `localStorage` de tu navegador para cosas que solo tienen sentido en tu dispositivo: mantener la sesión iniciada, recordar tus preferencias de lectura y sonido, el estado del tutorial y el gato que eliges en la página de inicio (que pasa a tu cuenta si te registras). Esa información no sale de tu navegador y puedes borrarla vaciando los datos del sitio.
 
 Nuestra analítica (PostHog) está configurada expresamente para **no escribir cookies ni usar el almacenamiento del navegador**, por eso no verás un banner de consentimiento de cookies (sección 2.7). Si en el futuro incorporamos analítica que sí lo requiera, publicaremos un aviso y pediremos tu consentimiento antes de activarla.
 

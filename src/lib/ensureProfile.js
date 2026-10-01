@@ -38,14 +38,17 @@ async function crearPerfilYManual(user) {
 
   if (!perfil) {
     const meta = user.user_metadata || {}
+    // Registro con correo: `nombre` (el apellido ya no se pide; se añade en el
+    // Perfil). Google: given_name / family_name, o full_name partido.
+    const [nombreGoogle = '', ...restoGoogle] = (meta.full_name || meta.name || '').trim().split(/\s+/)
     const { error: perfilError } = await supabase.from('perfiles').insert({
       id: user.id,
-      nombre: meta.nombre || '',
-      apellido: meta.apellido || '',
+      nombre: meta.nombre || meta.given_name || nombreGoogle,
+      apellido: meta.apellido || meta.family_name || restoGoogle.join(' '),
+      // Con Google llega vacía: la pide CompletarCuenta y la escribe aquí.
       fecha_nacimiento: meta.fecha_nacimiento || null,
-      // El género se declara en el registro y se copia acá igual que la fecha:
-      // en `perfiles` se puede cruzar con lecturas y biblioteca, en el metadata
-      // de Auth no. Columna añadida en la migración 043.
+      // `perfiles.genero` (migración 043) ya no se pide desde octubre de 2026;
+      // solo queda en las cuentas antiguas.
       genero: meta.genero || null,
     })
     if (perfilError) { console.error('No se pudo crear el perfil:', perfilError); return }

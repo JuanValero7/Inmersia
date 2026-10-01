@@ -1,6 +1,6 @@
 # Términos y Condiciones de Inmersia
 
-**Última actualización:** 30 de septiembre de 2026
+**Última actualización:** 1 de octubre de 2026
 
 ---
 
@@ -66,9 +66,11 @@ La edad se determina por la fecha de nacimiento que declaras al registrarte. Si 
 
 ### 3.2 Datos del registro
 
-Debes proporcionar un correo electrónico válido, una contraseña, tu nombre y apellido reales, tu fecha de nacimiento y tu género, y aceptar estos Términos y la Política de Privacidad.
+Debes proporcionar un correo electrónico válido, una contraseña, tu nombre real y tu fecha de nacimiento, y aceptar estos Términos y la Política de Privacidad. El apellido es opcional y puedes añadirlo en tu perfil.
 
-**Tu nombre y apellido serán visibles** para el resto de usuarios registrados: firman tus comentarios, tus reseñas y tu presencia en la sala de chat. Dentro de una comunidad, sus miembros ven además tu avance en el libro de la comunidad (ver la Política de Privacidad, sección 2.5). Si no quieres que tu nombre real aparezca en la comunidad, no publiques en ella.
+También puedes registrarte con tu cuenta de **Google**. En ese caso no creas una contraseña en Inmersia, y en tu primer ingreso te pedimos la fecha de nacimiento y la aceptación de estos Términos y de la Política de Privacidad antes de que puedas usar la Plataforma.
+
+**Tu nombre (y tu apellido, si lo añades) será visible** para el resto de usuarios registrados: firman tus comentarios, tus reseñas y tu presencia en la sala de chat. Dentro de una comunidad, sus miembros ven además tu avance en el libro de la comunidad (ver la Política de Privacidad, sección 2.5). Si no quieres que tu nombre real aparezca en la comunidad, no publiques en ella.
 
 La información que aportes debe ser veraz y estar actualizada. Podemos suspender cuentas con información falsa o engañosa.
 

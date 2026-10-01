@@ -11,6 +11,7 @@ import useIsMobile from './hooks/useIsMobile.js'
 import { useSuperuser } from './hooks/useSuperuser.js'
 import { useGatoColor } from './hooks/useGatoColor.js'
 import AuthModal from './components/AuthModal.jsx'
+import CompletarCuenta, { faltaCompletarCuenta } from './components/CompletarCuenta.jsx'
 import { AuthModalProvider } from './context/authModal.jsx'
 import { evento } from './lib/analytics.js'
 import { useOnboardingController, OnboardingProvider } from './context/onboarding.jsx'
@@ -521,6 +522,10 @@ export default function App() {
           }}
         />
       )}
+
+      {/* Cuentas sin fecha de nacimiento (las de Google): fecha + Términos antes
+          de usar la app. Ver CompletarCuenta.jsx. */}
+      {faltaCompletarCuenta(user) && <CompletarCuenta user={user} />}
 
       {/* Aviso global de red: cubre Biblioteca, Tienda, Álbum y Perfil de una vez
           (todas comen de las queries compartidas de src/lib/queries.js). */}
