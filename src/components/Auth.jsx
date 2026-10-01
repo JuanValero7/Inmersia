@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase.js'
 import { EDAD_MINIMA, edadEnAnios } from '../lib/edad.js'
 import { LEGAL_VERSION } from '../lib/constants.js'
 import { evento } from '../lib/analytics.js'
+import { antesDeIrAGoogle } from '../lib/progresoInvitado.js'
 import LegalModal from './legal/LegalModal.jsx'
 import '../styles/auth.css'
 
@@ -112,6 +113,7 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
   const handleGoogle = async () => {
     clear(); setLoading(true)
     evento('auth_google', { pestana: tab })
+    antesDeIrAGoogle() // la página se recarga: guarda la muestra que estaba leyendo
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin + window.location.pathname },
@@ -202,6 +204,12 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
         </div>
 
         <div className="login-body">
+          {tab !== 'forgot' && (
+            <div className="auth-tabs" role="tablist">
+              <button type="button" role="tab" aria-selected={tab === 'login'} className={`auth-tab ${tab === 'login' ? 'active' : ''}`} onClick={() => { setTab('login'); clear() }}>Iniciar sesión</button>
+              <button type="button" role="tab" aria-selected={tab === 'registro'} className={`auth-tab ${tab === 'registro' ? 'active' : ''}`} onClick={() => { setTab('registro'); clear() }}>Crear cuenta</button>
+            </div>
+          )}
           {error   && <div className="auth-error">{error}</div>}
           {success && <div className="auth-success">{success}</div>}
 

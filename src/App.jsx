@@ -6,7 +6,7 @@ import { ensureProfile } from './lib/ensureProfile.js'
 import { MANUAL_LIBRO_ID } from './lib/constants.js'
 import { queryKeys } from './lib/queries.js'
 import { LIMITE_PENDIENTES } from './hooks/useCompraLibro.js'
-import { tomarMuestra } from './lib/progresoInvitado.js'
+import { tomarMuestra, volvioDeGoogleEnLibro } from './lib/progresoInvitado.js'
 import useIsMobile from './hooks/useIsMobile.js'
 import { useSuperuser } from './hooks/useSuperuser.js'
 import { useGatoColor } from './hooks/useGatoColor.js'
@@ -334,6 +334,12 @@ export default function App() {
     queryClient.invalidateQueries({ queryKey: queryKeys.bibliotecaUsuario(u.id) })
     // Permanece en el lector; el efecto de guestMode oculta el paywall al dejar de ser invitado.
   }, [location.pathname, location.state, navigate, queryClient])
+
+  // Al volver de "Continuar con Google" la página se recargó y el onAuthSuccess
+  // del pop-up no corre: si estaba leyendo una muestra, el libro se adquiere aquí.
+  useEffect(() => {
+    if (user && volvioDeGoogleEnLibro()) acquireBookAfterAuth(user)
+  }, [user, acquireBookAfterAuth])
 
   // El aviso de "límite alcanzado" se autodescarta a los 7 s.
   useEffect(() => {
