@@ -1,6 +1,6 @@
 # Tienda nueva: plan de implementación (escritorio y móvil)
 
-Estado al 1 oct 2026. El diseño está cerrado y aprobado por Juan en dos prototipos navegables. **Todavía no se ha tocado código.** Este documento es la guía para programarlo: qué se construye, en qué orden, qué archivos cambian y qué falta decidir.
+Estado al 1 oct 2026. El diseño está cerrado y aprobado por Juan en dos prototipos navegables. **F0–F3 hechas (escritorio completo); falta el móvil (F4–F5) y el cierre (F6).** Este documento es la guía para programarlo: qué se construye, en qué orden, qué archivos cambian y qué falta decidir.
 
 ## Referencias
 - **Prototipo escritorio:** https://claude.ai/artifact/2qkUWTuEPtTLGSqhfpzbid
@@ -310,17 +310,40 @@ Con esto se arma el embudo: tienda → sala/ficha → historia → comenzar a le
   - **La 070 ya está corrida** y verificada: las 5 salas con su género.
 - **Libros nuevos:** no entran solos en ninguna sala.
 
-## 9. Para retomar (siguiente sesión: F3, las salas en escritorio)
-- **Sin commit:** todo lo de F0–F2 está sin commit, porque Juan aún no lo ha pedido. `git status` muestra el trabajo.
-- **Qué falta:** la vista `sala` de `Tienda.jsx` es un aviso provisional. La F3 la sustituye por `SalaVista.jsx` (sección 1.3 y prototipo de escritorio), y se apoya en lo que ya existe:
-  - `armarEstanterias`, `secuenciaVisual` y `estanteriaDe` (`utils/estanteria.js`, con tests); falta fijar la posición del lomo durante la visita con `sessionStorage`;
-  - `Historia.jsx` (núcleo `Historia`, con `pausada`, `lateral` y `children`) y `useHistoria`;
-  - `SalaCard` y `Portal` (`salaPiezas.jsx`; la variante `compacta` sirve para el pasillo);
-  - `CabeceraTienda` (Atrás = «Tienda»);
-  - `useSalasQuery` (`genero`, `libros` en orden) y `useFichaEnUrl`.
-- **Recordar:**
-  - el buscador de la sala abre `/tienda/catalogo?q=…` (el catálogo ya lee `?q=`);
-  - sin sonido de sala;
-  - en la historia, «Comenzar a leer» grande y debajo Ficha + Guardar en mi biblioteca;
-  - «Desliza» = rueda, ↓ o el botón;
-  - el evento `sala_abierta` y los de la historia (sección 5). Hay que añadirlos en `sala_libros` (el atajo SQL está en la cabecera de la 066).
+- **F3 hecha (sin commit) el 1 oct:** las salas en escritorio (`/tienda/<slug>`, también la temporada vigente).
+  - **Archivos nuevos:** `tienda/SalaVista.jsx` y `styles/sala.css`.
+  - **Archivos tocados:**
+    - `Tienda.jsx`: la vista `sala` monta `SalaVista` con `key={slug}`, así que el pasillo abre una sala nueva.
+    - `Historia.jsx`: prop `alSalir`, que al desmontarse informa hasta qué escena llegó (evento `historia_vista`).
+    - `salaPiezas.jsx`: `esVisitable(sala)`. Las salas siempre; la temporada, solo entre sus fechas. La usan la principal y la sala.
+    - `TiendaPrincipal.jsx`: usa `esVisitable` en lugar de su propio `hoyLocal`.
+    - Respaldo en `Inmersia_respaldos/2026-10-01_tienda-F3/`.
+  - **Comportamiento:**
+    - La cabecera es `CabeceraTienda` («Tienda»). El buscador abre `/tienda/catalogo?q=…` con Enter.
+    - La posición del lomo se guarda en `sessionStorage` (`inmersia:lomo:<sala>:<pág>-<balda>`).
+    - «Desliza» funciona con la rueda sobre el panel, ↓/↑ (fuera del buscador y con la ficha cerrada) o el botón, y cambia la estantería de página.
+    - Se precargan las escenas del libro siguiente.
+    - La ficha va en `?libro=` y pausa la historia.
+    - Al guardar sale el aviso «quedó en tu biblioteca · N de 5». **Solo en la sala:** la principal y el catálogo todavía no tienen ese aviso.
+    - Un slug que no existe, o una temporada fuera de fecha, vuelve a `/tienda`.
+  - **Analítica:** `sala_abierta`, `historia_vista`, `historia_desliza` y `cta_comenzar` (origen `sala`).
+  - **Verificado:** eslint sin errores, 77 tests y build. En el navegador, como invitado, a 860, 1024 y 1440 px, sin desborde:
+    - el numerador en el jardín (20 libros) y el paso de la página 1 a la 2 con la rueda;
+    - la ficha desde la historia, con Escape y la URL;
+    - el buscador, un slug inexistente, el pasillo con sus flechas, el Atrás del navegador y el botón Tienda.
+  - **Arreglo de la medición:** el texto del lomo va en un `span` interior con `writing-mode` vertical. Dentro de un elemento vertical, el `cqi` de `--cw` se mide contra otro eje y el lomo salía más alto que las portadas.
+  - **Falta probar con sesión:** guardar desde la historia (el aviso N de 5) y el límite de 5.
+
+## 9. Para retomar (siguiente sesión: F4, el móvil: principal, catálogo y ficha)
+- **Sin commit:** todo lo de F0–F3 está sin commit, porque Juan aún no lo ha pedido. `git status` muestra el trabajo.
+- **Qué falta:** `TiendaMobile.jsx` sigue con el recorrido viejo. `/tienda/:sala` redirige a `/tienda` en móvil hasta la F5. La F4 es la sección 1.2 (móvil) y el prototipo móvil:
+  - fila fija con Atrás, logo y lupa;
+  - chips y `HojaFiltros`;
+  - portada de temporada, carrusel de salas y 2 carriles de 6.
+- **Se reutiliza:**
+  - `useCatalogoFiltro` (búsqueda amplia, `?q=`);
+  - `useSalasQuery`, `esVisitable`, `SalaCard` y `Portal`;
+  - `useLibrosPalabrasQuery` y `seLeeEnUnaTarde`;
+  - `useFichaEnUrl` y `FichaLibroMobile`.
+- **Pendiente pequeño:** el aviso «quedó en tu biblioteca · N de 5» de la principal y el catálogo (hoy solo está en la sala).
+- **Pendiente para el final (Juan, 1 oct):** en pantallas anchas (≈2000 px o más) la sala deja un gran hueco vacío a la derecha de las baldas, entre los libros y el panel. Las portadas tienen un tope de 140 px (`--cw` en `sala.css`) y las baldas ocupan todo el ancho. Se resuelve al terminar las fases.

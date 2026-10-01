@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTiendaData } from '../hooks/useTiendaData.js'
 import { LIMITE_PENDIENTES } from '../hooks/useCompraLibro.js'
 import { useOnboarding } from '../context/onboarding.jsx'
@@ -9,13 +9,14 @@ import { TEXTO_TIENDA_LIMITE } from './onboarding/textos.js'
 import CalleEscena from './tienda/CalleEscena.jsx'
 import CatalogoInterior from './tienda/CatalogoInterior.jsx'
 import TiendaPrincipal from './tienda/TiendaPrincipal.jsx'
+import SalaVista from './tienda/SalaVista.jsx'
 import '../styles/tienda.css'
 
 // =============================================================
 // VistaTienda · la Tienda en escritorio (cáscara de datos y rutas)
 //   /tienda            → TiendaPrincipal (portada, salas, carriles)
 //   /tienda/catalogo   → CatalogoInterior (todo el catálogo)
-//   /tienda/:sala      → la sala (fase 3 del plan)
+//   /tienda/:sala      → SalaVista (estanterías e historias de una sala)
 // La lógica de datos (catálogo, pendientes, compra) vive en useTiendaData,
 // compartido con TiendaMobile.jsx.
 //
@@ -27,6 +28,7 @@ import '../styles/tienda.css'
 export default function VistaTienda({ vista = 'principal', onGoBack, user, gatoColor, onOpenBook, isSuperuser = false }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const { sala: salaSlug } = useParams()
   const porLaCalle = vista === 'principal' && !!user && !!location.state?.calle && !location.state?.entrar
   const [enCalle, setEnCalle] = useState(porLaCalle)
   const [filtroTipo, setFiltroTipo] = useState('todos') // catálogo completo: 'todos' | 'ficcion' | 'noficcion'
@@ -91,14 +93,24 @@ export default function VistaTienda({ vista = 'principal', onGoBack, user, gatoC
   }
 
   if (vista === 'sala') {
-    // Fase 3 del plan: la sala con su estantería y su historia.
+    // key: pasar a otra sala desde el pasillo monta una sala nueva
+    // (estantería, libro elegido y buscador desde cero).
     return (
-      <div className="tp" style={{ display: 'grid', placeItems: 'center', gap: 16, textAlign: 'center', padding: 24 }}>
-        <div>
-          <p style={{ fontFamily: "'Baloo 2', cursive", fontSize: 26, fontWeight: 800, margin: '0 0 8px' }}>La sala llega en el siguiente paso</p>
-          <button type="button" className="tp-pill" onClick={() => navigate('/tienda')}>Volver a la tienda</button>
-        </div>
-      </div>
+      <SalaVista
+        key={salaSlug}
+        slug={salaSlug}
+        catalogo={catalogo}
+        loading={loading}
+        user={user}
+        gatoColor={gatoColor}
+        tieneLibro={tieneLibro}
+        pendientes={pendientes}
+        bloqueado={accesoBloqueado}
+        onComprar={comprar}
+        onEmpezarLeer={comprarYLeer}
+        onVolver={() => navigate('/tienda')}
+        onIrSala={(slug) => navigate(`/tienda/${slug}`)}
+      />
     )
   }
 

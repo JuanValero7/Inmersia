@@ -1,0 +1,104 @@
+/* ════════════════════════════════════════════════════════════════
+   SALA · una sala de la Tienda en escritorio (SalaVista.jsx, .sv-*)
+   Ocupa la pantalla sin desplazarse: cabecera (CabeceraTienda) arriba;
+   a la izquierda título, estanterías, numerador y pasillo; a la
+   derecha el panel 9:16 con la historia (núcleo .hist-* en historia.css).
+   El tamaño de las portadas (--cw) sale del ancho de la columna y del
+   alto de la ventana, para que las 2 baldas siempre quepan.
+   ════════════════════════════════════════════════════════════════ */
+
+.sv{height:100vh;height:100dvh;min-height:600px;display:flex;flex-direction:column;overflow:hidden;
+  color:#fbf0dc;font-family:'Poppins',system-ui,sans-serif;}
+.sv *{box-sizing:border-box;}
+.sv .tp-cab{flex-shrink:0;}
+.sv-sin-sala{background:#241812;}
+.sv-estado{margin:0;padding:60px 16px;text-align:center;color:#f5e9d6;display:flex;flex-direction:column;align-items:center;gap:14px;}
+
+.sv-cuerpo{flex-grow:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) auto;
+  column-gap:32px;padding:0 32px;}
+
+/* ── Izquierda: título y estanterías ── */
+.sv-izq{grid-column:1;grid-row:1;min-height:0;display:flex;flex-direction:column;padding-top:18px;container-type:inline-size;}
+.sv-cartel{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 14px;padding:0 22px;color:#fff;}
+.sv-cartel h1{margin:0;font-family:'Baloo 2',cursive;font-weight:800;font-size:34px;line-height:1.05;text-wrap:balance;
+  text-shadow:0 2px 10px rgba(0,0,0,.35);}
+.sv-cartel span{font-size:14px;opacity:.85;}
+
+.sv-estanterias{flex-grow:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:26px;
+  --cw:clamp(64px, min(calc((100cqi - 170px) / 4.2), calc((100vh - 470px) / 2.9)), 140px);}
+.sv-balda-libros{display:flex;align-items:flex-end;gap:18px;padding:0 22px;height:calc(var(--cw) * 1.452 + 26px);}
+.sv-tabla{height:18px;border-radius:3px;background:linear-gradient(180deg,#ecd6a8 0%,#c9a574 35%,#9c7a4c 100%);
+  box-shadow:0 2px 0 #7a5e38,0 16px 22px -8px rgba(0,0,0,.55);}
+
+.sv-libro{position:relative;flex-shrink:0;border:none;background:transparent;padding:0;cursor:pointer;
+  transition:transform .28s cubic-bezier(.34,1.3,.5,1);}
+.sv-libro:hover{transform:translateY(-8px);}
+.sv-libro.sel{transform:translateY(-22px);}
+.sv-libro.sel .book,.sv-libro.sel .sv-lomo{outline:3px solid var(--accent);outline-offset:4px;}
+.sv-libro .book{width:var(--cw);}
+.sv-libro .book-title{font-size:calc(var(--cw) * .1);}
+.sv-libro .book-scribble{font-size:calc(var(--cw) * .085);}
+/* El texto vertical va en un span interior: dentro de writing-mode vertical
+   la unidad cqi de --cw se mediría contra otro eje y el lomo saldría más alto. */
+.sv-lomo{display:flex;align-items:center;justify-content:center;height:calc(var(--cw) * 1.42);padding:10px 0;overflow:hidden;
+  border-radius:3px 4px 4px 3px;font-family:'Baloo 2',cursive;font-weight:700;font-size:clamp(11px, calc(var(--cw) * .095), 13px);
+  color:#fff8ea;box-shadow:inset 3px 0 0 rgba(255,255,255,.14),inset -4px 0 0 rgba(0,0,0,.2),2px 4px 0 rgba(0,0,0,.22);}
+.sv-lomo-txt{writing-mode:vertical-rl;max-height:100%;overflow:hidden;text-align:center;line-height:1.1;}
+
+.sv-numerador{display:flex;align-items:center;justify-content:center;gap:14px;height:52px;flex-shrink:0;
+  font-family:'Baloo 2',cursive;font-weight:700;font-size:16px;}
+.sv-numerador button,.sv-flecha{width:40px;height:40px;flex-shrink:0;border-radius:999px;display:grid;place-items:center;cursor:pointer;
+  border:1.5px solid rgba(251,240,220,.5);background:rgba(255,255,255,.08);color:#fbf0dc;}
+.sv-numerador button:hover:not(:disabled),.sv-flecha:hover{background:rgba(255,255,255,.16);}
+.sv-numerador button:disabled{opacity:.3;cursor:not-allowed;}
+
+/* ── Pasillo de otras salas ── */
+.sv-pasillo{grid-column:1;grid-row:2;display:flex;align-items:center;gap:14px;padding:12px 0 22px 22px;min-width:0;}
+.sv-pasillo-lbl{flex-shrink:0;width:72px;font-family:'Baloo 2',cursive;font-weight:700;font-size:15px;line-height:1.15;opacity:.85;}
+.sv-pasillo-pista{flex-grow:1;min-width:0;display:flex;gap:14px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;}
+.sv-pasillo-pista::-webkit-scrollbar{display:none;}
+.sv-pasillo .sp-sala{flex-shrink:0;}
+
+/* ── Derecha: el panel de la historia ── */
+.sv-der{grid-column:2;grid-row:1 / 3;display:flex;align-items:center;padding:20px 0 24px;}
+.sv-panel{position:relative;height:min(calc(100vh - 124px), 860px);aspect-ratio:9/16;max-width:470px;}
+.sv-invitacion{height:100%;border-radius:24px;border:2px dashed rgba(251,240,220,.35);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;padding:30px;text-align:center;}
+.sv-invitacion img{width:62%;}
+.sv-invitacion p{margin:0;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:22px;line-height:1.35;text-wrap:balance;}
+.sv-invitacion small{font-size:13px;opacity:.75;}
+
+.hist.sv-entra-sube{animation:sv-sube .42s cubic-bezier(.2,.8,.2,1);}
+.hist.sv-entra-baja{animation:sv-baja .42s cubic-bezier(.2,.8,.2,1);}
+@keyframes sv-sube{from{transform:translateY(60px);opacity:0}}
+@keyframes sv-baja{from{transform:translateY(-60px);opacity:0}}
+
+.sv-acciones{display:flex;gap:8px;}
+.sv-btn-claro{flex:1;min-width:0;height:44px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border-radius:999px;border:2.5px solid #4a3622;background:rgba(255,253,248,.95);color:#4a3622;cursor:pointer;white-space:nowrap;
+  font-family:'Baloo 2',cursive;font-weight:700;font-size:14px;}
+/* «Ficha» a su ancho; «Guardar en mi biblioteca» se queda con el resto (panel estrecho a 1024 px) */
+.sv-acciones .sv-btn-claro:first-child{flex:0 0 auto;padding:0 18px;}
+.sv-btn-claro:hover:not(:disabled){background:#fff;}
+.sv-btn-claro:disabled{opacity:.75;cursor:default;}
+.sv-limite{margin:0;font-size:12px;line-height:1.4;text-align:center;color:#f0b27a;}
+.sv-desliza{height:36px;border:none;background:transparent;color:#e3d2b8;cursor:pointer;
+  font:500 13px/36px 'Poppins',system-ui,sans-serif;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sv-desliza svg{display:inline-block;vertical-align:-3px;margin-right:4px;}
+.sv-desliza:hover:not(:disabled){color:#fff;}
+.sv-desliza:disabled{opacity:.5;cursor:default;}
+
+/* Libro sin historia: portada y las mismas acciones */
+.sv-sin-historia .book{width:120px;}
+.sv-sin-historia .hist-btn-leer,.sv-sin-historia .sv-acciones,.sv-sin-historia .sv-desliza{width:100%;}
+
+/* ── Aviso al guardar ── */
+.sv-aviso{position:fixed;left:50%;bottom:32px;z-index:90;transform:translate(-50%,20px);max-width:calc(100% - 32px);
+  padding:12px 20px;border-radius:999px;background:#2a1d14;color:#fff6e4;border:2px solid rgba(255,240,210,.35);
+  font-weight:600;font-size:14px;text-align:center;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;}
+.sv-aviso.on{opacity:1;transform:translate(-50%,0);}
+
+@media (prefers-reduced-motion:reduce){
+  .sv-libro,.sv-aviso{transition:none;}
+  .hist.sv-entra-sube,.hist.sv-entra-baja{animation:none;}
+}

@@ -8,7 +8,7 @@ import { imgUrl } from '../../lib/img.js'
 import { evento } from '../../lib/analytics.js'
 import { CAT_COLOR } from './tiendaHelpers.jsx'
 import { BookCard, CoverCard, Pagination, TIPOS } from './catalogoShared.jsx'
-import { SalaCard } from './salaPiezas.jsx'
+import { SalaCard, esVisitable } from './salaPiezas.jsx'
 import FichaLibro from './FichaLibro.jsx'
 import CabeceraTienda from './CabeceraTienda.jsx'
 import '../../styles/tienda-principal.css'
@@ -26,11 +26,6 @@ import '../../styles/tienda-principal.css'
 
 const MAX_POR_CARRIL = 8
 
-// YYYY-MM-DD en la hora del lector, para comparar con desde/hasta de la temporada.
-function hoyLocal() {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 const diaYMes = (fecha) => new Date(`${fecha}T12:00:00`).toLocaleDateString('es', { day: 'numeric', month: 'long' })
 
 const IconoBuscar = () => (
@@ -87,8 +82,7 @@ export default function TiendaPrincipal({ catalogo, loading, user, gatoColor = '
   const porId = useMemo(() => new Map(catalogo.map(l => [l.id, l])), [catalogo])
   const librosDe = (sala) => sala.libros.map(id => porId.get(id)).filter(Boolean)
 
-  const hoy = hoyLocal()
-  const temporada = salas.find(s => s.tipo === 'temporada' && (!s.desde || s.desde <= hoy) && (!s.hasta || hoy <= s.hasta))
+  const temporada = salas.find(s => s.tipo === 'temporada' && esVisitable(s))
   const salasPasillo = salas.filter(s => s.tipo === 'sala')
 
   // Carriles con reglas fijas (decisión 4): el catálogo ya viene en el orden curado.

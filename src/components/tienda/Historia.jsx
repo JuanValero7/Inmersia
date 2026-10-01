@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { useHistoria, ANCHO_ESCENA } from '../../hooks/useHistoria.js'
 import { useLibroReelsQuery } from '../../lib/queries.js'
@@ -21,6 +21,7 @@ import '../../styles/historia.css'
 //   onCerrar   · muestra la X si viene
 //   lateral    · botones de la columna derecha (móvil, sala)
 //   children   · acciones de abajo (Comenzar a leer, Desliza…)
+//   alSalir    · al desmontarse, con { escenasVistas, deTotal } (analítica)
 // =============================================================
 
 const IconoCerrar = () => (
@@ -29,8 +30,18 @@ const IconoCerrar = () => (
   </svg>
 )
 
-export default function Historia({ libro, escenas, pausada = false, onCerrar, lateral, children, className }) {
-  const { escena, actual, siguiente, anterior } = useHistoria(escenas, { pausada })
+export default function Historia({ libro, escenas, pausada = false, onCerrar, lateral, children, className, alSalir }) {
+  const { escena, total, actual, siguiente, anterior } = useHistoria(escenas, { pausada })
+
+  // Hasta qué escena llegó, para contarlo al salir (cambiar de libro o cerrar).
+  const visto = useRef({ max: 0, total: 0 })
+  useEffect(() => { visto.current = { max: Math.max(visto.current.max, escena), total } }, [escena, total])
+  const alSalirRef = useRef(alSalir)
+  useEffect(() => { alSalirRef.current = alSalir })
+  useEffect(() => () => {
+    if (visto.current.total) alSalirRef.current?.({ escenasVistas: visto.current.max + 1, deTotal: visto.current.total })
+  }, [])
+
   if (!actual) return null
   const categorias = (libro.categorias || []).join(', ')
 

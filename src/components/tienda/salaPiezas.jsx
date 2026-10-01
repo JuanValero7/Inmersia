@@ -14,6 +14,23 @@ export function mezclar(hex, destino, t) {
   return `rgb(${a.map((c, i) => Math.round(c + (b[i] - c) * t)).join(',')})`
 }
 
+// YYYY-MM-DD en la hora del lector, para comparar con desde/hasta de la temporada.
+function hoyLocal() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/**
+ * Si una sala se puede visitar hoy: las salas siempre; la temporada solo
+ * entre sus fechas. Los carriles (tipo 'carril') no son salas que se visiten.
+ */
+export function esVisitable(sala) {
+  if (sala.tipo === 'sala') return true
+  if (sala.tipo !== 'temporada') return false
+  const hoy = hoyLocal()
+  return (!sala.desde || sala.desde <= hoy) && (!sala.hasta || hoy <= sala.hasta)
+}
+
 // La tinta de la marca (#4a3622, --ink): de aquí salen los fondos oscuros.
 const TINTA = '#2a1d14'
 
