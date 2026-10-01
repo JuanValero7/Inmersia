@@ -146,7 +146,7 @@ export function useAlbum(user) {
           .in('libro_id', libroIds)),
 
         fetchAllRows(() => supabase.from('sesiones_lectura')
-          .select('libro_id, started_at, ended_at')
+          .select('libro_id, started_at, ended_at, segundos_activos')
           .eq('user_id', user.id)
           .in('libro_id', libroIds)),
 
