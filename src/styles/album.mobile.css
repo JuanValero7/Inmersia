@@ -24,40 +24,10 @@
 
 .album-m-gato-wrap{
   position:absolute; right:8px; bottom:calc(6px + env(safe-area-inset-bottom)); width:74px; z-index:15;
-  background:none; border:0; padding:0; cursor:pointer;
+  pointer-events:none;
   filter:drop-shadow(2px 6px 5px rgba(60,40,18,0.34));
 }
-.album-m-gato-wrap:active{ transform:scale(.96); }
 .album-m-gato{ width:100%; height:auto; display:block; pointer-events:none; }
-.album-m-gato-badge{
-  position:absolute; top:-1px; right:-1px; width:13px; height:13px; border-radius:50%;
-  background:var(--rojo); border:2px solid var(--crema); box-shadow:0 0 0 1.5px var(--ink);
-}
-
-/* ─── menú del gato ─── */
-.album-m-gatomenu-backdrop{ position:absolute; inset:0; z-index:16; }
-.album-m-gatomenu{
-  position:absolute; right:8px; bottom:86px; z-index:17; min-width:172px;
-  background:var(--crema); border:2px solid var(--ink); border-radius:12px;
-  box-shadow:0 14px 30px rgba(74,54,34,.25); padding:8px;
-}
-.album-m-gatomenu-title{ margin:0 0 5px; padding:0 3px; font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft); }
-.album-m-gatomenu-item{
-  display:block; width:100%; text-align:left; background:var(--papel-warm); border:2px solid var(--ink);
-  border-radius:9px; padding:8px 10px; font-family:var(--ui); font-weight:700; font-size:12.5px; color:var(--ink);
-  cursor:pointer; box-shadow:1.2px 1.6px 0 rgba(74,54,34,.25);
-}
-.album-m-gatomenu-item:disabled{ opacity:.45; cursor:default; }
-.album-m-gatomenu-item:not(:disabled):active{ transform:translateY(1px); }
-
-/* ─── aviso de "modo pegar" activo ─── */
-.album-m-pegarhint{
-  position:absolute; left:50%; bottom:calc(10px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:14;
-  background:rgba(40,26,12,.85); color:#fffaf2; font-family:var(--ui); font-weight:700; font-size:11px;
-  padding:6px 14px; border-radius:999px; box-shadow:0 8px 18px rgba(0,0,0,.25); cursor:pointer;
-}
-.album-m-pegarhint b{ text-decoration:underline; }
-
 /* ─── barra superior ─── */
 /* El padding superior sube con el notch (viewport-fit=cover, ver index.html):
    con los 7px pelados la barra quedaba debajo de la muesca. */
@@ -186,14 +156,13 @@
 /* casilla vacía */
 .cellL.empty{ background:repeating-linear-gradient(135deg,#efe7d4 0 8px,#e8dfca 8px 16px);
   border:2px dashed rgba(74,54,34,.4); box-shadow:none; cursor:default; }
-.cellL.empty .eslot{ position:absolute; inset:0; z-index:2; display:flex; flex-direction:column; align-items:center;
+.cellL.empty .eslot, .cellL.pending .eslot{ position:absolute; inset:0; z-index:2; display:flex; flex-direction:column; align-items:center;
   justify-content:center; gap:4px; text-align:center; padding:5px; color:rgba(74,54,34,.5); }
-.cellL.empty .eslot span{ font-size:7px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; line-height:1.15; }
+.cellL.empty .eslot span, .cellL.pending .eslot span{ font-size:7px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; line-height:1.15; }
 
 /* casilla desbloqueada, todavía sin pegar */
 .cellL.pending{ background:repeating-linear-gradient(135deg,#fdf3e2 0 8px,#f8ecd2 8px 16px);
-  border:2px solid var(--terra); box-shadow:var(--clay); cursor:default; }
-.cellL.pending.armed{ cursor:pointer; }
+  border:2px solid var(--terra); box-shadow:var(--clay); cursor:pointer; }
 .cellL.pending .eslot.pend{ color:var(--terra-d); }
 .cellL.pending .eslot.pend svg{ opacity:.85; }
 

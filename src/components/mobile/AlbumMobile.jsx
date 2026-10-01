@@ -33,7 +33,7 @@ const IForo   = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="non
 const ILeer   = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6.25C10.83 5.48 9.25 5 7.5 5S4.17 5.48 3 6.25v13C4.17 18.48 5.75 18 7.5 18s3.33.48 4.5 1.25m0-13C13.17 5.48 14.75 5 16.5 5S19.83 5.48 21 6.25v13C19.83 18.48 18.25 18 16.5 18s-3.33.48-4.5 1.25m0-13v13" /></svg>)
 const IRotate = () => (<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2.5" /><path d="M9 18h6" /></svg>)
 
-function Cell({ item, color, idx, hero, onOpen, pegarMode, onPegar }) {
+function Cell({ item, color, idx, hero, onOpen, onPegar }) {
   const [pegando, setPegando] = useState(false)
   const num = String(idx + 1).padStart(2, '0')
   const cls = `cellL${hero ? ' hero' : ''}`
@@ -47,15 +47,18 @@ function Cell({ item, color, idx, hero, onOpen, pegarMode, onPegar }) {
   }
 
   if (!item.pegada) {
+    // Se pega con un toque directo sobre la casilla (antes había que activar
+    // un "modo pegar" desde el gato).
     const handleClick = () => {
-      if (!pegarMode || pegando) return
+      if (pegando) return
       setPegando(true)
       onPegar?.(item.key)
       setTimeout(() => setPegando(false), 500)
     }
     return (
-      <div className={`${cls} pending${pegarMode ? ' armed' : ''}${pegando ? ' pegando' : ''}`} onClick={handleClick}>
-        <div className="eslot pend"><IStick /><span>Para pegar</span></div>
+      <div className={`${cls} pending${pegando ? ' pegando' : ''}`} onClick={handleClick}
+        role="button" aria-label="Pegar barajita">
+        <div className="eslot pend"><IStick /><span>Toca para pegar</span></div>
       </div>
     )
   }
@@ -73,7 +76,7 @@ function Cell({ item, color, idx, hero, onOpen, pegarMode, onPegar }) {
   )
 }
 
-function Catrow({ kind, data, onMore, onOpen, pegarMode, onPegar }) {
+function Catrow({ kind, data, onMore, onOpen, onPegar }) {
   const meta = SEC_META[kind]
   const { total = 0, unlocked = 0, items = [] } = data || {}
   const slots = items.length ? items.slice(0, 3) : [{ unlocked: false }]
@@ -92,7 +95,7 @@ function Catrow({ kind, data, onMore, onOpen, pegarMode, onPegar }) {
           return (
             <Cell key={i} item={it} color={meta.color} idx={i} hero={i === 0}
               onOpen={fi >= 0 ? () => onOpen(kind, fi) : undefined}
-              pegarMode={pegarMode} onPegar={(itemKey) => onPegar(kind, itemKey)} />
+              onPegar={(itemKey) => onPegar(kind, itemKey)} />
           )
         })}
         {total > 3 && (
@@ -221,8 +224,6 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
   const { items, loading, pegar } = useAlbum(user)
   const [idx, setIdx] = useState(0)
   const [sheet, setSheet] = useState(null) // { kind, idx } | null
-  const [gatoMenuOpen, setGatoMenuOpen] = useState(false)
-  const [pegarMode, setPegarMode] = useState(false)
 
   useEffect(() => {
     if (!items.length) return
@@ -235,7 +236,7 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
 
   const go = (i) => {
     if (i < 0 || i >= items.length) return
-    setIdx(i); setSheet(null); setPegarMode(false); setGatoMenuOpen(false)
+    setIdx(i); setSheet(null)
     try { localStorage.setItem(KEY, String(i)) } catch { /* ignore */ }
   }
 
@@ -296,40 +297,14 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
     { k: 'Notas tomadas',    v: stats.notas ? `${stats.notas}` : '—' },
   ]
 
-  // Pendientes de pegar, solo entre las primeras 3 posiciones visibles por sección.
-  const pendientesVisibles = order.reduce((n, kind) => {
-    const secItems = secciones[kind]?.items || []
-    return n + secItems.slice(0, 3).filter(it => it.unlocked && !it.pegada).length
-  }, 0)
-
   const onPegar = (kind, itemKey) => pegar(libro.libro_id, kind, itemKey)
 
   return (
     <div className="album-m-root">
-      <button type="button" className="album-m-gato-wrap" aria-label="Pegar barajitas"
-        onClick={() => setGatoMenuOpen(o => !o)}>
+      {/* El gato ya no es un botón: las barajitas se pegan tocándolas. */}
+      <div className="album-m-gato-wrap" aria-hidden="true">
         <img className="album-m-gato" src={`/assets/biblioteca/gato-${gatoColor}-1-thumb.webp`} alt="" />
-        {pendientesVisibles > 0 && <span className="album-m-gato-badge" />}
-      </button>
-
-      {gatoMenuOpen && (
-        <>
-          <div className="album-m-gatomenu-backdrop" onClick={() => setGatoMenuOpen(false)} />
-          <div className="album-m-gatomenu">
-            <p className="album-m-gatomenu-title">Álbum</p>
-            <button type="button" className="album-m-gatomenu-item" disabled={!pendientesVisibles}
-              onClick={() => { setPegarMode(true); setGatoMenuOpen(false) }}>
-              Pegar barajitas{pendientesVisibles > 0 ? ` (${pendientesVisibles})` : ''}
-            </button>
-          </div>
-        </>
-      )}
-
-      {pegarMode && (
-        <div className="album-m-pegarhint" onClick={() => setPegarMode(false)}>
-          Tocá una casilla para pegarla · <b>listo</b>
-        </div>
-      )}
+      </div>
 
       <div className="album-m-rotate">
         <button className="album-m-rotate-back" onClick={onGoBack} title="Volver a la biblioteca"><IBack />Biblioteca</button>
@@ -402,7 +377,7 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
             <Catrow key={kind} kind={kind} data={secciones[kind]}
               onMore={(k) => setSheet({ kind: k, idx: 0 })}
               onOpen={(k, i) => setSheet({ kind: k, idx: i })}
-              pegarMode={pegarMode} onPegar={onPegar} />
+              onPegar={onPegar} />
           ))}
         </section>
       </div>
