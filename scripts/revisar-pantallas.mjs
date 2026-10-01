@@ -68,12 +68,19 @@ const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
 const page = await ctx.newPage()
 
 // Los slugs no se saben de antemano: se pescan de la respuesta de Supabase.
+// Las salas, igual, para recorrer una sala de la Tienda.
 const slugs = new Set()
+const salas = new Set()
 page.on('response', async r => {
-  if (!r.url().includes('/rest/v1/libros')) return
+  const deLibros = r.url().includes('/rest/v1/libros?')
+  const deSalas = r.url().includes('/rest/v1/salas?')
+  if (!deLibros && !deSalas) return
   try {
     const j = await r.json()
-    ;(Array.isArray(j) ? j : []).forEach(l => { if (l.slug) slugs.add(l.slug) })
+    ;(Array.isArray(j) ? j : []).forEach(x => {
+      if (!x.slug) return
+      if (deSalas) { if (x.tipo === 'sala') salas.add(x.slug) } else slugs.add(x.slug)
+    })
   } catch { /* respuesta no-JSON, da igual */ }
 })
 
@@ -84,18 +91,22 @@ await page.goto(`${BASE}/auth`, { waitUntil: 'networkidle' })
 await page.waitForSelector('input[type="email"]', { timeout: 15000 })
 await page.locator('input[type="email"]').last().fill(EMAIL)
 await page.locator('input[type="password"]').last().fill(PASS)
-await page.getByRole('button', { name: /entrar a mi biblioteca/i }).click()
+// El botón de enviar del formulario (su texto cambia con el diseño del pop-up).
+await page.locator('button.btn-stamp[type="submit"]').last().click()
 await page.waitForURL(/\/biblioteca/, { timeout: 20000 })
 console.log('✓ sesión iniciada\n')
 
 await page.goto(`${BASE}/tienda`, { waitUntil: 'networkidle' })
 await page.waitForTimeout(1200)
 const slug = [...slugs][0]
+const sala = [...salas][0]
 if (!slug) console.log('⚠ no se pudo pescar ningún slug: Lector/Cartelera/Foro se saltan\n')
 
 const PANTALLAS = [
   ['Biblioteca', '/biblioteca'],
   ['Tienda',     '/tienda'],
+  ['Catálogo',   '/tienda/catalogo'],
+  ...(sala ? [['Sala', `/tienda/${sala}`]] : []),
   ['Álbum',      '/album'],
   ['Perfil',     '/perfil'],
   ...(slug ? [

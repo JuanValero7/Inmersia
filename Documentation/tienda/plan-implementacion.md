@@ -1,6 +1,6 @@
 # Tienda nueva: plan de implementación (escritorio y móvil)
 
-Estado al 1 oct 2026. El diseño está cerrado y aprobado por Juan en dos prototipos navegables. **F0–F5 hechas (escritorio y móvil completos); falta el cierre (F6) y el hueco de la sala en pantallas anchas.** Este documento es la guía para programarlo: qué se construye, en qué orden, qué archivos cambian y qué falta decidir.
+Estado al 1 oct 2026. El diseño está cerrado y aprobado por Juan en dos prototipos navegables. **F0–F6 hechas (sin commit). Queda el hueco de la sala en pantallas anchas (sección 9).** Este documento es la guía para programarlo: qué se construye, en qué orden, qué archivos cambian y qué falta decidir.
 
 ## Referencias
 - **Prototipo escritorio:** https://claude.ai/artifact/2qkUWTuEPtTLGSqhfpzbid
@@ -381,12 +381,48 @@ Con esto se arma el embudo: tienda → sala/ficha → historia → comenzar a le
     - «Otras salas».
   - **Escritorio, sin cambios tras el ajuste:** repetida la prueba de la F3.
 
-## 9. Para retomar (siguiente sesión: F6, el cierre)
-- **Sin commit:** todo lo de F0–F5 está sin commit, porque Juan aún no lo ha pedido.
-- **Lo que queda de la F6:**
-  - **Biblioteca y borrado:** se adelantaron en la F1 (`PanelLibro`, `LibroReel`, `.bkp-*` y `.reel-*` ya no existen). Hay que comprobar que no queda CSS huérfano en `tienda.css`, por ejemplo `.int-back` cuando la calle deje de usarlo.
-  - **Analítica:** ya se registran `tienda_vista`, `tienda_busqueda`, `tienda_filtro`, `sala_abierta`, `historia_vista`, `historia_desliza`, `ficha_abierta`, `cta_comenzar` y `avance_abierto`. Falta comprobarlos en PostHog.
-  - **Revisión de pantallas:** `scripts/revisar-pantallas.mjs` en 860–1440 px y en móvil.
-  - **Probar con sesión:** guardar con el aviso «N de 5», el límite de 5 y el tutorial (paso `tienda` en la calle).
-- **Pendiente pequeño:** el aviso «quedó en tu biblioteca · N de 5» de la principal y el catálogo (hoy solo está en la sala).
-- **Pendiente para el final (Juan, 1 oct):** en pantallas anchas (≈2000 px o más) la sala deja un gran hueco vacío a la derecha de las baldas, entre los libros y el panel. Las portadas tienen un tope de 140 px (`--cw` en `sala.css`) y las baldas ocupan todo el ancho. Se resuelve al terminar las fases.
+- **F6 hecha (sin commit) el 1 oct:** el cierre.
+  - **CSS huérfano:** se borró `.int-filter-label` de `tienda.css`. Era la única clase sin uso en los ocho CSS de la tienda. Otras seis lo parecían, pero se arman con plantillas (`sv-entra-${…}`, `${className}-txt`).
+  - **`tienda.css` no se parte (decisión, 3.5):**
+    - Sus reglas de móvil (`@media` ≤ 640 px) sobrescriben la tarjeta y la rejilla del catálogo, que comparten los dos formatos, y dependen del orden de carga.
+    - En un archivo aparte, el móvil lo importaría antes que `tienda.css` y esas reglas perderían.
+    - Lo nuevo del móvil ya vive en `tienda.mobile.css` y `sala.mobile.css`.
+  - **`scripts/revisar-pantallas.mjs`:**
+    - Ahora recorre también el Catálogo y una sala (pesca su slug de `/rest/v1/salas`).
+    - El clic de login va al botón de enviar: el texto «Entrar a mi biblioteca» ya no existe.
+    - Respaldo en `Inmersia_respaldos/2026-10-01_tienda-F6/`.
+  - **Barrido de 860 a 1440 px con sesión:**
+    - **Arreglado:** a 900 × 900 la balda de la sala se salía 24 px. El panel de la historia crecía con la altura. Ahora mide como mucho el 40 % del ancho (`sala.css`).
+    - **Falsos positivos:** libros de los carriles y salas del pasillo, que se deslizan a propósito, y la portada inclinada de la temporada.
+    - **Fuera de la tienda, sin tocar:**
+      - Biblioteca a 860 y 900 px: la barra de arriba («Comunidades ▾ · nombre») se sale 149 y 109 px, y la página se desplaza en horizontal (+115 y +75).
+      - Perfil a 860 px: el correo largo se sale 2 px.
+      - Cartelera en todos los anchos: adornos de 4 a 8 px (`.cart-file-peek`, `.cart-bk-*`).
+  - **Probado con sesión** (cuenta de revisión, escritorio):
+    - biblioteca → calle → puerta → tienda;
+    - guardar desde la sala: «… · 4 de 5» y «… · 5 de 5»;
+    - con 5 pendientes, «Comenzar a leer» y «Guardar» quedan desactivados, con el aviso del límite;
+    - en un libro propio, «Comenzar a leer» abre el lector.
+  - **Analítica comprobada** (envolviendo `window.posthog.capture` en desarrollo):
+    - **Escritorio con sesión:** `tienda_vista` (calle), `tienda_busqueda`, `tienda_filtro`, `ficha_abierta` (tienda, sala), `avance_abierto`, `sala_abierta`, `historia_desliza`, `historia_vista`, `libro_comprado`, `cta_comenzar` y `libro_abierto`.
+    - **Móvil como invitado:** lo mismo, con `donde: principal_movil`.
+    - **Pendiente:** verlo llegar en el panel de PostHog con tráfico real. PostHog descarta los navegadores automatizados.
+  - **Lo que quedó en la cuenta de revisión** (`bibliotecas_usuarios` no tiene política de borrado, a propósito, así que no se pudo deshacer desde la app):
+    - 2 libros de más (El fantasma de Canterville, Arsène Lupin): 5 pendientes, en el límite.
+    - Fecha de nacimiento 1990-01-01 y términos aceptados (el paso «Un último paso»).
+    - Se abrió el lector de Arsène Lupin.
+    - Para quitar los libros, en el SQL Editor:
+      ```sql
+      delete from bibliotecas_usuarios
+      where user_id = (select id from auth.users where email = 'revision.layout.mth4dn6u@inmersia-qa.test')
+        and libro_id in (select id from libros where slug in ('el-fantasma-de-canterville', 'ladron'));
+      ```
+
+## 9. Para retomar
+- **Sin commit:** F0–F6 están hechas y sin commit, porque Juan aún no lo ha pedido. Son commits separados por fase, a `main`.
+- **Pendiente de la tienda:**
+  - **Hueco en salas anchas** (Juan, 1 oct): a unos 2000 px o más, la sala de escritorio deja un gran espacio vacío entre las baldas y el panel. Las portadas tienen un tope de 140 px (`--cw` en `sala.css`) y las baldas ocupan todo el ancho.
+  - **Aviso «quedó en tu biblioteca · N de 5»** en la tienda principal y el catálogo. Hoy solo está en las salas (`useAvisoGuardar`).
+  - **Migración 064:** sin correr; El Principito sigue con `orden` 10.
+  - **Primera línea:** falta decidir dedicatoria o comienzo en El Principito y Largo viaje hacia la noche (069).
+- **Fuera de la tienda (barrido de la F6):** la barra de la Biblioteca a 860–900 px, el Perfil a 860 px y la Cartelera.
