@@ -23,7 +23,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
-import { CAPITULOS_MUESTRA } from '../lib/constants.js'
 import { evento } from '../lib/analytics.js'
 
 // Filas de subrayados_usuario → { [capitulo_num]: [{ id, texto }, ...] }
@@ -42,9 +41,10 @@ function agruparSubrayados(filas) {
 // la carga de la lista de capítulos los usa para reposicionar al restaurar
 // progreso. Son setters de useState (estables), por eso no van en deps.
 // `muestra` = el lector está en modo muestra (invitado, o usuario autenticado que
-// no adquirió el libro). Recorta la lista de capítulos a CAPITULOS_MUESTRA: para el
-// rol `anon` la RLS ya devuelve solo esos dos, pero para `authenticated` no, así que
-// sin este tope un usuario logueado leía el libro entero abriéndolo por URL.
+// no adquirió el libro). Solo se leen los capítulos y párrafos con `en_muestra`
+// (los primeros 10 minutos, migración 071). La RLS ya lo aplica a `anon` y a
+// `authenticated`; el filtro de acá cubre al superusuario, que la RLS deja verlo
+// todo, y deja la regla escrita en el cliente.
 /**
  * Wiring de datos del Lector, compartido tal cual por la cáscara de escritorio y la
  * de móvil. Es la plantilla de cómo debería verse el resto de pantallas: aquí está
@@ -56,7 +56,7 @@ function agruparSubrayados(filas) {
  * @param {object|null} book                     libro abierto
  * @param {(n: number) => void} setChapterIndex
  * @param {(n: number) => void} setPageIndex
- * @param {boolean} [muestra]   modo invitado: solo 2 capítulos, sin subrayado,
+ * @param {boolean} [muestra]   modo muestra: solo los primeros 10 minutos, sin subrayado,
  *                              cuaderno ni progreso
  * @returns {object} datos, operaciones y estado de la reseña
  */
@@ -159,7 +159,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
         // de progreso en la misma respuesta (FK ultimo_parrafo_id → parrafos.id),
         // evitando un viaje extra secuencial a `parrafos`.
         const [{ data: capsTodos, error: e }, { data: prog }] = await Promise.all([
-          supabase.from('capitulos').select('id, numero, titulo, palabras')
+          supabase.from('capitulos').select('id, numero, titulo, palabras, en_muestra')
             .eq('libro_id', book.libro_id).order('numero'),
           userId
             ? supabase.from('progreso_lectura')
@@ -169,12 +169,13 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
         ])
         if (e) throw e
         if (!capsTodos || capsTodos.length === 0) throw new Error('Este libro no tiene capítulos cargados.')
-        // Modo muestra → solo los primeros capítulos. `caps` es de acá en adelante
-        // la lista VISIBLE: el índice de restauración de progreso y el tope que
-        // dispara el paywall se calculan sobre ella.
-        const caps = muestra ? capsTodos.slice(0, CAPITULOS_MUESTRA) : capsTodos
+        // Modo muestra → solo los capítulos de la muestra (el último, a medias).
+        // `caps` es de acá en adelante la lista VISIBLE: el índice de
+        // restauración de progreso y el tope que dispara el paywall se calculan
+        // sobre ella.
+        const caps = muestra ? capsTodos.filter(c => c.en_muestra) : capsTodos
         // Total del libro ENTERO (también en muestra, para que el "% del
-        // libro" no llegue al 100 % con los dos capítulos de prueba). null si
+        // libro" no llegue al 100 % con la muestra). null si
         // a algún capítulo le faltan las palabras (migración 062).
         const palabrasTodas = capsTodos.every(c => c.palabras > 0)
           ? capsTodos.reduce((s, c) => s + c.palabras, 0) : null
@@ -233,9 +234,11 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
       .eq('capitulo_id', cap.id)
 
     const promesa = (async () => {
-      const { data: parrafos, error: e1 } = await supabase.from('parrafos')
+      let consulta = supabase.from('parrafos')
         .select('id, capitulo_id, numero, contenido, tipo, escena_tags, tiene_interactivo')
-        .eq('capitulo_id', cap.id).order('numero')
+        .eq('capitulo_id', cap.id)
+      if (muestra) consulta = consulta.eq('en_muestra', true)
+      const { data: parrafos, error: e1 } = await consulta.order('numero')
       if (e1) throw e1
       const entry = { parrafos: parrafos || [], mediaByParrafo: {}, ambient: null }
       actualizarCache(prev => ({ ...prev, [cap.id]: entry }))
@@ -263,7 +266,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
     enVueloRef.current[cap.id] = promesa
     try { return await promesa }
     finally { delete enVueloRef.current[cap.id] }
-  }, [actualizarCache])
+  }, [actualizarCache, muestra])
 
   // Precarga en segundo plano del capítulo que sigue al `chapterIndex`, cuando
   // el navegador está libre: así pasar de capítulo no espera a la red. No

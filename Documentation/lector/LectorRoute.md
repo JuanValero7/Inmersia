@@ -65,6 +65,6 @@ Función interna que convierte una fila de `libros` (tabla pública) a la estruc
 |---|---|---|
 | `libros` | `id, slug, titulo, autor, paginas, descripcion, color, portada_url, es_ficcion` | SELECT, filtro por `slug`, solo para invitados |
 
-## ⚠️ Límite de capítulos para invitados
+## ⚠️ Límite de la muestra
 
-El límite de 2 capítulos para invitados **no lo implementa este componente** — lo implementa la RLS de Supabase en la tabla `parrafos`. `LectorRoute` solo pasa `guestMode={true}` al Lector, que a su vez muestra el paywall al llegar al final del segundo capítulo.
+La muestra (los primeros 10 minutos: párrafos con `en_muestra`, migración 071) **no la implementa este componente**: la aplica la RLS de Supabase en `capitulos` y `parrafos`. `LectorRoute` solo pasa `guestMode={true}` al Lector, que muestra el paywall al llegar al final del último párrafo de la muestra.

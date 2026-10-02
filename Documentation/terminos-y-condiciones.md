@@ -34,7 +34,7 @@ Inmersia es una plataforma de lectura inmersiva. **Hoy todas sus funciones son g
 - **Comunidades de lectura** — grupos para leer un libro juntos. Pueden ser públicas o privadas (se entra con un código de invitación). Dentro del libro, los miembros dejan comentarios en los párrafos para toda la comunidad y **mensajitos** de una persona a otra, estos últimos **reservados a usuarios de 16 años o más**. Puedes estar en un máximo de 5 comunidades. Por ahora, crear comunidades solo está habilitado para algunas cuentas.
 - **Manual del Explorador** — guía de uso de la Plataforma.
 
-Sin cuenta puedes leer una **muestra de dos capítulos** de los libros del catálogo.
+Sin cuenta puedes leer una **muestra de los primeros 10 minutos de lectura** de cada libro del catálogo.
 
 **Límite de lecturas pendientes.** Puedes tener hasta **5 libros sin terminar** en tu biblioteca a la vez. Es una regla deliberada, para que la biblioteca sea una lista de lectura y no un almacén.
 

@@ -98,7 +98,7 @@ function EstrellaLector({ valor, onChange }) {
  * @property {boolean} startWithNotebook    abrir directamente en el cuaderno
  * @property {() => void} onNotebookStarted
  * @property {boolean} [isSuperuser]
- * @property {boolean} [guestMode]          invitado: solo 2 capítulos, sin subrayado
+ * @property {boolean} [guestMode]          muestra: solo los primeros 10 minutos, sin subrayado
  *                                          ni cuaderno ni progreso
  * @property {'invitado'|'limite'} [muestraMotivo]  por qué se muestra el aviso de muestra
  * @property {() => void} onRequestAuth      abre el pop-up de registro
@@ -783,9 +783,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
             </h2>
             <p style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 15, color: '#6b4c34', lineHeight: 1.55, margin: '0 0 28px' }}>
               {muestraMotivo === 'sin-adquirir' ? (
-                <>Ya leíste los dos capítulos de muestra.<br />Agrégalo desde la Tienda para continuar.</>
+                <>Ya leíste la muestra de este libro.<br />Agrégalo desde la Tienda para continuar.</>
               ) : (
-                <>Ya leíste los dos capítulos de muestra.<br />Crea tu cuenta gratis para continuar.</>
+                <>Ya leíste la muestra de este libro.<br />Crea tu cuenta gratis para continuar.</>
               )}
             </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>

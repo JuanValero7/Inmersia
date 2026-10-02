@@ -29,6 +29,7 @@ import { useCatalogoLibrosQuery } from '../lib/queries.js'
 import { imgUrl } from '../lib/img.js'
 import { GATO_ELEGIDO_KEY } from '../hooks/useGatoColor.js'
 import { evento } from '../lib/analytics.js'
+import { MINUTOS_MUESTRA } from '../lib/constants.js'
 import '../styles/landing.css'
 
 // El sufijo ?v= fuerza al navegador a descargar la versión nueva cuando se
@@ -174,7 +175,7 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
             <div className="inm-hero-cta" ref={heroCtaRef}>
               <a className="inm-clay-btn inm-clay-lg" href="#registro" onClick={entrar('hero')}>Entra ahora {flecha}</a>
             </div>
-            <p className="inm-micro">Prueba los 2 primeros capítulos de cualquier libro sin cuenta</p>
+            <p className="inm-micro">Lee los primeros {MINUTOS_MUESTRA} minutos de cualquier libro sin cuenta</p>
 
             {!mobile && (
               <div className="inm-picker" role="group" aria-label="Elige a tu compañero de lectura">

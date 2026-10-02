@@ -5,9 +5,9 @@
 // usuarios se embebe bibliotecas_usuarios(leido).
 //
 // Modo MUESTRA (`guestMode`): se entra tanto sin sesión como con sesión pero sin
-// tener el libro en la biblioteca. Son 2 capítulos en ambos casos — para `anon` lo
-// aplica la RLS, y para `authenticated` lo aplica useLectorData recortando la lista
-// (la RLS no distingue quién adquirió qué).
+// tener el libro en la biblioteca. Son los primeros 10 minutos en ambos casos
+// (parrafos.en_muestra, migración 071): lo aplica la RLS y useLectorData filtra
+// por la misma columna.
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'

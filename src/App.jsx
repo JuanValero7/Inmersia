@@ -7,6 +7,7 @@ import { MANUAL_LIBRO_ID } from './lib/constants.js'
 import { queryKeys } from './lib/queries.js'
 import { LIMITE_PENDIENTES } from './hooks/useCompraLibro.js'
 import { tomarMuestra, volvioDeGoogleEnLibro } from './lib/progresoInvitado.js'
+import { contarPalabras } from './utils/readerHelpers.js'
 import useIsMobile from './hooks/useIsMobile.js'
 import { useSuperuser } from './hooks/useSuperuser.js'
 import { useGatoColor } from './hooks/useGatoColor.js'
@@ -70,33 +71,56 @@ function AuthRedirect({ openAuth }) {
   return <Navigate to="/" replace />
 }
 
-// Rescata la lectura de muestra de un invitado que acaba de registrarse: traduce
-// los capítulos que alcanzó a leer (anotados en lib/progresoInvitado.js) a
-// porcentaje, y ancla el progreso en el primer párrafo del capítulo donde iba
-// para que el lector lo devuelva ahí — useLectorData restaura la posición por
-// `ultimo_parrafo_id`, no por el porcentaje.
+// Rescata la lectura de muestra de un invitado que acaba de registrarse: ancla
+// el progreso donde iba, para que el lector lo devuelva ahí (useLectorData
+// restaura por `ultimo_parrafo_id`, no por el porcentaje), y calcula el
+// porcentaje en palabras, como el "% del libro" del lector.
 //
-// Se llama justo después de dar de alta el libro en la biblioteca, así que la
-// fila de progreso todavía no existe: por eso upsert y no update. Los índices de
-// capítulo del modo muestra sirven tal cual, porque la lista recortada son los
-// primeros capítulos del libro en el mismo orden.
+// Dónde va el ancla:
+//   · Terminó la muestra (llegó al aviso) → el primer párrafo que NO es de
+//     muestra, justo donde cortó. Desde la 071 la muestra suele acabar a mitad
+//     de un capítulo: saltar al capítulo siguiente se comía el resto del actual.
+//   · No la terminó → el inicio del capítulo en el que iba.
+// El porcentaje importa: la Cartelera desbloquea fichas según él, así que uno
+// inflado (contar como leído un capítulo a medias) destapa spoilers.
+//
+// Se llama justo después de dar de alta el libro en la biblioteca: la RLS ya
+// deja leerlo entero, y la fila de progreso todavía no existe (por eso upsert).
+// `caps` (lib/progresoInvitado.js) son capítulos completados; llegar al aviso
+// cuenta como completar el último capítulo de la muestra.
 async function rescatarMuestra(userId, libroId) {
   const caps = tomarMuestra(libroId)
   if (!caps) return
 
   const { data: capitulos } = await supabase.from('capitulos')
-    .select('id').eq('libro_id', libroId).order('numero')
-  const total = capitulos?.length ?? 0
-  if (!total) return
+    .select('id, palabras, en_muestra').eq('libro_id', libroId).order('numero')
+  if (!capitulos?.length) return
+  const termino = caps >= capitulos.filter(c => c.en_muestra).length
 
-  const { data: parrafo } = await supabase.from('parrafos')
-    .select('id').eq('capitulo_id', capitulos[Math.min(caps, total - 1)].id)
-    .order('numero').limit(1).maybeSingle()
+  let iCap = termino ? caps - 1 : caps
+  let leidas = capitulos.slice(0, iCap).reduce((s, c) => s + (c.palabras || 0), 0)
+  let ancla = null
 
+  if (termino) {
+    const { data: parrafos } = await supabase.from('parrafos')
+      .select('id, contenido, tipo, en_muestra').eq('capitulo_id', capitulos[iCap].id).order('numero')
+    for (const p of parrafos || []) {
+      if (!p.en_muestra) { ancla = p.id; break }
+      if (p.tipo !== 'separador') leidas += contarPalabras(p.contenido)
+    }
+    if (!ancla) iCap += 1   // la muestra acabó justo al final del capítulo
+  }
+  if (!ancla && iCap < capitulos.length) {
+    const { data: primero } = await supabase.from('parrafos')
+      .select('id').eq('capitulo_id', capitulos[iCap].id).order('numero').limit(1).maybeSingle()
+    ancla = primero?.id ?? null
+  }
+
+  const total = capitulos.reduce((s, c) => s + (c.palabras || 0), 0)
   const { error } = await supabase.from('progreso_lectura').upsert({
     user_id: userId, libro_id: libroId,
-    porcentaje: Math.min(100, Math.round((caps / total) * 100)),
-    ultimo_parrafo_id: parrafo?.id ?? null,
+    porcentaje: total ? Math.min(100, Math.round((leidas / total) * 100)) : 0,
+    ultimo_parrafo_id: ancla,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id,libro_id' })
   if (error) console.error('No se pudo rescatar la lectura de muestra:', error.message)
@@ -196,7 +220,7 @@ export default function App() {
 
   // Precargar el chunk del Lector en un momento ocioso: al abrir un libro el
   // JS ya está en caché y desaparece el spinner de descarga. Aplica también a
-  // invitados (pueden leer 2 capítulos desde la landing/tienda).
+  // invitados (pueden leer la muestra desde la landing/tienda).
   useEffect(() => {
     if (!authReady || inLector) return
     // Con ahorro de datos o en 2G no se precarga: el lector se baja al abrirlo.

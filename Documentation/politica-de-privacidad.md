@@ -57,7 +57,7 @@ Las cuentas creadas antes del 1 de octubre de 2026 declararon además su **géne
 
 ### 2.3 Datos de visitantes sin cuenta
 
-Puedes leer una muestra de dos capítulos sin registrarte. En ese caso no creamos ningún perfil: solo se guardan preferencias locales en tu navegador, como el gato que eliges en la página de inicio (ver sección 10) y quedan los registros técnicos habituales de nuestros proveedores de alojamiento, que incluyen la dirección IP (ver sección 5).
+Puedes leer una muestra de los primeros 10 minutos de cada libro sin registrarte. En ese caso no creamos ningún perfil: solo se guardan preferencias locales en tu navegador, como el gato que eliges en la página de inicio (ver sección 10) y quedan los registros técnicos habituales de nuestros proveedores de alojamiento, que incluyen la dirección IP (ver sección 5).
 
 ### 2.4 Análisis interno y recomendaciones
 

@@ -3,11 +3,12 @@
 // Cualquier cambio aquí debe hacerse también en ese archivo SQL.
 export const MANUAL_LIBRO_ID = '00000000-0000-4000-8000-000000000001'
 
-// Capítulos que se pueden leer sin tener el libro en la biblioteca.
-// Es el mismo número que aplican las políticas RLS al rol `anon`; acá se usa
-// para aplicar el mismo tope a un usuario AUTENTICADO que abre por URL un
-// libro que no adquirió (para `authenticated` la RLS no lo limita).
-export const CAPITULOS_MUESTRA = 2
+// Minutos de lectura de la muestra (invitados, y libros que no están en tu
+// biblioteca). La muestra son los primeros párrafos hasta 2300 palabras =
+// MINUTOS_MUESTRA × PALABRAS_POR_MINUTO (utils/formato.js). Quien decide qué
+// párrafos entran es la base de datos (parrafos.en_muestra, migración 071),
+// que aplica la RLS; acá solo se usa para los textos.
+export const MINUTOS_MUESTRA = 10
 
 // Versión de los documentos legales, igual a la fecha de "Última actualización"
 // de Documentation/terminos-y-condiciones.md y politica-de-privacidad.md.

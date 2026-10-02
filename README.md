@@ -98,8 +98,9 @@ y la Tienda se creyera escritorio dentro de la misma pantalla.
 | **Álbum** | `/album` | Barajitas coleccionables y estadísticas |
 | **Perfil** | `/perfil` | Carnet de socio, seguridad, legal y descarga de datos |
 
-Los invitados pueden leer los **2 primeros capítulos** de cualquier libro. Ese límite lo
-imponen las políticas RLS `capitulos_guest_preview` y `parrafos_guest_preview`, no la UI.
+Los invitados pueden leer los **primeros 10 minutos** de cualquier libro: los primeros párrafos
+hasta 2300 palabras (`parrafos.en_muestra`, migración 071). Ese límite lo imponen las políticas
+RLS `capitulos_guest_preview` y `parrafos_guest_preview`, no la UI.
 
 ---
 

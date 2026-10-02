@@ -821,9 +821,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
             </h2>
             <p style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 14, color: '#6b4c34', lineHeight: 1.55, margin: '0 0 24px' }}>
               {muestraMotivo === 'sin-adquirir' ? (
-                <>Ya leíste los dos capítulos de muestra.<br />Agrégalo desde la Tienda para continuar.</>
+                <>Ya leíste la muestra de este libro.<br />Agrégalo desde la Tienda para continuar.</>
               ) : (
-                <>Ya leíste los dos capítulos de muestra.<br />Crea tu cuenta gratis para continuar.</>
+                <>Ya leíste la muestra de este libro.<br />Crea tu cuenta gratis para continuar.</>
               )}
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>

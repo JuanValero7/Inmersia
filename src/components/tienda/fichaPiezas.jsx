@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { useOpenAuth } from '../../context/authModal.jsx'
 import { evento } from '../../lib/analytics.js'
 import { imgUrl } from '../../lib/img.js'
+import { MINUTOS_MUESTRA } from '../../lib/constants.js'
 import { CAT_COLOR } from './tiendaHelpers.jsx'
 
 // =============================================================
@@ -116,6 +117,6 @@ export function useAccionesFicha({ libro, user, yaAdquirido, bloqueado, onCompra
     etiquetaGuardar: yaAdquirido ? '✓ Ya está en tu biblioteca' : '+ A mi biblioteca',
     aviso: limite
       ? 'Termina tus lecturas pendientes antes de sumar libros nuevos.'
-      : !user ? 'Los dos primeros capítulos, sin crear cuenta.' : '',
+      : !user ? `Los primeros ${MINUTOS_MUESTRA} minutos, sin crear cuenta.` : '',
   }
 }
