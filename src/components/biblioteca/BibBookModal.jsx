@@ -2,6 +2,7 @@ import React from 'react'
 import { inmTint } from './clay/helpers.jsx'
 import { useResena } from '../../hooks/useResena.js'
 import { MANUAL_LIBRO_ID } from './constants.js'
+import { useAnteriormente, AvisoAnteriormente, RepasoHistorias } from './AnteriormenteEn.jsx'
 
 // =============================================================
 // ACUARELA · BibBookModal
@@ -35,12 +36,19 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
 
   // Reseña (lógica compartida con BibBookSheet, ver src/hooks/useResena.js)
   const { miResena, form, setForm, modoForm, setModoForm, enviando, submitResena } = useResena(book, user, esManual);
+  const repaso = useAnteriormente(book, user);
+  const { abierto: repasoAbierto, cerrar: cerrarRepaso } = repaso;
 
+  // Escape cierra primero las stories de «Anteriormente en…» y, si no hay, la ficha.
   React.useEffect(() => {
-    const h = (e) => { if (e.key === 'Escape') onClose(); };
+    const h = (e) => {
+      if (e.key !== 'Escape') return;
+      if (repasoAbierto) cerrarRepaso();
+      else onClose();
+    };
     document.addEventListener('keydown', h);
     return () => document.removeEventListener('keydown', h);
-  }, [onClose]);
+  }, [onClose, repasoAbierto, cerrarRepaso]);
 
   async function handleCategoryChange(e) {
     if (esManual) return;
@@ -110,6 +118,10 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
             )}
           </div>
 
+          {repaso.hay && (
+            <AvisoAnteriormente titulo={book.title} capitulos={repaso.capitulos} diasSinLeer={repaso.diasSinLeer} onAbrir={repaso.abrir} />
+          )}
+
           {book.summary && (
             <div>
               <button onClick={() => setResumenOpen(o => !o)}
@@ -152,6 +164,11 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
             </div>
           )}
         </div>
+
+        {repaso.abierto && (
+          <RepasoHistorias titulo={book.title} capitulos={repaso.capitulos}
+            onCerrar={repaso.cerrar} onSeguir={() => onOpenBook(book)} />
+        )}
       </div>
     </div>
   );

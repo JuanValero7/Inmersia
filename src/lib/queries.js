@@ -43,6 +43,8 @@ export const queryKeys = {
   // Hero "Seguir leyendo" de la Biblioteca (ver useBiblioteca)
   tiempoLibro: (userId, libroId) => ['tiempoLibro', userId, libroId],
   investigacionReciente: (libroId, pct) => ['investigacionReciente', libroId, pct],
+  // «Anteriormente en…» de la ficha (ver useRepasoQuery)
+  repaso: (userId, libroId, pct) => ['repaso', userId, libroId, pct],
   // Tienda (ver Documentation/tienda/plan-implementacion.md)
   salas: () => ['salas'],
   libroResumen: (libroId) => ['libroResumen', libroId],
@@ -225,6 +227,90 @@ export function useInvestigacionRecienteQuery(libroId, pct) {
       return { capitulo, items: data || [] }
     },
     enabled: !!libroId && pct > 0,
+    staleTime: STALE_TIME,
+  })
+}
+
+// «Anteriormente en…» de la ficha de la Biblioteca: los últimos capítulos
+// TERMINADOS (hasta REPASO_MAX_CAPS), con lo que ya desbloqueó la Cartelera,
+// así que no hay spoilers. Sin tabla propia; se pide al abrir la ficha y la
+// clave lleva el porcentaje, así que solo se vuelve a pedir si avanzó.
+//   · Ficción: imagen + titulares de hasta 3 hechos. Imagen: una escena del
+//     capítulo al azar → si no hay, un personaje o lugar que aparece en él →
+//     si tampoco, null (la story se pinta como tarjeta de papel).
+//   · No ficción: solo la infografía del capítulo; sin ella, el capítulo no entra.
+// diasSinLeer: desde la última sesión de este libro (null si no hay ninguna).
+export const REPASO_MAX_CAPS = 5
+
+const alAzar = (lista) => lista[Math.floor(Math.random() * lista.length)]
+
+export function useRepasoQuery(userId, libroId, pct, esFiccion) {
+  return useQuery({
+    queryKey: queryKeys.repaso(userId, libroId, pct),
+    queryFn: async () => {
+      const [capsRes, sesionRes] = await Promise.all([
+        supabase.from('capitulos').select('id, numero, titulo').eq('libro_id', libroId).order('numero'),
+        supabase.from('sesiones_lectura').select('started_at, ended_at')
+          .eq('user_id', userId).eq('libro_id', libroId)
+          .order('started_at', { ascending: false }).limit(1),
+      ])
+      if (capsRes.error) throw capsRes.error
+      if (sesionRes.error) throw sesionRes.error
+
+      const caps = capsRes.data || []
+      const ultima = sesionRes.data?.[0]
+      const marca = ultima ? new Date(ultima.ended_at || ultima.started_at).getTime() : null
+      const diasSinLeer = marca ? Math.floor((Date.now() - marca) / 86_400_000) : null
+
+      const hasta = capituloActualDesdePct(pct, caps.length) - 1
+      const rango = caps.filter(c => c.numero >= hasta - REPASO_MAX_CAPS + 1 && c.numero <= hasta)
+      if (!rango.length) return { capitulos: [], diasSinLeer }
+
+      const [itemsRes, escenasRes] = await Promise.all([
+        esFiccion
+          ? supabase.from('cartelera_items')
+            .select('seccion, nombre, capitulo_numero, imagen:biblioteca_media!imagen_media_id(url)')
+            .eq('libro_id', libroId).lte('capitulo_numero', hasta)
+            .in('seccion', ['hechos', 'personajes', 'lugares'])
+          : { data: [] },
+        supabase.from('elementos_interactivos')
+          .select('media:biblioteca_media!inner(url, tipo), parrafo:parrafos!inner(capitulo_id)')
+          .in('parrafo.capitulo_id', rango.map(c => c.id))
+          .eq('media.tipo', 'imagen'),
+      ])
+      if (itemsRes.error) throw itemsRes.error
+      if (escenasRes.error) throw escenasRes.error
+
+      const items = itemsRes.data || []
+      // Imagen de cada personaje/lugar: puede venir en cualquiera de sus filas
+      // ya desbloqueadas, no necesariamente en la de este capítulo.
+      const imagenDe = {}
+      for (const it of items) {
+        if (it.seccion !== 'hechos' && it.imagen?.url) imagenDe[`${it.seccion}:${it.nombre}`] ??= it.imagen.url
+      }
+
+      const capitulos = rango.map(c => {
+        const escenas = (escenasRes.data || []).filter(e => e.parrafo.capitulo_id === c.id).map(e => e.media.url)
+        const base = { numero: c.numero, titulo: c.titulo }
+        if (!esFiccion) return escenas.length ? { ...base, tipo: 'infografia', imagen: escenas[0] } : null
+
+        const titulares = items.filter(it => it.seccion === 'hechos' && it.capitulo_numero === c.numero)
+          .slice(0, 3).map(it => it.nombre)
+        if (escenas.length) return { ...base, tipo: 'imagen', imagen: alAzar(escenas), titulares }
+
+        const conImagen = items.filter(it => it.seccion !== 'hechos' && it.capitulo_numero === c.numero
+          && imagenDe[`${it.seccion}:${it.nombre}`])
+        if (conImagen.length) {
+          const it = alAzar(conImagen)
+          return { ...base, tipo: 'imagen', imagen: imagenDe[`${it.seccion}:${it.nombre}`], titulares,
+            etiqueta: { nombre: it.nombre, seccion: it.seccion } }
+        }
+        return { ...base, tipo: 'papel', titulares }
+      }).filter(Boolean)
+
+      return { capitulos, diasSinLeer }
+    },
+    enabled: !!userId && !!libroId && pct > 0 && pct < 100,
     staleTime: STALE_TIME,
   })
 }

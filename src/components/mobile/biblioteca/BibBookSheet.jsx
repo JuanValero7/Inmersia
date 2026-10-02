@@ -10,6 +10,7 @@ import React from 'react'
 import { INK, ACCENT, inmTint, BookCover } from './bibmHelpers.jsx'
 import { useResena } from '../../../hooks/useResena.js'
 import { MANUAL_LIBRO_ID } from '../../biblioteca/constants.js'
+import { useAnteriormente, AvisoAnteriormente, RepasoHistorias } from '../../biblioteca/AnteriormenteEn.jsx'
 
 function Estrellas({ valor, onChange }) {
   const [hover, setHover] = React.useState(0)
@@ -25,7 +26,7 @@ function Estrellas({ valor, onChange }) {
   )
 }
 
-function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook, onAssignCategory }) {
+function SheetBody({ book, user, categories, repaso, onOpenBook, onGoForo, onGoNotebook, onAssignCategory }) {
   const esManual = book.id === MANUAL_LIBRO_ID
   const c = book.color || '#5a3d28'
   const hasProgress = typeof book.progress === 'number'
@@ -109,6 +110,10 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
         )}
       </div>
 
+      {repaso.hay && (
+        <AvisoAnteriormente titulo={book.title} capitulos={repaso.capitulos} diasSinLeer={repaso.diasSinLeer} onAbrir={repaso.abrir} />
+      )}
+
       {book.summary && (
         <div>
           <div className="bibm-lbl">Resumen</div>
@@ -148,11 +153,19 @@ function SheetBody({ book, user, categories, onOpenBook, onGoForo, onGoNotebook,
 export default function BibBookSheet({ book, user, categories, onClose, onOpenBook, onGoForo, onGoNotebook, onAssignCategory, transparentBackdrop = false }) {
   const [entering, setEntering] = React.useState(true)
   React.useEffect(() => { const t = setTimeout(() => setEntering(false), 20); return () => clearTimeout(t) }, [])
+  const repaso = useAnteriormente(book, user)
+  const { abierto: repasoAbierto, cerrar: cerrarRepaso } = repaso
+
+  // Escape cierra primero las stories de «Anteriormente en…» y, si no hay, la hoja.
   React.useEffect(() => {
-    const h = (e) => { if (e.key === 'Escape') onClose() }
+    const h = (e) => {
+      if (e.key !== 'Escape') return
+      if (repasoAbierto) cerrarRepaso()
+      else onClose()
+    }
     document.addEventListener('keydown', h)
     return () => document.removeEventListener('keydown', h)
-  }, [onClose])
+  }, [onClose, repasoAbierto, cerrarRepaso])
 
   return (
     <div className="bibm-backdrop" onClick={onClose} style={transparentBackdrop ? { background: 'transparent', backdropFilter: 'none' } : undefined}>
@@ -165,9 +178,14 @@ export default function BibBookSheet({ book, user, categories, onClose, onOpenBo
           </button>
         </div>
         <div className="bibm-noscroll" style={{ overflowY: 'auto', padding: '4px 18px 26px', maxHeight: 'calc(100% - 64px)' }}>
-          <SheetBody book={book} user={user} categories={categories}
+          <SheetBody book={book} user={user} categories={categories} repaso={repaso}
             onOpenBook={onOpenBook} onGoForo={onGoForo} onGoNotebook={onGoNotebook} onAssignCategory={onAssignCategory} />
         </div>
+
+        {repaso.abierto && (
+          <RepasoHistorias titulo={book.title} capitulos={repaso.capitulos} movil
+            onCerrar={repaso.cerrar} onSeguir={() => onOpenBook(book)} />
+        )}
       </div>
     </div>
   )
