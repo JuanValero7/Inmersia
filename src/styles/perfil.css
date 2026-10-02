@@ -107,6 +107,8 @@
 .pf-field-row:last-child{ border-bottom:none; }
 .pf-field-val{ font-size:17px; font-weight:700; color:var(--ink); }
 .pf-field-locked{ display:flex; align-items:center; gap:9px; }
+/* Un correo largo se corta con «…»; el completo va en el title. */
+.pf-field-locked .pf-field-val{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pf-lock-note{ font-size:12.5px; font-weight:600; color:var(--muted); margin-top:5px;
   display:flex; align-items:center; gap:7px; }
 .pf-input{ width:100%; background:var(--cream); border:2px solid var(--ink); border-radius:12px;

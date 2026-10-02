@@ -12,8 +12,17 @@ import { imgUrl } from '../../../lib/img.js'
 
 // `comunidades`: el menú de Comunidades (ComunidadesMenu) ya montado por
 // la Biblioteca, que es quien tiene el usuario; va antes del perfil.
+// La barra completa pide ~960px de caja (logo 197 + buscador 264 + derecha
+// 421 + huecos). Debajo de BARRA_ANCHO_COMPACTO (ventana < ~1060px) el perfil
+// queda en la inicial, Comunidades pierde su mínimo de 196px (comunidades.css)
+// y el buscador encoge; si no, Salir se salía de la pantalla entre 821 y 1000px.
+const BARRA_ANCHO_COMPACTO = 1000
+
 function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, onGoPerfil, onSignOut, comunidades = null }) {
   const ink = INK;
+  const [barraRef, ancho] = useAnchoContenedor();
+  // ancho 0 = todavía sin medir; asumimos holgado para no parpadear.
+  const compacto = ancho !== 0 && ancho < BARRA_ANCHO_COMPACTO;
   const bar = {
     display: 'flex', alignItems: 'center', gap: 16, borderRadius: 22, padding: '13px 17px',
     backgroundColor: '#F2792A',
@@ -27,18 +36,19 @@ function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, on
   };
   return (
     <div style={{ padding: '22px 32px 0' }}>
-      <div style={bar}>
+      <div ref={barraRef} className={'inm-hdr' + (compacto ? ' compacto' : '')} style={bar}>
         <img src="/assets/inmersia-logo2.png" alt="Inmersia" style={{ height: 40, width: 'auto', flexShrink: 0, marginLeft: 4 }} />
-        <div style={{ flex: 1, maxWidth: 620, marginLeft: 6, display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,253,247,0.9)', border: `2px solid ${ink}`, borderRadius: 999, padding: '10px 18px', boxShadow: `1.5px 2px 0 ${ink}14` }}>
+        <div style={{ flex: 1, minWidth: 0, maxWidth: 620, marginLeft: 6, display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,253,247,0.9)', border: `2px solid ${ink}`, borderRadius: 999, padding: '10px 18px', boxShadow: `1.5px 2px 0 ${ink}14` }}>
           <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={ink} strokeWidth="2.4"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35" strokeLinecap="round"/></svg>
-          <input value={search} onChange={e => onSearch(e.target.value)} onKeyDown={onSearchKeyDown} placeholder="Buscar por título, autor… (Enter para buscar)"
+          <input value={search} onChange={e => onSearch(e.target.value)} onKeyDown={onSearchKeyDown} placeholder={compacto ? 'Buscar título o autor' : 'Buscar por título, autor… (Enter para buscar)'}
             style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontWeight: 600, fontSize: 15, color: ink }} />
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 11, flexShrink: 0 }}>
           {comunidades}
-          <button onClick={onGoPerfil} style={{ ...navBtn, padding: '7px 15px 7px 8px' }} title="Mi perfil">
+          <button onClick={onGoPerfil} style={{ ...navBtn, padding: compacto ? '7px 8px' : '7px 15px 7px 8px' }}
+            title={compacto && displayName ? `Mi perfil · ${displayName}` : 'Mi perfil'} aria-label="Mi perfil">
             <span style={{ width: 27, height: 27, borderRadius: '50%', background: 'linear-gradient(135deg, #F2792A, #6f9457)', color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, border: `2px solid ${ink}` }}>{inicial}</span>
-            <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
+            {!compacto && <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>}
           </button>
           <button onClick={onSignOut} style={{ ...navBtn, padding: '8px 13px' }} title="Salir">
             <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" strokeLinecap="round" strokeLinejoin="round"/></svg>

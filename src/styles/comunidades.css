@@ -85,6 +85,8 @@
 /* ── Menú de escritorio (barra naranja) ── */
 .com-menu { position: relative; z-index: 40; display: flex; align-items: center; gap: 10px; }
 .com-select { min-width: 196px; justify-content: space-between; }
+/* Barra estrecha (InmHeader en modo compacto): mide lo que su texto. */
+.inm-hdr.compacto .com-select { min-width: 0; }
 .com-select.open { background: var(--sand); }
 .com-select-lbl { display: inline-flex; align-items: center; gap: 8px; }
 

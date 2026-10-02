@@ -156,7 +156,7 @@ export function SecDatos({ nombre, apellido, email, miembroDesde, cargando, onSa
       <div className="pf-field-row">
         <label className="pf-field-label">Correo electrónico</label>
         <div className="pf-field-locked">
-          <span className="pf-field-val">{email}</span>
+          <span className="pf-field-val" title={email}>{email}</span>
           <span style={{ color: 'var(--muted)' }} title="No editable">{I.lock}</span>
         </div>
         <div className="pf-lock-note">El correo es tu identificador de acceso y no se puede modificar.</div>
