@@ -179,7 +179,13 @@
   mask-image: linear-gradient(90deg, transparent, #000 5%, #000 92%, transparent);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 92%, transparent); }
 .inm-track { display: flex; gap: 22px; width: max-content; animation: inm-slide 55s linear infinite; }
-.inm-marquee:hover .inm-track, .inm-marquee:focus-within .inm-track { animation-play-state: paused; }
+/* Pausa solo con ratón o teclado. En pantalla táctil el :hover queda
+   «pegado» tras pasar el dedo y el :focus-within tras tocar una portada,
+   y la cinta se quedaba parada para siempre. */
+@media (hover: hover) {
+  .inm-marquee:hover .inm-track { animation-play-state: paused; }
+}
+.inm-marquee:has(:focus-visible) .inm-track { animation-play-state: paused; }
 @keyframes inm-slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .inm-plank { grid-column: 1 / -1; height: 16px; border: 2px solid var(--inm-ink); border-radius: 5px;
   background: linear-gradient(180deg, var(--inm-wood) 0 55%, var(--inm-wood-dark) 55%); box-shadow: 0 8px 14px rgba(40, 26, 12, .18); }

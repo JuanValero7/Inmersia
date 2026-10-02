@@ -77,7 +77,7 @@ function HojaFiltros({ categorias, seleccion, onAlternar, onQuitar, total, onCer
 }
 
 export default function TiendaPrincipalMobile({ catalogo, loading, user, gatoColor = 'negro', tieneLibro, bloqueado = false, onComprar, onEmpezarLeer, onSalir, onIrCatalogo, onIrSala, porLaCalle = false }) {
-  const { temporada, temporadaLibros, salas, librosDe, carriles } = usePortadaTienda(catalogo)
+  const { temporada, temporadaLibros, salas, librosDe, carriles } = usePortadaTienda(catalogo, { claves: CARRILES_MOVIL, porCarril: MAX_POR_CARRIL })
   const { libro: fichaLibro, abrir, cerrar } = useFichaEnUrl(catalogo)
   const [tipo, setTipo] = useState('todos')
   const [buscando, setBuscando] = useState(false)
@@ -102,7 +102,6 @@ export default function TiendaPrincipalMobile({ catalogo, loading, user, gatoCol
   const cancelarBusqueda = () => { filtro.handleQChange(''); setBuscando(false) }
   const limpiar = () => { filtro.resetFiltro(setTipo); setBuscando(false) }
 
-  const carrilesMovil = carriles.filter(c => CARRILES_MOVIL.includes(c.clave))
 
   const buscador = buscando && (
     <>
@@ -187,14 +186,14 @@ export default function TiendaPrincipalMobile({ catalogo, loading, user, gatoCol
               </section>
             )}
 
-            {carrilesMovil.map(c => (
+            {carriles.map(c => (
               <section key={c.clave} className="tpm-sec" aria-label={c.titulo}>
                 <div className="tpm-sec-cab">
                   <h2>{c.titulo}</h2>
                   <p>{c.subtitulo}</p>
                 </div>
                 <div className="tpm-pista tpm-carril">
-                  {c.libros.slice(0, MAX_POR_CARRIL).map(l => (
+                  {c.libros.map(l => (
                     <button key={l.id} type="button" className="tp-libro" onClick={() => abrir(l)}
                       aria-label={`${l.titulo}, ${l.autor}${tieneLibro(l.id) ? ' (ya está en tu biblioteca)' : ''}`}>
                       {tieneLibro(l.id) && <span className="tp-check" aria-hidden="true">✓</span>}

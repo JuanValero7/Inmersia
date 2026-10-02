@@ -23,7 +23,19 @@ const MIN_RATIO = 0.45      // no baja del 45% del tamaño base
 const PASO = 0.94           // reducción por paso de ajuste fino
 const MAX_PASOS = 6
 
-export default function CoverTitle({ title, size, className = 'book-title' }) {
+// El título va en crema sobre la ilustración. En los libros de color claro
+// (el ámbar #F5A623) la portada también es clara y no se leía: ahí va en
+// marrón oscuro (.book-title-oscuro en tienda.css). `fondo` es libro.color.
+const LUMINANCIA_CLARA = 0.55
+function esClaro(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '')
+  if (!m) return false
+  const n = parseInt(m[1], 16)
+  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255
+  return lum > LUMINANCIA_CLARA
+}
+
+export default function CoverTitle({ title, size, fondo, className = 'book-title' }) {
   const ref = useRef(null)
 
   useLayoutEffect(() => {
@@ -95,5 +107,5 @@ export default function CoverTitle({ title, size, className = 'book-title' }) {
     return () => { cancelado = true; ro.disconnect() }
   }, [title, size])
 
-  return <span ref={ref} className={className}>{title}</span>
+  return <span ref={ref} className={esClaro(fondo) ? `${className} book-title-oscuro` : className}>{title}</span>
 }

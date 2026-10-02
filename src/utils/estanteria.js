@@ -6,9 +6,10 @@
 //
 // Reglas (plan de la tienda, 1.3):
 //   · 2 baldas por estantería, 5 libros por balda.
-//   · Con 3 o más libros en la balda, uno va de lomo: el de mayor
-//     `orden` (el menos destacado de esa balda), en una posición
-//     aleatoria. Con menos de 3, todos de frente.
+//   · Con 3 o más libros en la balda, uno va de lomo: el de título más
+//     corto, para que entre en el lomo (si empatan, el de mayor `orden`,
+//     el menos destacado), en una posición aleatoria. Con menos de 3,
+//     todos de frente.
 // ─────────────────────────────────────────────────────────────
 
 export const LIBROS_POR_BALDA = 5
@@ -17,7 +18,7 @@ export const MIN_LIBROS_PARA_LOMO = 3
 const POR_ESTANTERIA = LIBROS_POR_BALDA * BALDAS_POR_ESTANTERIA
 
 /**
- * @template {{ orden?: number|null }} L
+ * @template {{ titulo?: string, orden?: number|null }} L
  * @param {L[]} libros  los de la sala, ya en su orden
  * @param {(clave: string, huecos: number) => number} posicionLomo
  *   índice (0..huecos-1) donde va el lomo en la balda `clave` («pagina-balda»)
@@ -41,9 +42,14 @@ export function armarEstanterias(libros, posicionLomo) {
 
 function armarBalda(tramo, clave, posicionLomo) {
   if (tramo.length < MIN_LIBROS_PARA_LOMO) return tramo.map(libro => ({ libro, lomo: false }))
-  // El de mayor orden; si empatan, el último en aparecer.
+  // El de título más corto; si empatan, el de mayor orden y, si también
+  // empatan, el último en aparecer.
+  const largo = l => (l.titulo || '').length
   let iLomo = 0
-  tramo.forEach((l, i) => { if ((l.orden ?? 0) >= (tramo[iLomo].orden ?? 0)) iLomo = i })
+  tramo.forEach((l, i) => {
+    const elegido = tramo[iLomo]
+    if (largo(l) < largo(elegido) || (largo(l) === largo(elegido) && (l.orden ?? 0) >= (elegido.orden ?? 0))) iLomo = i
+  })
   const frente = tramo.filter((_, i) => i !== iLomo).map(libro => ({ libro, lomo: false }))
   const huecos = frente.length + 1
   const pos = Math.min(Math.max(0, Math.floor(posicionLomo(clave, huecos))), huecos - 1)

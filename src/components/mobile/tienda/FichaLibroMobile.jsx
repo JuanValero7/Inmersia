@@ -33,6 +33,8 @@ export default function FichaLibroMobile({ libro, user, yaAdquirido = false, blo
   const datos = useFichaLibro(libro)
   const acciones = useAccionesFicha({ libro, user, yaAdquirido, bloqueado, onComprar, onEmpezarLeer, origen })
   const [avance, setAvance] = useState(false)
+  // En la sala el avance ya se está viendo (la historia), así que la ficha no lo ofrece.
+  const conAvance = origen !== 'sala' && datos.escenas.length > 0
 
   useEffect(() => { evento('ficha_abierta', { libro: libro.slug, origen }) }, [libro.slug, origen])
 
@@ -50,7 +52,7 @@ export default function FichaLibroMobile({ libro, user, yaAdquirido = false, blo
         <div className="flm-cabecera" style={cabecera}>
           {datos.sala && <span className="flm-sala">{datos.sala.nombre}</span>}
           <button type="button" className="flm-cerrar" onClick={onCerrar} aria-label="Cerrar la ficha"><IconoCerrar /></button>
-          {datos.escenas.length > 0 && (
+          {conAvance && (
             <button type="button" className="flm-avance" onClick={abrirAvance}>
               <i><IconoPlay /></i>Ver avance
             </button>

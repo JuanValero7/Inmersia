@@ -363,13 +363,14 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
           </div>
           <div>
             <h2 className="inm-closing-h">Tu próximo libro te está esperando.</h2>
-            <div className="inm-final-ctas" onMouseEnter={despertar} onMouseLeave={dormir} onFocus={despertar}>
-              {/* Escritorio: "Entra ahora" (registro) + el catálogo. Móvil: solo
-                  "Crear cuenta"; la barra fija de abajo ya lleva "Entra ahora". */}
-              {!mobile && <a className="inm-clay-btn inm-clay-lg" href="#registro" onClick={entrar('cierre')}>Entra ahora {flecha}</a>}
-              {!mobile && <a className="inm-clay-btn inm-clay-lg inm-clay-bordo" href="/tienda" onClick={verLibros('cierre')}>Ver todos los libros</a>}
-              {mobile && <a className="inm-clay-btn inm-clay-lg inm-clay-bordo" href="#registro" onClick={go('registro', 'cierre')}>Crear cuenta</a>}
-            </div>
+            {/* Escritorio: "Entra ahora" (registro) + el catálogo. Móvil: nada;
+                la barra fija de abajo ya lleva "Entra ahora". */}
+            {!mobile && (
+              <div className="inm-final-ctas" onMouseEnter={despertar} onMouseLeave={dormir} onFocus={despertar}>
+                <a className="inm-clay-btn inm-clay-lg" href="#registro" onClick={entrar('cierre')}>Entra ahora {flecha}</a>
+                <a className="inm-clay-btn inm-clay-lg inm-clay-bordo" href="/tienda" onClick={verLibros('cierre')}>Ver todos los libros</a>
+              </div>
+            )}
           </div>
         </div>
       </section>

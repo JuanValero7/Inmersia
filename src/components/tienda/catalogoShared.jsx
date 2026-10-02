@@ -52,7 +52,7 @@ export function CoverCard({ libro, grande = false }) {
           ? <img className="book-art-img" src={imgUrl(libro.portada_url, { width: 300 })} alt={libro.titulo} loading="lazy" />
           : <div className="book-art-empty" />}
         <span className={clsx('book-scribble', autorSizeClass(libro.autor))}>{libro.autor}</span>
-        <CoverTitle title={libro.titulo} />
+        <CoverTitle title={libro.titulo} fondo={libro.color} />
       </div>
       <div className="book-base" />
       <div className="book-pages" />

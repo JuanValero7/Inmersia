@@ -1,16 +1,18 @@
 /* ════════════════════════════════════════════════════════════════
    SALA · móvil (SalaMobile.jsx)
+   .sm-sala la raíz (no «.sm» a secas: choca con el sello .com-sello.sm
+          de Comunidades y lo estiraba a 100vh en la Biblioteca)
    .sm-*  la sala: título, baldas con etiquetas de papel, numerador,
           otras salas (tarjetas .tpm-salas de tienda.mobile.css)
    .smh-* la historia a pantalla completa (núcleo .hist-* en historia.css)
    Capas: historia 310 · ficha (.flm) 330 · aviso 340 · registro 3000.
    ════════════════════════════════════════════════════════════════ */
 
-.sm{min-height:100vh;min-height:100dvh;color:#fbf0dc;font-family:'Poppins',system-ui,sans-serif;
+.sm-sala{min-height:100vh;min-height:100dvh;color:#fbf0dc;font-family:'Poppins',system-ui,sans-serif;
   padding-bottom:env(safe-area-inset-bottom,0px);
   /* 4 portadas + 1 lomo (28) + 4 huecos (8) + márgenes: entran en el ancho */
   --cw:min(calc((100vw - 108px) / 4), 90px);}
-.sm *{box-sizing:border-box;}
+.sm-sala *{box-sizing:border-box;}
 .sm-sin-sala{background:#241812;}
 .sm-estado{margin:0;padding:60px 16px;text-align:center;color:#f5e9d6;}
 

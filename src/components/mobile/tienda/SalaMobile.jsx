@@ -232,7 +232,7 @@ export default function SalaMobile({ slug, catalogo, loading, user, tieneLibro, 
 
   if (isError || !sala || loading) {
     return (
-      <div className="sm sm-sin-sala">
+      <div className="sm-sala sm-sin-sala">
         {cabecera}
         <p className="sm-estado">{isError ? 'No pudimos abrir la sala.' : 'Abriendo la sala…'}</p>
       </div>
@@ -243,7 +243,7 @@ export default function SalaMobile({ slug, catalogo, loading, user, tieneLibro, 
   const baldas = estanterias[pagina] || []
 
   return (
-    <div className="sm" style={{ background: pared }}>
+    <div className="sm-sala" style={{ background: pared }}>
       {cabecera}
 
       <div className="sm-titulo">

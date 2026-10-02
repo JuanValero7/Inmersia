@@ -36,6 +36,8 @@ export default function FichaLibro({ libro, user, yaAdquirido = false, bloqueado
   const datos = useFichaLibro(libro)
   const acciones = useAccionesFicha({ libro, user, yaAdquirido, bloqueado, onComprar, onEmpezarLeer, origen })
   const [avance, setAvance] = useState(false)
+  // En la sala el avance ya se está viendo (la historia), así que la ficha no lo ofrece.
+  const conAvance = origen !== 'sala' && datos.escenas.length > 0
   const cerrarRef = useRef(null)
 
   useEffect(() => { evento('ficha_abierta', { libro: libro.slug, origen }) }, [libro.slug, origen])
@@ -69,7 +71,7 @@ export default function FichaLibro({ libro, user, yaAdquirido = false, bloqueado
           <button ref={cerrarRef} type="button" className="fl-cerrar" onClick={onCerrar} aria-label="Cerrar la ficha">
             <IconoCerrar />
           </button>
-          {datos.escenas.length > 0 && (
+          {conAvance && (
             <button type="button" className="fl-avance" onClick={abrirAvance}>
               <i><IconoPlay /></i>
               Ver el avance · {datos.escenas.length} escenas

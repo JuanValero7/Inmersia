@@ -14,7 +14,15 @@ describe('armarEstanterias', () => {
     expect(e[1][1]).toHaveLength(5)
   })
 
-  it('pone de lomo el de mayor orden de cada balda', () => {
+  it('pone de lomo el de título más corto de cada balda', () => {
+    const balda5 = ['Robinson Crusoe', 'Bambi', 'El banquete', 'Meditaciones', 'De profundis']
+      .map((titulo, i) => ({ id: `l${i + 1}`, orden: (i + 1) * 10, titulo }))
+    const [[balda]] = armarEstanterias(balda5, alPrincipio)
+    expect(balda[0].libro.titulo).toBe('Bambi')
+    expect(balda[0].lomo).toBe(true)
+  })
+
+  it('a igual largo de título, va de lomo el de mayor orden', () => {
     const [[balda]] = armarEstanterias(libros(5), alPrincipio)
     expect(balda[0]).toEqual({ libro: { id: 'l5', orden: 50 }, lomo: true })
     expect(balda.filter(x => x.lomo)).toHaveLength(1)

@@ -49,7 +49,7 @@ export function BookCover({ book, h = 150, fill = false, fillW = 105 }) {
           ? <img className="book-art-img" src={imgUrl(book.cover, { width: 320 })} alt={book.title} loading="lazy" />
           : <div className="book-art-empty" />}
         <span className="book-scribble" style={{ fontSize: autorFontSize(fw, book.author) }}>{book.author}</span>
-        <CoverTitle title={book.title} size={tituloBaseFontSize(fw)} />
+        <CoverTitle title={book.title} size={tituloBaseFontSize(fw)} fondo={book.color} />
       </div>
       <div className="book-base" />
       <div className="book-pages" />

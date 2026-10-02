@@ -296,6 +296,8 @@
   color:#f7efdd; text-shadow:0 2px 0 rgba(58,36,20,0.28);
   display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden;
 }
+/* Libros de color claro (CoverTitle, prop `fondo`): título oscuro. */
+.book-title.book-title-oscuro{ color:#3a2414; text-shadow:0 1px 0 rgba(255,246,228,0.55); }
 /* Los títulos largos los achica CoverTitle midiendo el texto real; acá solo
    queda el tamaño base y el line-clamp de arriba como tope duro (3 líneas). */
 

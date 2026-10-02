@@ -24,6 +24,7 @@ import '../../styles/tienda-principal.css'
 // =============================================================
 
 const MAX_POR_CARRIL = 8
+const CARRILES = ['empezar', 'tarde', 'nuevos']
 
 const diaYMes = (fecha) => new Date(`${fecha}T12:00:00`).toLocaleDateString('es', { day: 'numeric', month: 'long' })
 
@@ -66,7 +67,7 @@ function Carril({ titulo, subtitulo, libros, tieneLibro, onAbrir }) {
 }
 
 export default function TiendaPrincipal({ catalogo, loading, user, gatoColor = 'negro', tieneLibro, bloqueado = false, onComprar, onEmpezarLeer, onSalir, onIrCatalogo, onIrSala, porLaCalle = false }) {
-  const { temporada, temporadaLibros, salas: salasPasillo, librosDe, carriles } = usePortadaTienda(catalogo)
+  const { temporada, temporadaLibros, salas: salasPasillo, librosDe, carriles } = usePortadaTienda(catalogo, { claves: CARRILES, porCarril: MAX_POR_CARRIL })
   const { libro: fichaLibro, abrir, cerrar } = useFichaEnUrl(catalogo)
   const [tipo, setTipo] = useState('todos')
   const [verFiltros, setVerFiltros] = useState(false)
@@ -173,7 +174,7 @@ export default function TiendaPrincipal({ catalogo, loading, user, gatoColor = '
             )}
 
             {carriles.map(c => (
-              <Carril key={c.clave} titulo={c.titulo} subtitulo={c.subtitulo} libros={c.libros.slice(0, MAX_POR_CARRIL)} tieneLibro={tieneLibro} onAbrir={abrir} />
+              <Carril key={c.clave} titulo={c.titulo} subtitulo={c.subtitulo} libros={c.libros} tieneLibro={tieneLibro} onAbrir={abrir} />
             ))}
 
             <section className="tp-todo">

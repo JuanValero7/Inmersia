@@ -30,7 +30,7 @@ function BookCover({ book, h = 174 }) {
           ? <img className="book-art-img" src={imgUrl(book.cover, { width: Math.round(w * 2) })} alt={book.title} loading="lazy" />
           : <div className="book-art-empty" />}
         <span className="book-scribble" style={{ fontSize: autorFontSize(w, book.author) }}>{book.author}</span>
-        <CoverTitle title={book.title} size={tituloBaseFontSize(w)} />
+        <CoverTitle title={book.title} size={tituloBaseFontSize(w)} fondo={book.color} />
       </div>
       <div className="book-base" />
       <div className="book-pages" />
