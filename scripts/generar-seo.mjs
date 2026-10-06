@@ -44,6 +44,8 @@
 // desplegar igualmente durante una caída: SEO_SKIP=1 npm run build
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
+import { parseMarkdown, INLINE_RE } from '../src/components/legal/parseMarkdown.js'
+import { SOBRE } from '../src/content/sobre.js'
 
 const DIST   = 'dist'
 const ORIGEN = 'https://www.inmersia.io'
@@ -227,9 +229,124 @@ function bloqueCatalogo(lista, titulo, intro) {
         </ul>
         <!-- Google comprueba que la portada enlace la política de privacidad
              para verificar la marca del inicio de sesión. -->
-        <p><a href="${ORIGEN}/privacidad">Política de Privacidad</a> · <a href="${ORIGEN}/terminos">Términos y Condiciones</a> · <a href="${ORIGEN}/impressum">Impressum</a></p>
+        <p><a href="${ORIGEN}/privacidad">Política de Privacidad</a> · <a href="${ORIGEN}/terminos">Términos y Condiciones</a> · <a href="${ORIGEN}/impressum">Impressum</a> · <a href="${ORIGEN}${SOBRE.ruta}">Sobre Inmersia</a></p>
       </article>
     </div>`
+}
+
+// ── Páginas sueltas: /sobre y los documentos legales ─────────────────────
+// Hasta ahora /impressum, /privacidad y /terminos caían al index.html de la
+// home, así que un rastreador sin JavaScript leía el catálogo en vez del
+// Impressum. El verificador del programa de startups de Google tiene que poder
+// ver en el HTML crudo quién está detrás (negocio, equipo y producto): por eso
+// /sobre y los legales salen ahora con su propio contenido estático.
+
+const ESTILO_PAGINA = `<style>
+        #seo-estatico { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 4rem;
+                        color: #4a3622; font-family: Georgia, serif; }
+        #seo-estatico h1, #seo-estatico h2, #seo-estatico h3 {
+                        font-family: 'Playfair Display', Georgia, serif; line-height: 1.25; }
+        #seo-estatico p, #seo-estatico li { line-height: 1.7; }
+        #seo-estatico img { max-width: 100%; height: auto; border-radius: 12px; }
+        #seo-estatico a { color: #8b4d2a; }
+        #seo-estatico table { border-collapse: collapse; width: 100%; }
+        #seo-estatico th, #seo-estatico td { text-align: left; padding: .4rem .6rem;
+                        border-bottom: 1px solid rgba(74,54,34,.15); vertical-align: top; }
+      </style>`
+
+const PIE_PAGINAS = `<p><a href="${ORIGEN}/">Inmersia</a> · <a href="${ORIGEN}/terminos">Términos y Condiciones</a> · ` +
+  `<a href="${ORIGEN}/privacidad">Política de Privacidad</a> · <a href="${ORIGEN}/impressum">Impressum</a> · ` +
+  `<a href="${ORIGEN}${SOBRE.ruta}">Sobre Inmersia</a></p>`
+
+const bloquePagina = (cuerpo) => `<div id="seo-estatico">
+      ${ESTILO_PAGINA}
+      <article>
+        ${cuerpo}
+        ${PIE_PAGINAS}
+      </article>
+    </div>`
+
+// Lo inline del markdown legal, igual que renderInline() de LegalModal: los
+// enlaces a los otros .md pasan a ser sus rutas públicas.
+function inlineHtml(texto) {
+  let out = '', ultimo = 0, m
+  INLINE_RE.lastIndex = 0
+  while ((m = INLINE_RE.exec(texto))) {
+    out += esc(texto.slice(ultimo, m.index))
+    if (m[1] !== undefined) {
+      const href = /\.md$/i.test(m[2]) && m[2].includes('privacidad') ? `${ORIGEN}/privacidad`
+        : /\.md$/i.test(m[2]) && m[2].includes('terminos') ? `${ORIGEN}/terminos` : m[2]
+      out += `<a href="${esc(href)}">${esc(m[1])}</a>`
+    } else if (m[3] !== undefined) out += `<strong>${esc(m[3])}</strong>`
+    else if (m[4] !== undefined) out += `<em>${esc(m[4])}</em>`
+    ultimo = INLINE_RE.lastIndex
+  }
+  return out + esc(texto.slice(ultimo))
+}
+
+function docHtml(raw) {
+  return parseMarkdown(raw).map((b) => {
+    if (b.type === 'hr') return '<hr />'
+    if (/^h[1-4]$/.test(b.type)) return `<${b.type}>${inlineHtml(b.text)}</${b.type}>`
+    if (b.type === 'ul' || b.type === 'ol')
+      return `<${b.type}>${b.items.map(it => `<li>${inlineHtml(it)}</li>`).join('')}</${b.type}>`
+    if (b.type === 'table')
+      return `<table><thead><tr>${b.header.map(c => `<th>${inlineHtml(c)}</th>`).join('')}</tr></thead>` +
+        `<tbody>${b.rows.map(r => `<tr>${r.map(c => `<td>${inlineHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
+    return `<p>${inlineHtml(b.text).replace(/\n/g, '<br />')}</p>`
+  }).join('\n        ')
+}
+
+function sobreHtml() {
+  const { fundador: f, proceso: pr, modelo: mo, contacto: c, english: en } = SOBRE
+  const parrafos = (lista) => lista.map(t => `<p>${esc(t)}</p>`).join('')
+  return `<h1>${esc(SOBRE.titulo)}</h1>
+        ${parrafos(SOBRE.intro)}
+        <h2>${esc(f.titulo)}</h2>
+        <img src="${ORIGEN}${esc(f.foto)}" alt="${esc(f.fotoAlt)}" width="240" />
+        <p><strong>${esc(f.nombre)}</strong>, ${esc(f.cargo.toLowerCase())}.</p>
+        ${parrafos(f.bio)}
+        <p><em>${esc(f.credito)}</em></p>
+        <h2>${esc(pr.titulo)}</h2>
+        <p>${esc(pr.intro)}</p>
+        <ol>${pr.pasos.map(x => `<li><strong>${esc(x.titulo)}.</strong> ${esc(x.texto)}</li>`).join('')}</ol>
+        <p>${esc(pr.cierre)}</p>
+        <h2>${esc(mo.titulo)}</h2>
+        <p>${esc(mo.texto)}</p>
+        <h2>${esc(c.titulo)}</h2>
+        <ul><li>Correo: <a href="mailto:${esc(c.email)}">${esc(c.email)}</a></li>` +
+        c.enlaces.map(e => `<li>${esc(e.label)}: <a href="${esc(e.href)}">${esc(e.texto)}</a></li>`).join('') + `</ul>
+        <section lang="en"><h2>${esc(en.titulo)}</h2>${parrafos(en.parrafos)}</section>`
+}
+
+// schema.org/Organization con fundador: lo mismo que dice la página, en el
+// formato que leen Google y los validadores automáticos.
+const jsonLdOrganizacion = () => `<script type="application/ld+json">${JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Inmersia',
+  url: `${ORIGEN}/`,
+  logo: `${ORIGEN}/icons/icon-512.png`,
+  email: SOBRE.contacto.email,
+  foundingDate: '2026-04-27',
+  foundingLocation: 'Berlin, Germany',
+  founder: { '@type': 'Person', name: SOBRE.fundador.nombre, jobTitle: SOBRE.fundador.cargo },
+  sameAs: SOBRE.contacto.enlaces.filter(e => !e.href.includes('/in/')).map(e => e.href),
+}).replace(/</g, '\\u003c')}</script>`
+
+function paginaSuelta(plantilla, { ruta, titulo, desc, cuerpo, head = '' }) {
+  const url = `${ORIGEN}${ruta}`
+  return plantilla
+    .replace('<title>Inmersia — Lee, investiga y colecciona</title>', `<title>${esc(titulo)}</title>`)
+    .replace('<link rel="canonical" href="https://www.inmersia.io/" />',
+      `<link rel="canonical" href="${esc(url)}" />${head ? `\n    ${head}` : ''}`)
+    .replace('<div id="seo-estatico"></div>', bloquePagina(cuerpo))
+    .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${esc(desc)}" />`)
+    .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${esc(titulo)}" />`)
+    .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${esc(desc)}" />`)
+    .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${esc(url)}" />`)
+    .replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${esc(titulo)}" />`)
+    .replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${esc(desc)}" />`)
 }
 
 function paginaLibro(plantilla, l) {
@@ -285,6 +402,7 @@ function sitemap(lista) {
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     [ url(`${ORIGEN}/`, '1.0', 'weekly'),
       url(`${ORIGEN}/tienda`, '0.9', 'weekly'),
+      url(`${ORIGEN}${SOBRE.ruta}`, '0.5', 'monthly'),
       ...lista.map(l => url(`${ORIGEN}/libro/${l.slug}`, '0.8', 'monthly')),
     ].join('\n') + '\n</urlset>\n'
 }
@@ -335,10 +453,32 @@ const tienda = plantilla
 await mkdir(join(DIST, 'tienda'), { recursive: true })
 await writeFile(join(DIST, 'tienda', 'index.html'), tienda, 'utf8')
 
+// /sobre y los legales, también desde la plantilla limpia.
+const LEGALES = [
+  { ruta: '/terminos',   archivo: 'terminos-y-condiciones.md', titulo: 'Términos y Condiciones · Inmersia',
+    desc: 'Términos y condiciones de uso de Inmersia.' },
+  { ruta: '/privacidad', archivo: 'politica-de-privacidad.md', titulo: 'Política de Privacidad · Inmersia',
+    desc: 'Qué datos trata Inmersia, para qué y con qué derechos.' },
+  { ruta: '/impressum',  archivo: 'impressum.md',              titulo: 'Impressum · Inmersia',
+    desc: 'Impressum de Inmersia (§ 5 DDG).' },
+]
+const sueltas = [
+  { ruta: SOBRE.ruta, titulo: `${SOBRE.titulo} · Inmersia`, desc: SOBRE.descripcion,
+    cuerpo: sobreHtml(), head: jsonLdOrganizacion() },
+  ...await Promise.all(LEGALES.map(async (d) => ({
+    ...d, cuerpo: docHtml(await readFile(join('Documentation', d.archivo), 'utf8')),
+  }))),
+]
+for (const pg of sueltas) {
+  const dir = join(DIST, pg.ruta.slice(1))
+  await mkdir(dir, { recursive: true })
+  await writeFile(join(dir, 'index.html'), paginaSuelta(plantilla, pg), 'utf8')
+}
+
 await writeFile(join(DIST, 'sitemap.xml'), sitemap(lista), 'utf8')
 
 const sinHero  = lista.filter(l => !l?.metadata?.hero_url).length
 const sinTexto = lista.filter(l => !l.parrafos?.length).length
-console.log(`[seo] ${lista.length} libros · sitemap con ${lista.length + 2} URLs` +
+console.log(`[seo] ${lista.length} libros · ${sueltas.length} páginas sueltas · sitemap con ${lista.length + 3} URLs` +
             (sinHero  ? ` · ${sinHero} sin hero_url (usan la portada)` : '') +
             (sinTexto ? ` · ⚠️ ${sinTexto} sin capítulo 1 indexable` : ''))

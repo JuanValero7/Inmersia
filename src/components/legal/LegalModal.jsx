@@ -3,13 +3,14 @@ import { createPortal } from 'react-dom'
 import terminosRaw from '../../../Documentation/terminos-y-condiciones.md?raw'
 import privacidadRaw from '../../../Documentation/politica-de-privacidad.md?raw'
 import impressumRaw from '../../../Documentation/impressum.md?raw'
+import { parseMarkdown, INLINE_RE } from './parseMarkdown.js'
 
 // =============================================================
 // LegalModal — visor de Términos y Condiciones / Política de Privacidad.
 // Lee el contenido tal cual de Documentation/*.md (única fuente) y lo
-// interpreta con un parser mínimo (headers, hr, listas, tablas, negrita/
-// itálica, links) — alcanza para estos dos documentos, sin sumar una
-// dependencia de markdown completa.
+// interpreta con un parser mínimo (parseMarkdown.js: headers, hr, listas,
+// tablas; aquí, negrita/itálica y links) — alcanza para estos documentos,
+// sin sumar una dependencia de markdown completa.
 // =============================================================
 
 const INK = '#4a3622'
@@ -22,61 +23,6 @@ export const DOCS = {
   // persona física en Berlín. Va en alemán, que es lo que exige la norma.
   impressum:  { label: 'Impressum',               raw: impressumRaw },
 }
-
-function parseMarkdown(md) {
-  const lines = md.replace(/\r\n/g, '\n').split('\n')
-  const blocks = []
-  let i = 0
-  while (i < lines.length) {
-    const line = lines[i]
-    if (!line.trim()) { i++; continue }
-    if (/^-{3,}$/.test(line.trim())) { blocks.push({ type: 'hr' }); i++; continue }
-    const h = line.match(/^(#{1,4})\s+(.*)$/)
-    if (h) { blocks.push({ type: `h${h[1].length}`, text: h[2] }); i++; continue }
-    if (/^\|.*\|\s*$/.test(line) && lines[i + 1] && /^\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
-      const header = line.split('|').slice(1, -1).map(c => c.trim())
-      i += 2
-      const rows = []
-      while (i < lines.length && /^\|.*\|\s*$/.test(lines[i])) {
-        rows.push(lines[i].split('|').slice(1, -1).map(c => c.trim()))
-        i++
-      }
-      blocks.push({ type: 'table', header, rows })
-      continue
-    }
-    if (/^-\s+/.test(line)) {
-      const items = []
-      while (i < lines.length && /^-\s+/.test(lines[i])) {
-        items.push(lines[i].replace(/^-\s+/, ''))
-        i++
-      }
-      blocks.push({ type: 'ul', items })
-      continue
-    }
-    if (/^\d+\.\s+/.test(line)) {
-      const items = []
-      while (i < lines.length && /^\d+\.\s+/.test(lines[i])) {
-        items.push(lines[i].replace(/^\d+\.\s+/, ''))
-        i++
-      }
-      blocks.push({ type: 'ol', items })
-      continue
-    }
-    const para = []
-    while (i < lines.length && lines[i].trim() && !/^-{3,}$/.test(lines[i].trim())
-      && !/^#{1,4}\s/.test(lines[i]) && !/^-\s+/.test(lines[i]) && !/^\d+\.\s+/.test(lines[i])
-      && !/^\|.*\|\s*$/.test(lines[i])) {
-      para.push(lines[i]); i++
-    }
-    // Uniendo con salto de línea (y whiteSpace:'pre-line' al pintar), la
-    // dirección postal del responsable se lee como una dirección y no
-    // como una frase corrida.
-    blocks.push({ type: 'p', text: para.join('\n') })
-  }
-  return blocks
-}
-
-const INLINE_RE = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*/g
 
 function renderInline(text, onNavigate) {
   const out = []

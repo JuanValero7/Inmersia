@@ -23,6 +23,7 @@ import AvisoRed from './components/AvisoRed.jsx'
 import NoEncontrada from './components/NoEncontrada.jsx'
 // Carga diferida: lleva dentro el texto completo de los documentos legales.
 const PaginaLegal = lazy(() => import('./components/legal/PaginaLegal.jsx'))
+const PaginaSobre = lazy(() => import('./components/PaginaSobre.jsx'))
 
 const VistaBiblioteca       = lazy(() => import('./components/Biblioteca.jsx'))
 // Los lectores se importan por una función con nombre que comparten el lazy()
@@ -404,6 +405,9 @@ export default function App() {
           <Route path="/privacidad" element={<PaginaLegal doc="privacidad" />} />
           <Route path="/terminos"   element={<PaginaLegal doc="terminos" />} />
           <Route path="/impressum"  element={<PaginaLegal doc="impressum" />} />
+
+          {/* Quién está detrás y cómo se hace cada libro (src/content/sobre.js). */}
+          <Route path="/sobre" element={<PaginaSobre />} />
 
           {/* Reset de contraseña (Supabase redirige aquí) */}
           <Route path="/reset-password" element={

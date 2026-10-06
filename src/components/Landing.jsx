@@ -389,6 +389,7 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
             <a href="/terminos" onClick={abrirLegal('terminos')}>Términos y Condiciones</a>
             <a href="/privacidad" onClick={abrirLegal('privacidad')}>Política de Privacidad</a>
             <a href="/impressum" onClick={abrirLegal('impressum')}>Impressum</a>
+            <a href="/sobre">Sobre Inmersia</a>
             <a href="https://www.instagram.com/inmersia.io/" target="_blank" rel="noopener noreferrer">Instagram</a>
           </nav>
         </div>
