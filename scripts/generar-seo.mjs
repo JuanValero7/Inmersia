@@ -203,7 +203,7 @@ function bloqueEstatico(l, parrafos) {
 // enlazaba a otra en el HTML crudo —los enlaces los pinta React— así que los 51
 // libros eran 51 URLs sueltas sin nada que apuntara a ellas. Eso es justo lo
 // que Search Console llama «Descubierta: actualmente sin indexar».
-function bloqueCatalogo(lista, titulo, intro) {
+function bloqueCatalogo(lista, titulo, intro, extra = '') {
   const items = lista
     .map(l => `<li><a href="${ORIGEN}/libro/${esc(l.slug)}">${esc(l.titulo)}</a>` +
               `<span> — ${esc(l.autor || 'Autor desconocido')}</span></li>`)
@@ -223,7 +223,7 @@ function bloqueCatalogo(lista, titulo, intro) {
       </style>
       <article>
         <h1>${esc(titulo)}</h1>
-        <p>${esc(intro)}</p>
+        <p>${esc(intro)}</p>${extra}
         <ul>
           ${items}
         </ul>
@@ -436,9 +436,20 @@ for (const l of lista) {
 const INTRO = 'Obras de dominio público ilustradas, con sonido y pistas para ' +
               'investigar la trama. Leer en Inmersia es gratis.'
 
-const home = plantilla.replace(
-  '<div id="seo-estatico"></div>',
-  bloqueCatalogo(lista, 'Inmersia — Lee, investiga y colecciona', INTRO))
+// La portada es lo primero que lee el verificador de Google for Startups. Con
+// solo el catálogo, Inmersia parece una web de «contenido»; esto le dice en
+// inglés qué es el producto y quién está detrás, y lo manda a /sobre.
+const PRESENTACION = `
+        <section lang="en">
+          ${SOBRE.english.parrafos.slice(0, 2).map(t => `<p>${esc(t)}</p>`).join('\n          ')}
+          <p><a href="${ORIGEN}${SOBRE.ruta}">About Inmersia: founder, production pipeline and business model</a></p>
+        </section>`
+
+const home = plantilla
+  .replace('<link rel="canonical" href="https://www.inmersia.io/" />',
+           `<link rel="canonical" href="https://www.inmersia.io/" />\n    ${jsonLdOrganizacion()}`)
+  .replace('<div id="seo-estatico"></div>',
+           bloqueCatalogo(lista, 'Inmersia — Lee, investiga y colecciona', INTRO, PRESENTACION))
 await writeFile(join(DIST, 'index.html'), home, 'utf8')
 
 const tienda = plantilla
