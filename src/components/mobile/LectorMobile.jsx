@@ -121,7 +121,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const lector = useLectorComun({ book, guestMode, startWithNotebook, onNotebookStarted, onGoCartelera })
   const {
     userId, capitulos, palabrasLibro, chapterCache, loading, loadingCap, error,
-    isLeido, olvidarSubrayado, pendingRestore, setPendingRestore, restoredRef,
+    isLeido, pendingRestore, setPendingRestore, restoredRef,
     persistChapterAdvance, subrayar,
     quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
     miResena, resenaForm, setResenaForm, resenaEnviando,
@@ -648,7 +648,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         capituloNum={capitulos[chapterIndex]?.numero ?? chapterIndex + 1}
         capitulos={capitulos}
         gatoColor={gatoColor}
-        onSubrayadoBorrado={olvidarSubrayado}
+       
       />
 
       {/* Tira de predicción (fin de capítulo) y pista de primera vez */}

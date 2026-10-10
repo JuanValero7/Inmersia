@@ -20,10 +20,12 @@
 //
 // Refactor puro: comportamiento idéntico al previo.
 // ─────────────────────────────────────────────────────────────
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase.js'
 import { useSesion } from '../context/sesion.jsx'
-import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
+import { useResena } from './useResena.js'
+import { useInvalidateBibliotecaUsuario, useSubrayadosLibroQuery, queryKeys } from '../lib/queries.js'
 import { evento } from '../lib/analytics.js'
 import { guardar, guardarTodo, AVISOS } from '../lib/guardar.js'
 
@@ -100,56 +102,17 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
 
   // ── Subrayados del usuario (para pintarlos sobre el texto) ──
   // Se traen de una sola vez para todo el libro y se agrupan por capítulo: son
-  // filas cortas y así cambiar de capítulo no dispara una consulta nueva.
-  const [subrayadosPorCap, setSubrayadosPorCap] = useState({})
+  // filas cortas y así cambiar de capítulo no dispara una consulta nueva. La
+  // consulta es la misma que usa el Cuaderno (lib/queries.js): si borra uno
+  // allí, la marca desaparece aquí sola.
+  const queryClient = useQueryClient()
+  const subrayadosQuery = useSubrayadosLibroQuery(userId, book?.libro_id)
+  const subrayadosPorCap = useMemo(() => agruparSubrayados(subrayadosQuery.data), [subrayadosQuery.data])
 
-  // ── Reseña ──
-  const [resenaForm, setResenaForm] = useState({ rating: 0, texto: '' })
-  const [resenaEnviando, setResenaEnviando] = useState(false)
-  const [miResena, setMiResena] = useState(null)
 
-  // Subrayados: todos los del usuario en este libro, agrupados por capítulo
-  useEffect(() => {
-    if (!userId || !book?.libro_id) { setSubrayadosPorCap({}); return }
-    let cancelado = false
-    supabase.from('subrayados_usuario')
-      .select('id, texto_original, capitulo_num')
-      .eq('user_id', userId).eq('libro_id', book.libro_id)
-      .limit(500)
-      .then(({ data, error: err }) => {
-        if (cancelado) return
-        if (err) { console.error('subrayados:', err.message); return }
-        setSubrayadosPorCap(agruparSubrayados(data))
-      })
-    return () => { cancelado = true }
-  }, [userId, book?.libro_id])
-
-  // Reseña: traer la mía cuando el libro está terminado
-  useEffect(() => {
-    if (!userId || !book?.libro_id || !isLeido) return
-    supabase.from('resenas_libros').select('rating, texto')
-      .eq('user_id', userId).eq('libro_id', book.libro_id).maybeSingle()
-      .then(({ data }) => {
-        setMiResena(data || null)
-        if (data) setResenaForm({ rating: data.rating, texto: data.texto || '' })
-      })
-  }, [userId, book?.libro_id, isLeido])
-
-  // submit → true si se guardó, false si no pasó las validaciones.
-  // (Cada componente cierra su propio modal/sheet de reseña según el resultado.)
-  async function submitResena() {
-    if (!resenaForm.rating) return false
-    if ((resenaForm.texto?.length ?? 0) > 1000) return false
-    setResenaEnviando(true)
-    const { ok } = await guardar(supabase.from('resenas_libros').upsert(
-      { user_id: userId, libro_id: book.libro_id, rating: resenaForm.rating, texto: resenaForm.texto || null, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id,libro_id' }
-    ), { que: 'reseña', aviso: AVISOS.resena })
-    setResenaEnviando(false)
-    if (!ok) return false
-    setMiResena({ rating: resenaForm.rating, texto: resenaForm.texto })
-    return true
-  }
+  // Reseña: la mía, cuando el libro está terminado. Misma caché que la ficha
+  // de la Biblioteca (hooks/useResena.js).
+  const resena = useResena({ libroId: book?.libro_id, userId, activo: isLeido })
 
   // TODA escritura del caché pasa por aquí. El ref es lo que se consulta y el
   // estado es lo que se pinta: si se tocan por separado se desincronizan, y un
@@ -358,23 +321,12 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
     // con id: null sobre un subrayado que no existía en la base: el Cuaderno
     // salía sin él y esa marca no se podía borrar (el Cuaderno borra por id).
     if (!ok || !data?.id) return false
-    // Sin recargar: la marca amarilla aparece en cuanto se guarda.
-    setSubrayadosPorCap(prev => ({
-      ...prev,
-      [capNum]: [...(prev[capNum] || []), { id: data.id, texto }],
-    }))
+    // Sin recargar: la marca amarilla aparece en cuanto se guarda (y el
+    // Cuaderno lo ve, porque comparten la caché).
+    queryClient.setQueryData(queryKeys.subrayadosLibro(userId, book.libro_id),
+      (prev = []) => [...prev, { id: data.id, texto_original: texto, capitulo_num: capNum }])
     return true
   }
-
-  // El Cuaderno es quien borra en Supabase; acá solo se retira la marca del
-  // texto para que el libro no siga mostrando un subrayado que ya no existe.
-  const olvidarSubrayado = useCallback((id) => {
-    setSubrayadosPorCap(prev => {
-      const out = {}
-      for (const [cap, lista] of Object.entries(prev)) out[cap] = lista.filter(s => s.id !== id)
-      return out
-    })
-  }, [])
 
   // ── Operaciones de superusuario ───────────────────────────────
 
@@ -457,7 +409,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
   return {
     // datos
     userId, capitulos, palabrasLibro, chapterCache, loading, loadingCap, error,
-    isLeido, setIsLeido, subrayadosPorCap, olvidarSubrayado,
+    isLeido, setIsLeido, subrayadosPorCap,
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
     // operaciones
@@ -465,6 +417,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
     // superusuario
     quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
     // reseña
-    miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
+    miResena: resena.miResena, resenaForm: resena.form, setResenaForm: resena.setForm,
+    resenaEnviando: resena.enviando, submitResena: resena.submitResena,
   }
 }

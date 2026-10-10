@@ -1,7 +1,9 @@
 // Plain JavaScript (.jsx)
-import { useState, useEffect, useCallback, memo } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase.js'
 import { guardar, avisar, AVISOS } from '../../lib/guardar.js'
+import { useSubrayadosLibroQuery, queryKeys, SUBRAYADOS_MAX } from '../../lib/queries.js'
 import { theme, ClayButton } from './clay.jsx'
 
 // Tipos (arriba, horizontal)
@@ -14,12 +16,17 @@ const TYPES = [
 // Cuaderno de lectura — clay. Tipos arriba en horizontal; los capítulos con
 // notas (o el que estás leyendo) son las pestañas laterales.
 // Mantiene las queries Supabase: predicciones / anotaciones / subrayados.
-const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capituloNum, capitulos = [], gatoColor = 'negro', onSubrayadoBorrado }) {
+const SIN_SUBRAYADOS = []
+
+const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capituloNum, capitulos = [], gatoColor = 'negro' }) {
   const [type, setType] = useState('pred')
   const [selCap, setSelCap] = useState(capituloNum)
-  const [tabCaps, setTabCaps] = useState([])
-  const [subrayados, setSubrayados] = useState([])
-  const [subTruncated, setSubTruncated] = useState(false)
+  const [capsConNotas, setCapsConNotas] = useState([])
+  // Subrayados: la misma consulta que pinta las marcas en el lector, así que
+  // borrar uno aquí lo quita también del texto.
+  const queryClient = useQueryClient()
+  const subrayados = useSubrayadosLibroQuery(userId, libroId).data ?? SIN_SUBRAYADOS
+  const subTruncated = subrayados.length >= SUBRAYADOS_MAX
   // drafts por capítulo: { [num]: { pred, anot, anotId, loaded, dirty } }
   const [drafts, setDrafts] = useState({})
 
@@ -37,20 +44,19 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, libroId, capituloNum, userId])
 
+  // Pestañas: capítulos con predicción o anotación, más los que tienen subrayados.
+  const tabCaps = useMemo(() => [...new Set([...capsConNotas, ...subrayados.map(s => s.capitulo_num)])]
+    .sort((a, b) => a - b), [capsConNotas, subrayados])
+
   async function loadIndex() {
-    const [predList, anotList, subRes] = await Promise.all([
+    const [predList, anotList] = await Promise.all([
       supabase.from('predicciones_usuario').select('capitulo_num').eq('user_id', userId).eq('libro_id', libroId),
       supabase.from('anotaciones_usuario').select('capitulo_num').eq('user_id', userId).eq('libro_id', libroId),
-      supabase.from('subrayados_usuario').select('id, texto_original, capitulo_num').eq('user_id', userId).eq('libro_id', libroId).order('capitulo_num').limit(200),
     ])
     const nums = new Set([capituloNum])
     predList.data?.forEach(r => nums.add(r.capitulo_num))
     anotList.data?.forEach(r => nums.add(r.capitulo_num))
-    subRes.data?.forEach(r => nums.add(r.capitulo_num))
-    setTabCaps([...nums].sort((a, b) => a - b))
-    const subs = subRes.data || []
-    setSubrayados(subs)
-    setSubTruncated(subs.length === 200)
+    setCapsConNotas([...nums])
     loadChapter(capituloNum)
   }
 
@@ -133,8 +139,8 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
     const { ok } = await guardar(supabase.from('subrayados_usuario').delete().eq('id', id),
       { que: 'borrar subrayado', aviso: AVISOS.borrarSubrayado })
     if (!ok) return
-    setSubrayados(prev => prev.filter(s => s.id !== id))
-    onSubrayadoBorrado?.(id)
+    queryClient.setQueryData(queryKeys.subrayadosLibro(userId, libroId),
+      (prev = []) => prev.filter(s => s.id !== id))
   }
 
   if (!isOpen) return null
@@ -183,7 +189,7 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
               <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
                 {subTruncated && (
                   <p style={{ fontFamily: "'Baloo 2',sans-serif", fontSize: 12, color: 'rgba(160,100,40,0.8)', background: 'rgba(224,178,86,0.15)', borderRadius: 8, padding: '8px 12px', marginBottom: 12 }}>
-                    Solo se muestran los primeros 200 subrayados del libro.
+                    Solo se muestran los primeros {SUBRAYADOS_MAX} subrayados del libro.
                   </p>
                 )}
                 {subsCap.length === 0

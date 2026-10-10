@@ -247,6 +247,44 @@ try {
   await esperarParrafos(esc.page)
   comprobar(await primerParrafoVisible(esc.page) === anclaEsc, 'al recargar vuelve a la misma página')
 
+  // Subrayados: lector y Cuaderno comparten la consulta. Se crea uno sobre el
+  // texto que está en pantalla, se ve la marca, se borra desde el Cuaderno y
+  // la marca tiene que irse del texto sin recargar.
+  const textoVisible = await esc.page.evaluate((pid) =>
+    document.querySelector(`[data-parrafo-id="${pid}"]`)?.innerText || '', anclaEsc)
+  const fragmento = textoVisible.trim().split(/\s+/).slice(0, 5).join(' ')
+  const { data: suParrafo } = await sb.from('parrafos').select('capitulos(numero)').eq('id', anclaEsc).single()
+  const { data: sub, error: errSub } = await sb.from('subrayados_usuario').insert({
+    user_id: uid, libro_id: principito.id, capitulo_num: suParrafo.capitulos.numero,
+    texto_original: fragmento, parrafo_id: anclaEsc,
+  }).select('id').single()
+  if (errSub) mal(`no se pudo crear el subrayado de prueba: ${errSub.message}`)
+  await esc.page.reload()
+  await esperarParrafos(esc.page)
+  comprobar(await esc.page.locator('.subrayado-marca').count() > 0, 'el subrayado se pinta en el texto')
+  // Clic directo: una pista de primera vez puede estar encima del botón.
+  const pulsar = async (nombre) => {
+    // Por texto o por title (el × de borrar se llama "×" para el lector de pantalla).
+    const b = esc.page.locator(`button[title="${nombre}"]`).or(esc.page.getByRole('button', { name: nombre, exact: true })).first()
+    await b.waitFor({ state: 'attached', timeout: 10000 })
+    await b.dispatchEvent('click')
+    await esperar(800)
+  }
+  try {
+    await pulsar('Cuaderno')
+    await pulsar('Subrayados')
+    await pulsar('Eliminar')
+  } catch (e) {
+    const botones = await esc.page.evaluate(() => [...document.querySelectorAll('button')]
+      .map(b => (b.title || b.getAttribute('aria-label') || b.innerText || '').trim().replace(/\s+/g, ' ')).filter(Boolean).slice(0, 40))
+    mal(`no encontré un botón del Cuaderno: ${e.message.split(String.fromCharCode(10))[0]} · botones: ${botones.join(' | ')}`)
+  }
+  await esperar(1500)
+  const { data: quedan } = await sb.from('subrayados_usuario').select('id').eq('id', sub?.id ?? '')
+  comprobar(!quedan?.length, 'el Cuaderno lo borra de la base')
+  comprobar(await esc.page.locator('.subrayado-marca').count() === 0, 'y la marca se va del texto sin recargar')
+  await esc.page.keyboard.press('Escape')
+
   titulo('5. Lector de móvil')
   const mov = await abrirContexto(browser, alta.session, true)
   await mov.page.goto(`${BASE}/libro/${LIBRO}`)

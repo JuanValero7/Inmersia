@@ -36,7 +36,7 @@ function SheetBody({ book, user, categories, repaso, onOpenBook, onGoForo, onGoN
   const [saving, setSaving] = React.useState(false)
 
   // reseña (lógica compartida con BibBookModal, ver src/hooks/useResena.js)
-  const { miResena, form, setForm, modoForm, setModoForm, enviando, submitResena } = useResena(book, user, esManual)
+  const { miResena, form, setForm, modoForm, setModoForm, enviando, submitResena } = useResena({ libroId: book.id, userId: user?.id, activo: !!book.leido && !esManual })
 
   async function assign(catId) {
     if (esManual) return

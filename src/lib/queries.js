@@ -49,6 +49,9 @@ export const queryKeys = {
   libroResumen: (libroId) => ['libroResumen', libroId],
   librosPalabras: () => ['librosPalabras'],
   libroReels: (libroId) => ['libroReels', libroId],
+  // Lector y Cuaderno (ver useSubrayadosLibroQuery y hooks/useResena.js)
+  subrayadosLibro: (userId, libroId) => ['subrayadosLibro', userId, libroId],
+  miResena: (userId, libroId) => ['miResena', userId, libroId],
 }
 
 // perfiles.nombre/apellido — Biblioteca (saludo) y Perfil (formulario)
@@ -322,4 +325,26 @@ export function useInvalidateBibliotecaUsuario(userId) {
     () => queryClient.invalidateQueries({ queryKey: queryKeys.bibliotecaUsuario(userId) }),
     [queryClient, userId]
   )
+}
+
+// Subrayados del usuario en un libro. Los comparten el lector (pinta las
+// marcas) y el Cuaderno (los lista y los borra): antes cada uno los pedía por
+// su lado y se avisaban a mano al borrar. Quien escribe actualiza la caché con
+// setQueryData (subrayar en useLectorData, borrar en Notebook).
+export const SUBRAYADOS_MAX = 500
+
+export function useSubrayadosLibroQuery(userId, libroId) {
+  return useQuery({
+    queryKey: queryKeys.subrayadosLibro(userId, libroId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subrayados_usuario').select('id, texto_original, capitulo_num')
+        .eq('user_id', userId).eq('libro_id', libroId)
+        .order('capitulo_num').order('created_at').limit(SUBRAYADOS_MAX)
+      if (error) throw error
+      return data || []
+    },
+    enabled: !!userId && !!libroId,
+    staleTime: STALE_TIME,
+  })
 }

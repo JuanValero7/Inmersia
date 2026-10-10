@@ -35,7 +35,7 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
   const esManual = book.id === MANUAL_LIBRO_ID;
 
   // Reseña (lógica compartida con BibBookSheet, ver src/hooks/useResena.js)
-  const { miResena, form, setForm, modoForm, setModoForm, enviando, submitResena } = useResena(book, user, esManual);
+  const { miResena, form, setForm, modoForm, setModoForm, enviando, submitResena } = useResena({ libroId: book.id, userId: user?.id, activo: !!book.leido && !esManual });
   const repaso = useAnteriormente(book, user);
   const { abierto: repasoAbierto, cerrar: cerrarRepaso } = repaso;
 
