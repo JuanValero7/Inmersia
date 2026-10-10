@@ -38,7 +38,7 @@ const PolaroidStack = memo(forwardRef(function PolaroidStack({ images, esNoficci
   const dismissTimerRef = useRef(null)
   const hasImages = images && images.length > 0
 
-  useEffect(() => { if (index >= (images?.length || 0)) setIndex(0) }, [images?.length])
+  useEffect(() => { if (index >= (images?.length || 0)) setIndex(0) }, [images?.length, index])
   useEffect(() => { setHasOpened(false) }, [images?.length])
   useEffect(() => () => clearTimeout(dismissTimerRef.current), [])
 

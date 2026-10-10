@@ -465,6 +465,27 @@ body { background-color: var(--bg-warm); min-height: 100vh; overflow-x: hidden; 
 
 /* ══ UTILITIES COMPARTIDOS ═════════════════════════════════ */
 
+/* Aviso flotante arriba al centro — <AvisoGuardado>. Mismo aspecto que
+   <AvisoRed> y el aviso de límite de App.jsx, pero con la paleta en vez de
+   hex a mano: esos dos son candidatos a pasarse a esta clase. */
+.aviso-flotante {
+  position: fixed; top: calc(18px + env(safe-area-inset-top, 0px)); left: 50%;
+  transform: translateX(-50%); z-index: 4000;
+  max-width: 460px; width: calc(100% - 32px);
+}
+.aviso-flotante__caja {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--paper); border: 2px solid var(--ink); border-radius: 14px;
+  padding: 14px 16px; font-family: 'Baloo 2', sans-serif;
+  box-shadow: 2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22);
+}
+.aviso-flotante__icono { font-size: 20px; line-height: 1.2; }
+.aviso-flotante__caja p { margin: 0; flex: 1; min-width: 0; font-size: 14px; line-height: 1.45; color: var(--ink); }
+.aviso-flotante__caja button {
+  background: transparent; border: none; padding: 0; cursor: pointer;
+  color: var(--brown-soft); font-size: 20px; font-weight: 700; line-height: 1;
+}
+
 /* Spinner — usado en Auth y App (loading state) */
 .spinner {
   width: 18px; height: 18px;

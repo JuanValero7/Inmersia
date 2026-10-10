@@ -1,5 +1,5 @@
 // src/components/mobile/AlbumMobile.jsx
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAlbum, formatSeg } from '../../hooks/useAlbum.js'
 import { useOnboarding } from '../../context/onboarding.jsx'
 import TutorialHint from '../onboarding/TutorialHint.jsx'
@@ -234,11 +234,11 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
     if (!isNaN(saved) && saved >= 0 && saved < items.length) setIdx(saved)
   }, [items.length])
 
-  const go = (i) => {
+  const go = useCallback((i) => {
     if (i < 0 || i >= items.length) return
     setIdx(i); setSheet(null)
     try { localStorage.setItem(KEY, String(i)) } catch { /* ignore */ }
-  }
+  }, [items.length])
 
   useEffect(() => {
     const onKey = (e) => {
@@ -250,7 +250,7 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [idx, items.length, sheet])
+  }, [idx, sheet, go])
 
   // ── Onboarding (paso 'album'): basta con ENTRAR al Álbum para cerrar el paso
   // (ver el comentario largo en Album.jsx: atarlo a pegar la última barajita

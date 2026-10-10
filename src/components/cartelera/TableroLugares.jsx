@@ -103,8 +103,9 @@ function Reveal({ percent }) {
     fieldRef.current = getField(BOARD_W, BOARD_H)
     coatRef.current = getCoat(BOARD_W, BOARD_H)
     ready.current = true
-    paint(percent)
   }, [])
+  // Corre después del de arriba también al montar: ese primer pintado ya sale
+  // con el lienzo preparado.
   useEffect(() => { paint(percent) }, [percent])
 
   return <canvas ref={cvs} className="cart-coat" />

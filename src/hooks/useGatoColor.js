@@ -7,6 +7,7 @@
 // ─────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { guardar } from '../lib/guardar.js'
 
 // Gato que el visitante eligió en la landing, antes de tener cuenta. Al entrar
 // por primera vez, si la cuenta aún no tiene gato guardado, se queda con ese.
@@ -34,15 +35,18 @@ function tomarGatoElegido() {
  */
 export function useGatoColor(user) {
   const [gatoColor, setGatoColor] = useState('negro')
+  // Solo el id: el objeto `user` cambia de identidad al refrescarse el token,
+  // y eso no es motivo para volver a pedir el color.
+  const userId = user?.id
 
   useEffect(() => {
-    if (!user) return
+    if (!userId) return
     let activo = true
     ;(async () => {
       const { data } = await supabase
         .from('preferencias_usuario')
         .select('gato_color')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle()
       if (!activo) return
       const elegidoEnLanding = tomarGatoElegido()
@@ -51,22 +55,25 @@ export function useGatoColor(user) {
         setGatoColor(elegidoEnLanding)
         const { error } = await supabase
           .from('preferencias_usuario')
-          .upsert({ user_id: user.id, gato_color: elegidoEnLanding, updated_at: new Date().toISOString() })
+          .upsert({ user_id: userId, gato_color: elegidoEnLanding, updated_at: new Date().toISOString() })
         if (error) console.error('useGatoColor (gato de la landing):', error.message)
       }
     })()
     return () => { activo = false }
-  }, [user?.id])
+  }, [userId])
 
+  // El color anterior se lee ANTES de cambiarlo. Antes se capturaba dentro del
+  // updater de setGatoColor, que React puede ejecutar más tarde: si el guardado
+  // fallaba, `previous` seguía en undefined y el gato se quedaba sin color.
   const updateGatoColor = useCallback(async (color) => {
-    let previous
-    setGatoColor(curr => { previous = curr; return color })
-    if (!user) return
-    const { error } = await supabase
-      .from('preferencias_usuario')
-      .upsert({ user_id: user.id, gato_color: color, updated_at: new Date().toISOString() })
-    if (error) { console.error('updateGatoColor:', error.message); setGatoColor(previous) }
-  }, [user])
+    const previous = gatoColor
+    setGatoColor(color)
+    if (!userId) return
+    const { ok } = await guardar(supabase.from('preferencias_usuario')
+      .upsert({ user_id: userId, gato_color: color, updated_at: new Date().toISOString() }),
+      { que: 'color del gato' })
+    if (!ok) setGatoColor(previous)
+  }, [userId, gatoColor])
 
   return { gatoColor, updateGatoColor }
 }

@@ -167,7 +167,7 @@ export default function SuperuserSoundsPanel({
     if (!sugerirParrafoId || !visibles.find(p => p.id === sugerirParrafoId)) {
       setSugerirParrafoId(visibles[0]?.id || '')
     }
-  }, [parrafos, parrafoBusqueda])
+  }, [parrafos, parrafoBusqueda, sugerirParrafoId])
 
   // Load all biblioteca_media when Sugerir tab opens
   useEffect(() => {

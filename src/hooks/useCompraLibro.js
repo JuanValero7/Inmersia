@@ -15,6 +15,7 @@ import { useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
 import { evento } from '../lib/analytics.js'
+import { guardar, AVISOS } from '../lib/guardar.js'
 
 export const LIMITE_PENDIENTES = 5
 
@@ -36,8 +37,12 @@ export function useCompraLibro(user, isSuperuser, onOpenBook) {
   const comprar = useCallback(async (libro, { pendientes = 0 } = {}) => {
     if (!user?.id) return { error: 'no-auth' }
     if (!isSuperuser && pendientes >= LIMITE_PENDIENTES) return { error: 'bloqueado' }
-    const { error } = await supabase.from('bibliotecas_usuarios').insert({ user_id: user.id, libro_id: libro.id, leido: false })
-    if (error) { console.error('No se pudo adquirir el libro:', error.message); return { error: error.message } }
+    // El aviso lo enseña <AvisoGuardado>: el catálogo, la tienda principal y la
+    // Biblioteca ignoraban el { error } y el botón simplemente no hacía nada.
+    const { ok, error } = await guardar(
+      supabase.from('bibliotecas_usuarios').insert({ user_id: user.id, libro_id: libro.id, leido: false }),
+      { que: 'adquirir libro', aviso: AVISOS.libro })
+    if (!ok) return { error: error?.message || 'error' }
     invalidateBiblioteca()
     // "Comprado" es el nombre heredado del checklist; hoy adquirir es gratis.
     evento('libro_comprado', { libro_id: libro.id, slug: libro.slug ?? null })

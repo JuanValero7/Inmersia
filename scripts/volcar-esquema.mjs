@@ -29,7 +29,9 @@ import { spawnSync } from 'child_process'
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
 import { join } from 'path'
 
-const SALIDA = 'supabase/esquema'
+// ESQUEMA_SALIDA lo usa scripts/respaldar.mjs para meter una foto de la
+// estructura en cada copia de seguridad, sin tocar la del repo.
+const SALIDA = process.env.ESQUEMA_SALIDA || 'supabase/esquema'
 
 // ── configuración ───────────────────────────────────────────
 let env = {}

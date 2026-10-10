@@ -24,6 +24,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } from 'react'
 import { supabase } from '../../lib/supabase.js'
 import { useInvalidateBibliotecaUsuario } from '../../lib/queries.js'
+import { guardar, guardarTodo, AVISOS } from '../../lib/guardar.js'
 import useLocalStorage from '../../hooks/useLocalStorage.js'
 import { useLectorData } from '../../hooks/useLectorData.js'
 import { useXrayItems } from '../../hooks/useXrayItems.js'
@@ -52,8 +53,9 @@ import '../../styles/lector.mobile.css'
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
 const LINE = 1.72  // alto de línea (coincide con .lm-para en el CSS)
 // Referencia estable para los capítulos sin subrayados: un [] nuevo en cada
-// render invalidaría el memo de las páginas del libro.
+// render invalidaría el memo de las páginas del libro. Lo mismo para la media.
 const EMPTY_SUBRAYADOS = []
+const EMPTY_MEDIA = {}
 
 // ── Iconos lineales ──────────────────────────────────────────
 const Compass = () => (
@@ -210,7 +212,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   // arranque directo en cuaderno (desde Biblioteca → "abrir cuaderno")
   useEffect(() => {
     if (startWithNotebook) { setNotebookOpen(true); onNotebookStarted?.() }
-  }, [startWithNotebook])
+  }, [startWithNotebook, onNotebookStarted])
 
   // cargar capítulo actual cuando cambia
   useEffect(() => {
@@ -233,7 +235,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       }
     })()
     return () => { cancelled = true }
-  }, [chapterIndex, capitulos, fetchChapter, peekChapter])
+  }, [chapterIndex, capitulos, fetchChapter, peekChapter, setError, setLoadingCap])
 
   // Con el capítulo actual ya en pantalla, se trae el siguiente en segundo
   // plano para que pasar de capítulo no espere a la red.
@@ -247,7 +249,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const esNoficcion = book?.es_ficcion === false
   const xrayItems = useXrayItems(sheet === 'xray', book?.libro_id, currentChapter?.numero ?? chapterIndex + 1, esNoficcion ? 'glosario' : 'personajes')
   const currentChapData = currentChapter ? chapterCache[currentChapter.id] : null
-  const currentMedia    = currentChapData?.mediaByParrafo || {}
+  const currentMedia    = currentChapData?.mediaByParrafo || EMPTY_MEDIA
   const currentAmbient  = currentChapData?.ambient || null
   const currentCapNum   = currentChapter?.numero ?? chapterIndex + 1
   // Solo los textos: es lo que necesita el render para anclar la marca.
@@ -385,7 +387,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       paginar()
     })()
     return () => { cancelled = true }
-  }, [currentChapData?.parrafos, currentChapter?.id, fontSize, readingFont, geom.maxH, geom.lineHeight])
+  }, [currentChapData?.parrafos, currentChapter, fontSize, readingFont, geom.maxH, geom.lineHeight])
 
   // restaurar página exacta al volver.
   // Espera a que la paginación DEFINITIVA (medida) esté lista: con la paginación
@@ -401,7 +403,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     if (idx >= 0) setPageIndex(idx)
     setPendingRestore(null); restoredRef.current = true
     setGoToLastPage(false)
-  }, [pendingRestore, currentChapData, paginas, measuredReady])
+  }, [pendingRestore, currentChapData, paginas, measuredReady, restoredRef, setPendingRestore])
 
   // al navegar hacia atrás entre capítulos, esperar la paginación real del DOM
   // para saltar a la última página correcta del capítulo anterior
@@ -431,19 +433,22 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   }, [pageIndex, paginas])
 
   // ── Guardar progreso (debounce) ──
+  // Depende de `capituloCargado` y no de `currentChapData`: el objeto del
+  // capítulo se recrea cuando llegan sus sonidos e imágenes, y eso disparaba
+  // una escritura extra con la misma posición.
   useEffect(() => {
-    if (!restoredRef.current || !userId || !book?.libro_id || !currentChapData) return
+    if (!restoredRef.current || !userId || !book?.libro_id || !capituloCargado) return
     const firstParr = paginas[pageIndex]?.[0]; if (!firstParr) return
     const t = setTimeout(() => {
-      supabase.from('progreso_lectura').upsert({
+      guardar(supabase.from('progreso_lectura').upsert({
         user_id: userId, libro_id: book.libro_id,
         ultimo_parrafo_id: firstParr.id,
         ultimo_parrafo_offset: offsetDeAnclaje(paginas, pageIndex, firstParr.id),
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,libro_id' }).then(({ error }) => { if (error) console.error('No se pudo guardar el progreso de lectura:', error) })
+      }, { onConflict: 'user_id,libro_id' }), { que: 'progreso', aviso: AVISOS.progreso })
     }, 600)
     return () => clearTimeout(t)
-  }, [chapterIndex, pageIndex, paginas, userId, book?.libro_id, currentChapData])
+  }, [chapterIndex, pageIndex, paginas, userId, book?.libro_id, capituloCargado, restoredRef])
 
   // 100% al llegar al final del último capítulo
   useEffect(() => {
@@ -451,17 +456,19 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     if (!capitulos.length || chapterIndex !== capitulos.length - 1) return
     if (!paginas.length || pageIndex < paginas.length - 1) return
     const t = setTimeout(async () => {
-      await Promise.all([
+      const { ok } = await guardarTodo([
         supabase.from('progreso_lectura').update({ porcentaje: 100, updated_at: new Date().toISOString() })
           .eq('user_id', userId).eq('libro_id', book.libro_id),
         supabase.from('bibliotecas_usuarios').update({ leido: true })
           .eq('user_id', userId).eq('libro_id', book.libro_id),
-      ])
+      ], { que: 'libro terminado', aviso: AVISOS.terminado })
+      // Si falló no se marca: se reintenta la próxima vez que llegue a la última página.
+      if (!ok) return
       setIsLeido(true)
       invalidateBiblioteca()
     }, 600)
     return () => clearTimeout(t)
-  }, [chapterIndex, pageIndex, paginas.length, capitulos.length, userId, book?.libro_id])
+  }, [chapterIndex, pageIndex, paginas.length, capitulos.length, userId, book?.libro_id, restoredRef, setIsLeido, invalidateBiblioteca])
 
   // ── Imágenes visibles en la página actual (y anteriores del capítulo) ──
   const visibleImages = useMemo(() => {

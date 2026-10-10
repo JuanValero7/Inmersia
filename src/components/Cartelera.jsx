@@ -122,7 +122,7 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
     setFichaInitItemId(jumpToItemId)
     setView({ kind: 'ficha', key: esNoficcion ? 'glosario' : 'personajes' })
     onJumpConsumed?.()
-  }, [jumpToItemId, bookLoading])
+  }, [jumpToItemId, bookLoading, esNoficcion, onJumpConsumed])
 
   if (bookLoading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-warm)' }}>

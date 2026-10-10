@@ -151,7 +151,7 @@ export default function TableroNotas({
     () => decorNotas ? buildNotas({ boardW, boardH, cols, rows, embeds, center, excludeRects }) : [],
     [decorNotas, boardW, boardH, cols, rows, embeds, center, excludeRects]
   )
-  const visibleNotas = allNotas.slice(0, visibleCount)
+  const visibleNotas = useMemo(() => allNotas.slice(0, visibleCount), [allNotas, visibleCount])
 
   // hilos: loop entre las 4 miniaturas + cada nota a la miniatura más cercana
   const links = useMemo(() => {
@@ -163,7 +163,7 @@ export default function TableroNotas({
       out.push([{ cx: n.x, cy: n.y }, best])
     }
     return out
-  }, [visibleCount, embeds, visibleNotas])
+  }, [embeds, visibleNotas])
 
   return (
     <div className="cart-canvas cart-cork" style={{ width: boardW, height: boardH, transform: `scale(${scale})` }}>

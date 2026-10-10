@@ -15,11 +15,13 @@ import AuthModal from './components/AuthModal.jsx'
 import CompletarCuenta, { faltaCompletarCuenta } from './components/CompletarCuenta.jsx'
 import { AuthModalProvider } from './context/authModal.jsx'
 import { evento } from './lib/analytics.js'
+import { guardar, AVISOS } from './lib/guardar.js'
 import { useOnboardingController, OnboardingProvider } from './context/onboarding.jsx'
 import { usePistasController, PistasProvider } from './context/pistas.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
 import { LectorRoute } from './components/LectorRoute.jsx'
 import AvisoRed from './components/AvisoRed.jsx'
+import AvisoGuardado from './components/AvisoGuardado.jsx'
 import NoEncontrada from './components/NoEncontrada.jsx'
 // Carga diferida: lleva dentro el texto completo de los documentos legales.
 const PaginaLegal = lazy(() => import('./components/legal/PaginaLegal.jsx'))
@@ -118,13 +120,12 @@ async function rescatarMuestra(userId, libroId) {
   }
 
   const total = capitulos.reduce((s, c) => s + (c.palabras || 0), 0)
-  const { error } = await supabase.from('progreso_lectura').upsert({
+  await guardar(supabase.from('progreso_lectura').upsert({
     user_id: userId, libro_id: libroId,
     porcentaje: total ? Math.min(100, Math.round((leidas / total) * 100)) : 0,
     ultimo_parrafo_id: ancla,
     updated_at: new Date().toISOString(),
-  }, { onConflict: 'user_id,libro_id' })
-  if (error) console.error('No se pudo rescatar la lectura de muestra:', error.message)
+  }, { onConflict: 'user_id,libro_id' }), { que: 'rescatar muestra', aviso: AVISOS.progreso })
 }
 
 export default function App() {
@@ -248,11 +249,11 @@ export default function App() {
     const next = [bookId, ...lastOpenedBookIdsRef.current.filter(id => id !== bookId)].slice(0, 3)
     lastOpenedBookIdsRef.current = next
     setLastOpenedBookIds(next)
+    // Sin aviso: perder el orden de "Seguir leyendo" no merece interrumpir.
     if (currentUser) {
-      supabase
-        .from('preferencias_usuario')
-        .upsert({ user_id: currentUser.id, ultimos_libros: next, updated_at: new Date().toISOString() })
-        .then(({ error }) => { if (error) console.error('No se pudieron guardar los últimos libros:', error) })
+      guardar(supabase.from('preferencias_usuario')
+        .upsert({ user_id: currentUser.id, ultimos_libros: next, updated_at: new Date().toISOString() }),
+        { que: 'últimos libros' })
     }
   }
 
@@ -351,10 +352,10 @@ export default function App() {
       return
     }
 
-    const { error } = await supabase
-      .from('bibliotecas_usuarios')
-      .insert({ user_id: u.id, libro_id: libroId, leido: false })
-    if (error) { console.error('No se pudo agregar el libro tras autenticarse:', error.message); return }
+    const { ok } = await guardar(
+      supabase.from('bibliotecas_usuarios').insert({ user_id: u.id, libro_id: libroId, leido: false }),
+      { que: 'adquirir libro tras registrarse', aviso: AVISOS.libro })
+    if (!ok) return
     await rescatarMuestra(u.id, libroId)
     queryClient.invalidateQueries({ queryKey: queryKeys.bibliotecaUsuario(u.id) })
     // Permanece en el lector; el efecto de guestMode oculta el paywall al dejar de ser invitado.
@@ -574,6 +575,10 @@ export default function App() {
       {/* Aviso global de red: cubre Biblioteca, Tienda, Álbum y Perfil de una vez
           (todas comen de las queries compartidas de src/lib/queries.js). */}
       <AvisoRed />
+
+      {/* Aviso global de escrituras fallidas (progreso, subrayados, cuaderno…):
+          lo alimenta guardar() de src/lib/guardar.js. */}
+      <AvisoGuardado />
 
       {/* Aviso: llegó al límite de lecturas pendientes al intentar sumar un libro. */}
       {limiteAviso && (

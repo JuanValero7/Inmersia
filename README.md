@@ -18,7 +18,7 @@ Todo el catálogo es de dominio público y el acceso es gratuito.
 
 | Capa | Tecnología |
 |---|---|
-| Frontend | React 18 + Vite 5 |
+| Frontend | React 18 + Vite 8 |
 | Rutas | react-router-dom 7 |
 | Estado de servidor | @tanstack/react-query 5 |
 | Backend / Auth / DB | Supabase (Postgres + RLS + Realtime + Storage) |
@@ -193,15 +193,25 @@ No hay tests de componentes. La red de seguridad son los tests unitarios de la l
 y los scripts de Playwright.
 
 ```bash
-npm test                # 51 tests: paginación, geometría, tokens, edad, anclaje
-npm run security-check  # eslint + escáner de secretos + npm audit
-npm run typecheck       # JSDoc vía tsc (ver jsconfig.json)
+npm run lint            # ESLint: 0 errores y no más hex que el tope (ver abajo)
+npm test                # 78 tests: paginación, geometría, tokens, edad, anclaje
+npm run security-check  # lint + escáner de secretos + npm audit
+npm run typecheck       # JSDoc vía tsc (ver jsconfig.json) — hoy no comprueba nada
 ```
 
-`typecheck` solo revisa los archivos con `// @ts-check` en la primera línea, porque
-`checkJs` está en `false`: con `true` salen más de 12.000 avisos en archivos que aún no
-tienen JSDoc. Los 19 hooks y los 5 componentes principales ya están documentados, así que
-el editor autocompleta sus props aunque no ejecutes nada.
+**CI.** `.github/workflows/ci.yml` corre lint, tests, build, el escáner de secretos y
+`npm audit` en cada push y cada pull request. No despliega ni bloquea a Vercel: avisa.
+
+**Lint.** La única regla que queda en aviso es la de colores hex en JSX (~500
+heredados). `npm run lint` topa ese número con `--max-warnings`: un hex nuevo lo pasa del
+tope y falla. Al quitar hex, baja el tope en `package.json`. Las dependencias de los
+hooks de React (`exhaustive-deps`) son **error**: si hay que omitir una, va un
+`eslint-disable-next-line` con el motivo escrito encima.
+
+**Tipos.** `typecheck` solo revisa los archivos con `// @ts-check` en la primera línea, y
+hoy no lo lleva ninguno, así que no comprueba nada (por eso no está en la CI). Activarlo
+solo en `src/hooks` y `src/lib` da ~650 errores (medido el 10 oct 2026). El JSDoc de los
+hooks sí sirve ya: el editor autocompleta sus props.
 
 | Script | Para qué |
 |---|---|
@@ -228,7 +238,12 @@ el tablero de la Cartelera elige los hilos rojos con `Math.random`, y la Landing
 
 ## Base de datos
 
-51 migraciones en `supabase/Migration/`, y la seguridad vive en las políticas RLS: la
+**Copias de seguridad:** el plan gratis de Supabase no las hace. `npm run respaldo`
+(cada noche por tarea programada de Windows) guarda la base y los archivos de Storage en
+el disco local. Qué guarda, cómo saber si falla y cómo restaurar:
+[`Documentation/base-de-datos/copias-de-seguridad.md`](Documentation/base-de-datos/copias-de-seguridad.md).
+
+73 migraciones en `supabase/Migration/`, y la seguridad vive en las políticas RLS: la
 autorización de superusuario se comprueba en la propia policy
 (`EXISTS (SELECT 1 FROM superusuarios …)`), no solo en la UI.
 
@@ -355,5 +370,5 @@ Cosas pendientes de verdad, para que nadie las descubra otra vez desde cero:
   usar `.limit()` en la query de libros.
 - **Perfil → Transacciones e Historial:** UI preparada, sin tablas detrás.
 - **Perfil → Foto de perfil:** falta subirla a Supabase Storage.
-- **`npm audit`** reporta 2 vulnerabilidades `high` en dependencias de desarrollo
-  (`browserslist` vía Babel, y `vite`). `npm run security-check` falla por eso.
+- Revisión de arquitectura completa, con hoja de ruta:
+  [`Documentation/arquitectura/`](Documentation/arquitectura/).

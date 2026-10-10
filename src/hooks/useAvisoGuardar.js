@@ -25,7 +25,9 @@ export function useAvisoGuardar(onComprar, pendientes) {
   const guardar = async (libro) => {
     const { error } = await onComprar(libro)
     if (error === 'bloqueado') setAviso(`Ya tienes ${LIMITE_PENDIENTES} lecturas pendientes. Termina una para sumar otra.`)
-    else if (error) setAviso('No pudimos guardarlo. Inténtalo otra vez.')
+    // Un fallo de escritura ya lo enseña <AvisoGuardado> (ver useCompraLibro):
+    // repetirlo aquí daría dos avisos a la vez.
+    else if (error) return
     else {
       const n = pendientes + 1
       setAviso(`«${libro.titulo}» quedó en tu biblioteca${n <= LIMITE_PENDIENTES ? ` · ${n} de ${LIMITE_PENDIENTES}` : ''}`)

@@ -141,11 +141,15 @@ function ExploreSheet({ onClose, onGoLectura, onGoForo, onGoBiblioteca }) {
 }
 
 // ── Vista de sección: lista → ficha ──
+// Referencia estable para una sección vacía: un [] nuevo en cada render haría
+// correr en cada render el efecto que depende de `items`.
+const SIN_ITEMS = []
+
 function SectionView({ sectionKey, data, onGoBack, onGoLanding, onJump, onExplore, initialItemId, secciones = SECCIONES, gatoColor = 'negro', cartel = null }) {
   const meta = secciones.find(s => s.key === sectionKey)
   const navigate = useNavigate()
   const location = useLocation()
-  const items = data.itemsBySeccion[sectionKey] || []
+  const items = data.itemsBySeccion[sectionKey] || SIN_ITEMS
   const listScrollRef = useRef(0)
 
   // ── La ficha abierta vive en el HISTORIAL, no en un estado ──────────
@@ -301,7 +305,7 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
     setFichaInitItemId(jumpToItemId)
     setView({ kind: 'board', key: secciones[0].key })
     onJumpConsumed?.()
-  }, [jumpToItemId, bookLoading])
+  }, [jumpToItemId, bookLoading, secciones, onJumpConsumed])
 
   // Pistas de primera vez: en el tablero, "toca una sección"; dentro de una
   // sección, "toca al gato para cambiar". Usarlo cuenta como haberla visto.

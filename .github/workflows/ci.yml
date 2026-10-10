@@ -1,0 +1,65 @@
+# Comprobaciones automáticas en cada push y en cada pull request.
+#
+# QUÉ COMPRUEBA (lo mismo que puedes correr en local, en este orden)
+#   1. npm run lint   ESLint: 0 errores y no más hex que el tope de package.json
+#   2. npm test       Tests unitarios (Vitest)
+#   3. vite build     Que la app compila
+#   4. scan-secrets   Que no se haya colado ninguna clave en el código
+#   5. npm audit      Vulnerabilidades high o critical en dependencias
+#
+# QUÉ NO HACE
+#   - No despliega: eso lo sigue haciendo Vercel por su cuenta.
+#   - No genera las fichas de SEO (por eso `vite build` y no `npm run build`):
+#     necesitarían las claves de Supabase como secretos de GitHub, y Vercel
+#     ya las genera en su build.
+#   - No corre `npm run typecheck`: hoy ningún archivo lleva `// @ts-check`
+#     (ver jsconfig.json), así que no comprobaría nada.
+#
+# El audit va en un paso aparte y no bloquea: un aviso nuevo en una
+# dependencia de desarrollo puede aparecer cualquier día sin que nadie haya
+# tocado el código, y no debe poner la CI en rojo por sí solo. Sale como
+# aviso en la pestaña Actions.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Un push nuevo a la misma rama cancela la comprobación anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  comprobar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: npx vite build
+
+      - name: Secretos
+        run: node scripts/scan-secrets.mjs
+
+      - name: Auditoría de dependencias
+        run: npm audit --audit-level=high
+        continue-on-error: true

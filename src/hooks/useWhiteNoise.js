@@ -128,7 +128,11 @@ export function useWhiteNoise() {
       gainRef.current = null
       ctxRef.current  = null
     }
-  }, [tipo])   // solo reconstruir buffer cuando cambia el tipo
+  // Solo se reconstruye cuando cambia el tipo. volNoise da el volumen inicial,
+  // pero meterlo aquí rehace el AudioContext al mover el control (se oye un
+  // corte): sus cambios los aplica el efecto de abajo sobre gainRef.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipo])
 
   // Actualizar volumen sin reconstruir buffer
   useEffect(() => {

@@ -5,6 +5,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
+import { guardar, guardarTodo, AVISOS } from '../lib/guardar.js'
 import useLocalStorage from '../hooks/useLocalStorage.js'
 import { useLectorData } from '../hooks/useLectorData.js'
 import { useWhiteNoise } from '../hooks/useWhiteNoise.js'
@@ -32,8 +33,9 @@ import { useCapaEscritorio } from './comunidades/capa/CapaEscritorio.jsx'
 
 const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
 // Referencia estable para los capítulos sin subrayados: un [] nuevo en cada
-// render invalidaría el memo de las páginas del libro.
+// render invalidaría el memo de las páginas del libro. Lo mismo para la media.
 const EMPTY_SUBRAYADOS = []
+const EMPTY_MEDIA = {}
 
 // Geometría de página.
 // <PolaroidStack> mide 160 de ancho y se mete 110 por encima del canto del
@@ -176,7 +178,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       setNotebookOpen(true)
       onNotebookStarted?.()
     }
-  }, [startWithNotebook])
+  }, [startWithNotebook, onNotebookStarted])
 
   useEffect(() => {
     if (!explorarOpen) return
@@ -227,7 +229,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       }
     })()
     return () => { cancelled = true }
-  }, [chapterIndex, capitulos, fetchChapter, peekChapter])
+  }, [chapterIndex, capitulos, fetchChapter, peekChapter, setError, setLoadingCap])
 
   // Con el capítulo actual ya en pantalla, se trae el siguiente en segundo
   // plano para que pasar de capítulo no espere a la red.
@@ -239,7 +241,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
   const currentChapter  = capitulos[chapterIndex] || null
   const currentChapData = currentChapter ? chapterCache[currentChapter.id] : null
-  const currentMedia    = currentChapData?.mediaByParrafo || {}
+  const currentMedia    = currentChapData?.mediaByParrafo || EMPTY_MEDIA
   const currentAmbient  = currentChapData?.ambient || null
   const currentCapNum   = currentChapter?.numero ?? chapterIndex + 1
   // Solo los textos: es lo que necesita el render para anclar la marca.
@@ -285,7 +287,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       if (!cancelled) setCurrentPaginas(pages)
     })()
     return () => { cancelled = true }
-  }, [currentChapData?.parrafos, currentChapter?.id, chapterIndex, fontSize, readingFont, geom.pageW, geom.pageH])
+  }, [currentChapData?.parrafos, currentChapter, chapterIndex, fontSize, readingFont, geom.pageW, geom.pageH])
 
   // Restaurar posición de lectura guardada una vez que currentPaginas está lista.
   // El ancla es { parrafoId, offset }: el primer párrafo visible de la página
@@ -300,12 +302,12 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     setPendingRestore(null)
     restoredRef.current = true
     setGoToLastPage(false)
-  }, [pendingRestore, currentPaginas, doubleView])
+  }, [pendingRestore, currentPaginas, doubleView, restoredRef, setPendingRestore])
 
   // si cambia la geometría, evitar quedar fuera de rango
   useEffect(() => {
     if (pageIndex >= currentPaginas.length) setPageIndex(Math.max(0, currentPaginas.length - (doubleView ? 2 : 1)))
-  }, [currentPaginas.length])
+  }, [currentPaginas.length, pageIndex, doubleView])
 
   // al navegar hacia atrás entre capítulos, esperar a que currentPaginas
   // corresponda al capítulo actual antes de saltar a la última página
@@ -320,20 +322,23 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     setGoToLastPage(false)
   }, [goToLastPage, currentPaginas, currentChapData, doubleView])
 
+  // Guardar progreso (debounce). Depende de `capituloCargado` y no de
+  // `currentChapData`: el objeto del capítulo se recrea cuando llegan sus
+  // sonidos e imágenes, y eso dispararía una escritura extra.
   useEffect(() => {
     if (!restoredRef.current || !userId || !book?.libro_id) return
-    const cap = capitulos[chapterIndex]; if (!cap || !currentChapData) return
+    if (!capituloCargado) return
     const firstParr = currentPaginas[pageIndex]?.[0]; if (!firstParr) return
     const t = setTimeout(() => {
-      supabase.from('progreso_lectura').upsert({
+      guardar(supabase.from('progreso_lectura').upsert({
         user_id: userId, libro_id: book.libro_id,
         ultimo_parrafo_id: firstParr.id,
         ultimo_parrafo_offset: offsetDeAnclaje(currentPaginas, pageIndex, firstParr.id),
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,libro_id' }).then(({ error }) => { if (error) console.error('No se pudo guardar el progreso de lectura:', error) })
+      }, { onConflict: 'user_id,libro_id' }), { que: 'progreso', aviso: AVISOS.progreso })
     }, 600)
     return () => clearTimeout(t)
-  }, [chapterIndex, pageIndex, currentPaginas, userId, book?.libro_id, capitulos])
+  }, [chapterIndex, pageIndex, currentPaginas, userId, book?.libro_id, capituloCargado, restoredRef])
 
   // Al llegar a la última página del último capítulo → 100 %
   useEffect(() => {
@@ -344,19 +349,21 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     const isLastPage = pageIndex >= currentPaginas.length - step
     if (!isLastPage) return
     const t = setTimeout(async () => {
-      await Promise.all([
+      const { ok } = await guardarTodo([
         supabase.from('progreso_lectura')
           .update({ porcentaje: 100, updated_at: new Date().toISOString() })
           .eq('user_id', userId).eq('libro_id', book.libro_id),
         supabase.from('bibliotecas_usuarios')
           .update({ leido: true })
           .eq('user_id', userId).eq('libro_id', book.libro_id),
-      ])
+      ], { que: 'libro terminado', aviso: AVISOS.terminado })
+      // Si falló no se marca: se reintenta la próxima vez que llegue a la última página.
+      if (!ok) return
       setIsLeido(true)
       invalidateBiblioteca()
     }, 600)
     return () => clearTimeout(t)
-  }, [chapterIndex, pageIndex, currentPaginas.length, capitulos.length, doubleView, userId, book?.libro_id])
+  }, [chapterIndex, pageIndex, currentPaginas.length, capitulos.length, doubleView, userId, book?.libro_id, restoredRef, setIsLeido, invalidateBiblioteca])
 
   const handleTextSelect = useCallback(({ text, parrafoId, rect }) => {
     setPendingSelection({ text, parrafoId, rect })

@@ -292,7 +292,7 @@ export const BookReader = memo(function BookReader({
     }
     document.addEventListener('mousedown', handleOutside)
     return () => document.removeEventListener('mousedown', handleOutside)
-  }, [xrayOpen])
+  }, [xrayOpen, onToggleXray])
   const xrayInitial = s => (s || '').replace(/^(El|La|Los|Las)\s+/i, '').charAt(0).toUpperCase()
   const pal = getReaderPalette(readingTheme)
   const total = paginas.length

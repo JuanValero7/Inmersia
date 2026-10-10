@@ -1,6 +1,7 @@
 // Plain JavaScript (.jsx)
-import { useState, useEffect, memo } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { supabase } from '../../lib/supabase.js'
+import { guardar, avisar, AVISOS } from '../../lib/guardar.js'
 import { theme, ClayButton } from './clay.jsx'
 
 // Tipos (arriba, horizontal)
@@ -30,22 +31,11 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
     if (!isOpen) return
     setSelCap(capituloNum)
     if (userId && libroId) loadIndex()
+  // Sin loadIndex a propósito: es una función nueva en cada render y meterla
+  // aquí repetiría las tres consultas en bucle. Se va al pasar el cuaderno a
+  // React Query (revisión de arquitectura, M1).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, libroId, capituloNum, userId])
-
-  // Flecha ► = "Guardar y continuar", igual que el botón del footer
-  // (se ignora si el usuario está escribiendo en el textarea).
-  useEffect(() => {
-    if (!isOpen) return
-    function handleKeyDown(e) {
-      if (e.key !== 'ArrowRight') return
-      const tag = document.activeElement?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return
-      e.preventDefault()
-      handleClose()
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, drafts, userId, libroId])
 
   async function loadIndex() {
     const [predList, anotList, subRes] = await Promise.all([
@@ -82,30 +72,67 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
     setDrafts(prev => ({ ...prev, [num]: { pred: '', anot: '', anotId: null, loaded: true, ...(prev[num] || {}), [field]: val, dirty: true } }))
   }
 
-  async function handleClose() {
-    const saves = []
+  // Guarda los borradores modificados y cierra. useCallback para que el efecto
+  // de la flecha ► de abajo no se vuelva a registrar en cada render.
+  //
+  // El cuaderno sigue montado aunque esté cerrado (return null más abajo), así
+  // que sus borradores sobreviven al cerrarlo. Por eso, tras guardar, cada
+  // capítulo queda limpio (dirty: false) y con el id de su anotación: antes
+  // no se marcaba, y cada cierre volvía a insertar la misma anotación nueva
+  // como fila duplicada. Si algo falla, ese capítulo sigue sucio y se
+  // reintenta en el próximo cierre.
+  const handleClose = useCallback(async () => {
+    const tareas = []
     for (const [numStr, d] of Object.entries(drafts)) {
       if (!d?.dirty || !userId || !libroId) continue
       const num = Number(numStr)
       const pred = d.pred.trim().slice(0, 2000)
       const anot = d.anot.trim().slice(0, 2000)
-      if (pred) {
-        saves.push(supabase.from('predicciones_usuario').upsert(
-          { user_id: userId, libro_id: libroId, capitulo_num: num, contenido: pred, updated_at: new Date().toISOString() },
-          { onConflict: 'user_id,libro_id,capitulo_num' }))
-      }
-      if (anot) {
-        saves.push(d.anotId
-          ? supabase.from('anotaciones_usuario').update({ contenido: anot }).eq('id', d.anotId)
-          : supabase.from('anotaciones_usuario').insert({ user_id: userId, libro_id: libroId, capitulo_num: num, contenido: anot }))
-      }
+      tareas.push((async () => {
+        const [rPred, rAnot] = await Promise.all([
+          pred
+            ? guardar(supabase.from('predicciones_usuario').upsert(
+                { user_id: userId, libro_id: libroId, capitulo_num: num, contenido: pred, updated_at: new Date().toISOString() },
+                { onConflict: 'user_id,libro_id,capitulo_num' }), { que: 'cuaderno (predicción)' })
+            : { ok: true },
+          anot
+            ? guardar(d.anotId
+                ? supabase.from('anotaciones_usuario').update({ contenido: anot }).eq('id', d.anotId)
+                : supabase.from('anotaciones_usuario').insert({ user_id: userId, libro_id: libroId, capitulo_num: num, contenido: anot }).select('id').single(),
+                { que: 'cuaderno (anotación)' })
+            : { ok: true },
+        ])
+        const anotId = d.anotId || rAnot.data?.id || null
+        setDrafts(prev => ({ ...prev, [num]: { ...prev[num], anotId, dirty: !(rPred.ok && rAnot.ok) } }))
+        return rPred.ok && rAnot.ok
+      })())
     }
-    if (saves.length) await Promise.all(saves)
+    const resultados = await Promise.all(tareas)
+    if (resultados.includes(false)) avisar(AVISOS.cuaderno)
     onClose()
-  }
+  }, [drafts, userId, libroId, onClose])
+
+  // Flecha ► = "Guardar y continuar", igual que el botón del footer
+  // (se ignora si el usuario está escribiendo en el textarea).
+  useEffect(() => {
+    if (!isOpen) return
+    function handleKeyDown(e) {
+      if (e.key !== 'ArrowRight') return
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      e.preventDefault()
+      handleClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, handleClose])
 
   async function deleteSubrayado(id) {
-    await supabase.from('subrayados_usuario').delete().eq('id', id)
+    // Solo se retira si se borró de verdad: antes desaparecía igual y volvía a
+    // salir al reabrir el cuaderno.
+    const { ok } = await guardar(supabase.from('subrayados_usuario').delete().eq('id', id),
+      { que: 'borrar subrayado', aviso: AVISOS.borrarSubrayado })
+    if (!ok) return
     setSubrayados(prev => prev.filter(s => s.id !== id))
     onSubrayadoBorrado?.(id)
   }

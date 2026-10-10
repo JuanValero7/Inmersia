@@ -24,6 +24,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
 import { evento } from '../lib/analytics.js'
+import { guardar, guardarTodo, AVISOS } from '../lib/guardar.js'
 
 // Filas de subrayados_usuario → { [capitulo_num]: [{ id, texto }, ...] }
 function agruparSubrayados(filas) {
@@ -132,19 +133,30 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
     if (!resenaForm.rating) return false
     if ((resenaForm.texto?.length ?? 0) > 1000) return false
     setResenaEnviando(true)
-    const { error } = await supabase.from('resenas_libros').upsert(
+    const { ok } = await guardar(supabase.from('resenas_libros').upsert(
       { user_id: userId, libro_id: book.libro_id, rating: resenaForm.rating, texto: resenaForm.texto || null, updated_at: new Date().toISOString() },
       { onConflict: 'user_id,libro_id' }
-    )
+    ), { que: 'reseña', aviso: AVISOS.resena })
     setResenaEnviando(false)
-    if (error) { console.error('submitResena:', error.message); return false }
+    if (!ok) return false
     setMiResena({ rating: resenaForm.rating, texto: resenaForm.texto })
     return true
   }
 
+  // TODA escritura del caché pasa por aquí. El ref es lo que se consulta y el
+  // estado es lo que se pinta: si se tocan por separado se desincronizan, y un
+  // párrafo borrado por el superusuario reaparecería al volver al capítulo.
+  // Va antes del efecto de carga, que la nombra en sus dependencias.
+  const actualizarCache = useCallback((fn) => {
+    chapterCacheRef.current = fn(chapterCacheRef.current)
+    setChapterCache(chapterCacheRef.current)
+  }, [])
+
   // Cargar lista de capítulos (+ restaurar capítulo/párrafo de progreso).
   // Espera a `userReady` para no correr dos veces (con userId=null y luego
-  // con el id real), lo que reseteaba caché/posición de lectura.
+  // con el id real), lo que reseteaba caché/posición de lectura. `userId`
+  // está en las dependencias pero cambia en la misma ronda que `userReady`,
+  // así que no añade ejecuciones; los setters y actualizarCache son estables.
   useEffect(() => {
     if (!userReady) return
     if (!book?.libro_id) { setLoading(false); return }
@@ -202,15 +214,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
       }
     })()
     return () => { cancelled = true }
-  }, [book?.libro_id, userReady, muestra])
-
-  // TODA escritura del caché pasa por aquí. El ref es lo que se consulta y el
-  // estado es lo que se pinta: si se tocan por separado se desincronizan, y un
-  // párrafo borrado por el superusuario reaparecería al volver al capítulo.
-  const actualizarCache = useCallback((fn) => {
-    chapterCacheRef.current = fn(chapterCacheRef.current)
-    setChapterCache(chapterCacheRef.current)
-  }, [])
+  }, [book?.libro_id, userReady, muestra, userId, actualizarCache, setChapterIndex, setPageIndex])
 
   // Peticiones de capítulo en vuelo, por id: si la precarga del siguiente
   // capítulo todavía no terminó cuando el usuario llega a él, se espera esa
@@ -308,7 +312,10 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
           .eq('user_id', userId).eq('libro_id', book.libro_id)
       )
     }
-    await Promise.all(updates)
+    const { ok } = await guardarTodo(updates, {
+      que: 'avance de capítulo', aviso: newPct >= 90 ? AVISOS.terminado : AVISOS.progreso,
+    })
+    if (!ok) return
     // `pendingChapter` es cuántos capítulos lleva completados, no el número
     // del capítulo — de ahí el nombre de la propiedad.
     evento('capitulo_terminado', {
@@ -325,19 +332,16 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
     const cap = capitulos[chapterIndex]
     const capNum = cap?.numero ?? chapterIndex + 1
     const texto = text.slice(0, 1000)
-    const { data, error } = await supabase.from('subrayados_usuario').insert({
+    const { ok, data } = await guardar(supabase.from('subrayados_usuario').insert({
       user_id: userId, libro_id: book.libro_id,
       capitulo_num: capNum,
       texto_original: texto,
       parrafo_id: parrafoId || null,
-    }).select('id').single()
+    }).select('id').single(), { que: 'subrayado', aviso: AVISOS.subrayado })
     // Si el insert falla no se pinta nada. Antes se pintaba la marca amarilla
     // con id: null sobre un subrayado que no existía en la base: el Cuaderno
     // salía sin él y esa marca no se podía borrar (el Cuaderno borra por id).
-    if (error || !data?.id) {
-      console.error('subrayar:', error?.message || 'el insert no devolvió id')
-      return false
-    }
+    if (!ok || !data?.id) return false
     // Sin recargar: la marca amarilla aparece en cuanto se guarda.
     setSubrayadosPorCap(prev => ({
       ...prev,
