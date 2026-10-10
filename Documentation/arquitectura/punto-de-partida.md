@@ -187,11 +187,11 @@ pruebas.
 
 ## 4. Lo demás, cada cosa en su sesión
 
-| Tema | Qué hay | Dónde mirar |
+| Tema | Estado | Dónde arrancar |
 |---|---|---|
-| **Storage al 91 %** (0,91 de 1 GB) | ~5–6 libros más y Supabase deja de aceptar subidas. Opciones: Pro (~25 $/mes, además trae copias automáticas), recomprimir imágenes (medir con la copia local de `storage/`), o moverlas a otro almacenamiento (p. ej. Cloudflare R2) | Panel de Supabase → Usage |
-| **Sentry** | El código está listo, pero falta `VITE_SENTRY_DSN` en Vercel: hoy los errores no llegan a ningún sitio | `src/lib/errores.js` |
-| **SEO** | `generar-seo.mjs` mete `<style>` en línea que la CSP bloquea (error de consola en producción desde el 29 sep): sacarlo a un `.css`. Además: LCP móvil de 6,8 s en la landing, paquete inicial de ~148 kB, Search Console | `scripts/generar-seo.mjs`, `vercel.json` |
-| **Correo a potenciales clientes** | Zoho (`juanvalero@inmersia.io`) para el trato uno a uno; Resend probablemente para los correos de la app. Ojo con UWG §7 (correo comercial en frío en Alemania). Primero definir a quién se escribe | — |
-| **Fase 4** | A4 (lector duplicado), M1 (React Query en todo), M2 (capa de datos en `src/data/`, un solo `mapLibro`), M3 (`App.jsx` más ligero, `useSesion`) | Revisión |
-| **Restos** | Portada huérfana `El corsario negro/portada/portada.webp` (minúsculas) en Storage: se puede borrar. ~29 `console.error` en escrituras secundarias, a pasar a `guardar()` al tocarlas. Script para subir el espejo de Storage si algún día hay que restaurarlo | — |
+| **SEO** | Pendiente: `<style>` en línea bloqueado por la CSP, LCP móvil 6,8 s, paquete inicial ~160 kB, Search Console | [`../seo/punto-de-partida.md`](../seo/punto-de-partida.md) |
+| **Correo** | Pendiente: a quién escribir (Zoho, UWG §7) y correos de la app (Resend como SMTP de Supabase) | [`../correo/punto-de-partida.md`](../correo/punto-de-partida.md) |
+| **Storage al 91 %** | Decisión de Juan: Supabase Pro (25 $/mes: 100 GB, copias diarias 7 días, 250 GB de egress, sin pausa, contraseñas filtradas) o recomprimir imágenes primero. Ojo: con Pro, `inmersia-pruebas` en la misma organización suma ~10 $/mes de cómputo | Panel de Supabase → Usage |
+| **Sentry** | ✅ Activo desde el 10 oct (proyecto `inmersia-web`, región UE, avisos por correo). Opcional: subir *source maps* para trazas legibles | `src/lib/errores.js` |
+| **Seguridad pendiente** | Límite de intentos en códigos de invitación; protección de contraseñas filtradas (requiere Pro); edad en el login con Google antes de activarlo | Memoria / revisión |
+| **Restos** | Portada huérfana `El corsario negro/portada/portada.webp` (minúsculas) en Storage: se puede borrar. ~29 `console.error` en escrituras secundarias, a pasar a `guardar()` al tocarlas. 13 archivos de `components/`/`context/` que importan `supabase`: al tocarlos | — |
