@@ -92,7 +92,10 @@ export function LectorRoute({ LectorCmp, user, isSuperuser, gatoColor, openAuth,
   // Se resuelve con la query COMPARTIDA de React Query (ver lib/queries.js), la
   // misma que usan Biblioteca/Tienda/Álbum: si el usuario llegó desde cualquiera
   // de ellas ya está en caché y esto no cuesta ni un viaje de red ni un spinner.
-  const book = matches ? currentBook : fetchedBook
+  // Mientras se vuelve a pedir el MISMO libro (p. ej. al entrar desde el muro,
+  // que cambia isAuthed) se sigue mostrando el que ya había: si no, el lector
+  // se desmontaría y el invitado perdería la página donde iba.
+  const book = matches ? currentBook : (fetchedBook?.slug === slug ? fetchedBook : null)
 
   // Navegar al Foro o a la Investigación apuntando de dónde se viene, para que
   // su botón atrás sepa volver al lector. Lleva también el libro, que a estas
@@ -125,7 +128,7 @@ export function LectorRoute({ LectorCmp, user, isSuperuser, gatoColor, openAuth,
     })
   }, [loading, libroId, isAuthed, tieneLibro, isSuperuser, book?.slug])
 
-  if (loading) return LoadingScreen
+  if (loading && !book) return LoadingScreen
   if (!book) return null
   // Solo esperamos la PRIMERA resolución: si el lector ya está en pantalla no se
   // desmonta nunca más por esto. Importa en el caso del invitado que inicia sesión

@@ -32,7 +32,7 @@ import { useSesionLectura } from '../../hooks/useSesionLectura.js'
 import { useOnboarding } from '../../context/onboarding.jsx'
 import TutorialHint from '../onboarding/TutorialHint.jsx'
 import { TEXTO_MANUAL_HINT } from '../onboarding/textos.js'
-import { anotarMuestra } from '../../lib/progresoInvitado.js'
+import { anotarMuestra, anotarPosicion } from '../../lib/progresoInvitado.js'
 import { MANUAL_LIBRO_ID } from '../../lib/constants.js'
 import { usePistas } from '../../context/pistas.jsx'
 import Pista from '../onboarding/Pista.jsx'
@@ -151,7 +151,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     isLeido, setIsLeido, subrayadosPorCap, olvidarSubrayado,
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
-    fetchChapter, peekChapter, precargarSiguiente, playSfx, persistChapterAdvance, subrayar,
+    fetchChapter, peekChapter, precargarSiguiente, playSfx, persistChapterAdvance, subrayar, recordarPosicion,
     quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
     miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
   } = useLectorData(book, setChapterIndex, setPageIndex, guestMode)
@@ -436,19 +436,25 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   // Depende de `capituloCargado` y no de `currentChapData`: el objeto del
   // capítulo se recrea cuando llegan sus sonidos e imágenes, y eso disparaba
   // una escritura extra con la misma posición.
+  // Sin sesión no hay fila de progreso: la posición se anota para que, si entra
+  // desde el muro, siga en esta misma página (ver lib/rescatarMuestra.js).
   useEffect(() => {
-    if (!restoredRef.current || !userId || !book?.libro_id || !capituloCargado) return
+    if (!restoredRef.current || !book?.libro_id || !capituloCargado) return
+    if (!userId && !guestMode) return
     const firstParr = paginas[pageIndex]?.[0]; if (!firstParr) return
+    const offset = offsetDeAnclaje(paginas, pageIndex, firstParr.id)
+    recordarPosicion(chapterIndex, firstParr.id, offset)
     const t = setTimeout(() => {
+      if (!userId) { anotarPosicion(book.libro_id, firstParr.id, offset); return }
       guardar(supabase.from('progreso_lectura').upsert({
         user_id: userId, libro_id: book.libro_id,
         ultimo_parrafo_id: firstParr.id,
-        ultimo_parrafo_offset: offsetDeAnclaje(paginas, pageIndex, firstParr.id),
+        ultimo_parrafo_offset: offset,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,libro_id' }), { que: 'progreso', aviso: AVISOS.progreso })
     }, 600)
     return () => clearTimeout(t)
-  }, [chapterIndex, pageIndex, paginas, userId, book?.libro_id, capituloCargado, restoredRef])
+  }, [chapterIndex, pageIndex, paginas, userId, guestMode, book?.libro_id, capituloCargado, restoredRef, recordarPosicion])
 
   // 100% al llegar al final del último capítulo
   useEffect(() => {

@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './index.css'
 import App from './App.jsx'
+import { SesionProvider } from './context/sesion.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { iniciarAnalitica } from './lib/analytics.js'
 import { iniciarErrores } from './lib/errores.js'
@@ -33,7 +34,9 @@ createRoot(document.getElementById('root')).render(
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <SesionProvider>
+          <App />
+        </SesionProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </ErrorBoundary>

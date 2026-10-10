@@ -1,21 +1,16 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useNavigate, Outlet, useLocation } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from './lib/supabase.js'
-import { ensureProfile } from './lib/ensureProfile.js'
 import { MANUAL_LIBRO_ID } from './lib/constants.js'
-import { queryKeys } from './lib/queries.js'
 import { LIMITE_PENDIENTES } from './hooks/useCompraLibro.js'
-import { tomarMuestra, volvioDeGoogleEnLibro } from './lib/progresoInvitado.js'
-import { contarPalabras } from './utils/readerHelpers.js'
 import useIsMobile from './hooks/useIsMobile.js'
-import { useSuperuser } from './hooks/useSuperuser.js'
-import { useGatoColor } from './hooks/useGatoColor.js'
+import { useSesion } from './context/sesion.jsx'
+import { useAdquirirTrasEntrar } from './hooks/useAdquirirTrasEntrar.js'
 import AuthModal from './components/AuthModal.jsx'
 import CompletarCuenta, { faltaCompletarCuenta } from './components/CompletarCuenta.jsx'
 import { AuthModalProvider } from './context/authModal.jsx'
 import { evento } from './lib/analytics.js'
-import { guardar, AVISOS } from './lib/guardar.js'
+import { guardar } from './lib/guardar.js'
 import { useOnboardingController, OnboardingProvider } from './context/onboarding.jsx'
 import { usePistasController, PistasProvider } from './context/pistas.jsx'
 import ResetPassword from './components/ResetPassword.jsx'
@@ -74,73 +69,14 @@ function AuthRedirect({ openAuth }) {
   return <Navigate to="/" replace />
 }
 
-// Rescata la lectura de muestra de un invitado que acaba de registrarse: ancla
-// el progreso donde iba, para que el lector lo devuelva ahí (useLectorData
-// restaura por `ultimo_parrafo_id`, no por el porcentaje), y calcula el
-// porcentaje en palabras, como el "% del libro" del lector.
-//
-// Dónde va el ancla:
-//   · Terminó la muestra (llegó al aviso) → el primer párrafo que NO es de
-//     muestra, justo donde cortó. Desde la 071 la muestra suele acabar a mitad
-//     de un capítulo: saltar al capítulo siguiente se comía el resto del actual.
-//   · No la terminó → el inicio del capítulo en el que iba.
-// Los capítulos completados importan: la Cartelera desbloquea fichas según
-// ellos, así que contar como leído un capítulo a medias destapa spoilers.
-//
-// Se llama justo después de dar de alta el libro en la biblioteca: la RLS ya
-// deja leerlo entero, y la fila de progreso todavía no existe (por eso upsert).
-// `caps` (lib/progresoInvitado.js) son capítulos completados; llegar al aviso
-// cuenta como completar el último capítulo de la muestra.
-async function rescatarMuestra(userId, libroId) {
-  const caps = tomarMuestra(libroId)
-  if (!caps) return
-
-  const { data: capitulos } = await supabase.from('capitulos')
-    .select('id, palabras, en_muestra').eq('libro_id', libroId).order('numero')
-  if (!capitulos?.length) return
-  const termino = caps >= capitulos.filter(c => c.en_muestra).length
-
-  let iCap = termino ? caps - 1 : caps
-  let leidas = capitulos.slice(0, iCap).reduce((s, c) => s + (c.palabras || 0), 0)
-  let ancla = null
-
-  if (termino) {
-    const { data: parrafos } = await supabase.from('parrafos')
-      .select('id, contenido, tipo, en_muestra').eq('capitulo_id', capitulos[iCap].id).order('numero')
-    for (const p of parrafos || []) {
-      if (!p.en_muestra) { ancla = p.id; break }
-      if (p.tipo !== 'separador') leidas += contarPalabras(p.contenido)
-    }
-    if (!ancla) iCap += 1   // la muestra acabó justo al final del capítulo
-  }
-  if (!ancla && iCap < capitulos.length) {
-    const { data: primero } = await supabase.from('parrafos')
-      .select('id').eq('capitulo_id', capitulos[iCap].id).order('numero').limit(1).maybeSingle()
-    ancla = primero?.id ?? null
-  }
-
-  // `iCap` es ahora el capítulo donde queda el ancla: los anteriores están
-  // completos (eso desbloquea la Cartelera, migración 075).
-  const total = capitulos.reduce((s, c) => s + (c.palabras || 0), 0)
-  await guardar(supabase.from('progreso_lectura').upsert({
-    user_id: userId, libro_id: libroId,
-    porcentaje: total ? Math.min(100, Math.round((leidas / total) * 100)) : 0,
-    capitulos_completados: Math.min(iCap, capitulos.length),
-    ultimo_parrafo_id: ancla,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'user_id,libro_id' }), { que: 'rescatar muestra', aviso: AVISOS.progreso })
-}
-
 export default function App() {
-  const [user,                setUser]                = useState(undefined)
-  const [authReady,           setAuthReady]           = useState(false)
+  const { user, authReady, isSuperuser, gatoColor, updateGatoColor, setUser, cerrarSesion } = useSesion()
   const [lastOpenedBookIds,   setLastOpenedBookIds]   = useState([])
   const lastOpenedBookIdsRef = useRef(lastOpenedBookIds)
   lastOpenedBookIdsRef.current = lastOpenedBookIds
   const [lectorStartNotebook, setLectorStartNotebook] = useState(false)
   const [cartelaJumpId,       setCartelaJumpId]       = useState(null)
   const [authTab,             setAuthTab]             = useState(null) // null | 'login' | 'registro'
-  const [limiteAviso,         setLimiteAviso]         = useState(false) // aviso "límite de pendientes alcanzado"
 
   // Abre el pop-up de autenticación en la pestaña indicada.
   //
@@ -157,13 +93,11 @@ export default function App() {
   }, [])
 
   const navigate    = useNavigate()
-  const queryClient = useQueryClient()
   const onboarding  = useOnboardingController(user, navigate)
   const pistas      = usePistasController(user)
   const location    = useLocation()
   const isMobile    = useIsMobile()
-  const isSuperuser = useSuperuser(user ?? null)
-  const { gatoColor, updateGatoColor } = useGatoColor(user)
+  const { adquirirTrasEntrar, limiteAviso, cerrarLimiteAviso } = useAdquirirTrasEntrar(user)
 
   // Bloquear el tipo de lector mientras el usuario está leyendo: si isMobile
   // cambia en mitad de la sesión (p. ej. al rotar un teléfono grande que cruza
@@ -183,45 +117,15 @@ export default function App() {
   const Tienda      = isMobile ? VistaTiendaMobile     : VistaTienda
   const Album       = isMobile ? AlbumMobile           : VistaAlbum
 
-  const loadLastBooks = useCallback(async (u) => {
-    if (!u) return
-    const { data } = await supabase
-      .from('preferencias_usuario')
-      .select('ultimos_libros')
-      .eq('user_id', u.id)
-      .maybeSingle()
-    if (data?.ultimos_libros?.length) {
-      setLastOpenedBookIds(data.ultimos_libros)
-    }
-  }, [])
-
+  // "Seguir leyendo": los últimos libros abiertos, guardados en la base. Se
+  // cargan al haber sesión y se vacían al salir.
   useEffect(() => {
-    let mounted = true
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return
-      const u = session?.user ?? null
-      setUser(u)
-      setAuthReady(true)
-      if (u) loadLastBooks(u)
-    })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null)
-      // ensureProfile va en un setTimeout(0) a propósito: este callback corre
-      // DENTRO del lock exclusivo de auth de supabase-js, y cualquier llamada al
-      // cliente desde acá vuelve a pedir ese mismo lock → deadlock (la app se
-      // queda colgada en "Abriendo la biblioteca…"). Es el patrón que recomienda
-      // la propia librería (ver el doc de onAuthStateChange en @supabase/auth-js).
-      if (event === 'SIGNED_IN' && session?.user) {
-        setTimeout(() => ensureProfile(session.user), 0)
-      }
-      if (event === 'PASSWORD_RECOVERY') { navigate('/reset-password'); return }
-      if (event === 'SIGNED_OUT') {
-        setLastOpenedBookIds([])
-        navigate('/')
-      }
-    })
-    return () => { mounted = false; subscription.unsubscribe() }
-  }, [loadLastBooks, navigate])
+    if (!user?.id) { setLastOpenedBookIds([]); return }
+    let activo = true
+    supabase.from('preferencias_usuario').select('ultimos_libros').eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => { if (activo && data?.ultimos_libros?.length) setLastOpenedBookIds(data.ultimos_libros) })
+    return () => { activo = false }
+  }, [user?.id])
 
   // Precargar el chunk del Lector en un momento ocioso: al abrir un libro el
   // JS ya está en caché y desaparece el spinner de descarga. Aplica también a
@@ -240,12 +144,7 @@ export default function App() {
     return () => clearTimeout(t)
   }, [authReady, lectorEsMobile, inLector])
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    setLastOpenedBookIds([])
-    navigate('/')
-  }
+  const handleSignOut = cerrarSesion
 
   function pushBookId(bookId, currentUser) {
     if (bookId === MANUAL_LIBRO_ID) return // el Manual no entra en "seguir leyendo"
@@ -317,54 +216,6 @@ export default function App() {
     setLectorStartNotebook(true)
     navigate(`/libro/${book.slug || book.id}`, { state: { book } })
   }, [user, navigate])
-
-  // Tras autenticarse desde el paywall de invitado (estando en /libro/:slug),
-  // agrega ese libro a la biblioteca del usuario respetando el límite de
-  // lecturas pendientes (lo impone adquirir_libro() en la base). Cuenta nueva o usuario bajo el límite → se adquiere y
-  // sigue leyendo. Usuario existente que ya llegó al límite → no se adquiere y
-  // se lo expulsa a su Biblioteca con un aviso (misma regla que la Tienda).
-  // Al adquirirlo se rescata además lo que leyó como invitado (rescatarMuestra).
-  const acquireBookAfterAuth = useCallback(async (u) => {
-    if (!u?.id || !location.pathname.startsWith('/libro/')) return
-    const slug = location.pathname.split('/')[2]
-    if (!slug) return
-
-    // Resolver el libro: usar el que traiga la navegación si coincide con la
-    // URL; si no, buscarlo (caso del enlace compartido).
-    const libroNav = location.state?.book
-    let libroId = (libroNav?.slug === slug || libroNav?.id === slug) ? libroNav?.libro_id : null
-    if (!libroId) {
-      const { data } = await supabase.from('libros').select('id').eq('slug', slug).maybeSingle()
-      libroId = data?.id
-    }
-    if (!libroId) return
-
-    // adquirir_libro() (migración 076) comprueba el límite y si ya lo tenía.
-    const res = await supabase.rpc('adquirir_libro', { p_libro_id: libroId })
-    if (res.error?.hint === 'limite_pendientes') {
-      setLimiteAviso(true)
-      navigate('/biblioteca', { replace: true })
-      return
-    }
-    const { ok, data: nuevo } = await guardar(res, { que: 'adquirir libro tras registrarse', aviso: AVISOS.libro })
-    if (!ok || !nuevo) return // falló, o ya lo tenía: sigue leyendo
-    await rescatarMuestra(u.id, libroId)
-    queryClient.invalidateQueries({ queryKey: queryKeys.bibliotecaUsuario(u.id) })
-    // Permanece en el lector; el efecto de guestMode oculta el paywall al dejar de ser invitado.
-  }, [location.pathname, location.state, navigate, queryClient])
-
-  // Al volver de "Continuar con Google" la página se recargó y el onAuthSuccess
-  // del pop-up no corre: si estaba leyendo una muestra, el libro se adquiere aquí.
-  useEffect(() => {
-    if (user && volvioDeGoogleEnLibro()) acquireBookAfterAuth(user)
-  }, [user, acquireBookAfterAuth])
-
-  // El aviso de "límite alcanzado" se autodescarta a los 7 s.
-  useEffect(() => {
-    if (!limiteAviso) return
-    const t = setTimeout(() => setLimiteAviso(false), 7000)
-    return () => clearTimeout(t)
-  }, [limiteAviso])
 
   if (!authReady) return Fallback
 
@@ -549,13 +400,13 @@ export default function App() {
           initialTab={authTab}
           onClose={() => setAuthTab(null)}
           onAuthSuccess={(u) => {
-            setUser(u); loadLastBooks(u); setAuthTab(null)
+            setUser(u); setAuthTab(null)
             // También en cuenta nueva. Antes se saltaba, porque el tutorial se
             // lleva al usuario a la Biblioteca de todos modos; el efecto era que
             // el libro de muestra se perdía —sin él en la biblioteca el lector
             // seguía en modo muestra: sin subrayado, sin cuaderno y sin progreso.
             // Ahora queda adquirido, con los capítulos que alcanzó a leer.
-            acquireBookAfterAuth(u)
+            adquirirTrasEntrar(u)
           }}
         />
       )}
@@ -580,7 +431,7 @@ export default function App() {
             <p style={{ margin: 0, flex: 1, fontSize: 14, color: '#4a3622', lineHeight: 1.45 }}>
               Alcanzaste tu límite de {LIMITE_PENDIENTES} lecturas pendientes. Termina alguna para sumar este libro a tu biblioteca.
             </p>
-            <button type="button" onClick={() => setLimiteAviso(false)} aria-label="Cerrar"
+            <button type="button" onClick={cerrarLimiteAviso} aria-label="Cerrar"
               style={{ background: 'transparent', border: 'none', color: '#9a6a4a', cursor: 'pointer', fontSize: 20, fontWeight: 700, lineHeight: 1, padding: 0 }}>×</button>
           </div>
         </div>

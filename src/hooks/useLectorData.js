@@ -22,6 +22,7 @@
 // ─────────────────────────────────────────────────────────────
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { useSesion } from '../context/sesion.jsx'
 import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
 import { evento } from '../lib/analytics.js'
 import { guardar, guardarTodo, AVISOS } from '../lib/guardar.js'
@@ -71,8 +72,24 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
   // fetchChapter y peekChapter para poder quedarse con deps vacías.
   const [chapterCache, setChapterCache] = useState({})
   const chapterCacheRef = useRef({})
-  const [userId, setUserId] = useState(null)
-  const [userReady, setUserReady] = useState(false)  // ya resolvimos quién es el usuario (o anónimo)
+  // El usuario sale de la sesión compartida (context/sesion.jsx): si entra sin
+  // que el lector se remonte, aquí se entera igual. App no pinta nada hasta
+  // saber si hay sesión, así que al montar ya está resuelto.
+  const userId = useSesion().user?.id ?? null
+  // La carga de capítulos lo lee por ref: entrar sin salir del lector no debe
+  // recargar el libro (lo devolvería al principio); lo recarga salir de la
+  // muestra, que es cuando cambian los capítulos visibles.
+  const userIdRef = useRef(userId)
+  userIdRef.current = userId
+
+  // Dónde está el lector ahora mismo, en memoria. Al recargar el MISMO libro
+  // (sale del modo muestra al entrar o al adquirirlo desde el muro) se vuelve
+  // aquí, no a lo guardado en la base: esa escritura puede no haber llegado
+  // todavía y el lector abriría en el capítulo 1.
+  const posicionRef = useRef(null)   // { libroId, chapterIndex, parrafoId, offset }
+  const recordarPosicion = useCallback((chapterIndex, parrafoId, offset) => {
+    posicionRef.current = { libroId: book?.libro_id, chapterIndex, parrafoId, offset }
+  }, [book?.libro_id])
   const [loading, setLoading] = useState(true)
   const [loadingCap, setLoadingCap] = useState(false)
   const [error, setError] = useState(null)
@@ -90,15 +107,6 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
   const [resenaForm, setResenaForm] = useState({ rating: 0, texto: '' })
   const [resenaEnviando, setResenaEnviando] = useState(false)
   const [miResena, setMiResena] = useState(null)
-
-  // usuario — getSession() lee el token local (0 ms); getUser() haría un
-  // viaje de red al servidor de Auth que bloqueaba toda la carga del libro.
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUserId(data?.session?.user?.id || null)
-      setUserReady(true)
-    })
-  }, [])
 
   // Subrayados: todos los del usuario en este libro, agrupados por capítulo
   useEffect(() => {
@@ -153,12 +161,10 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
   }, [])
 
   // Cargar lista de capítulos (+ restaurar capítulo/párrafo de progreso).
-  // Espera a `userReady` para no correr dos veces (con userId=null y luego
-  // con el id real), lo que reseteaba caché/posición de lectura. `userId`
-  // está en las dependencias pero cambia en la misma ronda que `userReady`,
-  // así que no añade ejecuciones; los setters y actualizarCache son estables.
+  // Corre al abrir el libro y al salir del modo muestra (ahí cambian los
+  // capítulos visibles); los setters y actualizarCache son estables.
   useEffect(() => {
-    if (!userReady) return
+    const userId = userIdRef.current
     if (!book?.libro_id) { setLoading(false); return }
     let cancelled = false
     ;(async () => {
@@ -170,10 +176,11 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
         // El embed parrafos!ultimo_parrafo_id trae el capitulo_id del párrafo
         // de progreso en la misma respuesta (FK ultimo_parrafo_id → parrafos.id),
         // evitando un viaje extra secuencial a `parrafos`.
+        const enMemoria = posicionRef.current?.libroId === book.libro_id ? posicionRef.current : null
         const [{ data: capsTodos, error: e }, { data: prog }] = await Promise.all([
           supabase.from('capitulos').select('id, numero, titulo, palabras, en_muestra')
             .eq('libro_id', book.libro_id).order('numero'),
-          userId
+          userId && !enMemoria
             ? supabase.from('progreso_lectura')
                 .select('ultimo_parrafo_id, ultimo_parrafo_offset, parrafos!ultimo_parrafo_id(capitulo_id)')
                 .eq('user_id', userId).eq('libro_id', book.libro_id).maybeSingle()
@@ -196,7 +203,10 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
         // del párrafo) afina la restauración cuando el párrafo es largo y está
         // dividido en varias páginas (ver paginaDeAnclaje en readerHelpers).
         let startChapter = 0, pendingAnchor = null
-        if (prog?.ultimo_parrafo_id && prog?.parrafos?.capitulo_id) {
+        if (enMemoria && enMemoria.chapterIndex < caps.length) {
+          startChapter = enMemoria.chapterIndex
+          pendingAnchor = { parrafoId: enMemoria.parrafoId, offset: enMemoria.offset }
+        } else if (prog?.ultimo_parrafo_id && prog?.parrafos?.capitulo_id) {
           const idx = caps.findIndex(c => c.id === prog.parrafos.capitulo_id)
           if (idx >= 0) {
             startChapter = idx
@@ -214,7 +224,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
       }
     })()
     return () => { cancelled = true }
-  }, [book?.libro_id, userReady, muestra, userId, actualizarCache, setChapterIndex, setPageIndex])
+  }, [book?.libro_id, muestra, actualizarCache, setChapterIndex, setPageIndex])
 
   // Peticiones de capítulo en vuelo, por id: si la precarga del siguiente
   // capítulo todavía no terminó cuando el usuario llega a él, se espera esa
@@ -451,7 +461,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
     pendingRestore, setPendingRestore, restoredRef,
     setLoadingCap, setError,
     // operaciones
-    fetchChapter, peekChapter, precargarSiguiente, playSfx, persistChapterAdvance, subrayar,
+    fetchChapter, peekChapter, precargarSiguiente, playSfx, persistChapterAdvance, subrayar, recordarPosicion,
     // superusuario
     quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
     // reseña

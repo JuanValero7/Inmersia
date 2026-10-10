@@ -13,24 +13,35 @@
 // Biblioteca en cuanto detecta el flag — el lector se desmonta en esa misma
 // ronda y cualquier efecto suyo se pierde en la carrera. Esto sobrevive al
 // desmontaje sin tocar storage: es la misma carga de página.
-let anotado = null   // { libroId, caps } · caps = capítulos COMPLETADOS
+// { libroId, caps, ancla } · caps = capítulos COMPLETADOS; ancla = { parrafoId,
+// offset } del primer párrafo que el invitado tiene en pantalla, para que al
+// entrar siga en la misma página y no al principio del capítulo.
+let anotado = null
 
 // La llama el lector mientras `guestMode` está activo. Solo sube: llegar al
 // final del último capítulo de muestra cuenta como terminarlo (lo marca el
 // paywall con chapterIndex + 1), y volver atrás no borra ese avance.
 export function anotarMuestra(libroId, caps) {
   if (!libroId || !(caps > 0)) return
-  if (anotado?.libroId !== libroId) anotado = { libroId, caps }
+  if (anotado?.libroId !== libroId) anotado = { libroId, caps, ancla: null }
   else anotado.caps = Math.max(anotado.caps, caps)
 }
 
-// Devuelve los capítulos leídos como invitado y los consume: el rescate corre
-// una sola vez por libro.
+// La llama el lector en modo muestra cada vez que se asienta en una página,
+// igual que guarda el progreso con sesión. Esta sí puede bajar: es dónde está.
+export function anotarPosicion(libroId, parrafoId, offset = 0) {
+  if (!libroId || !parrafoId) return
+  if (anotado?.libroId !== libroId) anotado = { libroId, caps: 0, ancla: null }
+  anotado.ancla = { parrafoId, offset }
+}
+
+// Devuelve lo leído como invitado ({ caps, ancla }, o null si nada) y lo
+// consume: el rescate corre una sola vez por libro.
 export function tomarMuestra(libroId) {
-  if (!anotado || anotado.libroId !== libroId) return 0
-  const { caps } = anotado
+  if (!anotado || anotado.libroId !== libroId) return null
+  const { caps, ancla = null } = anotado
   anotado = null
-  return caps
+  return { caps, ancla }
 }
 
 // ── "Continuar con Google" ──
