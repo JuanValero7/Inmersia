@@ -52,6 +52,8 @@ export const queryKeys = {
   // Lector y Cuaderno (ver useSubrayadosLibroQuery y hooks/useResena.js)
   subrayadosLibro: (userId, libroId) => ['subrayadosLibro', userId, libroId],
   miResena: (userId, libroId) => ['miResena', userId, libroId],
+  // Chat del Foro (regla 16+)
+  fechaNacimiento: (userId) => ['fechaNacimiento', userId],
 }
 
 // perfiles.nombre/apellido — Biblioteca (saludo) y Perfil (formulario)
@@ -346,5 +348,24 @@ export function useSubrayadosLibroQuery(userId, libroId) {
     },
     enabled: !!userId && !!libroId,
     staleTime: STALE_TIME,
+  })
+}
+
+// Fecha de nacimiento del perfil, para la regla 16+ del chat. Se lee de
+// `perfiles` y no del metadata de la cuenta: la del perfil solo se puede poner
+// una vez (migración 074) y la del metadata la puede cambiar el usuario. Va
+// aparte de usePerfilQuery a propósito: el Perfil reescribe esa caché con
+// nombre y apellido al guardar y se llevaría la fecha por delante.
+export function useFechaNacimientoQuery(userId) {
+  return useQuery({
+    queryKey: queryKeys.fechaNacimiento(userId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('perfiles').select('fecha_nacimiento').eq('id', userId).maybeSingle()
+      if (error) throw error
+      return data?.fecha_nacimiento ?? null
+    },
+    enabled: !!userId,
+    staleTime: 10 * 60_000,
   })
 }

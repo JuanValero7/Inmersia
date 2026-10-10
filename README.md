@@ -35,12 +35,14 @@ ni TypeScript (ver *Convenciones*).
 
 ## Arquitectura
 
+Guía completa para quien llega nuevo: [`Documentation/arquitectura/guia-desarrolladores.md`](Documentation/arquitectura/guia-desarrolladores.md).
+
 ### Las tres capas y su frontera
 
 ```
    COMPONENTES     ¿cómo se ve?        Lector.jsx, Perfil.jsx, ForoChat.jsx …
    ────────────────────────────────── ← la frontera
-   HOOKS           ¿qué datos hay?     19 hooks en src/hooks/
+   HOOKS           ¿qué datos hay?     31 hooks en src/hooks/
    SUPABASE        dónde viven         src/lib/supabase.js
 ```
 
@@ -48,7 +50,8 @@ ni TypeScript (ver *Convenciones*).
 directamente pasan dos cosas: deja de poder probarse sin simular la red entera, y React
 Query no se entera de esa escritura, así que su caché se queda con el dato viejo.
 
-Hoy quedan 14 componentes que se la saltan. Es deuda conocida, no un patrón a imitar.
+Hoy quedan 13 archivos de `components/` y `context/` que se la saltan. Es deuda conocida,
+no un patrón a imitar: se arreglan al tocarlos.
 
 ### El fork desktop / mobile es intencional
 
@@ -190,14 +193,22 @@ rewrites**. Un libro sin archivo cae al catch-all de siempre: se degrada solo.
 ## Verificación
 
 No hay tests de componentes. La red de seguridad son los tests unitarios de la lógica pura
-y los scripts de Playwright.
+y las **pruebas de humo**: los recorridos que no pueden romperse, en un navegador de verdad.
 
 ```bash
 npm run lint            # ESLint: 0 errores y no más hex que el tope (ver abajo)
-npm test                # 78 tests: paginación, geometría, tokens, edad, anclaje
+npm test                # 96 tests: paginación, geometría, tokens, edad, anclaje, libros…
+npm run humo            # recorridos de punta a punta contra el proyecto de PRUEBAS
 npm run security-check  # lint + escáner de secretos + npm audit
 npm run typecheck       # JSDoc vía tsc (ver jsconfig.json) — hoy no comprueba nada
 ```
+
+`npm run humo` (`scripts/humo.mjs`) crea una cuenta desechable, recorre registro, el
+invitado que entra desde el muro de la muestra, el límite de pendientes, el lector de
+escritorio y de móvil (progreso, volver a la misma página, tira, subrayados y Cuaderno),
+la Cartelera, las pantallas principales y borrar la cuenta. Solo corre contra
+`inmersia-pruebas` (se niega con cualquier otra URL) y en tu máquina, no en la CI. Antes de
+un cambio que toque el lector, la sesión o la Biblioteca: que salga en verde.
 
 **CI.** `.github/workflows/ci.yml` corre lint, tests, build, el escáner de secretos y
 `npm audit` en cada push y cada pull request. No despliega ni bloquea a Vercel: avisa.
@@ -243,7 +254,7 @@ el tablero de la Cartelera elige los hilos rojos con `Math.random`, y la Landing
 el disco local. Qué guarda, cómo saber si falla y cómo restaurar:
 [`Documentation/base-de-datos/copias-de-seguridad.md`](Documentation/base-de-datos/copias-de-seguridad.md).
 
-73 migraciones en `supabase/Migration/`, y la seguridad vive en las políticas RLS: la
+77 migraciones en `supabase/Migration/`, y la seguridad vive en las políticas RLS: la
 autorización de superusuario se comprueba en la propia policy
 (`EXISTS (SELECT 1 FROM superusuarios …)`), no solo en la UI.
 
@@ -302,7 +313,17 @@ Reglas que ya costó descubrir una vez. Romperlas no da error: da un fallo silen
 
 - **Un solo breakpoint: 820 px, en `useIsMobile`.** No definas otro en un componente.
 
-- **Desktop y móvil comparten datos y lógica; solo se bifurca el layout.**
+- **Desktop y móvil comparten datos y lógica; solo se bifurca el layout.** Lo común
+  tiene casa: `hooks/useLectorComun.js` (los dos lectores) y
+  `components/biblioteca/miBiblioteca.js` (las dos Bibliotecas). Si vas a escribir lo
+  mismo en los dos archivos, va ahí.
+
+- **La sesión se lee con `useSesion()`** (`context/sesion.jsx`): usuario, superusuario y
+  gato. No vuelvas a pedirla con `supabase.auth.getSession()` en un hook: una segunda
+  fuente de verdad ya hizo que el lector no guardara progreso tras entrar.
+
+- **Una fila de `libros` se traduce con `mapLibro`** (`lib/libros.js`). Había siete
+  copias, con tres colores por defecto distintos.
 
 - **La geometría de la Cartelera recibe las constantes por parámetro, nunca por clausura.**
   Los dos tableros usan constantes con el mismo nombre y valores distintos (1180×720 frente
@@ -338,18 +359,18 @@ src/
 │   ├── onboarding/   (4)   Tutorial guiado por fases
 │   ├── tienda/       (6)   CalleEscena, CatalogoInterior, PanelLibro
 │   └── mobile/      (13)   Cáscaras móviles + biblioteca/ lector/ tienda/
-├── hooks/           (19)   La frontera con Supabase
-├── lib/             (12)   supabase, queries, analytics, errores,
+├── hooks/           (31)   La frontera con Supabase
+├── lib/             (14)   supabase, queries, libros, analytics, errores,
 │                           carteleraGeometria, edad, misDatos…
-├── context/          (2)   authModal, onboarding
+├── context/          (4)   sesion, authModal, onboarding, pistas
 ├── styles/          (16)   CSS por vista, con su variante .mobile
 ├── utils/            (3)   Paginación del lector (desktop y móvil), helpers
 ├── index.css               Reset base + paleta de marca + utilidades
-├── App.jsx                 Rutas y estado de sesión
+├── App.jsx                 Rutas
 └── main.jsx                Arranque: errores, analítica, render
 scripts/                    Verificación y generación (ver Verificación)
 supabase/
-├── Migration/       (51)   Esquema y políticas
+├── Migration/       (77)   Esquema y políticas
 ├── consultas/              SQL de apoyo, solo lectura
 └── exportar-politicas.sql
 Documentation/              Checklists y notas de trabajo
@@ -361,7 +382,8 @@ Documentation/              Checklists y notas de trabajo
 
 Cosas pendientes de verdad, para que nadie las descubra otra vez desde cero:
 
-- **14 componentes importan `supabase` directamente**, saltándose la frontera de hooks.
+- **13 archivos de `components/` y `context/` importan `supabase` directamente**,
+  saltándose la frontera de hooks.
 - **89 `<div>`/`<span>` con `onClick`** sin semántica de control: el tabulador no los
   alcanza y un lector de pantalla no los anuncia como pulsables. Pesa más de lo normal
   aquí, porque el público objetivo se solapa con quien navega por teclado.

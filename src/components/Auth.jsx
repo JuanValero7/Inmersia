@@ -154,10 +154,9 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
         legal_aceptado_at: new Date().toISOString(),
       } },
     })
-    // El perfil y el Manual del Explorador se crean en App.jsx (ensureProfile) al
-    // recibir el evento SIGNED_IN — cubre tanto la sesión inmediata (confirmación de
-    // email desactivada) como el primer login tras confirmar (cuando signUp no
-    // devuelve sesión y no hay auth.uid() disponible todavía para el insert).
+    // El perfil y el Manual del Explorador los crea la base al registrarse
+    // (trigger de la migración 073). ensureProfile, al recibir SIGNED_IN, es solo
+    // la red de seguridad (ver context/sesion.jsx).
     if (signUpError) { setLoading(false); setError(signUpError.message); return }
     // La cuenta ya existe, con sesión inmediata o pendiente de confirmar el
     // correo. La distinción importa: si `confirmacion_pendiente` domina, la

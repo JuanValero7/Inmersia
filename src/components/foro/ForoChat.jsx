@@ -4,6 +4,7 @@ import clsx from 'clsx'
 import { supabase } from '../../lib/supabase.js'
 import { Avatar, timeAgo, fetchNombre } from './foroUtils.jsx'
 import { puedeUsarChat, EDAD_MINIMA_CHAT } from '../../lib/edad.js'
+import { useFechaNacimientoQuery } from '../../lib/queries.js'
 
 export default function ForoChat({ foro, book, user, miNombre, onSesionChange }) {
   const [enSala,       setEnSala]       = useState(false)
@@ -16,9 +17,12 @@ export default function ForoChat({ foro, book, user, miNombre, onSesionChange })
 
   const [salaError,    setSalaError]    = useState(null)
 
-  // Edad declarada en el registro. Sin sala no hay presencia, y sin presencia
-  // nadie puede invitar a este usuario: basta con cerrar esta puerta.
-  const puedeChatear = puedeUsarChat(user?.user_metadata?.fecha_nacimiento)
+  // Edad declarada en el registro, la del PERFIL: solo se pone una vez
+  // (migración 074); la del metadata de la cuenta la puede cambiar el usuario.
+  // Mientras llega se usa la del metadata. Sin sala no hay presencia, y sin
+  // presencia nadie puede invitar a este usuario: basta con cerrar esta puerta.
+  const fechaPerfil = useFechaNacimientoQuery(user?.id)
+  const puedeChatear = puedeUsarChat(fechaPerfil.isSuccess ? fechaPerfil.data : user?.user_metadata?.fecha_nacimiento)
 
   const salaChannelRef = useRef(null)
   const chatChannelRef = useRef(null)
