@@ -7,11 +7,12 @@
 // la deja de mostrar al cambiar de capítulo.
 //
 // Compartida por escritorio y móvil. En móvil va más arriba (`movil`) para no
-// tapar al gato, que abre la bandeja de herramientas.
+// tapar al gato, que abre la bandeja de herramientas. En escritorio se sube
+// sobre el borde inferior del libro: pegada al fondo de la ventana no se veía.
 export default function TiraPrediccion({ capNum, onAnotar, onCerrar, movil = false }) {
   return (
     <div role="status" style={{
-      position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: movil ? 78 : 18, zIndex: 40,
+      position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: movil ? 78 : 110, zIndex: 40,
       width: movil ? 'calc(100% - 28px)' : 'auto', maxWidth: 620, boxSizing: 'border-box',
       display: 'flex', alignItems: 'center', gap: 12,
       background: '#fffdf8', border: '2px solid #4a3622', borderRadius: movil ? 18 : 999,

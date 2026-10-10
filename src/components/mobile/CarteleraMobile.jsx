@@ -11,7 +11,7 @@
 //   { onGoBack, book, user, onGoForo, onGoBiblioteca }
 // ─────────────────────────────────────────────────────────────
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams, useLocation } from 'react-router-dom'
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import { useBookBySlug } from '../../hooks/useBookBySlug.js'
 
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
@@ -143,27 +143,61 @@ function ExploreSheet({ onClose, onGoLectura, onGoForo, onGoBiblioteca }) {
 // ── Vista de sección: lista → ficha ──
 function SectionView({ sectionKey, data, onGoBack, onGoLanding, onJump, onExplore, initialItemId, secciones = SECCIONES, gatoColor = 'negro', cartel = null }) {
   const meta = secciones.find(s => s.key === sectionKey)
-  const [tab, setTab] = useState('lista')      // lista | ficha
-  const [selId, setSelId] = useState(null)
+  const navigate = useNavigate()
+  const location = useLocation()
   const items = data.itemsBySeccion[sectionKey] || []
-  const current = items.find(it => it.id === selId || it.allIds?.includes(selId)) || null
   const listScrollRef = useRef(0)
 
-  // al cambiar de sección reseteamos a Lista
-  useEffect(() => { setTab('lista'); setSelId(null); listScrollRef.current = 0 }, [sectionKey])
+  // ── La ficha abierta vive en el HISTORIAL, no en un estado ──────────
+  // Abrir una ficha desde la lista empuja una entrada nueva, con la misma URL
+  // y la ficha en el `state`. Así el atrás del TELÉFONO cierra la ficha y
+  // devuelve a la lista; desde la lista (o el tablero) sale de la
+  // Investigación como siempre. Antes la ficha era un useState: para el
+  // navegador seguías en la página por la que entraste y atrás te sacaba de
+  // un tirón al lector.
+  //
+  // Solo la ficha tiene entrada propia. La sección no: atrás desde una lista
+  // tiene que salir, no pasear por el tablero ni por las secciones visitadas.
+  // El `state` sobrevive a recargar la página, así que recargar en una ficha
+  // sigue en esa ficha.
+  const fichaHist = location.state?.cmFicha?.seccion === sectionKey ? location.state.cmFicha.id : null
 
-  // salto directo a un item desde X-ray: back desde ficha va al origen, no a la lista
-  const saltoDirecto = useRef(false)
+  // Salto directo desde las Fichas del lector: se aterriza en un detalle sin
+  // pasar por la lista y SIN entrada propia, así que atrás vuelve al lector.
+  const [saltoId, setSaltoId] = useState(null)
+
+  // al cambiar de sección se vuelve a la lista
+  useEffect(() => { setSaltoId(null); listScrollRef.current = 0 }, [sectionKey])
+
   useEffect(() => {
     if (!initialItemId || items.length === 0) return
-    if (items.find(it => it.id === initialItemId || it.allIds?.includes(initialItemId))) {
-      setSelId(initialItemId)
-      setTab('ficha')
-      saltoDirecto.current = true
-    }
+    if (items.find(it => it.id === initialItemId || it.allIds?.includes(initialItemId))) setSaltoId(initialItemId)
   }, [initialItemId, items])
 
-  const pick = (id) => { setSelId(id); setTab('ficha'); saltoDirecto.current = false }
+  const selId = fichaHist ?? saltoId
+  const tab = selId ? 'ficha' : 'lista'
+  const saltoDirecto = !fichaHist && !!saltoId
+  const current = items.find(it => it.id === selId || it.allIds?.includes(selId)) || null
+
+  const pick = (id) => {
+    setSaltoId(null)
+    navigate({ pathname: location.pathname, search: location.search }, { state: { ...location.state, cmFicha: { seccion: sectionKey, id } } })
+  }
+  // Cerrar la ficha = deshacer su entrada, igual que el atrás del teléfono.
+  const cerrarFicha = () => navigate(-1)
+
+  // El gato (otra sección o el tablero) sale también de la ficha: primero se
+  // deshace su entrada, para que no quede en el historial una ficha detrás
+  // de la vista nueva (el siguiente atrás no haría nada visible). El cambio
+  // de vista espera al `popstate`: hecho a la vez, el ?seccion= nuevo se
+  // escribía en la entrada de la ficha y el retroceso lo pisaba con el viejo.
+  const trasCerrarFicha = (fn) => {
+    if (!fichaHist) return fn()
+    window.addEventListener('popstate', () => fn(), { once: true })
+    navigate(-1)
+  }
+  const saltar = (k) => trasCerrarFicha(() => onJump(k))
+  const irAlTablero = () => trasCerrarFicha(onGoLanding)
 
   // ── La flecha de atrás del header retrocede POR DENTRO ──────────────
   // La Cartelera es la única pantalla de la app con vistas anidadas
@@ -179,13 +213,13 @@ function SectionView({ sectionKey, data, onGoBack, onGoLanding, onJump, onExplor
   // flecha devuelve al lector. Mandar a una lista por la que nunca pasaste
   // sería inventarte un camino.
   const atrasJerarquico =
-    tab === 'ficha' && !saltoDirecto.current ? () => setTab('lista')
-    : tab === 'ficha'                        ? onGoBack
-    : onGoLanding
+    tab === 'ficha' && !saltoDirecto ? cerrarFicha
+    : tab === 'ficha'                ? onGoBack
+    : irAlTablero
 
   const etiquetaAtras =
-    tab === 'ficha' && !saltoDirecto.current ? `Volver a ${meta.label}`
-    : tab === 'ficha'                        ? 'Volver a la lectura'
+    tab === 'ficha' && !saltoDirecto ? `Volver a ${meta.label}`
+    : tab === 'ficha'                ? 'Volver a la lectura'
     : 'Volver al tablero'
 
   return (
@@ -214,7 +248,7 @@ function SectionView({ sectionKey, data, onGoBack, onGoLanding, onJump, onExplor
         <CarteleraMobileFicha section={meta} item={current} />
       )}
 
-      <CatDock currentKey={sectionKey} onJump={onJump} onGoLanding={onGoLanding} secciones={secciones} gatoColor={gatoColor} />
+      <CatDock currentKey={sectionKey} onJump={saltar} onGoLanding={irAlTablero} secciones={secciones} gatoColor={gatoColor} />
     </div>
   )
 }
