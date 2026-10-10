@@ -2,6 +2,7 @@ import React from 'react'
 import { INK, inmTint, BookCover, CornerMounts, Skel, useAnchoContenedor } from './helpers.jsx'
 import { NovedadesSpotlight } from './NovedadesSpotlight.jsx'
 import { imgUrl } from '../../../lib/img.js'
+import { mapLibro } from '../../../lib/libros.js'
 // =============================================================
 // ACUARELA · Header (logo + buscador + nav) y Swimlane (hero).
 // Header cableado: search, Tienda, Perfil, Salir.
@@ -97,7 +98,6 @@ function RecomendacionSpotlight({ recomendaciones, idx, setIdx, onOpen, onPrevie
   if (!recomendaciones.length) return null
 
   const libro = recomendaciones[idx]
-  const bookShape = (l) => ({ id: l.id, title: l.titulo, author: l.autor, cover: l.portada_url, color: l.color, pages: l.paginas })
   // ancho 0 = todavía sin medir; asumimos holgado para no parpadear.
   const holgado  = ancho === 0 || ancho >= REC_ANCHO_LATERAL
   const estrecho = ancho !== 0 && ancho < REC_ANCHO_COMPACTO
@@ -109,7 +109,7 @@ function RecomendacionSpotlight({ recomendaciones, idx, setIdx, onOpen, onPrevie
     <div ref={cajaRef} style={{ display: 'flex', alignItems: 'center', gap: estrecho ? 26 : 40, padding: '16px 14px 26px', flexWrap: 'wrap' }}>
       <div onClick={(e) => onOpen(libro, e.currentTarget.getBoundingClientRect())}
         style={{ cursor: 'pointer', flexShrink: 0, transform: 'rotate(-5deg)', filter: `drop-shadow(4px 10px 12px ${ink}48)` }}>
-        <BookCover book={bookShape(libro)} h={portadaH} />
+        <BookCover book={mapLibro(libro)} h={portadaH} />
       </div>
 
       {/* En modo tira el alto lo manda el contenido, no la portada: si se fija
@@ -159,7 +159,7 @@ function RecomendacionSpotlight({ recomendaciones, idx, setIdx, onOpen, onPrevie
             : { display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 4 }}>
             {recomendaciones.map((l, i) => i === idx ? null : (
               <div key={l.id} onClick={() => setIdx(i)} style={{ cursor: 'pointer', flexShrink: 0 }}>
-                <BookCover book={bookShape(l)} h={holgado ? 110 : 78} />
+                <BookCover book={mapLibro(l)} h={holgado ? 110 : 78} />
               </div>
             ))}
           </div>

@@ -1,5 +1,6 @@
 import React from 'react'
 import { INK, BookCover, useAnchoContenedor } from './helpers.jsx'
+import { mapLibro } from '../../../lib/libros.js'
 
 // =============================================================
 // ACUARELA · Novedades — vista "Spotlight + carrusel".
@@ -16,10 +17,6 @@ import { INK, BookCover, useAnchoContenedor } from './helpers.jsx'
 // shape de BookCover (title/author/cover) solo para pintar.
 // =============================================================
 
-const bookShape = (l) => ({
-  id: l.id, title: l.titulo, author: l.autor,
-  cover: l.portada_url, color: l.color, pages: l.paginas,
-})
 
 // icono ojo (mismo que usa Preview en el resto de la biblioteca)
 function EyeIcon({ size = 15 }) {
@@ -65,7 +62,7 @@ function NovedadesSpotlight({ novedades = [], idx, setIdx, onOpen, onPreview }) 
       <div style={{ flex: '1.15', minWidth: 0, display: 'flex', gap: estrecho ? 22 : 34, alignItems: 'center' }}>
         <div onClick={(e) => onOpen(libro, e.currentTarget.getBoundingClientRect())}
           style={{ cursor: 'pointer', flexShrink: 0, transform: 'rotate(-4deg)', filter: `drop-shadow(4px 12px 14px ${ink}4d)` }}>
-          <BookCover book={bookShape(libro)} h={portadaH} />
+          <BookCover book={mapLibro(libro)} h={portadaH} />
         </div>
 
         {/* En modo tira el alto lo manda el contenido, no la portada: si se fija
@@ -120,7 +117,7 @@ function NovedadesSpotlight({ novedades = [], idx, setIdx, onOpen, onPreview }) 
             {novedades.map((l, i) => i === idx ? null : (
               <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 13, flexShrink: 0, minWidth: holgado ? 0 : 210 }}>
                 <div onClick={() => setIdx(i)} style={{ cursor: 'pointer', flexShrink: 0 }} title="Ver en el spot principal">
-                  <BookCover book={bookShape(l)} h={64} />
+                  <BookCover book={mapLibro(l)} h={64} />
                 </div>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ fontWeight: 800, fontSize: 13.5, color: ink, lineHeight: 1.2,

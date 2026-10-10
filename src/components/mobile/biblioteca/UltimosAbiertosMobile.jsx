@@ -14,6 +14,7 @@
 import React from 'react'
 import { INK, BookCover } from './bibmHelpers.jsx'
 import { imgUrl } from '../../../lib/img.js'
+import { mapLibro } from '../../../lib/libros.js'
 
 // Chasis común: portada + fondo acuarela del libro + contenido a la derecha.
 function BibCard({ book, heroUrl, onClick, children }) {
@@ -71,14 +72,13 @@ export function UltimosAbiertosMobile({ books, onOpen }) {
 // Novedades / Para ti: filas crudas del catálogo (titulo/autor/portada_url/
 // color/metadata). Se mapean al shape de BookCover para pintar y al tocar
 // abren el Preview/Panel (onOpen = setReelLibro).
-const libroShape = (l) => ({ id: l.id, title: l.titulo, author: l.autor, cover: l.portada_url, color: l.color })
 
 export function LibroCardsMobile({ libros, onOpen, badge }) {
   if (!libros?.length) return null
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {libros.map(l => (
-        <BibCard key={l.id} book={libroShape(l)} heroUrl={l.metadata?.hero_url_mobile}
+        <BibCard key={l.id} book={mapLibro(l)} heroUrl={l.metadata?.hero_url_mobile}
           onClick={() => onOpen(l)}>
           {badge && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(74,54,34,0.1)', color: INK, fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '2px 8px', borderRadius: 999, marginBottom: 5 }}>{badge}</span>

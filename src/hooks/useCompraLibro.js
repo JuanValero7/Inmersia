@@ -16,6 +16,7 @@ import { supabase } from '../lib/supabase.js'
 import { useInvalidateBibliotecaUsuario } from '../lib/queries.js'
 import { evento } from '../lib/analytics.js'
 import { guardar, AVISOS } from '../lib/guardar.js'
+import { mapLibro } from '../lib/libros.js'
 
 export const LIMITE_PENDIENTES = 5
 
@@ -59,19 +60,7 @@ export function useCompraLibro(user, isSuperuser, onOpenBook) {
       const { error } = await comprar(libro, { pendientes })
       if (error) return { error }
     }
-    onOpenBook?.({
-      id: libro.id,
-      libro_id: libro.id,
-      slug: libro.slug,
-      title: libro.titulo,
-      author: libro.autor || 'Desconocido',
-      pages: libro.paginas || 200,
-      _baseColor: libro.color || '#F2792A',
-      summary: libro.descripcion || '',
-      cover: libro.portada_url || null,
-      es_ficcion: libro.es_ficcion ?? true,
-      progress: null,
-    })
+    onOpenBook?.({ ...mapLibro(libro), progress: null })
     return { error: null }
   }, [comprar, onOpenBook, user])
 

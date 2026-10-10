@@ -24,6 +24,7 @@ import { usePerfilQuery, useCatalogoLibrosQuery, useBibliotecaUsuarioQuery, useI
 import { formatSeg } from './useReadingStats.js'
 import { getSecciones } from '../components/cartelera/carteleraHelpers.js'
 import { MANUAL_LIBRO_ID, COLOR_BOOK_FALLBACK2 } from '../components/biblioteca/constants.js'
+import { mapLibro } from '../lib/libros.js'
 
 const NOVEDADES_COUNT = 5
 const RECOMENDACIONES_COUNT = 5
@@ -133,20 +134,9 @@ export function useBiblioteca(user, lastOpenedBookIds) {
     // Filtra filas cuyo libro fue borrado o no es accesible por RLS
     // (Supabase devuelve libros: null y reventaría el .map).
     const mapped = (bibliotecaQuery.data || []).filter(r => r.libros).map(r => ({
-      id: r.libros.id,
-      libro_id: r.libros.id,
-      slug: r.libros.slug,
+      ...mapLibro(r.libros),
       categoria_id: r.categoria_id,
-      title: r.libros.titulo,
-      author: r.libros.autor || 'Desconocido',
-      pages: r.libros.paginas || 200,
-      _baseColor: r.libros.color || COLOR_BOOK_FALLBACK2,
-      summary: r.libros.descripcion || '',
       leido: r.leido,
-      cover: r.libros.portada_url || null,
-      heroUrl: r.libros.metadata?.hero_url || null,
-      heroUrlMobile: r.libros.metadata?.hero_url_mobile || null,
-      es_ficcion: r.libros.es_ficcion ?? true,
       // % por palabras, para mostrar. Lo que desbloquea es capitulosCompletados (migración 075).
       progress: typeof progMap[r.libros.id] === 'number' ? progMap[r.libros.id] / 100 : null,
       capitulosCompletados: completadosMap[r.libros.id] ?? 0,

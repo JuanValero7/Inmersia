@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase.js'
 import { useBibliotecaUsuarioQuery } from '../lib/queries.js'
 import { computeSesionStats } from './useReadingStats.js'
 import { capituloActualDesdeProgreso } from '../components/cartelera/carteleraHelpers.js'
+import { mapLibro } from '../lib/libros.js'
 
 // Normaliza un nombre/título para comparar duplicados (misma imagen re-subida
 // con otra URL): sin acentos, sin mayúsculas, sin espacios de más.
@@ -95,18 +96,8 @@ export function useAlbum(user) {
   // Libros del usuario: query compartida con Biblioteca/Tienda (ver
   // src/lib/queries.js) en vez de un fetch propio de bibliotecas_usuarios.
   const bibliotecaQuery = useBibliotecaUsuarioQuery(user?.id)
-  const libros = useMemo(() => (bibliotecaQuery.data || []).filter(r => r.libros).map(r => ({
-    id:          r.libros.id,
-    libro_id:    r.libros.id,
-    slug:        r.libros.slug,
-    title:       r.libros.titulo,
-    author:      r.libros.autor || 'Desconocido',
-    pages:       r.libros.paginas || 200,
-    _baseColor:  r.libros.color || '#F2792A',
-    cover:       r.libros.portada_url || null,
-    es_ficcion:  r.libros.es_ficcion ?? true,
-    leido:       r.leido,
-  })), [bibliotecaQuery.data])
+  const libros = useMemo(() => (bibliotecaQuery.data || []).filter(r => r.libros)
+    .map(r => ({ ...mapLibro(r.libros), leido: r.leido })), [bibliotecaQuery.data])
 
   useEffect(() => {
     if (!user?.id) { setItems([]); setLoading(false); return }

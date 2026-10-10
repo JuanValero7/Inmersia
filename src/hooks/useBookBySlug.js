@@ -2,6 +2,7 @@
 // si no (null o slug distinto), lo fetchea desde `libros` por el :slug del route.
 // Permite acceso directo a /investigacion/:slug y /foro/:slug sin currentBook en memoria.
 import { useState, useEffect } from 'react'
+import { mapLibro as mapLibroBase } from '../lib/libros.js'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 
@@ -11,14 +12,7 @@ import { supabase } from '../lib/supabase.js'
 // solo cuando hay sesión. Sin el join el encadenamiento opcional cae en false,
 // que es lo correcto: un invitado no tiene ningún libro marcado como leído.
 export function mapLibro(data) {
-  return {
-    id: data.id, libro_id: data.id, slug: data.slug,
-    title: data.titulo, author: data.autor || 'Desconocido',
-    pages: data.paginas || 200, _baseColor: data.color || '#F2792A',
-    summary: data.descripcion || '', cover: data.portada_url || null,
-    es_ficcion: data.es_ficcion ?? true,
-    leido: data.bibliotecas_usuarios?.[0]?.leido ?? false,
-  }
+  return { ...mapLibroBase(data), leido: data.bibliotecas_usuarios?.[0]?.leido ?? false }
 }
 
 /**
