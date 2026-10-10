@@ -174,9 +174,9 @@ for (const [nombre, ruta] of PANTALLAS) {
   console.log(`  ${nuevas ? '✗' : '✓'} ${nombre.padEnd(12)} ${nuevas ? `${nuevas} violaciones` : 'limpia'}`)
 }
 
-// ── comprobación aparte: las fuentes de Google se aplicaron ──
-// Es el único origen externo de estilos; si la CSP lo bloqueara, el texto
-// caería a la fuente del sistema sin dar ningún error de JS.
+// ── comprobación aparte: las fuentes web se aplicaron ──
+// Se sirven desde public/fonts (src/styles/fuentes.css). Si la CSP las
+// bloqueara, el texto caería a la fuente del sistema sin ningún error de JS.
 pantallaActual = 'Biblioteca'
 await page.goto(BASE + '/biblioteca', { waitUntil: 'networkidle' })
 await page.waitForTimeout(1200)
