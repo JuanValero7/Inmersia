@@ -85,6 +85,7 @@ function arrancar() {
       // navegador (posthog.is_capturing(), posthog.config, …).
       if (import.meta.env.DEV) window.posthog = posthog
       cola.splice(0).forEach(([nombre, props]) => ph.capture(nombre, props))
+      medirVelocidad()
     })
     .catch((e) => {
       // Un bloqueador de anuncios o una CSP mal puesta caen aquí. La app sigue
@@ -93,9 +94,39 @@ function arrancar() {
     })
 }
 
+// ── Velocidad real (Core Web Vitals) ─────────────────────────────────────
+// Lo que Google usa para juzgar la velocidad no es Lighthouse sino lo que
+// tardan los visitantes reales. Esto lo mide con la librería oficial de Google
+// (web-vitals, ~2 kB) y lo manda como evento `web_vital`, una vez por métrica
+// y visita. Se carga después de PostHog, pero no se pierde nada: el navegador
+// guarda los tiempos y la librería los recoge con retraso (`buffered`).
+//
+// En PostHog: evento `web_vital`, filtro `metrica = LCP` y `ruta = /`, y mirar
+// el percentil 75 de `valor`, que es el que usa Google. Umbrales de «bueno»:
+// LCP ≤ 2500 ms · INP ≤ 200 ms · CLS ≤ 0,1. `nota` ya trae el veredicto.
+//
+// `ruta` es la de entrada, no la actual: LCP, FCP y TTFB solo existen para la
+// primera carga, y en una SPA lo demás son cambios de ruta sin recarga.
+let rutaEntrada = null
+
+function medirVelocidad() {
+  import('web-vitals')
+    .then(({ onLCP, onFCP, onCLS, onINP, onTTFB }) => {
+      const enviar = (m) => evento('web_vital', {
+        metrica: m.name,
+        valor: m.name === 'CLS' ? Number(m.value.toFixed(3)) : Math.round(m.value),
+        nota: m.rating,              // good | needs-improvement | poor
+        ruta: rutaEntrada,
+      })
+      ;[onLCP, onFCP, onCLS, onINP, onTTFB].forEach(f => f(enviar))
+    })
+    .catch((e) => console.error('[analítica] no se pudo cargar web-vitals:', e))
+}
+
 export function iniciarAnalitica() {
   if (iniciada || !KEY) return
   iniciada = true
+  rutaEntrada = window.location.pathname
 
   // Esperar a que el navegador esté ocioso: medir no puede robarle milisegundos
   // a abrir la biblioteca. El `timeout` evita que en una pestaña de fondo la

@@ -76,7 +76,18 @@ landing. Las dos vías reales, las dos de cambio estructural (hablarlas antes):
 1. Pintar la landing sin esperar a `getSession` cuando no hay sesión guardada en localStorage.
 2. Que el hero forme parte del HTML estático de `/` (generar-seo.mjs) y React lo herede.
 
-**Cómo medir:** la API de PSI sin clave suele tener la cuota agotada. Lighthouse local con el
+**Decisión de Juan (10 oct): medir a los visitantes reales antes de tocar nada.** Desde ese
+día PostHog recibe el evento `web_vital` (librería oficial `web-vitals`, en
+`src/lib/analytics.js`). Para leerlo: evento `web_vital`, filtros `metrica = LCP` y
+`ruta = /`, y el **percentil 75** de `valor`, que es el que usa Google (bueno: ≤ 2500 ms).
+`$device_type` separa móvil de escritorio. Revisar al cabo de 1–2 semanas:
+- p75 ≤ 2,5 s → no se toca nada.
+- Peor → **prerenderizado de la landing** (generar en el build el HTML de la portada con
+  el propio React y que el navegador lo «despierte»). Es lo estándar. Lo delicado: la
+  landing de móvil o escritorio y el gato elegido se deciden en el navegador.
+- La «copia a mano del hero» en el HTML está **descartada** por Juan.
+
+**Cómo medir en laboratorio:** la API de PSI sin clave suele tener la cuota agotada. Lighthouse local con el
 Chromium de Playwright: `CHROME_PATH=<playwright chromium> npx lighthouse@12 <url>
 --only-categories=performance`. Tres pasadas como mínimo y mirar *qué* elemento es el LCP: a
 veces cuenta el bloque estático (1,7 s) y no la imagen.
