@@ -157,10 +157,16 @@ function jsonLdLibro(l, url, img) {
   return `<script type="application/ld+json">\n${json}\n    </script>`
 }
 
-// El contenido que se lleva el rastreador que no ejecuta JavaScript. Estilo
-// propio y mínimo, sin depender del CSS de la app: durante el instante que se
-// ve, antes de que React monte, tiene que parecerse a Inmersia y no a un
-// documento sin formato. Los colores son los de la marca (index.css).
+// El estilo del bloque estático, en public/seo-estatico.css. No puede ir en un
+// <style> dentro del HTML: la CSP de vercel.json (style-src 'self') bloquea lo
+// en línea y el bloque salía sin formato justo para quien lo lee, Googlebot
+// incluido. El <link> va DENTRO de #seo-estatico: cuando main.jsx retira el
+// bloque, la hoja se va con él y no toca la app.
+const HOJA_SEO = '<link rel="stylesheet" href="/seo-estatico.css" />'
+
+// El contenido que se lleva el rastreador que no ejecuta JavaScript. Durante el
+// instante que se ve, antes de que React monte, tiene que parecerse a Inmersia
+// y no a un documento sin formato.
 function bloqueEstatico(l, parrafos) {
   const texto = parrafos
     .map(p => `<p>${esc(p.contenido)}</p>`)
@@ -170,20 +176,8 @@ function bloqueEstatico(l, parrafos) {
     ? `<img src="${esc(l.portada_url)}" alt="Portada de ${esc(l.titulo)}" width="220" loading="eager" />`
     : ''
 
-  return `<div id="seo-estatico">
-      <style>
-        #seo-estatico { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 4rem;
-          font-family: Lora, Georgia, serif; color: #4a3622; background: #fffdf8; }
-        #seo-estatico h1 { font-family: 'Playfair Display', Georgia, serif;
-          font-size: 2rem; margin: 0 0 .25rem; line-height: 1.2; }
-        #seo-estatico h2 { font-family: 'Playfair Display', Georgia, serif;
-          font-size: 1.35rem; margin: 2.5rem 0 1rem; }
-        #seo-estatico .autor { font-size: 1.05rem; opacity: .75; margin: 0 0 1.5rem; }
-        #seo-estatico img { max-width: 100%; height: auto; border-radius: 6px; }
-        #seo-estatico p { line-height: 1.7; margin: 0 0 1.1rem; }
-        #seo-estatico .leer { display: inline-block; margin: 1.5rem 0; padding: .7rem 1.4rem;
-          background: #f2792a; color: #fffdf8; border-radius: 999px; text-decoration: none; }
-      </style>
+  return `<div id="seo-estatico" class="seo-libro">
+      ${HOJA_SEO}
       <article>
         <h1>${esc(l.titulo)}</h1>
         <p class="autor">${esc(l.autor || 'Autor desconocido')}</p>
@@ -209,18 +203,8 @@ function bloqueCatalogo(lista, titulo, intro, extra = '') {
               `<span> — ${esc(l.autor || 'Autor desconocido')}</span></li>`)
     .join('\n          ')
 
-  return `<div id="seo-estatico">
-      <style>
-        #seo-estatico { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 4rem;
-          font-family: Lora, Georgia, serif; color: #4a3622; background: #fffdf8; }
-        #seo-estatico h1 { font-family: 'Playfair Display', Georgia, serif;
-          font-size: 2rem; margin: 0 0 .75rem; line-height: 1.2; }
-        #seo-estatico p { line-height: 1.7; margin: 0 0 1.5rem; }
-        #seo-estatico ul { list-style: none; padding: 0; margin: 0; }
-        #seo-estatico li { padding: .5rem 0; border-bottom: 1px solid rgba(74,54,34,.12); }
-        #seo-estatico a { color: #8b4d2a; text-decoration: none; font-weight: 600; }
-        #seo-estatico span { opacity: .7; font-weight: 400; }
-      </style>
+  return `<div id="seo-estatico" class="seo-catalogo">
+      ${HOJA_SEO}
       <article>
         <h1>${esc(titulo)}</h1>
         <p>${esc(intro)}</p>${extra}
@@ -241,25 +225,12 @@ function bloqueCatalogo(lista, titulo, intro, extra = '') {
 // ver en el HTML crudo quién está detrás (negocio, equipo y producto): por eso
 // /sobre y los legales salen ahora con su propio contenido estático.
 
-const ESTILO_PAGINA = `<style>
-        #seo-estatico { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 4rem;
-                        color: #4a3622; font-family: Georgia, serif; }
-        #seo-estatico h1, #seo-estatico h2, #seo-estatico h3 {
-                        font-family: 'Playfair Display', Georgia, serif; line-height: 1.25; }
-        #seo-estatico p, #seo-estatico li { line-height: 1.7; }
-        #seo-estatico img { max-width: 100%; height: auto; border-radius: 12px; }
-        #seo-estatico a { color: #8b4d2a; }
-        #seo-estatico table { border-collapse: collapse; width: 100%; }
-        #seo-estatico th, #seo-estatico td { text-align: left; padding: .4rem .6rem;
-                        border-bottom: 1px solid rgba(74,54,34,.15); vertical-align: top; }
-      </style>`
-
 const PIE_PAGINAS = `<p><a href="${ORIGEN}/">Inmersia</a> · <a href="${ORIGEN}/terminos">Términos y Condiciones</a> · ` +
   `<a href="${ORIGEN}/privacidad">Política de Privacidad</a> · <a href="${ORIGEN}/impressum">Impressum</a> · ` +
   `<a href="${ORIGEN}${SOBRE.ruta}">Sobre Inmersia</a></p>`
 
-const bloquePagina = (cuerpo) => `<div id="seo-estatico">
-      ${ESTILO_PAGINA}
+const bloquePagina = (cuerpo) => `<div id="seo-estatico" class="seo-pagina">
+      ${HOJA_SEO}
       <article>
         ${cuerpo}
         ${PIE_PAGINAS}

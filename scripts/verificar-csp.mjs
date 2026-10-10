@@ -142,7 +142,7 @@ await page.goto(`${BASE}/auth`, { waitUntil: 'networkidle' })
 await page.waitForSelector('input[type="email"]', { timeout: 15000 })
 await page.locator('input[type="email"]').last().fill(EMAIL)
 await page.locator('input[type="password"]').last().fill(PASS)
-await page.getByRole('button', { name: /entrar a mi biblioteca/i }).click()
+await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
 await page.waitForURL(/\/biblioteca/, { timeout: 20000 })
 console.log('✓ sesión iniciada (REST y websocket de Supabase pasaron la CSP)\n')
 

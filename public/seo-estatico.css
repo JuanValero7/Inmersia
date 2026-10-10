@@ -1,0 +1,50 @@
+/* Estilo del bloque #seo-estatico que escribe scripts/generar-seo.mjs.
+ *
+ * Vive aquí y no en un <style> dentro del HTML porque la CSP de vercel.json
+ * (style-src 'self' …) bloquea los estilos en línea: en producción el bloque
+ * salía sin formato y la consola enseñaba la violación en cada página.
+ *
+ * El <link> va dentro del propio #seo-estatico, así que cuando src/main.jsx
+ * retira el bloque la hoja se va con él y no toca la app. Mínimo y sin
+ * depender del CSS de la app; los colores son los de la marca (index.css).
+ *
+ * Tres variantes, según la clase del div:
+ *   .seo-libro    ficha de libro (/libro/<slug>)
+ *   .seo-catalogo home y /tienda
+ *   .seo-pagina   /sobre y los legales
+ */
+
+#seo-estatico { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #4a3622; }
+
+/* ── Ficha de libro ─────────────────────────────────────────── */
+#seo-estatico.seo-libro { font-family: Lora, Georgia, serif; background: #fffdf8; }
+#seo-estatico.seo-libro h1 { font-family: 'Playfair Display', Georgia, serif;
+  font-size: 2rem; margin: 0 0 .25rem; line-height: 1.2; }
+#seo-estatico.seo-libro h2 { font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.35rem; margin: 2.5rem 0 1rem; }
+#seo-estatico.seo-libro .autor { font-size: 1.05rem; opacity: .75; margin: 0 0 1.5rem; }
+#seo-estatico.seo-libro img { max-width: 100%; height: auto; border-radius: 6px; }
+#seo-estatico.seo-libro p { line-height: 1.7; margin: 0 0 1.1rem; }
+#seo-estatico.seo-libro .leer { display: inline-block; margin: 1.5rem 0; padding: .7rem 1.4rem;
+  background: #f2792a; color: #fffdf8; border-radius: 999px; text-decoration: none; }
+
+/* ── Catálogo: home y /tienda ───────────────────────────────── */
+#seo-estatico.seo-catalogo { font-family: Lora, Georgia, serif; background: #fffdf8; }
+#seo-estatico.seo-catalogo h1 { font-family: 'Playfair Display', Georgia, serif;
+  font-size: 2rem; margin: 0 0 .75rem; line-height: 1.2; }
+#seo-estatico.seo-catalogo p { line-height: 1.7; margin: 0 0 1.5rem; }
+#seo-estatico.seo-catalogo ul { list-style: none; padding: 0; margin: 0; }
+#seo-estatico.seo-catalogo li { padding: .5rem 0; border-bottom: 1px solid rgba(74,54,34,.12); }
+#seo-estatico.seo-catalogo a { color: #8b4d2a; text-decoration: none; font-weight: 600; }
+#seo-estatico.seo-catalogo span { opacity: .7; font-weight: 400; }
+
+/* ── Páginas sueltas: /sobre y los legales ──────────────────── */
+#seo-estatico.seo-pagina { font-family: Georgia, serif; }
+#seo-estatico.seo-pagina h1, #seo-estatico.seo-pagina h2, #seo-estatico.seo-pagina h3 {
+  font-family: 'Playfair Display', Georgia, serif; line-height: 1.25; }
+#seo-estatico.seo-pagina p, #seo-estatico.seo-pagina li { line-height: 1.7; }
+#seo-estatico.seo-pagina img { max-width: 100%; height: auto; border-radius: 12px; }
+#seo-estatico.seo-pagina a { color: #8b4d2a; }
+#seo-estatico.seo-pagina table { border-collapse: collapse; width: 100%; }
+#seo-estatico.seo-pagina th, #seo-estatico.seo-pagina td { text-align: left; padding: .4rem .6rem;
+  border-bottom: 1px solid rgba(74,54,34,.15); vertical-align: top; }
