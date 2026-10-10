@@ -36,12 +36,14 @@ export function useCompraLibro(user, isSuperuser, onOpenBook) {
 
   const comprar = useCallback(async (libro, { pendientes = 0 } = {}) => {
     if (!user?.id) return { error: 'no-auth' }
+    // Este chequeo es para responder al instante; el que manda es el de
+    // adquirir_libro() en la base (migración 076).
     if (!isSuperuser && pendientes >= LIMITE_PENDIENTES) return { error: 'bloqueado' }
+    const res = await supabase.rpc('adquirir_libro', { p_libro_id: libro.id })
+    if (res.error?.hint === 'limite_pendientes') return { error: 'bloqueado' }
     // El aviso lo enseña <AvisoGuardado>: el catálogo, la tienda principal y la
     // Biblioteca ignoraban el { error } y el botón simplemente no hacía nada.
-    const { ok, error } = await guardar(
-      supabase.from('bibliotecas_usuarios').insert({ user_id: user.id, libro_id: libro.id, leido: false }),
-      { que: 'adquirir libro', aviso: AVISOS.libro })
+    const { ok, error } = await guardar(res, { que: 'adquirir libro', aviso: AVISOS.libro })
     if (!ok) return { error: error?.message || 'error' }
     invalidateBiblioteca()
     // "Comprado" es el nombre heredado del checklist; hoy adquirir es gratis.

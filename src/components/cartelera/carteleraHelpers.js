@@ -21,12 +21,12 @@ export const SECCIONES_NOFICCION = [
 
 export const getSecciones = (esNoficcion) => esNoficcion ? SECCIONES_NOFICCION : SECCIONES
 
-// Capítulo en curso a partir del porcentaje leído: inversa de la fórmula de
-// Lector.jsx (pct = round(pendingIdx / total * 100)), donde pendingIdx
-// (0-based) = número de capítulo (1-based) ya completado. La Cartelera
-// muestra lo de los capítulos < este. 0 = todavía nada.
-export function capituloActualDesdePct(pct, totalCapitulos) {
-  return (pct > 0 && totalCapitulos > 0) ? Math.round(pct / 100 * totalCapitulos) + 1 : 0
+// Capítulo en curso a partir de progreso_lectura.capitulos_completados
+// (migración 075; el `porcentaje` es por palabras y solo se muestra). La
+// Cartelera muestra lo de los capítulos < este. 0 = todavía nada.
+export function capituloActualDesdeProgreso(capitulosCompletados, pct) {
+  const completados = capitulosCompletados ?? 0
+  return (completados > 0 || pct > 0) ? completados + 1 : 0
 }
 
 // tags viven en metadata.tags (jsonb)

@@ -115,7 +115,7 @@ export function useBiblioteca(user, lastOpenedBookIds) {
     let activo = true
     ;(async () => {
       const { data } = await supabase.from('progreso_lectura')
-        .select('libro_id, porcentaje').eq('user_id', user.id)
+        .select('libro_id, porcentaje, capitulos_completados').eq('user_id', user.id)
       if (activo) setProgresos(data || [])
     })()
     return () => { activo = false }
@@ -128,8 +128,8 @@ export function useBiblioteca(user, lastOpenedBookIds) {
   const fetchUserBooks = useCallback(() => invalidateBiblioteca(), [invalidateBiblioteca])
 
   const rawBooks = useMemo(() => {
-    const progMap = {}
-    progresos.forEach(p => { progMap[p.libro_id] = p.porcentaje })
+    const progMap = {}, completadosMap = {}
+    progresos.forEach(p => { progMap[p.libro_id] = p.porcentaje; completadosMap[p.libro_id] = p.capitulos_completados })
     // Filtra filas cuyo libro fue borrado o no es accesible por RLS
     // (Supabase devuelve libros: null y reventaría el .map).
     const mapped = (bibliotecaQuery.data || []).filter(r => r.libros).map(r => ({
@@ -147,7 +147,9 @@ export function useBiblioteca(user, lastOpenedBookIds) {
       heroUrl: r.libros.metadata?.hero_url || null,
       heroUrlMobile: r.libros.metadata?.hero_url_mobile || null,
       es_ficcion: r.libros.es_ficcion ?? true,
+      // % por palabras, para mostrar. Lo que desbloquea es capitulosCompletados (migración 075).
       progress: typeof progMap[r.libros.id] === 'number' ? progMap[r.libros.id] / 100 : null,
+      capitulosCompletados: completadosMap[r.libros.id] ?? 0,
     }))
     // El Manual del Explorador ya viene aquí como fila real de la BD
     // (ensureProfile lo inserta con MANUAL_LIBRO_ID). No inyectamos ninguno
@@ -212,9 +214,8 @@ export function useBiblioteca(user, lastOpenedBookIds) {
   // Datos extra del hero, solo para el libro destacado: tiempo leído (chip
   // "Llevas…") y lo último desbloqueado en la Cartelera (nota "Nuevo en la
   // investigación"). Se piden aquí para que desktop y móvil lean lo mismo.
-  const pctFeatured = typeof featured?.progress === 'number' ? Math.round(featured.progress * 100) : 0
   const tiempoQuery = useTiempoLibroQuery(user.id, featured?.id)
-  const investigacionQuery = useInvestigacionRecienteQuery(featured?.id, pctFeatured)
+  const investigacionQuery = useInvestigacionRecienteQuery(featured?.id, featured?.capitulosCompletados ?? 0)
 
   const featuredConHero = useMemo(() => {
     if (!featured) return null

@@ -17,7 +17,6 @@ import { useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from './supabase.js'
 import { computeSesionStats } from '../hooks/useReadingStats.js'
-import { capituloActualDesdePct } from '../components/cartelera/carteleraHelpers.js'
 
 const STALE_TIME = 60_000
 
@@ -42,9 +41,9 @@ export const queryKeys = {
   denuncias: (pendientes) => ['denuncias', pendientes],
   // Hero "Seguir leyendo" de la Biblioteca (ver useBiblioteca)
   tiempoLibro: (userId, libroId) => ['tiempoLibro', userId, libroId],
-  investigacionReciente: (libroId, pct) => ['investigacionReciente', libroId, pct],
+  investigacionReciente: (libroId, completados) => ['investigacionReciente', libroId, completados],
   // «Anteriormente en…» de la ficha (ver useRepasoQuery)
-  repaso: (userId, libroId, pct) => ['repaso', userId, libroId, pct],
+  repaso: (userId, libroId, completados) => ['repaso', userId, libroId, completados],
   // Tienda (ver Documentation/tienda/plan-implementacion.md)
   salas: () => ['salas'],
   libroResumen: (libroId) => ['libroResumen', libroId],
@@ -210,15 +209,12 @@ export function useTiempoLibroQuery(userId, libroId) {
 // (capitulo_numero = capítulo actual − 1): la nota "Nuevo en la
 // investigación" del hero. No guarda qué vio el usuario: muestra siempre lo
 // último desbloqueado, y cambia al terminar el siguiente capítulo.
-// La clave lleva el porcentaje, así que solo se vuelve a pedir si avanzó.
-export function useInvestigacionRecienteQuery(libroId, pct) {
+// La clave lleva los capítulos completados, así que solo se vuelve a pedir si avanzó.
+export function useInvestigacionRecienteQuery(libroId, completados) {
   return useQuery({
-    queryKey: queryKeys.investigacionReciente(libroId, pct),
+    queryKey: queryKeys.investigacionReciente(libroId, completados),
     queryFn: async () => {
-      const { count, error: errCaps } = await supabase
-        .from('capitulos').select('id', { count: 'exact', head: true }).eq('libro_id', libroId)
-      if (errCaps) throw errCaps
-      const capitulo = capituloActualDesdePct(pct, count ?? 0) - 1
+      const capitulo = completados
       if (capitulo < 1) return { capitulo: 0, items: [] }
       const { data, error } = await supabase
         .from('cartelera_items').select('nombre, seccion')
@@ -226,7 +222,7 @@ export function useInvestigacionRecienteQuery(libroId, pct) {
       if (error) throw error
       return { capitulo, items: data || [] }
     },
-    enabled: !!libroId && pct > 0,
+    enabled: !!libroId && completados > 0,
     staleTime: STALE_TIME,
   })
 }
@@ -234,7 +230,7 @@ export function useInvestigacionRecienteQuery(libroId, pct) {
 // «Anteriormente en…» de la ficha de la Biblioteca: los últimos capítulos
 // TERMINADOS (hasta REPASO_MAX_CAPS), con lo que ya desbloqueó la Cartelera,
 // así que no hay spoilers. Sin tabla propia; se pide al abrir la ficha y la
-// clave lleva el porcentaje, así que solo se vuelve a pedir si avanzó.
+// clave lleva los capítulos completados, así que solo se vuelve a pedir si avanzó.
 //   · Ficción: imagen + titulares de hasta 3 hechos. Imagen: una escena del
 //     capítulo al azar → si no hay, un personaje o lugar que aparece en él →
 //     si tampoco, null (la story se pinta como tarjeta de papel).
@@ -244,9 +240,9 @@ export const REPASO_MAX_CAPS = 5
 
 const alAzar = (lista) => lista[Math.floor(Math.random() * lista.length)]
 
-export function useRepasoQuery(userId, libroId, pct, esFiccion) {
+export function useRepasoQuery(userId, libroId, completados, esFiccion) {
   return useQuery({
-    queryKey: queryKeys.repaso(userId, libroId, pct),
+    queryKey: queryKeys.repaso(userId, libroId, completados),
     queryFn: async () => {
       const [capsRes, sesionRes] = await Promise.all([
         supabase.from('capitulos').select('id, numero, titulo').eq('libro_id', libroId).order('numero'),
@@ -262,7 +258,9 @@ export function useRepasoQuery(userId, libroId, pct, esFiccion) {
       const marca = ultima ? new Date(ultima.ended_at || ultima.started_at).getTime() : null
       const diasSinLeer = marca ? Math.floor((Date.now() - marca) / 86_400_000) : null
 
-      const hasta = capituloActualDesdePct(pct, caps.length) - 1
+      // Libro terminado: ya no hay nada que repasar.
+      if (completados >= caps.length) return { capitulos: [], diasSinLeer }
+      const hasta = completados
       const rango = caps.filter(c => c.numero >= hasta - REPASO_MAX_CAPS + 1 && c.numero <= hasta)
       if (!rango.length) return { capitulos: [], diasSinLeer }
 
@@ -310,7 +308,7 @@ export function useRepasoQuery(userId, libroId, pct, esFiccion) {
 
       return { capitulos, diasSinLeer }
     },
-    enabled: !!userId && !!libroId && pct > 0 && pct < 100,
+    enabled: !!userId && !!libroId && completados > 0,
     staleTime: STALE_TIME,
   })
 }

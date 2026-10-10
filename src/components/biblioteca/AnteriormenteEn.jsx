@@ -33,8 +33,7 @@ export const DIAS_DESTACADO = 5
  */
 export function useAnteriormente(book, user) {
   const esManual = book.id === MANUAL_LIBRO_ID
-  const pct = typeof book.progress === 'number' ? Math.round(book.progress * 100) : 0
-  const { data } = useRepasoQuery(user?.id, esManual ? null : book.id, pct, book.es_ficcion !== false)
+  const { data } = useRepasoQuery(user?.id, esManual ? null : book.id, book.capitulosCompletados ?? 0, book.es_ficcion !== false)
   const [abierto, setAbierto] = useState(false)
   const cerrar = useCallback(() => setAbierto(false), [])
   const capitulos = data?.capitulos || []

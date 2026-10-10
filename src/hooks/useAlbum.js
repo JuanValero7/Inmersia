@@ -5,12 +5,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useBibliotecaUsuarioQuery } from '../lib/queries.js'
 import { computeSesionStats } from './useReadingStats.js'
-
-// Misma fórmula que useCartelera: inversa de round(pendingIdx / total * 100)
-function derivarCapActual(pct, totalCaps) {
-  if (pct <= 0 || totalCaps <= 0) return 0
-  return Math.round(pct / 100 * totalCaps) + 1
-}
+import { capituloActualDesdeProgreso } from '../components/cartelera/carteleraHelpers.js'
 
 // Normaliza un nombre/título para comparar duplicados (misma imagen re-subida
 // con otra URL): sin acentos, sin mayúsculas, sin espacios de más.
@@ -137,7 +132,7 @@ export function useAlbum(user) {
         pegadasRes,
       ] = await Promise.all([
         fetchAllRows(() => supabase.from('progreso_lectura')
-          .select('libro_id, porcentaje')
+          .select('libro_id, porcentaje, capitulos_completados')
           .eq('user_id', user.id)
           .in('libro_id', libroIds)),
 
@@ -189,7 +184,7 @@ export function useAlbum(user) {
       if (cancelled) return
 
       // Índices por libro_id
-      const progresoMap = Object.fromEntries((progresosRes.data || []).map(p => [p.libro_id, p.porcentaje]))
+      const progresoMap = Object.fromEntries((progresosRes.data || []).map(p => [p.libro_id, p]))
 
       const totalCapsMap = {}
       for (const c of (capsRes.data || [])) {
@@ -228,9 +223,11 @@ export function useAlbum(user) {
 
       // Construir un item por libro
       const result = libros.map(libro => {
-        const pct       = Math.max(0, Math.min(100, progresoMap[libro.libro_id] ?? 0))
+        const prog      = progresoMap[libro.libro_id]
+        const pct       = Math.max(0, Math.min(100, prog?.porcentaje ?? 0))
         const totalCaps = totalCapsMap[libro.libro_id] ?? 0
-        const capActual = derivarCapActual(pct, totalCaps)
+        // Lo que desbloquea son los capítulos completados (075), no el % por palabras.
+        const capActual = capituloActualDesdeProgreso(prog?.capitulos_completados, pct)
 
         // Filas de este libro
         const cartRows = (carteleraImgRes.data || []).filter(r => r.libro_id === libro.libro_id)

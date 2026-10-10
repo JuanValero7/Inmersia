@@ -342,7 +342,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
   // Al llegar a la última página del último capítulo → 100 %
   useEffect(() => {
-    if (!restoredRef.current || !userId || !book?.libro_id) return
+    // En muestra no: el último capítulo de la muestra no es el del libro.
+    if (!restoredRef.current || !userId || !book?.libro_id || guestMode) return
     if (!capitulos.length || chapterIndex !== capitulos.length - 1) return
     if (!currentPaginas.length) return
     const step = doubleView ? 2 : 1
@@ -351,7 +352,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     const t = setTimeout(async () => {
       const { ok } = await guardarTodo([
         supabase.from('progreso_lectura')
-          .update({ porcentaje: 100, updated_at: new Date().toISOString() })
+          .update({ porcentaje: 100, capitulos_completados: capitulos.length, updated_at: new Date().toISOString() })
           .eq('user_id', userId).eq('libro_id', book.libro_id),
         supabase.from('bibliotecas_usuarios')
           .update({ leido: true })
@@ -363,7 +364,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       invalidateBiblioteca()
     }, 600)
     return () => clearTimeout(t)
-  }, [chapterIndex, pageIndex, currentPaginas.length, capitulos.length, doubleView, userId, book?.libro_id, restoredRef, setIsLeido, invalidateBiblioteca])
+  }, [chapterIndex, pageIndex, currentPaginas.length, capitulos.length, doubleView, userId, book?.libro_id, guestMode, restoredRef, setIsLeido, invalidateBiblioteca])
 
   const handleTextSelect = useCallback(({ text, parrafoId, rect }) => {
     setPendingSelection({ text, parrafoId, rect })

@@ -44,13 +44,16 @@ const { data: libros, error: errLib } = await sb.from('libros')
   .order('created_at', { ascending: false }).limit(4)
 if (errLib) { console.error('libros:', errLib.message); process.exit(1) }
 
-const filas = [
-  { user_id: uid, libro_id: MANUAL, leido: false },
-  ...libros.map((l, i) => ({ user_id: uid, libro_id: l.id, leido: i < 2 })),
-]
-const { error: errIns } = await sb.from('bibliotecas_usuarios').insert(filas)
+// El Manual lo pone el trigger de la 073; el resto, adquirir_libro() (076),
+// que es la única forma de añadir libros desde la API.
+let errIns = null
+for (const [i, l] of libros.entries()) {
+  const { error } = await sb.rpc('adquirir_libro', { p_libro_id: l.id })
+  if (!errIns && error) errIns = error
+  if (!error && i < 2) await sb.from('bibliotecas_usuarios').update({ leido: true }).eq('user_id', uid).eq('libro_id', l.id)
+}
 if (errIns) console.error('  ⚠ no se pudieron agregar libros:', errIns.message)
-else console.log(`✓ ${filas.length} libros en la biblioteca:`, libros.map(l => l.titulo).join(' · '))
+else console.log(`✓ Manual + ${libros.length} libros en la biblioteca:`, libros.map(l => l.titulo).join(' · '))
 
 writeFileSync('.env.revision.local',
   `# Cuenta DESECHABLE creada por scripts/crear-cuenta-revision.mjs\n` +

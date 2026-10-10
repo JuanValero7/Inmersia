@@ -452,12 +452,13 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
   // 100% al llegar al final del último capítulo
   useEffect(() => {
-    if (!restoredRef.current || !userId || !book?.libro_id) return
+    // En muestra no: el último capítulo de la muestra no es el del libro.
+    if (!restoredRef.current || !userId || !book?.libro_id || guestMode) return
     if (!capitulos.length || chapterIndex !== capitulos.length - 1) return
     if (!paginas.length || pageIndex < paginas.length - 1) return
     const t = setTimeout(async () => {
       const { ok } = await guardarTodo([
-        supabase.from('progreso_lectura').update({ porcentaje: 100, updated_at: new Date().toISOString() })
+        supabase.from('progreso_lectura').update({ porcentaje: 100, capitulos_completados: capitulos.length, updated_at: new Date().toISOString() })
           .eq('user_id', userId).eq('libro_id', book.libro_id),
         supabase.from('bibliotecas_usuarios').update({ leido: true })
           .eq('user_id', userId).eq('libro_id', book.libro_id),
@@ -468,7 +469,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       invalidateBiblioteca()
     }, 600)
     return () => clearTimeout(t)
-  }, [chapterIndex, pageIndex, paginas.length, capitulos.length, userId, book?.libro_id, restoredRef, setIsLeido, invalidateBiblioteca])
+  }, [chapterIndex, pageIndex, paginas.length, capitulos.length, userId, book?.libro_id, guestMode, restoredRef, setIsLeido, invalidateBiblioteca])
 
   // ── Imágenes visibles en la página actual (y anteriores del capítulo) ──
   const visibleImages = useMemo(() => {

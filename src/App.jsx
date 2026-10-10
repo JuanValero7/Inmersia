@@ -84,8 +84,8 @@ function AuthRedirect({ openAuth }) {
 //     muestra, justo donde cortó. Desde la 071 la muestra suele acabar a mitad
 //     de un capítulo: saltar al capítulo siguiente se comía el resto del actual.
 //   · No la terminó → el inicio del capítulo en el que iba.
-// El porcentaje importa: la Cartelera desbloquea fichas según él, así que uno
-// inflado (contar como leído un capítulo a medias) destapa spoilers.
+// Los capítulos completados importan: la Cartelera desbloquea fichas según
+// ellos, así que contar como leído un capítulo a medias destapa spoilers.
 //
 // Se llama justo después de dar de alta el libro en la biblioteca: la RLS ya
 // deja leerlo entero, y la fila de progreso todavía no existe (por eso upsert).
@@ -119,10 +119,13 @@ async function rescatarMuestra(userId, libroId) {
     ancla = primero?.id ?? null
   }
 
+  // `iCap` es ahora el capítulo donde queda el ancla: los anteriores están
+  // completos (eso desbloquea la Cartelera, migración 075).
   const total = capitulos.reduce((s, c) => s + (c.palabras || 0), 0)
   await guardar(supabase.from('progreso_lectura').upsert({
     user_id: userId, libro_id: libroId,
     porcentaje: total ? Math.min(100, Math.round((leidas / total) * 100)) : 0,
+    capitulos_completados: Math.min(iCap, capitulos.length),
     ultimo_parrafo_id: ancla,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id,libro_id' }), { que: 'rescatar muestra', aviso: AVISOS.progreso })
@@ -317,7 +320,7 @@ export default function App() {
 
   // Tras autenticarse desde el paywall de invitado (estando en /libro/:slug),
   // agrega ese libro a la biblioteca del usuario respetando el límite de
-  // lecturas pendientes. Cuenta nueva o usuario bajo el límite → se adquiere y
+  // lecturas pendientes (lo impone adquirir_libro() en la base). Cuenta nueva o usuario bajo el límite → se adquiere y
   // sigue leyendo. Usuario existente que ya llegó al límite → no se adquiere y
   // se lo expulsa a su Biblioteca con un aviso (misma regla que la Tienda).
   // Al adquirirlo se rescata además lo que leyó como invitado (rescatarMuestra).
@@ -336,26 +339,15 @@ export default function App() {
     }
     if (!libroId) return
 
-    // Estado de su biblioteca + condición de superusuario, en paralelo.
-    const [{ data: filas }, { count: superCount }] = await Promise.all([
-      supabase.from('bibliotecas_usuarios').select('libro_id, leido').eq('user_id', u.id),
-      supabase.from('superusuarios').select('*', { count: 'exact', head: true }).eq('user_id', u.id),
-    ])
-    if ((filas || []).some(f => f.libro_id === libroId)) return // ya lo tenía: sigue leyendo
-
-    const esSuper    = (superCount ?? 0) > 0
-    const pendientes = (filas || []).filter(f => f.libro_id !== MANUAL_LIBRO_ID && !f.leido).length
-
-    if (!esSuper && pendientes >= LIMITE_PENDIENTES) {
+    // adquirir_libro() (migración 076) comprueba el límite y si ya lo tenía.
+    const res = await supabase.rpc('adquirir_libro', { p_libro_id: libroId })
+    if (res.error?.hint === 'limite_pendientes') {
       setLimiteAviso(true)
       navigate('/biblioteca', { replace: true })
       return
     }
-
-    const { ok } = await guardar(
-      supabase.from('bibliotecas_usuarios').insert({ user_id: u.id, libro_id: libroId, leido: false }),
-      { que: 'adquirir libro tras registrarse', aviso: AVISOS.libro })
-    if (!ok) return
+    const { ok, data: nuevo } = await guardar(res, { que: 'adquirir libro tras registrarse', aviso: AVISOS.libro })
+    if (!ok || !nuevo) return // falló, o ya lo tenía: sigue leyendo
     await rescatarMuestra(u.id, libroId)
     queryClient.invalidateQueries({ queryKey: queryKeys.bibliotecaUsuario(u.id) })
     // Permanece en el lector; el efecto de guestMode oculta el paywall al dejar de ser invitado.

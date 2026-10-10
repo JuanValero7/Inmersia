@@ -3,14 +3,14 @@
 // las 4 imágenes "principales" (fondo de cada tablero) y las predicciones.
 //
 // Regla de revelado (igual que los otros tableros):
-//   - porcentaje (0..100): fuente única de verdad para el avance.
-//   - capituloActual se deriva de pct + total capítulos (inversa de la fórmula
-//     de Lector.jsx: pct = round(pendingIdx / total * 100)).
+//   - capitulos_completados (migración 075): lo que desbloquea. capituloActual
+//     = completados + 1 (ver capituloActualDesdeProgreso).
+//   - porcentaje (0..100, por palabras): solo para mostrar el avance.
 //   - cartelera_items / predicciones: se filtran en servidor con capitulo < capActual.
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useReadingStats } from './useReadingStats.js'
-import { capituloActualDesdePct } from '../components/cartelera/carteleraHelpers.js'
+import { capituloActualDesdeProgreso } from '../components/cartelera/carteleraHelpers.js'
 
 // A partir de qué avance se cargan las estadísticas de lectura para la placa
 // del tablero "Datos"/"Resumen" (ver TableroDatos.jsx). Recién cerca del final
@@ -52,22 +52,16 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
         return
       }
 
-      // 1) progreso + total capítulos en paralelo (necesarios para derivar capActual
-      //    antes de filtrar items en servidor)
-      const [{ data: prog }, chapsRes] = await Promise.all([
-        supabase.from('progreso_lectura')
-          .select('porcentaje')
-          .eq('user_id', userId)
-          .eq('libro_id', libroId)
-          .maybeSingle(),
-        supabase.from('capitulos')
-          .select('id', { count: 'exact', head: true })
-          .eq('libro_id', libroId),
-      ])
+      // 1) progreso (necesario para derivar capActual antes de filtrar items en servidor)
+      const { data: prog } = await supabase.from('progreso_lectura')
+        .select('porcentaje, capitulos_completados')
+        .eq('user_id', userId)
+        .eq('libro_id', libroId)
+        .maybeSingle()
 
       const pct = Math.max(0, Math.min(100, prog?.porcentaje ?? 0))
 
-      const capActual = capituloActualDesdePct(pct, chapsRes.count ?? 0)
+      const capActual = capituloActualDesdeProgreso(prog?.capitulos_completados, pct)
 
       // 2) En paralelo: items + imágenes + predicciones, filtrados en servidor
       let itemsQuery = supabase.from('cartelera_items')

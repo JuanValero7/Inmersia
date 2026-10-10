@@ -300,11 +300,17 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
   // Persistir avance de capítulo al cerrar el cuaderno (idéntico en ambos)
   async function persistChapterAdvance(pendingChapter) {
     if (!userId || !book?.libro_id) return
-    const newPct = Math.round((pendingChapter / capitulos.length) * 100)
+    // Se guardan las dos cosas (migración 075): los capítulos completados, que
+    // desbloquean la Cartelera, y el % por palabras, el mismo "% del libro"
+    // que ve el usuario. Por capítulos solo si a alguno le faltan las palabras.
+    const leidas = capitulos.slice(0, pendingChapter).reduce((s, c) => s + (c.palabras || 0), 0)
+    const newPct = palabrasLibro
+      ? Math.min(100, Math.round((leidas / palabrasLibro) * 100))
+      : Math.round((pendingChapter / capitulos.length) * 100)
     const updates = [
       supabase.from('progreso_lectura')
-        .update({ porcentaje: newPct, updated_at: new Date().toISOString() })
-        .eq('user_id', userId).eq('libro_id', book.libro_id).lt('porcentaje', newPct),
+        .update({ porcentaje: newPct, capitulos_completados: pendingChapter, updated_at: new Date().toISOString() })
+        .eq('user_id', userId).eq('libro_id', book.libro_id).lt('capitulos_completados', pendingChapter),
     ]
     if (newPct >= 90) {
       updates.push(

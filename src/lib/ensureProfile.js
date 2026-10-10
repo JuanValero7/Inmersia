@@ -1,7 +1,8 @@
 // Crea el perfil y el Manual del Explorador de un usuario si todavía no existen.
-// Se invoca en cada evento SIGNED_IN (ver App.jsx): cubre tanto el registro con sesión
-// inmediata como el primer login tras confirmar el email, cuando signUp() no devolvió
-// sesión y los inserts del registro no pudieron correr (bloqueados por RLS).
+// Desde la migración 073 los crea la base al registrarse (trigger en auth.users), así
+// que esto es la RED DE SEGURIDAD: repara la cuenta si el trigger falló (deja un
+// WARNING en los logs y no bloquea el registro). Se invoca en cada evento SIGNED_IN
+// (ver App.jsx). Las dos lógicas de nombres (aquí y _crear_perfil) van a la par.
 //
 // MEMOIZADO por user.id: devuelve SIEMPRE la misma promesa mientras esté en vuelo o
 // resuelta. Dos motivos:
@@ -57,18 +58,8 @@ async function crearPerfilYManual(user) {
   // 2) Manual del Explorador: asegúralo SIEMPRE (idempotente), no solo al crear
   // el perfil. Así también repara a usuarios antiguos que no tengan la fila —
   // importante ahora que la Biblioteca ya no inyecta un manual sintético.
-  const { data: yaTiene } = await supabase
-    .from('bibliotecas_usuarios')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .eq('libro_id', MANUAL_LIBRO_ID)
-    .maybeSingle()
-  if (!yaTiene) {
-    const { error: manualError } = await supabase.from('bibliotecas_usuarios').insert({
-      user_id: user.id,
-      libro_id: MANUAL_LIBRO_ID,
-      leido: false,
-    })
-    if (manualError) console.error('No se pudo asignar el Manual del Explorador:', manualError)
-  }
+  // adquirir_libro (migración 076) no hace nada si ya lo tiene, y el Manual
+  // no cuenta para el límite de pendientes.
+  const { error: manualError } = await supabase.rpc('adquirir_libro', { p_libro_id: MANUAL_LIBRO_ID })
+  if (manualError) console.error('No se pudo asignar el Manual del Explorador:', manualError)
 }

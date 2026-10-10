@@ -1,6 +1,6 @@
 -- =============================================================
 -- INMERSIA — Extensiones
--- Volcado de producción del 2026-10-02 con `npm run esquema`.
+-- Volcado de producción del 2026-10-10 con `npm run esquema`.
 -- NO SE EDITA A MANO: se regenera. Cómo restaurarlo:
 -- Documentation/base-de-datos/respaldo-estructura.md
 -- =============================================================

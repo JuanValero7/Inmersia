@@ -22,7 +22,7 @@ Documentos de referencia, en este orden:
 | **1. Red de seguridad:** linter, Vite 8, CI, `guardar()` | ✅ En producción (commit `7546e4f`, CI verde, Vercel OK) |
 | **2a. Copias de seguridad** | ✅ `npm run respaldo` + tarea de Windows a las 03:00 |
 | **2b. Proyecto de pruebas** | ✅ `inmersia-pruebas`, usado por `npm run dev` |
-| **3. Reglas a la base de datos** | ⏭️ **Siguiente** (abajo, en detalle) |
+| **3. Reglas a la base de datos** | 🔄 **Casi:** 3.0, 3.1 y 3.4 ✅; 3.3 (075) y 3.2 (076) + código en pruebas, falta desplegar |
 | 4. Ordenar el código (lector duplicado, React Query, capa de datos, App.jsx) | Pendiente |
 | Continuo: colores a la paleta, botones accesibles, tipado JSDoc, tests de recorridos | Al tocar cada archivo |
 
@@ -79,13 +79,19 @@ revisión. El modelo a imitar es Comunidades (migraciones 051–057): trigger o 
 la base, `HINT` en el error y el cliente traduciéndolo a un mensaje (`useComunidades.js`,
 `mensajeError`).
 
-### 3.0 Calentamiento: migración 072
+### 3.0 Calentamiento: migración 072 — ✅ Hecha
 
-`supabase/Migration/072_limpieza_avisos_supabase.sql` está escrita y **sin aplicar**:
-search_path fijo, REVOKE a anon e índices duplicados. Es el ensayo perfecto del flujo
-nuevo: aplicarla en pruebas, comprobar, copia, producción.
+`supabase/Migration/072_limpieza_avisos_supabase.sql`: search_path fijo, REVOKE a anon e
+índices duplicados. Aplicada en pruebas y en producción el 10 oct (copia previa
+`2026-10-10_1541`).
 
-### 3.1 Perfil y Manual al registrarse → trigger en `auth.users`
+### 3.1 Perfil y Manual al registrarse → trigger en `auth.users` — ✅ Hecha
+
+> **Hecho (10 oct):** migración `073_perfil_al_registrarse.sql`, en pruebas y producción.
+> Trigger → `_crear_perfil` + `_asignar_manual`, cada una con su `EXCEPTION`: un fallo
+> deja un WARNING y nunca tumba el registro. Rellenó las cuentas sin perfil o sin Manual
+> (la de abril incluida). Falta ver el trigger en un registro real (las pruebas fueron con
+> altas simuladas).
 
 - **Hoy:** `src/lib/ensureProfile.js`, desde el navegador en cada `SIGNED_IN`, inserta en
   `perfiles` y mete el Manual (`MANUAL_LIBRO_ID`) en `bibliotecas_usuarios`.
@@ -98,6 +104,16 @@ nuevo: aplicarla en pruebas, comprobar, copia, producción.
   `ensureProfile`, que se repara sola si vuelve a entrar.
 
 ### 3.2 Adquirir un libro → función `adquirir_libro()`
+
+> **Hecho en pruebas (10 oct):** `076_adquirir_libro.sql`. Devuelve true/false (nuevo / ya lo
+> tenía), HINT `limite_pendientes`; sin política de INSERT; UPDATE solo de `leido` y
+> `categoria_id`. El rescate de la muestra se queda en el navegador (si falla, el libro ya
+> está y empieza desde el principio). Desplegar el código y correr la 076 seguidas.
+
+> **Orden acordado:** después de 3.3, porque el rescate de la muestra escribe progreso.
+> **Agujero encontrado (10 oct):** la política UPDATE de `bibliotecas_usuarios` deja
+> cambiar `libro_id` de una fila propia (otra forma de saltarse el límite). La app solo
+> actualiza `leido` y `categoria_id`: limitar el UPDATE a esas columnas aquí.
 
 - **Hoy:** tres inserts directos en `bibliotecas_usuarios`: `useCompraLibro.js:43`,
   `App.jsx:356` (tras registrarse desde la muestra) y `ensureProfile.js:67` (Manual). El
@@ -114,6 +130,11 @@ nuevo: aplicarla en pruebas, comprobar, copia, producción.
 
 ### 3.3 Un único significado del progreso (M5)
 
+> **Decisión de Juan (10 oct):** dos datos, no uno. `porcentaje` = % por palabras (lo que
+> ve el usuario); `capitulos_completados` = lo que desbloquea (Cartelera, Álbum,
+> Investigación, «Anteriormente en…»). Migración `075_capitulos_completados.sql` + código,
+> **en pruebas**. Producción: correr la 075 y desplegar justo después.
+
 - **Problema:** `progreso_lectura.porcentaje` se escribe por capítulos
   (`useLectorData.persistChapterAdvance`), por palabras (`App.rescatarMuestra`) y al 100 %
   (Lector y LectorMobile), y se lee como capítulos para desbloquear la Cartelera
@@ -128,7 +149,18 @@ nuevo: aplicarla en pruebas, comprobar, copia, producción.
 - Encaja con una función `completar_capitulo()` que actualice progreso y `leido` a la vez.
   Hoy son dos escrituras sueltas, en tres sitios.
 
-### 3.4 Decisiones que tiene que tomar Juan (preguntar antes)
+### 3.4 Decisiones de Juan — ✅ Tomadas (10 oct)
+
+> 1. **Cartelera: se queda como está.** Son obras de dominio público; "final de El
+>    Principito" está en Google. No reabrir.
+> 2. **Edad:** la fecha de nacimiento se pone **una sola vez** y no cambia. La regla 16+
+>    del chat se queda **solo en la app** (un menor llamando a la API no es un caso real).
+> 3. **`perfiles_publicos`:** visible para todos, pero **solo el nombre, sin apellido**.
+>
+> 2 y 3 van en `074_fecha_fija_y_sin_apellido.sql`: aplicada y probada en pruebas,
+> **pendiente de producción**.
+>
+> Texto original de las preguntas:
 
 1. **Spoilers de la Cartelera:** `cartelera_items` es `USING (true)` para cualquier
    sesión; el filtro por capítulo solo está en el cliente. ¿Basta (es dominio público) o
@@ -141,7 +173,7 @@ nuevo: aplicarla en pruebas, comprobar, copia, producción.
 
 ### 3.5 Cómo probarlo
 
-En pruebas, con cuentas de prueba. **Antes**, Juan tiene que configurar en el panel de
+En pruebas, con cuentas de prueba. ✅ **Hecho (10 oct):** Juan configuró en el panel de
 `inmersia-pruebas`:
 - Authentication → URL Configuration: *Site URL* `http://localhost:5173` y redirect
   `http://localhost:5173/**`;

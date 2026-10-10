@@ -1,6 +1,6 @@
 -- =============================================================
 -- INMERSIA — Esquema public (tablas, funciones, RLS, políticas, permisos)
--- Volcado de producción del 2026-10-02 con `npm run esquema`.
+-- Volcado de producción del 2026-10-10 con `npm run esquema`.
 -- NO SE EDITA A MANO: se regenera. Cómo restaurarlo:
 -- Documentation/base-de-datos/respaldo-estructura.md
 -- =============================================================
@@ -41,11 +41,28 @@ COMMENT ON SCHEMA public IS 'standard public schema';
 
 
 --
+-- Name: _asignar_manual(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._asignar_manual(p_user_id uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  INSERT INTO bibliotecas_usuarios (user_id, libro_id, leido)
+  VALUES (p_user_id, '00000000-0000-4000-8000-000000000001', false)
+  ON CONFLICT (user_id, libro_id) DO NOTHING;
+END;
+$$;
+
+
+--
 -- Name: _check_usuario_sin_sesion_activa(); Type: FUNCTION; Schema: public; Owner: -
 --
 
 CREATE FUNCTION public._check_usuario_sin_sesion_activa() RETURNS trigger
     LANGUAGE plpgsql
+    SET search_path TO 'public'
     AS $$
 BEGIN
   IF EXISTS (
@@ -187,11 +204,50 @@ $$;
 
 CREATE FUNCTION public._crear_foro_para_libro() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
 BEGIN
   INSERT INTO foros (libro_id) VALUES (NEW.id);
   RETURN NEW;
 END;
+$$;
+
+
+--
+-- Name: _crear_perfil(uuid, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._crear_perfil(p_user_id uuid, p_meta jsonb) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_completo text   := btrim(coalesce(nullif(p_meta->>'full_name', ''), p_meta->>'name', ''));
+  v_partes   text[] := regexp_split_to_array(v_completo, '\s+');
+  v_fecha    date;
+  v_genero   text   := p_meta->>'genero';
+BEGIN
+  BEGIN
+    v_fecha := nullif(p_meta->>'fecha_nacimiento', '')::date;
+  EXCEPTION WHEN others THEN
+    v_fecha := NULL;
+  END;
+
+  IF v_genero NOT IN ('masculino', 'femenino', 'diverso') THEN
+    v_genero := NULL;
+  END IF;
+
+  INSERT INTO perfiles (id, nombre, apellido, fecha_nacimiento, genero)
+  VALUES (
+    p_user_id,
+    coalesce(nullif(p_meta->>'nombre', ''), nullif(p_meta->>'given_name', ''), v_partes[1], ''),
+    coalesce(nullif(p_meta->>'apellido', ''), nullif(p_meta->>'family_name', ''),
+             array_to_string(v_partes[2:], ' ')),
+    v_fecha,
+    v_genero
+  )
+  ON CONFLICT (id) DO NOTHING;
+END;
 $$;
 
 
@@ -264,6 +320,93 @@ $$;
 
 
 --
+-- Name: _trg_fecha_nacimiento_fija(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._trg_fecha_nacimiento_fija() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  IF OLD.fecha_nacimiento IS NOT NULL
+     AND NEW.fecha_nacimiento IS DISTINCT FROM OLD.fecha_nacimiento
+     AND current_user IN ('authenticated', 'anon') THEN
+    RAISE EXCEPTION 'La fecha de nacimiento no se puede cambiar.'
+      USING ERRCODE = '42501', HINT = 'fecha_fija';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: _trg_perfil_al_registrarse(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._trg_perfil_al_registrarse() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  BEGIN
+    PERFORM _crear_perfil(NEW.id, coalesce(NEW.raw_user_meta_data, '{}'::jsonb));
+  EXCEPTION WHEN others THEN
+    RAISE WARNING '_crear_perfil(%): % %', NEW.id, SQLSTATE, SQLERRM;
+  END;
+
+  BEGIN
+    PERFORM _asignar_manual(NEW.id);
+  EXCEPTION WHEN others THEN
+    RAISE WARNING '_asignar_manual(%): % %', NEW.id, SQLSTATE, SQLERRM;
+  END;
+
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: adquirir_libro(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.adquirir_libro(p_libro_id uuid) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_uid    uuid := auth.uid();
+  v_manual constant uuid := '00000000-0000-4000-8000-000000000001';  -- MANUAL_LIBRO_ID
+  -- LIMITE_PENDIENTES de src/hooks/useCompraLibro.js: si cambia uno, cambiar los dos.
+  v_limite constant int := 5;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Hace falta una sesión.' USING ERRCODE = '42501', HINT = 'sin_sesion';
+  END IF;
+
+  -- Dos peticiones a la vez del mismo usuario no se cuelan las dos.
+  PERFORM pg_advisory_xact_lock(hashtext('adquirir_libro:' || v_uid));
+
+  IF EXISTS (SELECT 1 FROM bibliotecas_usuarios WHERE user_id = v_uid AND libro_id = p_libro_id) THEN
+    RETURN false;
+  END IF;
+
+  IF p_libro_id <> v_manual
+     AND NOT EXISTS (SELECT 1 FROM superusuarios WHERE user_id = v_uid)
+     AND (SELECT count(*) FROM bibliotecas_usuarios
+          WHERE user_id = v_uid AND libro_id <> v_manual AND NOT coalesce(leido, false)) >= v_limite
+  THEN
+    RAISE EXCEPTION 'Ya tienes % lecturas pendientes.', v_limite
+      USING ERRCODE = '42501', HINT = 'limite_pendientes';
+  END IF;
+
+  INSERT INTO bibliotecas_usuarios (user_id, libro_id, leido)
+  VALUES (v_uid, p_libro_id, false);
+  RETURN true;
+END;
+$$;
+
+
+--
 -- Name: buscar_comunidades(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -301,6 +444,7 @@ $$;
 
 CREATE FUNCTION public.contar_palabras(texto text) RETURNS integer
     LANGUAGE sql IMMUTABLE
+    SET search_path TO 'public'
     AS $$
   SELECT CASE WHEN btrim(coalesce(texto, '')) = '' THEN 0
               ELSE array_length(regexp_split_to_array(btrim(texto), '\s+'), 1) END
@@ -854,6 +998,7 @@ $$;
 
 CREATE FUNCTION public.trg_muestra_delete() RETURNS trigger
     LANGUAGE plpgsql
+    SET search_path TO 'public'
     AS $$
 BEGIN
   IF pg_trigger_depth() > 1 THEN RETURN NULL; END IF;
@@ -868,6 +1013,7 @@ END $$;
 
 CREATE FUNCTION public.trg_muestra_insert() RETURNS trigger
     LANGUAGE plpgsql
+    SET search_path TO 'public'
     AS $$
 BEGIN
   IF pg_trigger_depth() > 1 THEN RETURN NULL; END IF;
@@ -882,6 +1028,7 @@ END $$;
 
 CREATE FUNCTION public.trg_muestra_update() RETURNS trigger
     LANGUAGE plpgsql
+    SET search_path TO 'public'
     AS $$
 BEGIN
   IF pg_trigger_depth() > 1 THEN RETURN NULL; END IF;
@@ -897,6 +1044,7 @@ END $$;
 
 CREATE FUNCTION public.trg_palabras_delete() RETURNS trigger
     LANGUAGE plpgsql
+    SET search_path TO 'public'
     AS $$
 BEGIN
   PERFORM recalcular_palabras_capitulos(ARRAY(SELECT DISTINCT capitulo_id FROM viejos));
@@ -910,6 +1058,7 @@ END $$;
 
 CREATE FUNCTION public.trg_palabras_insert() RETURNS trigger
     LANGUAGE plpgsql
+    SET search_path TO 'public'
     AS $$
 BEGIN
   PERFORM recalcular_palabras_capitulos(ARRAY(SELECT DISTINCT capitulo_id FROM nuevos));
@@ -923,6 +1072,7 @@ END $$;
 
 CREATE FUNCTION public.trg_palabras_update() RETURNS trigger
     LANGUAGE plpgsql
+    SET search_path TO 'public'
     AS $$
 BEGIN
   PERFORM recalcular_palabras_capitulos(ARRAY(
@@ -1562,7 +1712,7 @@ COMMENT ON COLUMN public.perfiles.genero IS 'Género declarado en el registro. B
 CREATE VIEW public.perfiles_publicos WITH (security_invoker='false') AS
  SELECT id,
     nombre,
-    apellido
+    NULL::text AS apellido
    FROM public.perfiles;
 
 
@@ -1570,7 +1720,7 @@ CREATE VIEW public.perfiles_publicos WITH (security_invoker='false') AS
 -- Name: VIEW perfiles_publicos; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON VIEW public.perfiles_publicos IS 'Nombre público de cada usuario para Foro, reseñas y chat. Solo id/nombre/apellido: el resto de perfiles sigue siendo privado (RLS por fila propia). Ver migración 038.';
+COMMENT ON VIEW public.perfiles_publicos IS 'Nombre público de cada usuario para Foro, reseñas y chat. Solo id/nombre; apellido siempre NULL desde la 074 (la columna queda por compatibilidad). El resto de perfiles sigue siendo privado. Ver migraciones 038 y 074.';
 
 
 --
@@ -1622,8 +1772,17 @@ CREATE TABLE public.progreso_lectura (
     porcentaje smallint DEFAULT 0 NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     ultimo_parrafo_offset integer DEFAULT 0 NOT NULL,
+    capitulos_completados integer DEFAULT 0 NOT NULL,
+    CONSTRAINT progreso_lectura_capitulos_completados_check CHECK ((capitulos_completados >= 0)),
     CONSTRAINT progreso_lectura_porcentaje_check CHECK (((porcentaje >= 0) AND (porcentaje <= 100)))
 );
+
+
+--
+-- Name: COLUMN progreso_lectura.porcentaje; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.progreso_lectura.porcentaje IS '% del libro por palabras, para mostrar. Lo que desbloquea contenido es capitulos_completados. Ver migración 075.';
 
 
 --
@@ -1631,6 +1790,13 @@ CREATE TABLE public.progreso_lectura (
 --
 
 COMMENT ON COLUMN public.progreso_lectura.ultimo_parrafo_offset IS 'Offset en caracteres dentro de ultimo_parrafo_id donde empieza la última página vista (para párrafos largos divididos en varias páginas).';
+
+
+--
+-- Name: COLUMN progreso_lectura.capitulos_completados; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.progreso_lectura.capitulos_completados IS 'Capítulos terminados. Desbloquea la Cartelera, el Álbum y el repaso. El % que ve el usuario es `porcentaje` (por palabras). Ver migración 075.';
 
 
 --
@@ -1799,14 +1965,6 @@ ALTER TABLE ONLY public.biblioteca_media
 
 ALTER TABLE ONLY public.bibliotecas_usuarios
     ADD CONSTRAINT bibliotecas_usuarios_pkey PRIMARY KEY (id);
-
-
---
--- Name: bibliotecas_usuarios bibliotecas_usuarios_user_id_libro_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.bibliotecas_usuarios
-    ADD CONSTRAINT bibliotecas_usuarios_user_id_libro_id_key UNIQUE (user_id, libro_id);
 
 
 --
@@ -2192,13 +2350,6 @@ CREATE INDEX chat_historial_user_id_foro_id_created_at_idx ON public.chat_histor
 
 
 --
--- Name: chat_mensajes_sesion_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX chat_mensajes_sesion_id_created_at_idx ON public.chat_mensajes USING btree (sesion_id, created_at);
-
-
---
 -- Name: chat_sesiones_libro_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2248,13 +2399,6 @@ CREATE INDEX idx_biblioteca_media_tags ON public.biblioteca_media USING gin (tag
 
 
 --
--- Name: idx_bibliotecas_user; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_bibliotecas_user ON public.bibliotecas_usuarios USING btree (user_id);
-
-
---
 -- Name: idx_bibliotecas_usuarios_user; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2297,13 +2441,6 @@ CREATE INDEX idx_cartelera_items_libro_con_imagen ON public.cartelera_items USIN
 
 
 --
--- Name: idx_cartelera_libro_capitulo; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cartelera_libro_capitulo ON public.cartelera_items USING btree (libro_id, capitulo_numero);
-
-
---
 -- Name: idx_cartelera_principal_libro; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2329,20 +2466,6 @@ CREATE INDEX idx_categorias_user ON public.categorias_usuario USING btree (user_
 --
 
 CREATE INDEX idx_categorias_usuario_user ON public.categorias_usuario USING btree (user_id, orden, nombre);
-
-
---
--- Name: idx_chat_historial_user_foro; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_chat_historial_user_foro ON public.chat_historial USING btree (user_id, foro_id, created_at DESC);
-
-
---
--- Name: idx_chat_historial_user_foro_fecha; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_chat_historial_user_foro_fecha ON public.chat_historial USING btree (user_id, foro_id, created_at DESC);
 
 
 --
@@ -2416,20 +2539,6 @@ CREATE INDEX idx_elementos_interactivos_parrafo ON public.elementos_interactivos
 
 
 --
--- Name: idx_foro_comentarios_foro_parent; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_foro_comentarios_foro_parent ON public.foros_comentarios USING btree (foro_id, parent_id, created_at DESC);
-
-
---
--- Name: idx_foro_comentarios_parent; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_foro_comentarios_parent ON public.foros_comentarios USING btree (parent_id);
-
-
---
 -- Name: idx_foros_comentarios_comunidad; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2448,13 +2557,6 @@ CREATE INDEX idx_foros_comentarios_foro_parent_fecha ON public.foros_comentarios
 --
 
 CREATE INDEX idx_interactivos_media ON public.elementos_interactivos USING btree (media_id);
-
-
---
--- Name: idx_interactivos_parrafo; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_interactivos_parrafo ON public.elementos_interactivos USING btree (parrafo_id);
 
 
 --
@@ -2532,13 +2634,6 @@ CREATE INDEX idx_predicciones_user_libro_cap ON public.predicciones_usuario USIN
 --
 
 CREATE INDEX idx_progreso_lectura_user_libro ON public.progreso_lectura USING btree (user_id, libro_id);
-
-
---
--- Name: idx_progreso_user_libro; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_progreso_user_libro ON public.progreso_lectura USING btree (user_id, libro_id);
 
 
 --
@@ -2630,6 +2725,13 @@ CREATE TRIGGER trg_comunidad_tras_baja AFTER DELETE ON public.comunidad_miembros
 --
 
 CREATE TRIGGER trg_denuncia_copiar_contenido BEFORE INSERT ON public.denuncias FOR EACH ROW EXECUTE FUNCTION public._denuncia_copiar_contenido();
+
+
+--
+-- Name: perfiles trg_fecha_nacimiento_fija; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_fecha_nacimiento_fija BEFORE UPDATE OF fecha_nacimiento ON public.perfiles FOR EACH ROW EXECUTE FUNCTION public._trg_fecha_nacimiento_fija();
 
 
 --
@@ -3265,13 +3367,6 @@ ALTER TABLE ONLY public.superusuarios
 
 
 --
--- Name: perfiles Perfil propio; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Perfil propio" ON public.perfiles USING ((auth.uid() = id)) WITH CHECK ((auth.uid() = id));
-
-
---
 -- Name: perfiles Perfiles visibles por dueño; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -3297,13 +3392,6 @@ CREATE POLICY "Solo admin puede modificar reels" ON public.libro_reels USING ((a
 --
 
 CREATE POLICY "Usuarios actualizan su propia biblioteca" ON public.bibliotecas_usuarios FOR UPDATE TO authenticated USING ((auth.uid() = user_id)) WITH CHECK ((auth.uid() = user_id));
-
-
---
--- Name: bibliotecas_usuarios Usuarios añaden a su biblioteca; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Usuarios añaden a su biblioteca" ON public.bibliotecas_usuarios FOR INSERT TO authenticated WITH CHECK ((auth.uid() = user_id));
 
 
 --
@@ -3872,6 +3960,13 @@ CREATE POLICY parrafos_select ON public.parrafos FOR SELECT TO authenticated USI
 ALTER TABLE public.perfiles ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: perfiles perfiles_insert_propio; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY perfiles_insert_propio ON public.perfiles FOR INSERT TO authenticated WITH CHECK ((auth.uid() = id));
+
+
+--
 -- Name: perfiles perfiles_update_propio; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -4174,6 +4269,14 @@ GRANT USAGE ON SCHEMA public TO service_role;
 
 
 --
+-- Name: FUNCTION _asignar_manual(p_user_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._asignar_manual(p_user_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._asignar_manual(p_user_id uuid) TO service_role;
+
+
+--
 -- Name: FUNCTION _check_usuario_sin_sesion_activa(); Type: ACL; Schema: public; Owner: -
 --
 
@@ -4227,9 +4330,16 @@ GRANT ALL ON FUNCTION public._comunidad_tras_baja() TO service_role;
 -- Name: FUNCTION _crear_foro_para_libro(); Type: ACL; Schema: public; Owner: -
 --
 
-GRANT ALL ON FUNCTION public._crear_foro_para_libro() TO anon;
-GRANT ALL ON FUNCTION public._crear_foro_para_libro() TO authenticated;
+REVOKE ALL ON FUNCTION public._crear_foro_para_libro() FROM PUBLIC;
 GRANT ALL ON FUNCTION public._crear_foro_para_libro() TO service_role;
+
+
+--
+-- Name: FUNCTION _crear_perfil(p_user_id uuid, p_meta jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._crear_perfil(p_user_id uuid, p_meta jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._crear_perfil(p_user_id uuid, p_meta jsonb) TO service_role;
 
 
 --
@@ -4238,6 +4348,31 @@ GRANT ALL ON FUNCTION public._crear_foro_para_libro() TO service_role;
 
 REVOKE ALL ON FUNCTION public._denuncia_copiar_contenido() FROM PUBLIC;
 GRANT ALL ON FUNCTION public._denuncia_copiar_contenido() TO service_role;
+
+
+--
+-- Name: FUNCTION _trg_fecha_nacimiento_fija(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._trg_fecha_nacimiento_fija() FROM PUBLIC;
+GRANT ALL ON FUNCTION public._trg_fecha_nacimiento_fija() TO service_role;
+
+
+--
+-- Name: FUNCTION _trg_perfil_al_registrarse(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._trg_perfil_al_registrarse() FROM PUBLIC;
+GRANT ALL ON FUNCTION public._trg_perfil_al_registrarse() TO service_role;
+
+
+--
+-- Name: FUNCTION adquirir_libro(p_libro_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.adquirir_libro(p_libro_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.adquirir_libro(p_libro_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.adquirir_libro(p_libro_id uuid) TO service_role;
 
 
 --
@@ -4272,7 +4407,6 @@ GRANT ALL ON FUNCTION public.crear_comunidad(p_nombre text, p_descripcion text, 
 --
 
 REVOKE ALL ON FUNCTION public.delete_parrafo_superuser(p_id uuid) FROM PUBLIC;
-GRANT ALL ON FUNCTION public.delete_parrafo_superuser(p_id uuid) TO anon;
 GRANT ALL ON FUNCTION public.delete_parrafo_superuser(p_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.delete_parrafo_superuser(p_id uuid) TO service_role;
 
@@ -4538,9 +4672,23 @@ GRANT ALL ON TABLE public.anotaciones_usuario TO service_role;
 -- Name: TABLE bibliotecas_usuarios; Type: ACL; Schema: public; Owner: -
 --
 
-GRANT ALL ON TABLE public.bibliotecas_usuarios TO anon;
-GRANT ALL ON TABLE public.bibliotecas_usuarios TO authenticated;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.bibliotecas_usuarios TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.bibliotecas_usuarios TO authenticated;
 GRANT ALL ON TABLE public.bibliotecas_usuarios TO service_role;
+
+
+--
+-- Name: COLUMN bibliotecas_usuarios.leido; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT UPDATE(leido) ON TABLE public.bibliotecas_usuarios TO authenticated;
+
+
+--
+-- Name: COLUMN bibliotecas_usuarios.categoria_id; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT UPDATE(categoria_id) ON TABLE public.bibliotecas_usuarios TO authenticated;
 
 
 --
