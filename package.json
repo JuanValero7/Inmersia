@@ -10,6 +10,7 @@
     "test": "vitest run",
     "lint": "eslint src --max-warnings 504",
     "esquema": "node scripts/volcar-esquema.mjs",
+    "humo": "node scripts/humo.mjs",
     "respaldo": "node scripts/respaldar.mjs",
     "security-check": "npm run lint && node scripts/scan-secrets.mjs && npm audit --audit-level=high",
     "typecheck": "tsc -p jsconfig.json --noEmit"
