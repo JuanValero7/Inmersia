@@ -87,7 +87,7 @@ async function pedir(ruta) {
 }
 
 async function libros() {
-  const campos = 'id,slug,titulo,autor,descripcion,portada_url,metadata'
+  const campos = 'id,slug,titulo,autor,descripcion,portada_url,metadata,created_at'
   return pedir(`libros?select=${campos}&visible=eq.true&slug=not.is.null`)
 }
 
@@ -364,17 +364,30 @@ function paginaLibro(plantilla, l) {
 
 // Solo rutas públicas. /investigacion y /foro viven detrás de ProtectedRoute,
 // así que meterlas aquí sería mandar a Google contra una pantalla de login.
+//
+// LASTMOD: antes era la fecha del build para todas las URLs, y como se
+// despliega varias veces por semana, Google aprendía que no significa nada y
+// la ignoraba. Ahora es real: cada ficha, el día que se cargó el libro (la
+// tabla no guarda fecha de modificación); la home y /tienda, el del libro más
+// reciente, que es cuando cambia el catálogo; /sobre, sin fecha antes que una
+// inventada.
+//
+// LOC: el protocolo pide la URL codificada (persuasión → persuasi%C3%B3n).
+// Un slug con tilde se servía igual, pero así no depende de la tolerancia de
+// cada buscador.
 function sitemap(lista) {
-  const hoy = new Date().toISOString().slice(0, 10)
-  const url = (loc, prio, freq) =>
-    `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${hoy}</lastmod>\n` +
+  const dia = (iso) => iso ? String(iso).slice(0, 10) : null
+  const ultimo = lista.map(l => dia(l.created_at)).filter(Boolean).sort().at(-1)
+  const url = (loc, fecha, prio, freq) =>
+    `  <url>\n    <loc>${esc(encodeURI(loc))}</loc>\n` +
+    (fecha ? `    <lastmod>${fecha}</lastmod>\n` : '') +
     `    <changefreq>${freq}</changefreq>\n    <priority>${prio}</priority>\n  </url>`
   return '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-    [ url(`${ORIGEN}/`, '1.0', 'weekly'),
-      url(`${ORIGEN}/tienda`, '0.9', 'weekly'),
-      url(`${ORIGEN}${SOBRE.ruta}`, '0.5', 'monthly'),
-      ...lista.map(l => url(`${ORIGEN}/libro/${l.slug}`, '0.8', 'monthly')),
+    [ url(`${ORIGEN}/`, ultimo, '1.0', 'weekly'),
+      url(`${ORIGEN}/tienda`, ultimo, '0.9', 'weekly'),
+      url(`${ORIGEN}${SOBRE.ruta}`, null, '0.5', 'monthly'),
+      ...lista.map(l => url(`${ORIGEN}/libro/${l.slug}`, dia(l.created_at), '0.8', 'monthly')),
     ].join('\n') + '\n</urlset>\n'
 }
 
