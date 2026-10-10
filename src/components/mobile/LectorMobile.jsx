@@ -22,19 +22,11 @@
 //   { book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted }
 // ─────────────────────────────────────────────────────────────
 import React, { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } from 'react'
-import { supabase } from '../../lib/supabase.js'
-import { useInvalidateBibliotecaUsuario } from '../../lib/queries.js'
-import { guardar, guardarTodo, AVISOS } from '../../lib/guardar.js'
-import useLocalStorage from '../../hooks/useLocalStorage.js'
-import { useLectorData } from '../../hooks/useLectorData.js'
+import { useLectorComun, useGuardarProgreso } from '../../hooks/useLectorComun.js'
 import { useXrayItems } from '../../hooks/useXrayItems.js'
-import { useSesionLectura } from '../../hooks/useSesionLectura.js'
-import { useOnboarding } from '../../context/onboarding.jsx'
 import TutorialHint from '../onboarding/TutorialHint.jsx'
 import { TEXTO_MANUAL_HINT } from '../onboarding/textos.js'
-import { anotarMuestra, anotarPosicion } from '../../lib/progresoInvitado.js'
-import { MANUAL_LIBRO_ID } from '../../lib/constants.js'
-import { usePistas } from '../../context/pistas.jsx'
+import { anotarMuestra } from '../../lib/progresoInvitado.js'
 import Pista from '../onboarding/Pista.jsx'
 import TiraPrediccion from '../lector/TiraPrediccion.jsx'
 import { paginarParrafosMobileDOM } from '../../utils/lectorPaginationMobile.js'
@@ -43,19 +35,15 @@ import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTI
 import { INK, ACCENT } from '../lector/clay.jsx'
 import SuperuserSoundsPanel from '../lector/SuperuserSoundsPanel.jsx'
 import { useAmbientPlayer } from '../../hooks/useAmbientPlayer.js'
-import { useWhiteNoise } from '../../hooks/useWhiteNoise.js'
 import { AMBIENTE_FICCION_ACTIVO } from '../lector/readerConstants.js'
 import MobileBookPage from './lector/MobileBookPage.jsx'
 import { useCapaMovil } from '../comunidades/capa/CapaMovil.jsx'
 import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, FotoAsomada, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
 import '../../styles/lector.mobile.css'
 
-const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
 const LINE = 1.72  // alto de línea (coincide con .lm-para en el CSS)
 // Referencia estable para los capítulos sin subrayados: un [] nuevo en cada
 // render invalidaría el memo de las páginas del libro. Lo mismo para la media.
-const EMPTY_SUBRAYADOS = []
-const EMPTY_MEDIA = {}
 
 // ── Iconos lineales ──────────────────────────────────────────
 const Compass = () => (
@@ -124,13 +112,28 @@ function HighlighterIcon({ active }) {
  */
 export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, muestraMotivo = 'invitado', onRequestAuth, onGoTienda, gatoColor = 'negro' }) {
   // ── Estado de navegación de lectura (UI) ──
-  const [chapterIndex, setChapterIndex] = useState(0)
-  const [pageIndex,    setPageIndex]    = useState(0)
-  const [goToLastPage, setGoToLastPage] = useState(false)
   const [sheet,        setSheetRaw]     = useState(null)   // 'chapters' | 'typo' | 'audio' | 'nav'
   const [imageOpen,    setImageOpen]    = useState(false)
-  const [notebookOpen, setNotebookOpen] = useState(false)
   const [catOpen,        setCatOpen]        = useState(false)
+
+  // Todo lo que el móvil hace igual que el escritorio (datos, muestra, tutorial,
+  // preferencias, capítulo actual, reseña, cuaderno): ver hooks/useLectorComun.js
+  const lector = useLectorComun({ book, guestMode, startWithNotebook, onNotebookStarted, onGoCartelera })
+  const {
+    userId, capitulos, palabrasLibro, chapterCache, loading, loadingCap, error,
+    isLeido, olvidarSubrayado, pendingRestore, setPendingRestore, restoredRef,
+    persistChapterAdvance, subrayar,
+    quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
+    miResena, resenaForm, setResenaForm, resenaEnviando,
+    chapterIndex, setChapterIndex, pageIndex, setPageIndex, goToLastPage, setGoToLastPage,
+    notebookOpen, setNotebookOpen, resenaOpen, setResenaOpen, adminPanelOpen, setAdminPanelOpen,
+    showPaywall, setShowPaywall, setTiraCerrada,
+    onboarding, tutorialManual, explorarVisible, manualHintVisto, setManualHintVisto, irCartelera,
+    whiteNoise, fontSize, setFontSize, readingFont, setReadingFont, readingTheme, setReadingTheme, modoProgreso, setModoProgreso,
+    currentChapter, currentChapData, currentMedia, currentAmbient, currentSubrayados,
+    handleSubmitResena, handleCloseNotebook, anotarDesdeTira,
+    pistas, marcarPista, tocarSfx, esManual, tiraSi,
+  } = lector
 
   useEffect(() => {
     if (!catOpen) return
@@ -138,65 +141,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     document.addEventListener('mousedown', handleOutside)
     return () => document.removeEventListener('mousedown', handleOutside)
   }, [catOpen])
-  // Tira de predicción al terminar un capítulo (igual que el escritorio).
-  const [tiraCerrada, setTiraCerrada] = useState(null)   // capítulo cuya tira ya se cerró
-  const pistas = usePistas()
-  const marcarPista = pistas.marcar
-  const [adminPanelOpen, setAdminPanelOpen] = useState(false)
-  const [showPaywall,    setShowPaywall]    = useState(false)
-
-  // Lógica de datos compartida con el Lector de escritorio (ver src/hooks/useLectorData.js)
-  const {
-    userId, capitulos, palabrasLibro, chapterCache, loading, loadingCap, error,
-    isLeido, setIsLeido, subrayadosPorCap, olvidarSubrayado,
-    pendingRestore, setPendingRestore, restoredRef,
-    setLoadingCap, setError,
-    fetchChapter, peekChapter, precargarSiguiente, playSfx, persistChapterAdvance, subrayar, recordarPosicion,
-    quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
-    miResena, resenaForm, setResenaForm, resenaEnviando, submitResena,
-  } = useLectorData(book, setChapterIndex, setPageIndex, guestMode)
-
-  // Modo muestra: se anota cuánto lleva leído el invitado para que la
-  // adquisición lo rescate al registrarse (ver lib/progresoInvitado.js).
-  useEffect(() => {
-    if (guestMode) anotarMuestra(book?.libro_id, chapterIndex)
-  }, [guestMode, chapterIndex, book?.libro_id])
-
-  useSesionLectura(userId, book, guestMode)
-  const invalidateBiblioteca = useInvalidateBibliotecaUsuario(userId)
-
-  // Paywall: cerrar con Escape. Y si el invitado se autentica (guestMode pasa a
-  // false) lo ocultamos para que no quede atascado encima del lector desbloqueado.
-  useEffect(() => {
-    if (!showPaywall) return
-    const onKey = (e) => { if (e.key === 'Escape') setShowPaywall(false) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [showPaywall])
-  useEffect(() => { if (!guestMode) setShowPaywall(false) }, [guestMode])
-
-  // Onboarding: durante el paso 'manual' del tutorial, el botón Explorar ni
-  // siquiera aparece hasta llegar al capítulo 2 (el texto del manual lo anuncia
-  // ahí), y cuando aparece su única salida es Investigación.
-  const onboarding = useOnboarding()
-  const tutorialManual = onboarding.active && onboarding.step === 'manual'
-  const explorarVisible = !tutorialManual || chapterIndex >= 1
-  const [manualHintVisto, setManualHintVisto] = useState(false)
-  const irCartelera = useCallback((itemId) => {
-    if (tutorialManual) onboarding.advance('manual')   // manual → investigacion
-    onGoCartelera(itemId)
-  }, [tutorialManual, onboarding, onGoCartelera])
-
-  // ── Reseña (UI) ──
-  const [resenaOpen, setResenaOpen] = useState(false)
-
-  // Preferencias de lectura (compartidas con el escritorio vía localStorage)
-  const [fontSize,    setFontSize]    = useLocalStorage('inm_lector_fontSize', 16)
-  const [readingFont, setReadingFont] = useLocalStorage('inm_lector_font', READING_FONT_DEFAULT)
-  const [readingTheme, setReadingTheme] = useLocalStorage('inm_lector_theme', 'light')
-  // Cómo se ve el progreso en el pie: 'pagina' (como siempre), 'capitulo' o 'libro'.
-  const [modoProgreso, setModoProgreso] = useLocalStorage('inm_lector_progreso', 'pagina')
-
   // ── Estado de UI no compartido ──
   const [modoSubrayado,  setModoSubrayado]  = useState(false)
   const [pendingConfirm, setPendingConfirm] = useState(null)   // { text, parrafoId }
@@ -209,58 +153,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const setSheet   = (v) => { setSheetRaw(v); setCatOpen(false) }
   const openNotebook = () => { setNotebookOpen(true); setCatOpen(false) }
 
-  // arranque directo en cuaderno (desde Biblioteca → "abrir cuaderno")
-  useEffect(() => {
-    if (startWithNotebook) { setNotebookOpen(true); onNotebookStarted?.() }
-  }, [startWithNotebook, onNotebookStarted])
-
-  // cargar capítulo actual cuando cambia
-  useEffect(() => {
-    const cap = capitulos[chapterIndex]; if (!cap) return
-    let cancelled = false
-    ;(async () => {
-      setError(null)
-      try {
-        // peekChapter mira el caché sin pedir nada, para no encender el
-        // spinner en un capítulo ya cargado. Es estable, igual que
-        // fetchChapter (ver el espejo en ref de useLectorData), así que este
-        // efecto solo corre cuando cambia de verdad el capítulo.
-        let entry = peekChapter(cap.id)
-        if (!entry) { setLoadingCap(true); entry = await fetchChapter(cap) }
-        if (cancelled || !entry) return
-      } catch (err) {
-        if (!cancelled) setError(err.message || String(err))
-      } finally {
-        if (!cancelled) setLoadingCap(false)
-      }
-    })()
-    return () => { cancelled = true }
-  }, [chapterIndex, capitulos, fetchChapter, peekChapter, setError, setLoadingCap])
-
-  // Con el capítulo actual ya en pantalla, se trae el siguiente en segundo
-  // plano para que pasar de capítulo no espere a la red.
-  const capituloCargado = !!(capitulos[chapterIndex] && chapterCache[capitulos[chapterIndex].id])
-  useEffect(() => {
-    if (!capituloCargado) return
-    return precargarSiguiente(chapterIndex)
-  }, [capituloCargado, chapterIndex, precargarSiguiente])
-
-  const currentChapter  = capitulos[chapterIndex] || null
   const esNoficcion = book?.es_ficcion === false
   const xrayItems = useXrayItems(sheet === 'xray', book?.libro_id, currentChapter?.numero ?? chapterIndex + 1, esNoficcion ? 'glosario' : 'personajes')
-  const currentChapData = currentChapter ? chapterCache[currentChapter.id] : null
-  const currentMedia    = currentChapData?.mediaByParrafo || EMPTY_MEDIA
-  const currentAmbient  = currentChapData?.ambient || null
-  const currentCapNum   = currentChapter?.numero ?? chapterIndex + 1
-  // Solo los textos: es lo que necesita el render para anclar la marca.
-  const currentSubrayados = useMemo(
-    () => (subrayadosPorCap[currentCapNum] || EMPTY_SUBRAYADOS).map(s => s.texto),
-    [subrayadosPorCap, currentCapNum])
   const { playing: ambientPlaying, volume: ambientVol, toggle: toggleAmbient, setVol } = useAmbientPlayer(currentAmbient?.url)
-  // Ruido ambiental (no ficción): el hook vive aquí —no dentro del sheet— para
-  // que el sonido siga al cerrar el sheet y solo pare al salir del lector o al
-  // apagarlo en el panel. Inerte hasta que el usuario lo activa.
-  const whiteNoise = useWhiteNoise()
 
   // ── Paginación a prueba de fallos (medida del DOM real) ──
   // No estimamos: paginarParrafosMobileDOM maqueta el texto en un contenedor
@@ -403,7 +298,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     if (idx >= 0) setPageIndex(idx)
     setPendingRestore(null); restoredRef.current = true
     setGoToLastPage(false)
-  }, [pendingRestore, currentChapData, paginas, measuredReady, restoredRef, setPendingRestore])
+  }, [pendingRestore, currentChapData, paginas, measuredReady, restoredRef, setPendingRestore, setGoToLastPage, setPageIndex])
 
   // al navegar hacia atrás entre capítulos, esperar la paginación real del DOM
   // para saltar a la última página correcta del capítulo anterior
@@ -414,7 +309,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     if (last < 0) return
     setPageIndex(last)
     setGoToLastPage(false)
-  }, [goToLastPage, paginas, paginadoChap, currentChapter?.id])
+  }, [goToLastPage, paginas, paginadoChap, currentChapter?.id, setGoToLastPage, setPageIndex])
 
   // preservar párrafo visible cuando la geometría cambia (e.g. URL bar móvil)
   useEffect(() => {
@@ -432,50 +327,8 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     if (p) pageAnchorRef.current = { parrafoId: p.id, offset: offsetDeAnclaje(paginas, pageIndex, p.id) }
   }, [pageIndex, paginas])
 
-  // ── Guardar progreso (debounce) ──
-  // Depende de `capituloCargado` y no de `currentChapData`: el objeto del
-  // capítulo se recrea cuando llegan sus sonidos e imágenes, y eso disparaba
-  // una escritura extra con la misma posición.
-  // Sin sesión no hay fila de progreso: la posición se anota para que, si entra
-  // desde el muro, siga en esta misma página (ver lib/rescatarMuestra.js).
-  useEffect(() => {
-    if (!restoredRef.current || !book?.libro_id || !capituloCargado) return
-    if (!userId && !guestMode) return
-    const firstParr = paginas[pageIndex]?.[0]; if (!firstParr) return
-    const offset = offsetDeAnclaje(paginas, pageIndex, firstParr.id)
-    recordarPosicion(chapterIndex, firstParr.id, offset)
-    const t = setTimeout(() => {
-      if (!userId) { anotarPosicion(book.libro_id, firstParr.id, offset); return }
-      guardar(supabase.from('progreso_lectura').upsert({
-        user_id: userId, libro_id: book.libro_id,
-        ultimo_parrafo_id: firstParr.id,
-        ultimo_parrafo_offset: offset,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,libro_id' }), { que: 'progreso', aviso: AVISOS.progreso })
-    }, 600)
-    return () => clearTimeout(t)
-  }, [chapterIndex, pageIndex, paginas, userId, guestMode, book?.libro_id, capituloCargado, restoredRef, recordarPosicion])
-
-  // 100% al llegar al final del último capítulo
-  useEffect(() => {
-    // En muestra no: el último capítulo de la muestra no es el del libro.
-    if (!restoredRef.current || !userId || !book?.libro_id || guestMode) return
-    if (!capitulos.length || chapterIndex !== capitulos.length - 1) return
-    if (!paginas.length || pageIndex < paginas.length - 1) return
-    const t = setTimeout(async () => {
-      const { ok } = await guardarTodo([
-        supabase.from('progreso_lectura').update({ porcentaje: 100, capitulos_completados: capitulos.length, updated_at: new Date().toISOString() })
-          .eq('user_id', userId).eq('libro_id', book.libro_id),
-        supabase.from('bibliotecas_usuarios').update({ leido: true })
-          .eq('user_id', userId).eq('libro_id', book.libro_id),
-      ], { que: 'libro terminado', aviso: AVISOS.terminado })
-      // Si falló no se marca: se reintenta la próxima vez que llegue a la última página.
-      if (!ok) return
-      setIsLeido(true)
-      invalidateBiblioteca()
-    }, 600)
-    return () => clearTimeout(t)
-  }, [chapterIndex, pageIndex, paginas.length, capitulos.length, userId, book?.libro_id, guestMode, restoredRef, setIsLeido, invalidateBiblioteca])
+  // Dónde va y libro terminado (hooks/useLectorComun.js).
+  useGuardarProgreso({ ...lector, book, guestMode }, paginas, paginas.length > 0 && pageIndex >= paginas.length - 1)
 
   // ── Imágenes visibles en la página actual (y anteriores del capítulo) ──
   const visibleImages = useMemo(() => {
@@ -545,22 +398,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   }
   function pickChapter(i) { setChapterIndex(i); setPageIndex(0); setSheet(null); setGoToLastPage(false) }
 
-  // ── Cuaderno: al cerrar, persistir avance de capítulo si venía de "fin de capítulo" ──
-  async function handleSubmitResena() {
-    if (await submitResena()) setResenaOpen(false)
-  }
-
-  function handleCloseNotebook() {
-    setNotebookOpen(false)
-  }
-  // Desde la tira el Cuaderno se abre en el capítulo que se está terminando
-  // (todavía es el actual) y la tira de ese capítulo ya no vuelve a salir.
-  function anotarDesdeTira() {
-    setTiraCerrada(chapterIndex)
-    setNotebookOpen(true)
-  }
-  // Sonido: tocar un texto que suena ya cuenta como haber visto su pista.
-  const tocarSfx = useCallback((m) => { marcarPista('sonido'); playSfx(m) }, [marcarPista, playSfx])
 
   // ── Modo subrayado mobile ──
   useEffect(() => {
@@ -635,13 +472,8 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
   // Pista de primera vez del lector: una sola a la vez, y nunca encima de otra
   // capa (hojas, Cuaderno, muro, reseña) ni a la vez que la tira de predicción.
-  const esManual = book?.libro_id === MANUAL_LIBRO_ID
-  // Tira de predicción: en la ÚLTIMA página del capítulo, antes de pasar al
-  // siguiente (igual que el escritorio).
-  const tira = !guestMode && !esManual && !loading && total > 0 && atChapterEnd
-    && chapterIndex < capitulos.length - 1 && tiraCerrada !== chapterIndex
-    ? { capNum: capitulos[chapterIndex]?.numero ?? chapterIndex + 1 }
-    : null
+  // Tira de predicción: en la ÚLTIMA página del capítulo (ver tiraSi).
+  const tira = tiraSi(total > 0 && atChapterEnd)
   const paginaSuena = page.some(p => (currentMedia[p.id] || []).some(m => m.origen === 'explicito' && m.tipo === 'audio'))
   const capaAbierta = loading || error || sheet || imageOpen || notebookOpen || showPaywall || resenaOpen || catOpen || tira || modoSubrayado
   const pistaLector = capaAbierta ? null : pistas.primera([

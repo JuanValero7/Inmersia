@@ -10,6 +10,7 @@
 //   1. Registro → la base crea perfil y Manual (trigger de la 073).
 //   2. Invitado que lee la muestra e inicia sesión sin salir del lector:
 //      sigue en la misma página, con el libro adquirido y guardando progreso.
+//      Y en el móvil, el muro al terminar la muestra.
 //   3. Límite de 5 pendientes en adquirir_libro() (076).
 //   4. Lector de escritorio: leer 2 capítulos, que se guarden capítulos y %
 //      por palabras (075), recargar y volver a la misma página.
@@ -196,6 +197,19 @@ try {
     `capitulos_completados=${p?.capitulos_completados}, antes ${trasEntrar}`)
   await inv.ctx.close()
 
+  // Invitado en el móvil que lee toda la muestra: le sale el muro.
+  const invMov = await abrirContexto(browser, null, true)
+  await invMov.page.goto(`${BASE}/libro/${LIBRO}`)
+  await esperarParrafos(invMov.page)
+  let muro = false
+  for (let i = 0; i < 80 && !muro; i++) {
+    await invMov.page.locator('.lm-turn.right').first().dispatchEvent('click')
+    await esperar(250)
+    muro = await invMov.page.getByText('Sigue leyendo en Inmersia').isVisible().catch(() => false)
+  }
+  comprobar(muro, 'al terminar la muestra en el móvil sale el muro')
+  await invMov.ctx.close()
+
   titulo('3. Límite de 5 pendientes')
   // Ya tiene El Principito: 4 más llegan al límite y el siguiente no entra.
   const { data: libros } = await sb.from('libros').select('id, slug').eq('visible', true)
@@ -217,7 +231,12 @@ try {
   await esperarParrafos(esc.page)
   const antesEsc = (await progreso())?.capitulos_completados ?? 0
   console.log(`    (antes: ${antesEsc} capítulos)`)
-  p = await leerHasta(antesEsc + 2, () => esc.page.keyboard.press('ArrowRight'))
+  let tiraVista = false
+  p = await leerHasta(antesEsc + 2, async () => {
+    tiraVista ||= await esc.page.getByRole('button', { name: 'Anotar predicción' }).isVisible().catch(() => false)
+    await esc.page.keyboard.press('ArrowRight')
+  })
+  comprobar(tiraVista, 'la tira de predicción sale al final del capítulo')
   comprobar(p?.capitulos_completados === antesEsc + 2, 'leer guarda los capítulos completados', `capitulos_completados=${p?.capitulos_completados}, antes ${antesEsc}`)
   comprobar(p?.porcentaje === pctEsperado(p?.capitulos_completados), 'el % se guarda por palabras', `guardado ${p?.porcentaje} con ${p?.capitulos_completados} capítulos, esperado ${pctEsperado(p?.capitulos_completados)}`)
   await esperar(1500)   // debounce del ancla
