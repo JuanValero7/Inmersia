@@ -22,8 +22,8 @@ Documentos de referencia, en este orden:
 | **1. Red de seguridad:** linter, Vite 8, CI, `guardar()` | ✅ En producción (commit `7546e4f`, CI verde, Vercel OK) |
 | **2a. Copias de seguridad** | ✅ `npm run respaldo` + tarea de Windows a las 03:00 |
 | **2b. Proyecto de pruebas** | ✅ `inmersia-pruebas`, usado por `npm run dev` |
-| **3. Reglas a la base de datos** | 🔄 **Casi:** 3.0, 3.1 y 3.4 ✅; 3.3 (075) y 3.2 (076) + código en pruebas, falta desplegar |
-| 4. Ordenar el código (lector duplicado, React Query, capa de datos, App.jsx) | Pendiente |
+| **3. Reglas a la base de datos** | ✅ En producción (072–077) |
+| **4. Ordenar el código** | ✅ Hecho el 10 oct (7 commits locales, de `1aa84ba` a `1c632b3`): `npm run humo`, `useSesion`, `useLectorComun`, `mapLibro`, subrayados y reseña en React Query, `miBiblioteca`, chat 16+ con la fecha del perfil. Ver el README |
 | Continuo: colores a la paleta, botones accesibles, tipado JSDoc, tests de recorridos | Al tocar cada archivo |
 
 ## 2. Cómo se trabaja ahora
@@ -63,8 +63,9 @@ Documentos de referencia, en este orden:
 
 ```bash
 npm run dev        # contra PRUEBAS
+npm run humo       # recorridos de punta a punta contra PRUEBAS (antes de tocar lector, sesión o Biblioteca)
 npm run lint       # 0 errores y no más de 504 hex (bajar el tope al quitar hex)
-npm test           # 86 tests
+npm test           # 96 tests
 npm run respaldo   # copia de producción ahora mismo
 npm run esquema    # foto de la estructura de producción en supabase/esquema/
 ```
