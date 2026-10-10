@@ -10,8 +10,8 @@
 import React from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useBiblioteca } from '../../hooks/useBiblioteca.js'
-import { useCompraLibro, LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
-import { SIN_CATEGORIA_ID, COLOR_DEFAULT, MANUAL_LIBRO_ID } from '../biblioteca/constants.js'
+import { useCompraEnBiblioteca, filtrarPorBusqueda, agruparEnEstantes, ultimosAbiertos } from '../biblioteca/miBiblioteca.js'
+import { SIN_CATEGORIA_ID, MANUAL_LIBRO_ID } from '../biblioteca/constants.js'
 import { INK, BookCover, Skel } from './biblioteca/bibmHelpers.jsx'
 import { imgUrl } from '../../lib/img.js'
 import { useOnboarding } from '../../context/onboarding.jsx'
@@ -150,16 +150,10 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
 
   // Compra desde el panel in-place (Novedades/Para ti) — mismas primitivas y
   // mismo límite de pendientes que la Tienda (ver useCompraLibro).
-  const pendientes = React.useMemo(() => books.filter(b => b.id !== MANUAL_LIBRO_ID && !b.leido).length, [books])
-  const { comprar: comprarLibro, comprarYLeer: comprarYLeerLibro } = useCompraLibro(user, isSuperuser, onOpenBook)
-  const handleComprarLibro = async (libro) => {
-    const { error } = await comprarLibro(libro, { pendientes })
-    if (!error) { await fetchUserBooks(); setSelectedLibro(null) }
-  }
-  const handleEmpezarLeerLibro = async (libro) => {
-    const { error } = await comprarYLeerLibro(libro, { pendientes, tieneLibro: () => false })
-    if (!error) { await fetchUserBooks(); setSelectedLibro(null) }
-  }
+  const compra = useCompraEnBiblioteca({ books, user, isSuperuser, onOpenBook,
+    alAdquirir: async () => { await fetchUserBooks(); setSelectedLibro(null) } })
+  const handleComprarLibro = compra.comprar
+  const handleEmpezarLeerLibro = compra.empezarALeer
 
 
   // ── Onboarding ──
@@ -186,21 +180,9 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
   }, [onboarding, onGoCatalogo])
 
   // ── Filtrado + agrupado (derivados de UI) ──
-  const searchedBooks = React.useMemo(() => books.filter(b => {
-    const q = deferredSearch.toLowerCase()
-    if (q && !b.title.toLowerCase().includes(q) && !b.author.toLowerCase().includes(q)) return false
-    return true
-  }), [books, deferredSearch])
+  const searchedBooks = React.useMemo(() => filtrarPorBusqueda(books, deferredSearch), [books, deferredSearch])
 
-  const groups = React.useMemo(() => {
-    const out = categories.map(c => ({
-      cat: { id: c.id, nombre: c.nombre, color: c.color },
-      books: searchedBooks.filter(b => b.categoria_id === c.id),
-    }))
-    const sinCat = searchedBooks.filter(b => !b.categoria_id)
-    if (sinCat.length) out.push({ cat: { id: SIN_CATEGORIA_ID, nombre: 'Sin categoría', color: COLOR_DEFAULT }, books: sinCat })
-    return out.filter(g => g.books.length && (!activeCategory || g.cat.id === activeCategory))
-  }, [categories, searchedBooks, activeCategory])
+  const groups = React.useMemo(() => agruparEnEstantes(categories, searchedBooks, activeCategory), [categories, searchedBooks, activeCategory])
 
   const counts = React.useMemo(() => {
     const m = { __all: books.filter(b => b.id !== MANUAL_LIBRO_ID).length }
@@ -210,13 +192,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
   }, [books, categories])
 
   // Últimos abiertos (máx 3) — featured viene del hook; se excluye para no duplicar "Seguir leyendo"
-  const ultimos = React.useMemo(() => {
-    const nonManual = books.filter(b => b.id !== MANUAL_LIBRO_ID && b.id !== featured?.id)
-    if (lastOpenedBookIds?.length) {
-      return lastOpenedBookIds.filter(id => id !== featured?.id).map(id => nonManual.find(b => b.id === id)).filter(Boolean).slice(0, 3)
-    }
-    return nonManual.slice(0, 3)
-  }, [books, lastOpenedBookIds, featured])
+  const ultimos = React.useMemo(() => ultimosAbiertos(books, lastOpenedBookIds, featured, 3), [books, lastOpenedBookIds, featured])
   const ultimosVisible = React.useMemo(() => {
     if (!deferredSearch) return ultimos
     const ids = new Set(searchedBooks.map(b => b.id))
@@ -429,7 +405,7 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
           libro={selectedLibro}
           user={user}
           yaAdquirido={false}
-          bloqueado={!isSuperuser && pendientes >= LIMITE_PENDIENTES}
+          bloqueado={compra.bloqueado}
           onComprar={() => handleComprarLibro(selectedLibro)}
           onEmpezarLeer={() => handleEmpezarLeerLibro(selectedLibro)}
           onCerrar={() => setSelectedLibro(null)}

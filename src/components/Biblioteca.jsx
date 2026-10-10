@@ -1,7 +1,7 @@
 import React from 'react'
 import { useBiblioteca } from '../hooks/useBiblioteca.js'
-import { useCompraLibro, LIMITE_PENDIENTES } from '../hooks/useCompraLibro.js'
-import { SIN_CATEGORIA_ID, COLOR_DEFAULT, MANUAL_LIBRO_ID } from './biblioteca/constants.js'
+import { useCompraEnBiblioteca, filtrarPorBusqueda, agruparEnEstantes, ultimosAbiertos } from './biblioteca/miBiblioteca.js'
+import { MANUAL_LIBRO_ID } from './biblioteca/constants.js'
 import '../styles/tienda.css'
 import '../styles/biblioteca.css'
 import BibBookModal from './biblioteca/BibBookModal.jsx'
@@ -86,17 +86,11 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
 
   // Compra desde el panel in-place (Novedades/Recomendaciones) — mismas
   // primitivas y mismo límite de pendientes que la Tienda (ver useCompraLibro).
-  const pendientes = React.useMemo(() => books.filter(b => b.id !== MANUAL_LIBRO_ID && !b.leido).length, [books]);
-  const { comprar: comprarLibro, comprarYLeer: comprarYLeerLibro } = useCompraLibro(user, isSuperuser, onOpenBook);
-  const handleComprarLibro = async (libro) => {
-    const { error } = await comprarLibro(libro, { pendientes });
-    if (!error) { await fetchUserBooks(); setSelectedLibro(null); }
-  };
-  const handleEmpezarLeerLibro = async (libro) => {
-    const { error } = await comprarYLeerLibro(libro, { pendientes, tieneLibro: () => false });
-    if (!error) { await fetchUserBooks(); setSelectedLibro(null); }
-  };
-  const bloqueadoCompra = !isSuperuser && pendientes >= LIMITE_PENDIENTES;
+  const compra = useCompraEnBiblioteca({ books, user, isSuperuser, onOpenBook,
+    alAdquirir: async () => { await fetchUserBooks(); setSelectedLibro(null); } });
+  const handleComprarLibro = compra.comprar;
+  const handleEmpezarLeerLibro = compra.empezarALeer;
+  const bloqueadoCompra = compra.bloqueado;
   const abrirAvance = (libro) => {
     evento('avance_abierto', { libro: libro.slug, origen: 'biblioteca' });
     setReelLibro(libro);
@@ -125,33 +119,14 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
   }, [searchInput]);
 
   // ── Filtrado + agrupado (derivados de UI) ──
-  const searchedBooks = React.useMemo(() => books.filter(b => {
-    const q = search.toLowerCase();
-    if (q && !b.title.toLowerCase().includes(q) && !b.author.toLowerCase().includes(q)) return false;
-    return true;
-  }), [books, search]);
+  const searchedBooks = React.useMemo(() => filtrarPorBusqueda(books, search), [books, search]);
 
   // Grupos para los estantes (categorías con libros + "Sin categoría")
-  const groups = React.useMemo(() => {
-    const out = categories.map(c => ({
-      cat: { id: c.id, nombre: c.nombre, color: c.color },
-      books: searchedBooks.filter(b => b.categoria_id === c.id),
-    }));
-    const sinCat = searchedBooks.filter(b => !b.categoria_id);
-    if (sinCat.length) out.push({ cat: { id: SIN_CATEGORIA_ID, nombre: 'Sin categoría', color: COLOR_DEFAULT }, books: sinCat });
-    return out.filter(g => g.books.length);
-  }, [categories, searchedBooks]);
+  const groups = React.useMemo(() => agruparEnEstantes(categories, searchedBooks), [categories, searchedBooks]);
 
   // "Últimos abiertos" del lateral (máx 2) — excluye el libro ya mostrado en
   // el hero "Seguir leyendo" para que no se repita.
-  const portadas = React.useMemo(() => {
-    const nonManual = books.filter(b => b.id !== MANUAL_LIBRO_ID && b.id !== featured?.id)
-    if (lastOpenedBookIds?.length) {
-      const ordered = lastOpenedBookIds.filter(id => id !== featured?.id).map(id => nonManual.find(b => b.id === id)).filter(Boolean)
-      return ordered.slice(0, 2)
-    }
-    return nonManual.slice(0, 2)
-  }, [books, lastOpenedBookIds, featured]);
+  const portadas = React.useMemo(() => ultimosAbiertos(books, lastOpenedBookIds, featured, 2), [books, lastOpenedBookIds, featured]);
 
   const openBook = React.useCallback((book) => { setSelectedBook(book); }, []);
 
