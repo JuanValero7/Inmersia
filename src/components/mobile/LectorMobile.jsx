@@ -22,7 +22,7 @@
 //   { book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted }
 // ─────────────────────────────────────────────────────────────
 import React, { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } from 'react'
-import { useLectorComun, useGuardarProgreso } from '../../hooks/useLectorComun.js'
+import { useLectorComun, useGuardarProgreso, useAmbienteEnPagina } from '../../hooks/useLectorComun.js'
 import { useXrayItems } from '../../hooks/useXrayItems.js'
 import TutorialHint from '../onboarding/TutorialHint.jsx'
 import { TEXTO_MANUAL_HINT } from '../onboarding/textos.js'
@@ -34,8 +34,6 @@ import { offsetDeAnclaje, paginaDeAnclaje, palabrasAcumuladasPorPagina, etiqueta
 import { Notebook } from '../lector/Notebook.jsx'          // ← cuaderno REUTILIZADO (igual al de PC)
 import { INK, ACCENT } from '../lector/clay.jsx'
 import SuperuserSoundsPanel from '../lector/SuperuserSoundsPanel.jsx'
-import { useAmbientPlayer } from '../../hooks/useAmbientPlayer.js'
-import { AMBIENTE_FICCION_ACTIVO } from '../lector/readerConstants.js'
 import MobileBookPage from './lector/MobileBookPage.jsx'
 import { useCapaMovil } from '../comunidades/capa/CapaMovil.jsx'
 import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, FotoAsomada, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
@@ -129,8 +127,8 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     notebookOpen, setNotebookOpen, resenaOpen, setResenaOpen, adminPanelOpen, setAdminPanelOpen,
     showPaywall, setShowPaywall, setTiraCerrada,
     onboarding, tutorialManual, explorarVisible, manualHintVisto, setManualHintVisto, irCartelera,
-    whiteNoise, fontSize, setFontSize, readingFont, setReadingFont, readingTheme, setReadingTheme, modoProgreso, setModoProgreso,
-    currentChapter, currentChapData, currentMedia, currentAmbient, currentSubrayados,
+    whiteNoise, ambiente, hayAmbiente, fontSize, setFontSize, readingFont, setReadingFont, readingTheme, setReadingTheme, modoProgreso, setModoProgreso,
+    currentChapter, currentChapData, currentMedia, currentSubrayados,
     handleSubmitResena, handleCloseNotebook, anotarDesdeTira,
     pistas, marcarPista, tocarSfx, esManual, tiraSi,
   } = lector
@@ -155,7 +153,6 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
   const esNoficcion = book?.es_ficcion === false
   const xrayItems = useXrayItems(sheet === 'xray', book?.libro_id, currentChapter?.numero ?? chapterIndex + 1, esNoficcion ? 'glosario' : 'personajes')
-  const { playing: ambientPlaying, volume: ambientVol, toggle: toggleAmbient, setVol } = useAmbientPlayer(currentAmbient?.url)
 
   // ── Paginación a prueba de fallos (medida del DOM real) ──
   // No estimamos: paginarParrafosMobileDOM maqueta el texto en un contenedor
@@ -329,6 +326,8 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
   // Dónde va y libro terminado (hooks/useLectorComun.js).
   useGuardarProgreso({ ...lector, book, guestMode }, paginas, paginas.length > 0 && pageIndex >= paginas.length - 1)
+  // Qué tramo de ambiente suena (hooks/useAmbiente.js).
+  useAmbienteEnPagina(lector, paginas)
 
   // ── Imágenes visibles en la página actual (y anteriores del capítulo) ──
   const visibleImages = useMemo(() => {
@@ -460,9 +459,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   })
 
   const CAT_ITEMS = [
-    // Audio: en ficción está oculto (ver AMBIENTE_FICCION_ACTIVO); en no ficción
-    // abre el ruido ambiental.
-    ...(esNoficcion || AMBIENTE_FICCION_ACTIVO ? [{ key: 'audio', label: 'Audio', icon: <CassetteIcon />, act: () => setSheet('audio') }] : []),
+    // Audio: en no ficción abre el ruido ambiental; en ficción, el ambiente,
+    // solo en capítulos con tramos (hooks/useAmbiente.js).
+    ...(esNoficcion || hayAmbiente ? [{ key: 'audio', label: 'Audio', icon: <CassetteIcon />, act: () => setSheet('audio') }] : []),
     ...(!guestMode ? [{ key: 'cuaderno', label: 'Cuaderno', icon: <SpiralNotebookIcon />, act: openNotebook }] : []),
     ...(!guestMode ? [{ key: 'subrayar', label: modoSubrayado ? 'Apagar ✏' : 'Subrayar', icon: <HighlighterIcon active={modoSubrayado} />, act: activarModoSubrayado }] : []),
     ...(capa.herramienta ? [capa.herramienta] : []),
@@ -629,7 +628,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       {sheet==='typo' && <TypoSheet fontSize={fontSize} onFontSize={setFontSize} readingFont={readingFont} onReadingFont={setReadingFont} readingTheme={readingTheme} onReadingTheme={setReadingTheme} modoProgreso={modoProgreso} onModoProgreso={setModoProgreso} onClose={()=>setSheet(null)} />}
       {sheet==='audio' && (book?.es_ficcion === false
         ? <WhiteNoiseSheet noise={whiteNoise} onClose={() => setSheet(null)} />
-        : <AudioSheet ambient={currentAmbient} playing={ambientPlaying} volume={ambientVol} onToggle={toggleAmbient} onVolume={setVol} onClose={() => setSheet(null)} />
+        : <AudioSheet ambiente={ambiente} onClose={() => setSheet(null)} />
       )}
       {sheet==='nav' && <NavSheet onGoForo={onGoForo} onGoCartelera={irCartelera} onGoBiblioteca={onGoBack} onClose={()=>setSheet(null)} soloInvestigacion={tutorialManual} />}
 

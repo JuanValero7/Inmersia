@@ -11,6 +11,8 @@
 //                      reseña, cuaderno y tira de predicción.
 //   useGuardarProgreso dónde va (cada página) y libro terminado (última página
 //                      del último capítulo). Se llama DESPUÉS de paginar.
+//   useAmbienteEnPagina qué tramo de ambiente toca a la página que se ve.
+//                      También DESPUÉS de paginar.
 //
 // Lo que NO está aquí, a propósito: la paginación (lectorPagination*.js) y la
 // restauración de página, la geometría, la navegación y toda la maquetación.
@@ -28,6 +30,7 @@ import { usePistas } from '../context/pistas.jsx'
 import useLocalStorage from './useLocalStorage.js'
 import { useLectorData } from './useLectorData.js'
 import { useWhiteNoise } from './useWhiteNoise.js'
+import { useAmbiente, ambienteDelParrafo } from './useAmbiente.js'
 import { useSesionLectura } from './useSesionLectura.js'
 
 export const READING_FONT_DEFAULT = "'Crimson Text', Georgia, serif"
@@ -96,6 +99,9 @@ export function useLectorComun({ book, guestMode, startWithNotebook, onNotebookS
   // Ruido ambiental (no ficción): vive aquí —no en el panel— para que siga
   // sonando al cerrarlo y solo pare al salir del lector o al apagarlo.
   const whiteNoise = useWhiteNoise()
+  // Ambiente de la ficción por tramos: aquí por lo mismo. Qué tramo toca lo
+  // decide cada lector con useAmbienteEnPagina, después de paginar.
+  const ambiente = useAmbiente()
 
   // Preferencias de lectura, compartidas entre escritorio y móvil.
   const [fontSize,     setFontSize]     = useLocalStorage('inm_lector_fontSize', 16)
@@ -138,7 +144,8 @@ export function useLectorComun({ book, guestMode, startWithNotebook, onNotebookS
   const currentChapter  = capitulos[chapterIndex] || null
   const currentChapData = currentChapter ? chapterCache[currentChapter.id] : null
   const currentMedia    = currentChapData?.mediaByParrafo || EMPTY_MEDIA
-  const currentAmbient  = currentChapData?.ambient || null
+  // El control de sonido de la ficción solo sale en capítulos con tramos.
+  const hayAmbiente     = !!currentChapter?.ambientes?.length
   const currentCapNum   = currentChapter?.numero ?? chapterIndex + 1
   // Solo los textos: es lo que necesita el render para anclar la marca.
   const currentSubrayados = useMemo(
@@ -178,9 +185,9 @@ export function useLectorComun({ book, guestMode, startWithNotebook, onNotebookS
     notebookOpen, setNotebookOpen, resenaOpen, setResenaOpen, adminPanelOpen, setAdminPanelOpen,
     showPaywall, setShowPaywall, setTiraCerrada,
     onboarding, tutorialManual, explorarVisible, manualHintVisto, setManualHintVisto, irCartelera,
-    whiteNoise,
+    whiteNoise, ambiente, hayAmbiente,
     fontSize, setFontSize, readingFont, setReadingFont, readingTheme, setReadingTheme, modoProgreso, setModoProgreso,
-    capituloCargado, currentChapter, currentChapData, currentMedia, currentAmbient, currentCapNum, currentSubrayados,
+    capituloCargado, currentChapter, currentChapData, currentMedia, currentCapNum, currentSubrayados,
     handleSubmitResena, handleCloseNotebook, anotarDesdeTira,
     pistas, marcarPista, tocarSfx, esManual, tiraSi,
   }
@@ -245,4 +252,23 @@ export function useGuardarProgreso(lector, paginas, esUltimaPagina) {
     }, 600)
     return () => clearTimeout(t)
   }, [chapterIndex, esUltimaPagina, capitulos.length, userId, book?.libro_id, guestMode, restoredRef, setIsLeido, invalidateBiblioteca])
+}
+
+/**
+ * Le dice al motor de ambiente qué tramo toca a la página que se ve: el del
+ * primer párrafo de la página (en doble página, la izquierda). Se llama
+ * después de paginar, como useGuardarProgreso.
+ *
+ * @param {ReturnType<typeof useLectorComun>} lector
+ * @param {Array<Array<{numero: number}>>} paginas   páginas del capítulo actual
+ */
+export function useAmbienteEnPagina(lector, paginas) {
+  const { ambiente: { situar }, currentChapter, pageIndex } = lector
+  const tramos = currentChapter?.ambientes
+  const numero = paginas[pageIndex]?.[0]?.numero
+  // Con tramos pero sin páginas todavía (el capítulo está cargando) no se
+  // decide nada: así cambiar de capítulo no apaga el sonido un momento.
+  const listo = !tramos?.length || numero != null
+  const slug = ambienteDelParrafo(tramos, numero)
+  useEffect(() => { if (listo) situar(slug) }, [listo, slug, situar])
 }

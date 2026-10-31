@@ -1,29 +1,17 @@
 // Plain JavaScript (.jsx)
 import { useState, memo } from 'react'
 import { theme } from './clay.jsx'
-import { useAmbientPlayer } from '../../hooks/useAmbientPlayer.js'
 
-// Grabadora de ambiente — clay. Conserva la lógica de audio real (ambient.url),
-// sin carretes girando y con opción de minimizar.
-const RecorderPlayer = memo(function RecorderPlayer({ ambient, onClose }) {
-  const [min, setMin] = useState(false)
-  const { playing, volume, toggle, setVol } = useAmbientPlayer(ambient?.url)
-
-  const disabled = !ambient?.url
-
-  if (min && !onClose) {
-    return (
-      <button type="button" onClick={() => setMin(false)} title="Ajustar ambiente"
-        style={{ width: 48, height: 48, borderRadius: 14, background: theme.navBg, border: `2px solid ${theme.ink}`, boxShadow: `2px 3px 0 ${theme.ink}26`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        <span style={{ fontSize: 18, color: theme.accent }}>♪</span>
-        {playing && <span style={{ position: 'absolute', top: 4, right: 5, width: 8, height: 8, borderRadius: '50%', background: theme.accent, boxShadow: `0 0 5px ${theme.accent}` }} />}
-      </button>
-    )
-  }
+// Grabadora de ambiente — clay. Solo el volumen: a 0 no suena nada (decisión de
+// Juan: el lector no elige ni pausa nada más). El sonido lo lleva el motor de
+// useAmbiente, que vive en el lector: cerrar este panel no lo corta.
+const RecorderPlayer = memo(function RecorderPlayer({ ambiente, onClose }) {
+  const { volumen, setVolumen, nombre } = ambiente
+  const suena = volumen > 0
 
   return (
-    <div style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, boxShadow: `2px 3px 0 ${theme.ink}26`, borderRadius: 16, padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 14, width: 330, opacity: disabled ? 0.6 : 1, position: 'relative' }}>
-      <button type="button" onClick={() => onClose ? onClose() : setMin(true)} title="Minimizar"
+    <div style={{ background: theme.navBg, border: `2px solid ${theme.ink}`, boxShadow: `2px 3px 0 ${theme.ink}26`, borderRadius: 16, padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 14, width: 300, position: 'relative' }}>
+      <button type="button" onClick={onClose} title="Cerrar"
         style={{ position: 'absolute', top: 6, right: 8, width: 18, height: 18, borderRadius: 6, border: `1.5px solid ${theme.ink}55`, background: 'transparent', color: theme.ink, fontSize: 11, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>–</button>
       <div style={{ display: 'flex', gap: 10 }}>
         {[0, 1].map(k => (
@@ -34,19 +22,17 @@ const RecorderPlayer = memo(function RecorderPlayer({ ambient, onClose }) {
         ))}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 10.5, color: theme.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 16 }}>{ambient ? (ambient.titulo || ambient.slug || 'ambiente') : 'sin ambiente'}</div>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 10.5, color: theme.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 16 }}>
+          {!suena ? 'Sube el volumen para oír el ambiente' : (nombre || 'Silencio en esta parte')}
+        </div>
         <div style={{ display: 'flex', gap: 2, marginTop: 7, height: 9, alignItems: 'flex-end' }}>
           {Array.from({ length: 14 }).map((_, i) => {
-            const on = playing && i < Math.round(volume * 14)
+            const on = suena && i < Math.round(volumen * 14)
             return <div key={i} style={{ flex: 1, height: 3 + (i % 4) * 1.6, background: on ? theme.meter : 'rgba(74,54,34,0.16)', borderRadius: 1, transition: 'background .12s' }} />
           })}
         </div>
-        <input type="range" min="0" max="1" step="0.01" value={volume} onChange={e => setVol(parseFloat(e.target.value))} className="inm-vol" style={{ width: '100%', marginTop: 8, color: theme.accent }} />
+        <input type="range" min="0" max="1" step="0.01" value={volumen} onChange={e => setVolumen(parseFloat(e.target.value))} aria-label="Volumen del ambiente" className="inm-vol" style={{ width: '100%', marginTop: 8, color: theme.accent }} />
       </div>
-      <button type="button" disabled={disabled} onClick={toggle} title={playing ? 'Pausar' : 'Reproducir'}
-        style={{ width: 40, height: 40, flexShrink: 0, borderRadius: '50%', border: `2px solid ${theme.ink}`, background: theme.accent, color: '#fff', fontSize: 14, cursor: disabled ? 'default' : 'pointer', boxShadow: `1.6px 2.4px 0 ${theme.ink}40`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {playing ? '❚❚' : '▶'}
-      </button>
     </div>
   )
 })

@@ -6,14 +6,14 @@
 
 ## Propósito
 
-Reproductor de audio de ambiente del capítulo para libros de **ficción**. Estética de grabadora analógica clay (carretes, medidor de barras). También exporta tres íconos ilustrados (`LupaIcon`, `ForoIcon`, `NotebookIcon`) que se usan en el popup "Explorar" y en el launcher del cuaderno del desktop.
+Panel del sonido de ambiente de los libros de **ficción**: solo el volumen (a 0 no suena nada; decisión de Juan, 31 oct 2026: el lector no elige ni pausa nada más). Estética de grabadora analógica clay (carretes, medidor de barras). El sonido no vive aquí sino en el motor `useAmbiente`, que vive en el lector: cerrar el panel no lo corta. También exporta tres íconos ilustrados (`LupaIcon`, `ForoIcon`, `NotebookIcon`) que se usan en el popup "Explorar" y en el launcher del cuaderno del desktop.
 
 ## Entradas (props)
 
 | Prop | Tipo | Descripción |
 |---|---|---|
-| `ambient` | `Media \| null` | Objeto de audio del capítulo (`{ url, titulo, slug }`) |
-| `onClose` | `fn \| undefined` | Si se pasa: botón "–" llama a `onClose`. Si no: minimiza a icono flotante |
+| `ambiente` | `ReturnType<useAmbiente>` | `{ volumen, setVolumen, nombre }` del motor de ambiente |
+| `onClose` | `fn` | Botón "–": cierra el panel (el sonido sigue) |
 
 ## Lo que exporta
 
@@ -26,14 +26,13 @@ Reproductor de audio de ambiente del capítulo para libros de **ficción**. Est�
 
 ## Flujo principal
 
-1. `useAmbientPlayer(ambient?.url)` crea y gestiona el `Audio` object. Al cambiar `ambient.url`, pausa, actualiza `src`, y si estaba reproduciéndose (`wasPlaying`), reanuda automáticamente.
-2. Botón play/pausa → `toggle()` del hook.
-3. Slider de volumen → `setVol(parseFloat(e.target.value))` del hook.
-4. Botón "–": si `onClose` existe, lo llama (el padre cierra el panel completo). Si no, minimiza a un botón compacto `48×48` con dot pulsante cuando está playing.
+1. Slider de volumen → `setVolumen()` del motor. Subirlo desde 0 es el gesto que deja al navegador poner sonido.
+2. El texto dice qué suena (`nombre` del ambiente del tramo actual), «Silencio en esta parte» si el tramo es `ninguno`, o «Sube el volumen…» a 0.
+3. Botón "–" → `onClose`.
 
 ### Medidor de barras
 
-14 barras (`<div>`) de altura variable (`3 + (i % 4) * 1.6` px). Una barra está "encendida" (`background: theme.meter`) si `playing && i < Math.round(volume * 14)`. Simula un VU meter proporcional al volumen.
+14 barras (`<div>`) de altura variable (`3 + (i % 4) * 1.6` px). Una barra está "encendida" (`background: theme.meter`) si `volumen > 0 && i < Math.round(volumen * 14)`. Simula un VU meter proporcional al volumen.
 
 ## Íconos ilustrados (`LupaIcon`, `ForoIcon`, `NotebookIcon`)
 
@@ -47,18 +46,15 @@ Los tres comparten el mismo comportamiento hover: `rotate(-7deg) translateY(0px)
 
 ## Decisiones no obvias
 
-**Dos modos del botón "–":** El `RecorderPlayer` puede usarse de dos formas en el desktop: (1) dentro del panel de `BookReader` donde `onClose` cierra el panel completo, o (2) flotante donde "–" solo minimiza. El componente no necesita saber cuál es el contexto — la presencia o ausencia de `onClose` determina el comportamiento.
-
-**`wasPlaying` capturado antes de pausar (en `useAmbientPlayer`):** Al cambiar de capítulo (nuevo `ambientUrl`), hay que pausar el audio anterior antes de cargar el nuevo. Si el audio estaba reproduciéndose, se quiere que el nuevo también empiece. Capturar `playing` como `wasPlaying` antes del `pause()` evita la condición de carrera donde el state se actualiza asíncronamente.
+**El motor no vive aquí:** antes el audio se creaba dentro de este componente y cerrar el panel lo cortaba. Ahora `useAmbiente` vive en `useLectorComun` (una vez por lector) y este panel solo lo controla. Cómo funciona el motor (tramos, bucle/detalles, fundidos): ver el encabezado de `src/hooks/useAmbiente.js`.
 
 **`useState` en los íconos (hover):** Los tres íconos usan `useState(false)` local para el hover. Alternativa sería CSS `:hover`, pero la animación de transform necesita aplicarse al wrapper completo (no a un pseudo-elemento), y el `transition` de cubic-bezier con rebote no es fácil de expresar en CSS puro sin JS.
 
 ## Conexiones de salida
 
-- `useAmbientPlayer` (`src/hooks/useAmbientPlayer.js`) — gestión del audio de ambiente
 - `clay.jsx` — `theme`
 
 ## Conexiones de entrada
 
-- `BookReader.jsx` — instancia `RecorderPlayer` dentro del panel de sonido (ficción)
+- `BookReader.jsx` — instancia `RecorderPlayer` dentro del panel de sonido (ficción, solo en capítulos con tramos de ambiente)
 - `Lector.jsx` — importa `NotebookIcon` para el botón del cuaderno en el footer

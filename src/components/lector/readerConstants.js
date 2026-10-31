@@ -1,9 +1,3 @@
-// Sonido de ambiente en ficción (RecorderPlayer / AudioSheet): oculto por ahora
-// —los capítulos aún no traen pistas y el chip confundía— pero el código sigue
-// vivo. Poner en true vuelve a mostrar el chip del lector y el ítem "Audio" del
-// gato en móvil. No afecta a la no ficción, que usa el ruido ambiental.
-export const AMBIENTE_FICCION_ACTIVO = false
-
 // Modos del pie de página (ver etiquetaProgreso en utils/readerHelpers.js).
 // La muestra es un símbolo y no un número: un número de ejemplo se confundía
 // con el progreso real.

@@ -5,7 +5,6 @@ import { theme, tint, getReaderPalette } from './clay.jsx'
 import { READING_FONTS, MODOS_PROGRESO } from './readerConstants.js'
 import { marcasDelParrafo } from '../../utils/readerHelpers.js'
 import { RecorderPlayer } from './RecorderPlayer.jsx'
-import { AMBIENTE_FICCION_ACTIVO } from './readerConstants.js'
 import WhiteNoisePlayer from './WhiteNoisePlayer.jsx'
 import '../../styles/lector.css'
 
@@ -267,7 +266,7 @@ export const BookReader = memo(function BookReader({
   onFontSize, onReadingFont, readingTheme = 'light', onReadingTheme,
   pageW = 470, pageH = 560, fontSize = 18, readingFont = "'Crimson Text', Georgia, serif",
   xrayOpen = false, xrayItems = [], onToggleXray, onXrayItemClick, xrayLocked = false,
-  ambient = null, esNoficcion = false,
+  ambiente = null, esNoficcion = false,
   whiteNoise = null, chapterLocked = false,
   comunidadChip = null, renderCapa = null,
   modoProgreso = 'pagina', onModoProgreso = null, etiquetaProgreso = null,
@@ -313,7 +312,8 @@ export const BookReader = memo(function BookReader({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <ChapterSelect chapters={chapters || []} chapterIndex={chapterIndex} onChapterSelect={onChapterSelect} locked={chapterLocked} />
           <TypographyControl fontSize={fontSize} onFontSize={onFontSize} readingFont={readingFont} onReadingFont={onReadingFont} readingTheme={readingTheme} onReadingTheme={onReadingTheme} modoProgreso={modoProgreso} onModoProgreso={onModoProgreso} />
-          {(esNoficcion || AMBIENTE_FICCION_ACTIVO) && (
+          {/* Ficción: solo en capítulos con tramos de ambiente (useAmbiente) */}
+          {(esNoficcion || ambiente) && (
           <div ref={soundRef} style={{ position: 'relative' }}>
             <button type="button" onClick={() => setSoundOpen(o => !o)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: soundOpen ? theme.accent : theme.navBg, color: soundOpen ? '#fff' : theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26`, whiteSpace: 'nowrap' }}>
@@ -323,7 +323,7 @@ export const BookReader = memo(function BookReader({
             <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 200, display: soundOpen ? 'block' : 'none' }}>
               {esNoficcion
                 ? <WhiteNoisePlayer noise={whiteNoise} onClose={() => setSoundOpen(false)} />
-                : <RecorderPlayer ambient={ambient} onClose={() => setSoundOpen(false)} />
+                : <RecorderPlayer ambiente={ambiente} onClose={() => setSoundOpen(false)} />
               }
             </div>
           </div>

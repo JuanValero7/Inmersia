@@ -47,7 +47,7 @@ El flujo de datos es idéntico al desktop (ver [Lector.md](Lector.md) y [useLect
    - `PolaroidsIcon` → overlay de imágenes del capítulo
    - `SpiralNotebookIcon` → Cuaderno
    - `HighlighterIcon` → modo subrayado
-4. **Audio de ambiente:** `useAmbientPlayer(currentAmbient?.url)` gestiona el ciclo de vida del audio. Al cambiar de capítulo, el hook detecta el cambio de URL, pausa, actualiza `src`, carga y reanuda si estaba playing.
+4. **Audio de ambiente:** el motor `useAmbiente` vive en `useLectorComun`; `useAmbienteEnPagina(lector, paginas)` le dice qué tramo toca a la página. La opción «Audio» del gato sale en ficción solo si el capítulo tiene tramos; `AudioSheet` solo tiene el volumen.
 5. **Autoshow de imagen:** Si `autoImages` está activado y hay imágenes en la página actual, abre `ImageOverlay` automáticamente al cambiar de página.
 
 ## Subrayado mobile (multi-página)
@@ -89,7 +89,7 @@ LectorMobile
   ├─ paginarParrafos        ← paginación (sin measuredHeights)
   ├─ Notebook               ← cuaderno reutilizado ídem desktop
   ├─ SuperuserSoundsPanel   ← panel de media (solo superusuario)
-  ├─ useAmbientPlayer       ← audio de ambiente (ficción)
+  ├─ useAmbienteEnPagina    ← tramo de ambiente de la página (ficción; motor en useLectorComun)
   ├─ MobileBookPage         ← hoja única del libro (src/components/mobile/lector/)
   ├─ LectorSheets.jsx       ← sheets y overlays extraídos (XraySheet, ChapterSheet, TypoSheet,
   │                            WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay,
@@ -111,7 +111,7 @@ LectorMobile
 
 - **`BookPage` inline** → extraído a `MobileBookPage.jsx` (y sheets a `LectorSheets.jsx`). Archivo reducido de ~1097 a ~629 líneas.
 - **`findPrefixAtEnd` / `findSuffixAtStart` duplicadas** → movidas a `src/utils/readerHelpers.js`.
-- **Audio de ambiente duplicado** → reemplazado por `useAmbientPlayer`.
+- **Audio de ambiente duplicado** → hoy es un solo motor, `useAmbiente`, compartido con el desktop vía `useLectorComun`.
 
 ## Nota
 

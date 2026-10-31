@@ -7,7 +7,7 @@
 // Va aquí (datos idénticos en ambos, sin acoplar a la UI):
 //   · userId
 //   · capítulos + caché + carga de lista con restauración de progreso
-//   · fetchChapter (párrafos + media + ambiente)
+//   · fetchChapter (párrafos + media)
 //   · reseña (carga + submit)
 //   · playSfx
 //   · persistChapterAdvance (avance de capítulo al cerrar el cuaderno)
@@ -15,7 +15,7 @@
 //
 // Se queda en cada componente (acoplado a su paginación/geometría o
 // divergente entre desktop y mobile): carga del capítulo ACTUAL,
-// guardado de progreso por página, marcar 100%, audio de ambiente,
+// guardado de progreso por página, marcar 100%,
 // selección de texto y todo el chrome/tour.
 //
 // Refactor puro: comportamiento idéntico al previo.
@@ -141,7 +141,8 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
         // evitando un viaje extra secuencial a `parrafos`.
         const enMemoria = posicionRef.current?.libroId === book.libro_id ? posicionRef.current : null
         const [{ data: capsTodos, error: e }, { data: prog }] = await Promise.all([
-          supabase.from('capitulos').select('id, numero, titulo, palabras, en_muestra')
+          // ambientes: tramos de sonido de ambiente (migración 080, ver useAmbiente)
+          supabase.from('capitulos').select('id, numero, titulo, palabras, en_muestra, ambientes')
             .eq('libro_id', book.libro_id).order('numero'),
           userId && !enMemoria
             ? supabase.from('progreso_lectura')
@@ -217,7 +218,7 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
       if (muestra) consulta = consulta.eq('en_muestra', true)
       const { data: parrafos, error: e1 } = await consulta.order('numero')
       if (e1) throw e1
-      const entry = { parrafos: parrafos || [], mediaByParrafo: {}, ambient: null }
+      const entry = { parrafos: parrafos || [], mediaByParrafo: {} }
       actualizarCache(prev => ({ ...prev, [cap.id]: entry }))
 
       mediaReq.then(({ data: mediaRows, error: e2 }) => {
@@ -227,14 +228,8 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
           if (!mediaByParrafo[m.parrafo_id]) mediaByParrafo[m.parrafo_id] = []
           mediaByParrafo[m.parrafo_id].push(m)
         }
-        // El ambiente es el primer audio de etiqueta en el orden del texto.
-        let ambient = null
-        for (const p of entry.parrafos) {
-          ambient = (mediaByParrafo[p.id] || []).find(m => m.origen === 'tag' && m.tipo === 'audio') || null
-          if (ambient) break
-        }
         actualizarCache(prev => prev[cap.id]
-          ? { ...prev, [cap.id]: { ...prev[cap.id], mediaByParrafo, ambient } }
+          ? { ...prev, [cap.id]: { ...prev[cap.id], mediaByParrafo } }
           : prev)
       })
       return entry

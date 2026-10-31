@@ -70,7 +70,7 @@ Lector.jsx / LectorMobile.jsx
   │     ├─► Supabase: subrayados_usuario                     (insert)
   │     └─► Supabase: elementos_interactivos, biblioteca_media (superusuario)
   ├─ paginarParrafos (src/utils/lectorPagination.js)
-  ├─ useAmbientPlayer(ambientUrl)   ── gestiona Audio object (ficción desktop + mobile)
+  ├─ useAmbiente (en useLectorComun) + useAmbienteEnPagina ── ambiente por tramos (ficción, migración 080)
   ├─ useXrayItems(isOpen, bookId, chapterNum, seccion)
   │     └─► Supabase: cartelera_items
   ├─ useLocalStorage — inm_lector_fontSize / font / theme / ledColor / inm_auto_img

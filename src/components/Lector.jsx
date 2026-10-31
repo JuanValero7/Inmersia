@@ -3,7 +3,7 @@
 // Solo estado, queries Supabase y composicion de vistas.
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { useLectorComun, useGuardarProgreso } from '../hooks/useLectorComun.js'
+import { useLectorComun, useGuardarProgreso, useAmbienteEnPagina } from '../hooks/useLectorComun.js'
 import { useXrayItems } from '../hooks/useXrayItems.js'
 import TutorialHint from './onboarding/TutorialHint.jsx'
 import { TEXTO_MANUAL_HINT } from './onboarding/textos.js'
@@ -116,8 +116,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     notebookOpen, setNotebookOpen, resenaOpen, setResenaOpen, adminPanelOpen, setAdminPanelOpen,
     showPaywall, setShowPaywall, setTiraCerrada,
     onboarding, tutorialManual, explorarVisible, manualHintVisto, setManualHintVisto, irCartelera,
-    whiteNoise, fontSize, setFontSize, readingFont, setReadingFont, readingTheme, setReadingTheme, modoProgreso, setModoProgreso,
-    currentChapter, currentChapData, currentMedia, currentAmbient, currentSubrayados,
+    whiteNoise, ambiente, hayAmbiente, fontSize, setFontSize, readingFont, setReadingFont, readingTheme, setReadingTheme, modoProgreso, setModoProgreso,
+    currentChapter, currentChapData, currentMedia, currentSubrayados,
     handleSubmitResena, handleCloseNotebook, anotarDesdeTira,
     pistas, marcarPista, tocarSfx, esManual, tiraSi,
   } = lector
@@ -219,6 +219,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   // última es la de la derecha.
   useGuardarProgreso({ ...lector, book, guestMode }, currentPaginas,
     currentPaginas.length > 0 && pageIndex >= currentPaginas.length - (doubleView ? 2 : 1))
+  // Qué tramo de ambiente suena (hooks/useAmbiente.js).
+  useAmbienteEnPagina(lector, currentPaginas)
 
   const handleTextSelect = useCallback(({ text, parrafoId, rect }) => {
     setPendingSelection({ text, parrafoId, rect })
@@ -532,7 +534,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   modoProgreso={modoProgreso}
                   onModoProgreso={setModoProgreso}
                   etiquetaProgreso={etiquetaPie}
-                  ambient={currentAmbient}
+                  ambiente={hayAmbiente ? ambiente : null}
                   esNoficcion={esNoficcion}
                   whiteNoise={whiteNoise}
                   comunidadChip={capa.chip}

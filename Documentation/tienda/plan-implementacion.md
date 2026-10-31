@@ -151,7 +151,7 @@ Una vista o función (`libros_resumen`) que **calcula** sin guardar nada nuevo, 
 - `capitulos`: count de `capitulos`.
 - `palabras`: suma de `capitulos.palabras` (ya existe desde la 062). El tiempo de lectura se calcula en la app con `palabras / 230` (decisión pendiente 2).
 - `ilustraciones`: imágenes distintas del libro (`media_por_parrafo`, tipo `imagen`).
-- `sonidos` (cambiado en la **069**): **momentos con sonido**, es decir, efectos anclados a una frase (`origen = 'explicito'`). El ambiente por etiqueta está apagado en ficción (`AMBIENTE_FICCION_ACTIVO = false`) y no cuenta. En no ficción da 0.
+- `sonidos` (cambiado en la **069**): **momentos con sonido**, es decir, efectos anclados a una frase (`origen = 'explicito'`). El ambiente de la ficción va aparte, por tramos en `capitulos.ambientes` (080), y no cuenta. En no ficción da 0.
 - **Regla de la ficha:** la tarjeta que vale 0 no se muestra (sonidos en no ficción; fichas en Lupin, El cupón falso, Una vida sin principios y Ensayos; ilustraciones en El ocaso de los ídolos).
 - `fichas`: de `cartelera_items`, contando cada una una vez aunque aparezca en varios capítulos. **Ficción:** personajes y lugares; la etiqueta dice «personajes y lugares de la Cartelera». **No ficción:** no tiene personajes, así que cuenta todas sus secciones (glosario, referencias, datos…), como «Infografías» en el Álbum; la etiqueta dice «fichas en la Investigación». Se agrupa por `nombre` normalizado, como el Álbum; la columna `nombre_canonico` de la 017 no existe en la base de datos.
 - Sin `barajitas`: se solapaban con ilustraciones y fichas (decisión 1).

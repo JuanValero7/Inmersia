@@ -190,8 +190,11 @@ export function WhiteNoiseSheet({ noise, onClose }) {
   )
 }
 
-export function AudioSheet({ ambient, playing, volume, onToggle, onVolume, onClose }) {
-  const disabled = !ambient?.url
+// Ambiente de la ficción: solo el volumen (a 0 no suena nada). El sonido lo
+// lleva el motor de useAmbiente, que vive en el lector: cerrar la hoja no lo corta.
+export function AudioSheet({ ambiente, onClose }) {
+  const { volumen, setVolumen, nombre } = ambiente
+  const suena = volumen > 0
   return (
     <div className="lm-backdrop" onClick={onClose}>
       <div className="lm-sheet" onClick={e=>e.stopPropagation()}>
@@ -199,23 +202,22 @@ export function AudioSheet({ ambient, playing, volume, onToggle, onVolume, onClo
         <div className="lm-sheet-head"><span className="lm-sheet-title">Ambiente</span>
           <button className="lm-close" onClick={onClose}><IcClose /></button></div>
         <div className="lm-audio-body">
-          <div className="lm-audio-track">♪ {ambient ? (ambient.titulo || ambient.slug || 'ambiente') : 'sin ambiente en este capítulo'}</div>
+          <div className="lm-audio-track">♪ {!suena ? 'Sube el volumen para oír el ambiente' : (nombre || 'Silencio en esta parte')}</div>
           <div className="lm-reels">
-            <div className={'lm-reel' + (playing?' spin':'')} />
-            <div className={'lm-reel' + (playing?' spin':'')} />
+            <div className={'lm-reel' + (suena?' spin':'')} />
+            <div className={'lm-reel' + (suena?' spin':'')} />
           </div>
           <div className="lm-meter">
             {Array.from({length:18}).map((_,i) => {
-              const on = playing && i < Math.round(volume*18)
+              const on = suena && i < Math.round(volumen*18)
               return <i key={i} className={on?'on':''} style={{ height: 6 + (i%5)*4 }} />
             })}
           </div>
           <div className="lm-audio-ctrls">
-            <button className="lm-play" disabled={disabled} onClick={onToggle}>{playing?'❚❚':'▶'}</button>
             <div className="lm-vol">
               <div className="lm-vol-row">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M11 5L6 9H3v6h3l5 4z" strokeLinejoin="round"/></svg>
-                <input className="lm-range" type="range" min="0" max="1" step="0.01" value={volume} onChange={e=>onVolume(parseFloat(e.target.value))} />
+                <input className="lm-range" type="range" min="0" max="1" step="0.01" value={volumen} aria-label="Volumen del ambiente" onChange={e=>setVolumen(parseFloat(e.target.value))} />
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H3v6h3l5 4z" strokeLinejoin="round"/><path d="M16 9a3 3 0 010 6" strokeLinecap="round"/><path d="M19 6.5a6.5 6.5 0 010 11" strokeLinecap="round"/></svg>
               </div>
             </div>
