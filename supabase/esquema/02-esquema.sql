@@ -1,6 +1,6 @@
 -- =============================================================
 -- INMERSIA — Esquema public (tablas, funciones, RLS, políticas, permisos)
--- Volcado de producción del 2026-10-10 con `npm run esquema`.
+-- Volcado de producción del 2026-10-31 con `npm run esquema`.
 -- NO SE EDITA A MANO: se regenera. Cómo restaurarlo:
 -- Documentation/base-de-datos/respaldo-estructura.md
 -- =============================================================
@@ -1164,8 +1164,16 @@ CREATE TABLE public.capitulos (
     numero integer NOT NULL,
     titulo text,
     palabras integer,
-    en_muestra boolean DEFAULT false NOT NULL
+    en_muestra boolean DEFAULT false NOT NULL,
+    ambientes jsonb
 );
+
+
+--
+-- Name: COLUMN capitulos.ambientes; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.capitulos.ambientes IS 'Tramos de sonido de ambiente: [{desde, hasta, ambiente}] por número de párrafo. NULL = sin ambiente.';
 
 
 --
@@ -2843,7 +2851,7 @@ ALTER TABLE ONLY public.bibliotecas_usuarios
 --
 
 ALTER TABLE ONLY public.bibliotecas_usuarios
-    ADD CONSTRAINT bibliotecas_usuarios_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id);
+    ADD CONSTRAINT bibliotecas_usuarios_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
 
 --

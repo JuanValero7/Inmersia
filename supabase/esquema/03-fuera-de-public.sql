@@ -1,6 +1,6 @@
 -- =============================================================
 -- INMERSIA — Lo que vive fuera del esquema public
--- Volcado de producción del 2026-10-10 con `npm run esquema`.
+-- Volcado de producción del 2026-10-31 con `npm run esquema`.
 -- NO SE EDITA A MANO: se regenera. Cómo restaurarlo:
 -- Documentation/base-de-datos/respaldo-estructura.md
 -- =============================================================
