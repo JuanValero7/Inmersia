@@ -70,6 +70,10 @@
   background:linear-gradient(180deg,rgba(27,21,26,.3) 0%,rgba(27,21,26,.05) 45%,var(--papel) 100%);}
 .fl-sala{position:absolute;z-index:2;left:28px;top:22px;padding:6px 14px;border-radius:999px;background:rgba(27,21,26,.72);
   color:#f0b27a;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;}
+/* Desde la Biblioteca la sala es un enlace a la Tienda (FichaLibro / FichaLibroMobile). */
+.fl-sala-enlace,.flm-sala-enlace{border:0;font-family:inherit;line-height:normal;display:inline-flex;align-items:center;gap:7px;cursor:pointer;transition:background .15s;}
+.fl-sala-enlace:hover,.flm-sala-enlace:active{background:rgba(27,21,26,.9);}
+.fl-sala-enlace:focus-visible,.flm-sala-enlace:focus-visible{outline:3px solid #f0b27a;outline-offset:2px;}
 .fl-cerrar{position:absolute;z-index:3;right:20px;top:18px;width:44px;height:44px;border-radius:999px;border:2.5px solid var(--ink);
   background:var(--papel);color:var(--ink);display:grid;place-items:center;cursor:pointer;}
 .fl-avance{position:absolute;z-index:3;right:36px;bottom:76px;display:flex;align-items:center;gap:10px;height:50px;

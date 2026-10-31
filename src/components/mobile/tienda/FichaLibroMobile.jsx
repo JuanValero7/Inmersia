@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useFichaLibro } from '../../../hooks/useFichaLibro.js'
 import { imgUrl } from '../../../lib/img.js'
 import { evento } from '../../../lib/analytics.js'
@@ -22,6 +23,9 @@ import '../../../styles/ficha.mobile.css'
 const IconoCerrar = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12" /><path d="M18 6L6 18" /></svg>
 )
+const IconoIr = () => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+)
 const IconoPlay = ({ size = 13 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
 )
@@ -35,6 +39,10 @@ export default function FichaLibroMobile({ libro, user, yaAdquirido = false, blo
   const [avance, setAvance] = useState(false)
   // En la sala el avance ya se está viendo (la historia), así que la ficha no lo ofrece.
   const conAvance = origen !== 'sala' && datos.escenas.length > 0
+  const navigate = useNavigate()
+  // Abierta desde la Biblioteca, la sala del libro lleva a la Tienda; dentro
+  // de la Tienda se queda como etiqueta.
+  const salaEnlace = origen === 'biblioteca' && datos.sala
 
   useEffect(() => { evento('ficha_abierta', { libro: libro.slug, origen }) }, [libro.slug, origen])
 
@@ -50,7 +58,10 @@ export default function FichaLibroMobile({ libro, user, yaAdquirido = false, blo
     <div className="flm" role="dialog" aria-modal="true" aria-labelledby="flm-titulo">
       <div className="flm-scroll">
         <div className="flm-cabecera" style={cabecera}>
-          {datos.sala && <span className="flm-sala">{datos.sala.nombre}</span>}
+          {salaEnlace
+            ? <button type="button" className="flm-sala flm-sala-enlace" onClick={() => navigate(`/tienda/${datos.sala.slug}`)}
+                title="Ver esta sala en la Tienda">{datos.sala.nombre} <IconoIr /></button>
+            : datos.sala && <span className="flm-sala">{datos.sala.nombre}</span>}
           <button type="button" className="flm-cerrar" onClick={onCerrar} aria-label="Cerrar la ficha"><IconoCerrar /></button>
           {conAvance && (
             <button type="button" className="flm-avance" onClick={abrirAvance}>

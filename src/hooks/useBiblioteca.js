@@ -247,6 +247,7 @@ export function useBiblioteca(user, lastOpenedBookIds) {
     rawBooks, loadingBooks, perfil, categories,
     categoriasMap, books, featured: featuredConHero,
     novedades, recomendaciones,
+    elegiblesTienda,
     displayName, inicial,
     fetchCategories, fetchUserBooks,
     createCategoria, updateCategoria, deleteCategoria, assignCategoriaToBook,

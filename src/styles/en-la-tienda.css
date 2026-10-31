@@ -1,0 +1,31 @@
+/* =============================================================
+   INMERSIA · EnLaTienda — libros de la Tienda bajo el buscador de
+   la Biblioteca (escritorio y móvil). Ver EnLaTienda.jsx.
+   ============================================================= */
+
+.elt { position: relative; display: flex; flex-direction: column; align-items: flex-start; }
+.elt button { font-family: inherit; box-sizing: border-box; }
+
+/* Línea discreta bajo el buscador. */
+.elt-linea { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; font-size: 13.5px; font-weight: 600; color: var(--ink); background: #fffdf8; border: 2px solid rgba(74,54,34,0.22); border-radius: 999px; padding: 5px 12px 5px 11px; cursor: pointer; transition: border-color .12s; }
+.elt-linea:hover, .elt-linea.on { border-color: var(--ink); }
+.elt-linea > svg { flex-shrink: 0; color: rgba(74,54,34,0.6); }
+.elt-linea-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.elt-n { flex-shrink: 0; background: var(--accent); color: #fff; font-size: 11.5px; font-weight: 800; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; display: grid; place-items: center; }
+.elt-giro { display: flex; transition: transform .15s; }
+.elt-linea.on .elt-giro { transform: rotate(90deg); }
+
+/* Lista desplegable, encima del contenido (como un autocompletado). */
+.elt-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 40; width: min(460px, 100%); display: flex; flex-direction: column; padding: 6px; background: #fffdf8; border: 2px solid var(--ink); border-radius: 16px; box-shadow: 2px 3px 0 rgba(74,54,34,0.18), 0 14px 30px rgba(74,54,34,0.18); }
+.elt-fila { display: flex; gap: 12px; align-items: center; text-align: left; width: 100%; min-width: 0; color: var(--ink); background: none; border: none; border-radius: 10px; padding: 7px 10px 7px 7px; cursor: pointer; }
+.elt-fila:hover { background: rgba(242,121,42,0.1); }
+.elt-portada { width: 40px; flex-shrink: 0; aspect-ratio: 2 / 3; border-radius: 3px 6px 6px 3px; border: 2px solid var(--ink); overflow: hidden; background: #f4ecda; }
+.elt-portada img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.elt-txt { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.elt-titulo { font-weight: 800; font-size: 14.5px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.elt-autor { font-size: 12.5px; font-weight: 600; color: rgba(74,54,34,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.elt-todos { display: flex; align-items: center; gap: 5px; margin-top: 4px; padding: 10px 10px 6px; border: none; border-top: 1.5px solid rgba(74,54,34,0.12); background: none; font-size: 13.5px; font-weight: 800; color: var(--accent); cursor: pointer; text-align: left; }
+
+.elt button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) { .elt-giro { transition: none; } }

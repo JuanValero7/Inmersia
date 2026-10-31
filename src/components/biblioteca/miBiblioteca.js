@@ -11,11 +11,28 @@ import { useMemo } from 'react'
 import { useCompraLibro, LIMITE_PENDIENTES } from '../../hooks/useCompraLibro.js'
 import { SIN_CATEGORIA_ID, COLOR_DEFAULT, MANUAL_LIBRO_ID } from './constants.js'
 
-/** Libros cuyo título o autor contienen `texto` (sin distinguir mayúsculas). */
+/** Texto comparable: sin acentos, en minúsculas y sin espacios en los bordes. */
+export function normalizarBusqueda(texto) {
+  return (texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+}
+
+const contiene = (q, ...campos) => campos.some(c => normalizarBusqueda(c).includes(q))
+
+/** Libros cuyo título o autor contienen `texto` (sin distinguir mayúsculas ni acentos). */
 export function filtrarPorBusqueda(libros, texto) {
-  const q = (texto || '').toLowerCase()
+  const q = normalizarBusqueda(texto)
   if (!q) return libros
-  return libros.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q))
+  return libros.filter(b => contiene(q, b.title, b.author))
+}
+
+/**
+ * Lo mismo sobre filas del catálogo (`titulo`/`autor`), para los libros de la
+ * Tienda que el usuario aún no tiene. Sin texto no devuelve nada.
+ */
+export function buscarEnTienda(catalogo, texto) {
+  const q = normalizarBusqueda(texto)
+  if (!q) return []
+  return catalogo.filter(l => contiene(q, l.titulo, l.autor))
 }
 
 /**

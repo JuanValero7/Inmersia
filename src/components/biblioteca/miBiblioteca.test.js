@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest'
 // El hook de compra arrastra Supabase; aquí solo se prueban las funciones puras.
 vi.mock('../../hooks/useCompraLibro.js', () => ({ useCompraLibro: () => ({}), LIMITE_PENDIENTES: 5 }))
 
-const { filtrarPorBusqueda, agruparEnEstantes, ultimosAbiertos, contarPendientes } = await import('./miBiblioteca.js')
+const { filtrarPorBusqueda, buscarEnTienda, agruparEnEstantes, ultimosAbiertos, contarPendientes } = await import('./miBiblioteca.js')
 const { MANUAL_LIBRO_ID, SIN_CATEGORIA_ID } = await import('./constants.js')
 
 const libro = (id, extra = {}) => ({ id, title: `Libro ${id}`, author: 'Autora', leido: false, categoria_id: null, ...extra })
@@ -16,6 +16,26 @@ describe('filtrarPorBusqueda', () => {
   })
   it('sin texto devuelve todos', () => {
     expect(filtrarPorBusqueda(libros, '')).toHaveLength(2)
+    expect(filtrarPorBusqueda(libros, '  ')).toHaveLength(2)
+  })
+  it('no distingue acentos, ni en lo que se escribe ni en el libro', () => {
+    const conAcento = [libro('c', { author: 'Sófocles' })]
+    expect(filtrarPorBusqueda(conAcento, 'sofocles').map(b => b.id)).toEqual(['c'])
+    expect(filtrarPorBusqueda(libros, 'PÓE').map(b => b.id)).toEqual(['b'])
+  })
+})
+
+describe('buscarEnTienda', () => {
+  const catalogo = [
+    { id: 'x', titulo: 'De profundis', autor: 'Oscar Wilde' },
+    { id: 'y', titulo: 'Edipo Rey', autor: 'Sófocles' },
+  ]
+  it('busca en titulo y autor del catálogo, sin acentos', () => {
+    expect(buscarEnTienda(catalogo, 'wilde').map(l => l.id)).toEqual(['x'])
+    expect(buscarEnTienda(catalogo, 'sofocles').map(l => l.id)).toEqual(['y'])
+  })
+  it('sin texto no devuelve nada', () => {
+    expect(buscarEnTienda(catalogo, ' ')).toEqual([])
   })
 })
 

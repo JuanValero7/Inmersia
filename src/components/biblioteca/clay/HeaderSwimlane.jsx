@@ -41,7 +41,7 @@ function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, on
         <img src="/assets/inmersia-logo2.png" alt="Inmersia" style={{ height: 40, width: 'auto', flexShrink: 0, marginLeft: 4 }} />
         <div style={{ flex: 1, minWidth: 0, maxWidth: 620, marginLeft: 6, display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,253,247,0.9)', border: `2px solid ${ink}`, borderRadius: 999, padding: '10px 18px', boxShadow: `1.5px 2px 0 ${ink}14` }}>
           <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={ink} strokeWidth="2.4"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35" strokeLinecap="round"/></svg>
-          <input value={search} onChange={e => onSearch(e.target.value)} onKeyDown={onSearchKeyDown} placeholder={compacto ? 'Buscar título o autor' : 'Buscar por título, autor… (Enter para buscar)'}
+          <input value={search} onChange={e => onSearch(e.target.value)} onKeyDown={onSearchKeyDown} placeholder={compacto ? 'Buscar título o autor' : 'Buscar por título o autor…'}
             style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontWeight: 600, fontSize: 15, color: ink }} />
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 11, flexShrink: 0 }}>

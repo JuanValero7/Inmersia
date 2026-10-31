@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useFichaLibro } from '../../hooks/useFichaLibro.js'
 import { imgUrl } from '../../lib/img.js'
 import { evento } from '../../lib/analytics.js'
@@ -28,6 +29,9 @@ import '../../styles/ficha.css'
 const IconoCerrar = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12" /><path d="M18 6L6 18" /></svg>
 )
+const IconoIr = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+)
 const IconoPlay = ({ size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
 )
@@ -39,6 +43,10 @@ export default function FichaLibro({ libro, user, yaAdquirido = false, bloqueado
   // En la sala el avance ya se está viendo (la historia), así que la ficha no lo ofrece.
   const conAvance = origen !== 'sala' && datos.escenas.length > 0
   const cerrarRef = useRef(null)
+  const navigate = useNavigate()
+  // Abierta desde la Biblioteca, la sala del libro lleva a la Tienda; dentro
+  // de la Tienda se queda como etiqueta.
+  const salaEnlace = origen === 'biblioteca' && datos.sala
 
   useEffect(() => { evento('ficha_abierta', { libro: libro.slug, origen }) }, [libro.slug, origen])
   useEffect(() => { cerrarRef.current?.focus() }, [])
@@ -67,7 +75,10 @@ export default function FichaLibro({ libro, user, yaAdquirido = false, bloqueado
     <div className="fl-velo" onClick={cerrarFuera}>
       <article className="fl" role="dialog" aria-modal="true" aria-labelledby="fl-titulo">
         <div className="fl-cabecera" style={cabecera}>
-          {datos.sala && <span className="fl-sala">{datos.sala.nombre}</span>}
+          {salaEnlace
+            ? <button type="button" className="fl-sala fl-sala-enlace" onClick={() => navigate(`/tienda/${datos.sala.slug}`)}
+                title="Ver esta sala en la Tienda">{datos.sala.nombre} <IconoIr /></button>
+            : datos.sala && <span className="fl-sala">{datos.sala.nombre}</span>}
           <button ref={cerrarRef} type="button" className="fl-cerrar" onClick={onCerrar} aria-label="Cerrar la ficha">
             <IconoCerrar />
           </button>

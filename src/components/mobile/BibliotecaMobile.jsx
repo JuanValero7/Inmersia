@@ -10,7 +10,8 @@
 import React from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useBiblioteca } from '../../hooks/useBiblioteca.js'
-import { useCompraEnBiblioteca, filtrarPorBusqueda, agruparEnEstantes, ultimosAbiertos } from '../biblioteca/miBiblioteca.js'
+import { useCompraEnBiblioteca, filtrarPorBusqueda, buscarEnTienda, agruparEnEstantes, ultimosAbiertos } from '../biblioteca/miBiblioteca.js'
+import EnLaTienda from '../biblioteca/EnLaTienda.jsx'
 import { SIN_CATEGORIA_ID, MANUAL_LIBRO_ID } from '../biblioteca/constants.js'
 import { INK, BookCover, Skel } from './biblioteca/bibmHelpers.jsx'
 import { imgUrl } from '../../lib/img.js'
@@ -93,7 +94,7 @@ function HeroLaneSkeleton({ gatoColor }) {
 export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, isSuperuser, onOpenBook, onGoTienda, onGoCatalogo, onGoPerfil, onGoAlbum, onGoForo, onGoInvestigacion, onGoNotebook, onGoComunidades }) {
   // Lógica de datos compartida con Biblioteca desktop (ver src/hooks/useBiblioteca.js)
   const {
-    loadingBooks, categories, categoriasMap, books, featured, novedades, recomendaciones, displayName, inicial,
+    loadingBooks, categories, categoriasMap, books, featured, novedades, recomendaciones, elegiblesTienda, displayName, inicial,
     createCategoria, updateCategoria,
     deleteCategoria: deleteCategoriaBase,
     assignCategoriaToBook: assignCategoriaToBookBase,
@@ -181,6 +182,8 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
 
   // ── Filtrado + agrupado (derivados de UI) ──
   const searchedBooks = React.useMemo(() => filtrarPorBusqueda(books, deferredSearch), [books, deferredSearch])
+  // Libros de la Tienda que coinciden y aún no tiene (ver EnLaTienda).
+  const deLaTienda = React.useMemo(() => buscarEnTienda(elegiblesTienda, deferredSearch), [elegiblesTienda, deferredSearch])
 
   const groups = React.useMemo(() => agruparEnEstantes(categories, searchedBooks, activeCategory), [categories, searchedBooks, activeCategory])
 
@@ -339,6 +342,10 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
                 <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" strokeLinecap="round"/></svg>
               </button>}
             </div>
+            {/* Justo bajo el buscador: lo que coincide en la Tienda y aún no tiene. */}
+            {!loadingBooks && deLaTienda.length > 0 && (
+              <EnLaTienda libros={deLaTienda} texto={deferredSearch} onAbrir={setSelectedLibro} />
+            )}
             <div className="bibm-col-actions">
               <img className="bibm-manage-gato" src={`/assets/wallpapers/gato-${gatoColor}-7.webp`} alt="" loading="lazy" />
               <button className={'bibm-act' + (activeCategory ? ' on' : '')} onClick={() => setScreen('filter')}>

@@ -1,12 +1,13 @@
 import React from 'react'
 import { useBiblioteca } from '../hooks/useBiblioteca.js'
-import { useCompraEnBiblioteca, filtrarPorBusqueda, agruparEnEstantes, ultimosAbiertos } from './biblioteca/miBiblioteca.js'
+import { useCompraEnBiblioteca, filtrarPorBusqueda, buscarEnTienda, agruparEnEstantes, ultimosAbiertos } from './biblioteca/miBiblioteca.js'
 import { MANUAL_LIBRO_ID } from './biblioteca/constants.js'
 import '../styles/tienda.css'
 import '../styles/biblioteca.css'
 import BibBookModal from './biblioteca/BibBookModal.jsx'
 import ManageCategoriasModal from './biblioteca/ManageCategoriasModal.jsx'
 import FichaLibro from './tienda/FichaLibro.jsx'
+import EnLaTienda from './biblioteca/EnLaTienda.jsx'
 import { AvanceLibro } from './tienda/Historia.jsx'
 import { evento } from '../lib/analytics.js'
 import { InmHeader, Swimlane, SwimlaneSkeleton } from './biblioteca/clay/HeaderSwimlane.jsx'
@@ -54,7 +55,7 @@ import { TEXTO_ALBUM_HINT, TEXTO_TIENDA_FINAL } from './onboarding/textos.js'
 function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSignOut, onOpenBook, onGoTienda, onGoCatalogo, onGoPerfil, onGoAlbum, onGoForo, onGoInvestigacion, onGoNotebook }) {
   // Lógica de datos compartida con BibliotecaMobile (ver src/hooks/useBiblioteca.js)
   const {
-    loadingBooks, categories, books, featured, novedades, recomendaciones, displayName, inicial,
+    loadingBooks, categories, books, featured, novedades, recomendaciones, elegiblesTienda, displayName, inicial,
     createCategoria, updateCategoria,
     deleteCategoria: deleteCategoriaBase,
     assignCategoriaToBook: assignCategoriaToBookBase,
@@ -80,8 +81,10 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
   }, [books, catalogo, onOpenBook]);
   const [showManageCats, setShowManage] = React.useState(false);
   const [showFilters, setShowFilters] = React.useState(false);
-  const [searchInput, setSearchInput] = React.useState('');
   const [search, setSearch] = React.useState('');
+  // Busca mientras se escribe (antes esperaba al Enter). El input usa `search`
+  // al instante; el filtrado, el valor diferido, como en móvil.
+  const deferredSearch = React.useDeferredValue(search);
   const [activeCategory, setCategory] = React.useState(null); // null | uuid | SIN_CATEGORIA_ID
 
   // Compra desde el panel in-place (Novedades/Recomendaciones) — mismas
@@ -108,18 +111,14 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
     setSelectedBook(prev => prev && prev.id === catalogoLibroId ? { ...prev, categoria_id } : prev);
   }
 
-  const handleSearchChange = React.useCallback((value) => {
-    setSearchInput(value);
-    if (!value) setSearch('');
+  const handleSearchKeyDown = React.useCallback((e) => {
+    if (e.key === 'Escape') setSearch('');
   }, []);
 
-  const handleSearchKeyDown = React.useCallback((e) => {
-    if (e.key === 'Enter') setSearch(searchInput);
-    if (e.key === 'Escape') { setSearchInput(''); setSearch(''); }
-  }, [searchInput]);
-
   // ── Filtrado + agrupado (derivados de UI) ──
-  const searchedBooks = React.useMemo(() => filtrarPorBusqueda(books, search), [books, search]);
+  const searchedBooks = React.useMemo(() => filtrarPorBusqueda(books, deferredSearch), [books, deferredSearch]);
+  // Libros de la Tienda que coinciden y aún no tiene (ver EnLaTienda).
+  const deLaTienda = React.useMemo(() => buscarEnTienda(elegiblesTienda, deferredSearch), [elegiblesTienda, deferredSearch]);
 
   // Grupos para los estantes (categorías con libros + "Sin categoría")
   const groups = React.useMemo(() => agruparEnEstantes(categories, searchedBooks), [categories, searchedBooks]);
@@ -167,11 +166,17 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
 
   return (
     <div className="bib-body" style={{ fontFamily: "'Baloo 2', cursive", color: INK, minHeight: '100%', backgroundColor: '#FBF5EC' }}>
-      <InmHeader search={searchInput} onSearch={handleSearchChange} onSearchKeyDown={handleSearchKeyDown} displayName={displayName} inicial={inicial}
+      <InmHeader search={search} onSearch={setSearch} onSearchKeyDown={handleSearchKeyDown} displayName={displayName} inicial={inicial}
         onGoPerfil={onGoPerfil} onSignOut={onSignOut}
         comunidades={<ComunidadesMenu user={user} onVerComunidad={(id, bienvenida) => setPanelComunidad({ id, bienvenida })} />} />
 
       <div style={{ padding: '26px 32px 56px' }}>
+        {/* Justo bajo el buscador: lo que coincide en la Tienda y aún no tiene. */}
+        {!loadingBooks && deLaTienda.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 22 }}>
+            <EnLaTienda libros={deLaTienda} texto={deferredSearch} onAbrir={setSelectedLibro} />
+          </div>
+        )}
         <div style={{ fontWeight: 800, fontSize: 32, letterSpacing: '-0.01em', color: headerInk }}>¡Hola, {displayName.split(' ')[0]}!</div>
 
         {/* Fila superior: hero (60%) + lateral con 2 últimos abiertos y
