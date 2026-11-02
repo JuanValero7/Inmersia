@@ -57,11 +57,14 @@
 .tp-resultados-cab h2{margin:0;flex-grow:1;font-weight:800;font-size:26px;}
 
 /* ── Portada de temporada ── */
-.tp-hero{position:relative;margin-top:24px;height:340px;border-radius:24px;overflow:hidden;border:2.5px solid var(--ink);
+/* Alto mínimo, no fijo: el texto va en el flujo y la portada crece con él.
+   Con altura fija y el texto en absoluto, un título de dos líneas («Noviembre
+   de lluvia») y una frase larga dejaban el botón «Ver los N» cortado. */
+.tp-hero{position:relative;margin-top:24px;min-height:340px;border-radius:24px;overflow:hidden;border:2.5px solid var(--ink);
   box-shadow:3px 5px 0 rgba(74,54,34,.2);background-color:#2a1d14;background-size:cover;background-position:70% 30%;}
 .tp-hero::after{content:"";position:absolute;inset:0;
   background:linear-gradient(90deg,rgba(27,21,26,.95) 0%,rgba(27,21,26,.82) 40%,rgba(27,21,26,.12) 76%,rgba(27,21,26,.3) 100%);}
-.tp-hero-txt{position:absolute;z-index:2;left:48px;top:46px;max-width:500px;color:#fbf0dc;display:flex;flex-direction:column;
+.tp-hero-txt{position:relative;z-index:2;margin-left:48px;padding:46px 0;max-width:500px;color:#fbf0dc;display:flex;flex-direction:column;
   align-items:flex-start;gap:12px;}
 .tp-eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#f0b27a;}
 .tp-hero h1{margin:0;font-weight:800;font-size:58px;line-height:.98;}
@@ -113,6 +116,6 @@
 @media (max-width:900px){
   .tp-hero h1{font-size:42px;}
   .tp-hero-portadas{display:none;}
-  .tp-hero-txt{left:28px;right:28px;}
+  .tp-hero-txt{margin:0 28px;max-width:none;}
 }
 @media (prefers-reduced-motion:reduce){ .tp-libro,.sp-sala,.tp-pill,.tp-chip{transition:none;} }

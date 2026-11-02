@@ -39,7 +39,9 @@
 .tpm .tp-sep{margin:0 2px;height:22px;}
 
 /* ── Portada de temporada ── */
-.tpm-hero{position:relative;margin:16px 16px 0;height:372px;border-radius:22px;overflow:hidden;border:2.5px solid var(--ink);
+/* Alto mínimo y texto en el flujo, pegado abajo: con un título o una frase
+   largos la portada crece en vez de montar el texto sobre las portadas. */
+.tpm-hero{position:relative;margin:16px 16px 0;min-height:372px;display:flex;flex-direction:column;justify-content:flex-end;border-radius:22px;overflow:hidden;border:2.5px solid var(--ink);
   box-shadow:3px 4px 0 rgba(74,54,34,.2);background-color:#2a1d14;background-size:cover;background-position:60% 25%;}
 .tpm-hero::after{content:"";position:absolute;inset:0;
   background:linear-gradient(180deg,rgba(27,21,26,.05) 0%,rgba(27,21,26,.35) 32%,rgba(27,21,26,.95) 68%);}
@@ -48,7 +50,8 @@
 .tpm-hero-portadas .book:nth-child(2){width:88px;z-index:2;}
 .tpm-hero-portadas .book-title{font-size:10px;}
 .tpm-hero-portadas .book-scribble{font-size:8px;}
-.tpm-hero-txt{position:absolute;z-index:2;left:18px;right:18px;bottom:18px;color:#fbf0dc;display:flex;flex-direction:column;
+/* 160px arriba = sitio para las portadas (top 18 + ~128 de alto). */
+.tpm-hero-txt{position:relative;z-index:2;padding:160px 18px 18px;color:#fbf0dc;display:flex;flex-direction:column;
   align-items:flex-start;gap:8px;}
 .tpm-hero h1{margin:0;font-weight:800;font-size:38px;line-height:.98;}
 .tpm-hero p{margin:0;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:16px;line-height:1.4;color:#f5e6cc;}
