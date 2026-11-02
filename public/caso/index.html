@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>El caso del alumno que no lee</title>
+<link rel="stylesheet" href="/caso/caso.css">
+</head>
+<body>
+<div id="stage">
+
+  <!-- PORTADA -->
+  <section id="portada" class="screen">
+    <div class="carpeta">
+      <div class="pest">EXPEDIENTE N.º 001</div>
+      <div class="cuerpo">
+        <span class="sello">CASO ABIERTO</span>
+        <h1>El caso del alumno que no lee</h1>
+        <p class="exp" id="expediente"></p>
+        <p class="tease">Seis pistas, un sospechoso y media hora para resolverlo.</p>
+      </div>
+      <svg class="clip" viewBox="0 0 44 130" aria-hidden="true"><path d="M30 40 V104 a10 10 0 0 1 -20 0 V22 a14 14 0 0 1 28 0 V100" fill="none" stroke="#9aa0a6" stroke-width="5" stroke-linecap="round"/></svg>
+      <div class="pol-juan"><img src="assets/juan.webp" alt=""><p>Juan Valero<small>a cargo de la investigación</small></p></div>
+    </div>
+    <img class="gato1" src="assets/naranja-7.webp" alt="">
+    <div class="marca"><img src="assets/inmersia-logo2.png" alt="Inmersia"></div>
+  </section>
+
+  <!-- APUESTA -->
+  <section id="apuesta" class="screen">
+    <div class="tarjeta-apuesta">
+      <span class="chip">Antes de abrir el caso</span>
+      <h1>Una apuesta</h1>
+      <p class="preg">De cada 10 alumnos, ¿cuántos cree que terminaron el último libro que les dieron?</p>
+      <div class="numeros" id="numeros"></div>
+      <p class="guardo">La guardamos para el final.</p>
+    </div>
+    <img class="gato2" src="assets/blanco-6.webp" alt="">
+  </section>
+
+  <!-- TABLERO -->
+  <section id="tablero" class="screen">
+    <div class="pild pild-izq"><small>INVESTIGACIÓN</small>El alumno que no lee</div>
+    <div class="pild pild-centro" id="pildColegio"></div>
+    <div class="pild pild-logo"><img src="assets/inmersia-logo2.png" alt="Inmersia"></div>
+    <div class="marco"><div></div></div>
+    <div id="brillo"></div>
+    <svg id="hilos" viewBox="0 0 1600 900"><g id="anillo"></g><g id="cuerdas"></g></svg>
+    <div id="nota"><small>LA APUESTA</small><b id="notaN"></b></div>
+    <div id="centro"><div class="tab">EXPEDIENTE</div><div class="body"><span class="sello" id="selloCentro">CASO ABIERTO</span><b>El alumno que no lee</b><small id="centroColegio"></small></div></div>
+    <div id="cards"></div>
+    <div id="entrar">Entrar →</div>
+    <img class="marco-gato" src="assets/negro-4.webp" alt="">
+    <img class="marco-gato2" src="assets/naranja-3.webp" alt="">
+    <div id="flash"></div>
+  </section>
+
+  <!-- FINAL -->
+  <section id="final" class="screen">
+    <div class="fin">
+      <span class="sello">CASO CERRADO</span>
+      <h1 id="finTitulo"></h1>
+      <p class="sub" id="finSub"></p>
+      <div class="tiles" id="tiles"></div>
+      <p class="pido" id="pido"></p>
+      <a class="boton" id="botonWeb" target="_blank" rel="noopener">Entrar a Inmersia →</a>
+    </div>
+    <img class="g1" src="assets/blanco-2.webp" alt="">
+    <img class="g2" src="assets/naranja-7.webp" alt="">
+  </section>
+
+  <div id="velo"></div>
+  <div id="ov"></div>
+</div>
+<div id="nav"><button id="prev" title="Anterior (←)">‹</button><span id="cont"></span><button id="next" title="Siguiente (→ o espacio)">›</button></div>
+
+<script src="/caso/caso.js"></script>
+</body>
+</html>
