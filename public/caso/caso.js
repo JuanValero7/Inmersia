@@ -217,12 +217,9 @@ function vars(root) {
     if (d.bg) el.style.background = d.bg;
     if (d.delay) el.style.animationDelay = d.delay + 's';
   });
-  // Captura que aún no existe: un recuadro que avisa en vez de una imagen rota.
+  // Captura que aún no existe: se quita su tarjeta entera, para que no se vea una imagen rota.
   root.querySelectorAll('img[data-falta]').forEach(img => img.addEventListener('error', () => {
-    const aviso = document.createElement('div');
-    aviso.className = 'falta ' + img.className;
-    aviso.innerHTML = 'Falta la captura:<br>' + img.dataset.falta;
-    img.replaceWith(aviso);
+    (img.closest('figure') || img).remove();
   }));
 }
 
