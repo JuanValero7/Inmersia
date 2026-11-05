@@ -65,4 +65,7 @@ describe('contarPendientes', () => {
   it('no cuenta el Manual ni los leídos', () => {
     expect(contarPendientes([libro(MANUAL_LIBRO_ID), libro('a'), libro('b', { leido: true })])).toBe(1)
   })
+  it('no cuenta los libros del aula', () => {
+    expect(contarPendientes([libro('a'), libro('b', { deAula: true })])).toBe(1)
+  })
 })

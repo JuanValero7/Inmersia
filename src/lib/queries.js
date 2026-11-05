@@ -181,7 +181,7 @@ export function useLibroReelsQuery(libroId) {
 // más repetida de la app (Biblioteca, Tienda, Álbum). Selecciona el
 // superset de columnas que necesita cada consumidor.
 const BIBLIOTECA_USUARIO_COLS =
-  'libro_id, leido, categoria_id, libros(id, slug, titulo, autor, paginas, descripcion, color, portada_url, metadata, es_ficcion)'
+  'libro_id, leido, de_aula, categoria_id, libros(id, slug, titulo, autor, paginas, descripcion, color, portada_url, metadata, es_ficcion)'
 
 export function useBibliotecaUsuarioQuery(userId) {
   return useQuery({

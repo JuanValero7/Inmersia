@@ -137,6 +137,8 @@ export function useBiblioteca(user, lastOpenedBookIds) {
       ...mapLibro(r.libros),
       categoria_id: r.categoria_id,
       leido: r.leido,
+      // Llegó por un aula (085): no cuenta para el límite de pendientes.
+      deAula: !!r.de_aula,
       // % por palabras, para mostrar. Lo que desbloquea es capitulosCompletados (migración 075).
       progress: typeof progMap[r.libros.id] === 'number' ? progMap[r.libros.id] / 100 : null,
       capitulosCompletados: completadosMap[r.libros.id] ?? 0,

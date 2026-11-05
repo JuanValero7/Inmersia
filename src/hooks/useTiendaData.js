@@ -33,13 +33,14 @@ export function useTiendaData(user, isSuperuser, onOpenBook) {
   }, [catalogoQuery.data])
 
   const userLibros = useMemo(
-    () => (bibliotecaQuery.data || []).map(r => ({ libro_id: r.libro_id, leido: r.leido })),
+    () => (bibliotecaQuery.data || []).map(r => ({ libro_id: r.libro_id, leido: r.leido, deAula: !!r.de_aula })),
     [bibliotecaQuery.data]
   )
 
   const loading = catalogoQuery.isLoading || bibliotecaQuery.isLoading
 
-  const pendientes      = userLibros.filter(l => !l.leido).length
+  // Los libros del aula (085) no cuentan para el límite.
+  const pendientes      = userLibros.filter(l => !l.leido && !l.deAula).length
   const accesoBloqueado = !isSuperuser && pendientes >= LIMITE_PENDIENTES
   const tieneLibro = id => userLibros.some(l => l.libro_id === id)
 

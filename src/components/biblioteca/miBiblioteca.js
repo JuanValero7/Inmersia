@@ -60,9 +60,9 @@ export function ultimosAbiertos(libros, idsRecientes, destacado, max) {
     .map(id => candidatos.find(b => b.id === id)).filter(Boolean).slice(0, max)
 }
 
-/** Lecturas pendientes: sin terminar y sin contar el Manual (es el límite de 5). */
+/** Lecturas pendientes: sin terminar, sin el Manual ni los libros del aula (085). Es el límite de 5. */
 export function contarPendientes(libros) {
-  return libros.filter(b => b.id !== MANUAL_LIBRO_ID && !b.leido).length
+  return libros.filter(b => b.id !== MANUAL_LIBRO_ID && !b.leido && !b.deAula).length
 }
 
 /**
