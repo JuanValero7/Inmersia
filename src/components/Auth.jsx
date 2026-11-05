@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase.js'
-import { EDAD_MINIMA, edadEnAnios } from '../lib/edad.js'
+import { EDAD_MINIMA, EDAD_MINIMA_AULA, edadEnAnios, necesitaAula } from '../lib/edad.js'
+import { verCodigoPendiente, tomarCodigoPendiente } from '../lib/codigoPendiente.js'
+import { normalizarCodigo } from '../hooks/useComunidades.js'
+import CamposMenorAula, { MENOR_VACIO, validarMenor } from './CamposMenorAula.jsx'
 import { LEGAL_VERSION } from '../lib/constants.js'
 import { evento } from '../lib/analytics.js'
 import { antesDeIrAGoogle } from '../lib/progresoInvitado.js'
@@ -89,6 +92,11 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
   // El apellido se puede añadir después en el Perfil.
   const [regForm,     setRegForm]     = useState({ nombre: '', fechaNacimiento: '', email: '', password: '' })
   const [aceptaLegal, setAceptaLegal] = useState(false)
+  // 12 o 13 años: código del aula, apellido y el check de los padres (086).
+  // El código viene relleno si se llegó por un enlace /unirse/….
+  const [menor,       setMenor]       = useState(() => ({ ...MENOR_VACIO, codigo: normalizarCodigo(verCodigoPendiente()) }))
+  const edadReg = edadEnAnios(regForm.fechaNacimiento)
+  const esMenorAula = necesitaAula(edadReg)
   const [forgotEmail, setForgotEmail] = useState('')
   const [legalDoc,    setLegalDoc]    = useState(null) // null | 'terminos' | 'privacidad'
 
@@ -140,14 +148,27 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
     // no aplicaba.
     const edad = edadEnAnios(regForm.fechaNacimiento)
     if (edad === null) { setError('Revisa la fecha de nacimiento.'); return }
-    if (edad < EDAD_MINIMA) { setError(`Para crear una cuenta en Inmersia tienes que tener al menos ${EDAD_MINIMA} años.`); return }
+    if (edad < EDAD_MINIMA_AULA) { setError(`Inmersia es para alumnos desde los ${EDAD_MINIMA_AULA} años.`); return }
     if (!aceptaLegal) { setError('Tienes que aceptar los Términos y Condiciones y la Política de Privacidad.'); return }
     setLoading(true)
+    // Con 12 o 13 años la base solo crea la cuenta con un código de aula
+    // válido (086): se comprueba antes para dar un error claro.
+    if (necesitaAula(edad)) {
+      const errMenor = await validarMenor(menor)
+      if (errMenor) { setLoading(false); setError(errMenor); return }
+    }
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: regForm.email.trim(), password: regForm.password,
       options: { data: {
         nombre: regForm.nombre.trim(),
         fecha_nacimiento: regForm.fechaNacimiento || null,
+        // 12–13 años: la base la mete en el aula al crear la cuenta (086).
+        ...(necesitaAula(edad) ? {
+          apellido: menor.apellido.trim(),
+          codigo_aula: normalizarCodigo(menor.codigo),
+          nombre_en_aula: `${regForm.nombre.trim()} ${menor.apellido.trim()}`,
+          consentimiento_padres: 'true',
+        } : {}),
         // Prueba de la aceptación: qué versión de los documentos aceptó y
         // cuándo. Sin esto, "aceptaste los Términos" no se puede sostener.
         legal_aceptado_version: LEGAL_VERSION,
@@ -157,7 +178,13 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
     // El perfil y el Manual del Explorador los crea la base al registrarse
     // (trigger de la migración 073). ensureProfile, al recibir SIGNED_IN, es solo
     // la red de seguridad (ver context/sesion.jsx).
-    if (signUpError) { setLoading(false); setError(signUpError.message); return }
+    if (signUpError) {
+      setLoading(false)
+      setError(necesitaAula(edad) ? 'No pudimos crear tu cuenta con ese código. Revisa el código de tu aula.' : signUpError.message)
+      return
+    }
+    // Ya está en el aula: que el menú de Comunidades no vuelva a pedir el código.
+    if (necesitaAula(edad)) tomarCodigoPendiente()
     // La cuenta ya existe, con sesión inmediata o pendiente de confirmar el
     // correo. La distinción importa: si `confirmacion_pendiente` domina, la
     // gente se está quedando en la bandeja de entrada y nunca vuelve.
@@ -281,8 +308,9 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
               <div className="form-field">
                 <label className="field-label" htmlFor="reg-fecha">Fecha de nacimiento</label>
                 <input id="reg-fecha" type="date" required className="auth-input" value={regForm.fechaNacimiento} onChange={e => setR('fechaNacimiento', e.target.value)} style={{ colorScheme: 'light' }} />
-                <small className="auth-hint">Hace falta tener {EDAD_MINIMA} años o más.</small>
+                <small className="auth-hint">Hace falta tener {EDAD_MINIMA} años o más ({EDAD_MINIMA_AULA} o 13, con el código de tu aula).</small>
               </div>
+              {esMenorAula && <CamposMenorAula valor={menor} onChange={setMenor} />}
               {/* Aceptación explícita: casilla obligatoria, no un "al continuar
                   aceptas" al pie. La versión aceptada y la fecha se guardan en el
                   metadata del usuario (ver handleRegister). */}

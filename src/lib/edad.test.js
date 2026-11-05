@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { edadEnAnios, puedeUsarChat, EDAD_MINIMA, EDAD_MINIMA_CHAT } from './edad.js'
+import { edadEnAnios, puedeUsarChat, necesitaAula, EDAD_MINIMA, EDAD_MINIMA_AULA, EDAD_MINIMA_CHAT } from './edad.js'
 
 // Fecha fija para que los tests no cambien de resultado el día del cumpleaños
 // de nadie: 15 de junio de 2026.
@@ -69,5 +69,9 @@ describe('límites declarados en los documentos legales', () => {
   it('son 14 para la cuenta y 16 para el chat', () => {
     expect(EDAD_MINIMA).toBe(14)
     expect(EDAD_MINIMA_CHAT).toBe(16)
+  })
+  it('12 y 13 solo con aula (086)', () => {
+    expect(EDAD_MINIMA_AULA).toBe(12)
+    expect([11, 12, 13, 14, null].map(necesitaAula)).toEqual([false, true, true, false, false])
   })
 })

@@ -231,3 +231,8 @@
 }
 .auth-hint { display: block; margin-top: 5px; font-size: 12px; color: #9a6a4a; font-weight: 500; }
 .auth-legal-foot { margin-top: 18px; font-size: 12px; }
+
+/* 12–13 años: código del aula, apellido y check de los padres (086) */
+.auth-menor { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 10px; padding: 12px 14px 4px;
+  border: 2px dashed rgba(74,54,34,0.25); border-radius: 14px; background: rgba(242,121,42,0.06); }
+.auth-menor-txt { margin: 0 0 6px; font-size: 13.5px; font-weight: 600; line-height: 1.4; }

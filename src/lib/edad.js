@@ -4,7 +4,10 @@
 // Política de Privacidad (sección 8), y viven acá para que documento y código
 // no puedan separarse sin que se note:
 //
-//   · EDAD_MINIMA        14 — crear una cuenta.
+//   · EDAD_MINIMA        14 — crear una cuenta por libre.
+//   · EDAD_MINIMA_AULA   12 — con 12 o 13 años solo se entra con el código de
+//     un aula: el colegio responde de la autorización de los padres
+//     (migración 086, que lo aplica también en la base).
 //   · EDAD_MINIMA_CHAT   16 — abrir el chat privado uno a uno. El foro público
 //     está moderado; el chat es una conversación entre dos personas que nadie
 //     supervisa, así que pide dos años más.
@@ -14,7 +17,11 @@
 // dice en los Términos. Esto es un límite de acceso, no un control de identidad.
 
 export const EDAD_MINIMA = 14
+export const EDAD_MINIMA_AULA = 12
 export const EDAD_MINIMA_CHAT = 16
+
+// ¿Esta edad solo puede entrar con el código de un aula? (12 o 13 años)
+export const necesitaAula = (edad) => edad !== null && edad >= EDAD_MINIMA_AULA && edad < EDAD_MINIMA
 
 // Devuelve la edad en años cumplidos, o null si la fecha no sirve
 // (vacía, ilegible o en el futuro).
