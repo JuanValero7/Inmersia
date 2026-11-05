@@ -28,6 +28,10 @@ const FUENTES = [
   ['permiso_crear_comunidades',  'creadores_comunidad',  'user_id'],
   // Solo los que TÚ enviaste: los recibidos son texto de otra persona (como el chat).
   ['mensajitos_enviados',        'mensajitos',           'de_id'],
+  // Colegios (081–086). El nombre en el aula va en comunidades_miembro y la
+  // marca de libro del aula (de_aula) en biblioteca.
+  ['capitulos_terminados',       'progreso_capitulos_log', 'user_id'],
+  ['colegios_que_administras',   'colegio_admins',       'user_id'],
   // Sin contenido_denunciado: es la copia del texto de otra persona.
   ['denuncias_hechas',           'denuncias',            'denunciante_id', 'id, tipo, objeto_id, comunidad_id, motivo, estado, created_at'],
 ]

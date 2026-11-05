@@ -1,6 +1,6 @@
 # Términos y Condiciones de Inmersia
 
-**Última actualización:** 1 de octubre de 2026
+**Última actualización:** 3 de noviembre de 2026
 
 ---
 
@@ -60,7 +60,9 @@ Inmersia podrá incorporar funcionalidades que utilicen inteligencia artificial.
 
 Para crear una cuenta debes tener al menos **14 años**.
 
-El **chat privado uno a uno** y los **mensajitos** de las comunidades están reservados a usuarios de **16 años o más**, por tratarse de un contacto no supervisado entre dos personas. El resto de la Plataforma, incluidos el foro público y los comentarios en las comunidades —que sí están moderados—, es accesible desde los 14.
+Con **12 o 13 años** solo puedes crear una cuenta con el **código de un aula** que te entregue tu colegio. Tu colegio garantiza que tus padres o tutores lo autorizan, y al registrarte confirmas que están informados (ver 3.4).
+
+El **chat privado uno a uno** y los **mensajitos** de las comunidades están reservados a usuarios de **16 años o más**, por tratarse de un contacto no supervisado entre dos personas. El resto de la Plataforma, incluidos el foro público y los comentarios en las comunidades —que sí están moderados—, es accesible desde la edad mínima.
 
 La edad se determina por la fecha de nacimiento que declaras al registrarte. Si declaras una edad falsa, podemos suspender o cancelar la cuenta.
 
@@ -77,6 +79,18 @@ La información que aportes debe ser veraz y estar actualizada. Podemos suspende
 ### 3.3 Responsabilidad de la cuenta
 
 Eres responsable de mantener la confidencialidad de tu contraseña y de la actividad que ocurra bajo tu cuenta. Avísanos de inmediato en **legal@inmersia.io** si sospechas de un acceso no autorizado. No debes compartir tu cuenta con terceros.
+
+### 3.4 Uso con tu colegio
+
+Un colegio puede usar Inmersia para la lectura de sus cursos. Entras a tu aula con un código que te da el colegio, escribiendo tu nombre y apellido como figuran en la lista de tu curso. Dentro del aula:
+
+- tu profesor elige el libro, que aparece solo en tu biblioteca, y la fecha en la que la clase debería terminarlo;
+- tu profesor y la administración del colegio ven cómo va tu lectura de ese libro, nunca lo que escribes (ver la Política de Privacidad, sección 2.9);
+- el colegio puede sacarte del aula, cambiar sus códigos o borrarla.
+
+Los códigos del aula, de profesor y de administración son personales del colegio: no los compartas fuera de él. Si tienes 12 o 13 años, para salir de tu única aula habla con tu profesor.
+
+Quien administra un colegio o da clase en un aula se compromete a usar el panel solo para acompañar la lectura de sus alumnos, y el colegio responde de ese uso según el acuerdo de tratamiento de datos que firma con Inmersia.
 
 ---
 

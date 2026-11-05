@@ -1,6 +1,6 @@
 # Política de Privacidad de Inmersia
 
-**Última actualización:** 1 de octubre de 2026
+**Última actualización:** 3 de noviembre de 2026
 
 ---
 
@@ -17,6 +17,8 @@ Lehrter Straße 24B
 
 Cuando la sociedad esté constituida, actualizaremos esta política con sus datos de registro y te avisaremos del cambio.
 
+**Si usas Inmersia a través de tu colegio**, lo que pasa dentro de tu aula lo trata Inmersia por encargo del colegio, que es el responsable de esos datos. Te lo explicamos en la sección 2.9.
+
 ---
 
 ## 2. Qué datos recopilamos y para qué
@@ -31,6 +33,8 @@ Cuando la sociedad esté constituida, actualizaremos esta política con sus dato
 | Fecha de nacimiento | Comprobar la edad mínima y análisis interno de uso (ver 2.4) |
 
 Los cuatro son obligatorios: sin ellos no podemos crear la cuenta. El **apellido** es opcional: puedes añadirlo en tu perfil, y entonces firma tu actividad junto a tu nombre.
+
+**Si tienes 12 o 13 años**, además te pedimos el **código de tu aula** (te lo da tu colegio), tu **apellido** y que confirmes que tus padres o tutores están informados. Sin un código de aula válido no se puede crear la cuenta (ver sección 8).
 
 Las cuentas creadas antes del 1 de octubre de 2026 declararon además su **género**, que se conserva en esas cuentas (ver 2.4). Desde esa fecha ya no lo pedimos.
 
@@ -54,6 +58,10 @@ Las cuentas creadas antes del 1 de octubre de 2026 declararon además su **géne
 | Mensajitos (notas de un miembro a otro dentro del libro) | Entregárselos a la persona a la que van dirigidos (ver 2.5 y 4) |
 | Denuncias que haces y copia del contenido denunciado | Revisar el contenido denunciado y moderar la comunidad (ver 2.6) |
 | Preferencias (color del gato, sonido, últimos libros, estado del tutorial) | Que la aplicación se comporte igual en todos tus dispositivos |
+| Aulas de tu colegio: a cuál perteneces y tu nombre tal como figura en la lista de tu curso | Que tu profesor te reconozca y que el colegio siga la lectura del aula (ver 2.9) |
+| Libros que te asigna tu aula | Ponerlos en tu biblioteca sin que cuenten para tu límite de lecturas pendientes |
+| La hora a la que terminas cada capítulo | Detectar capítulos pasados más rápido de lo que se puede leer (ver 2.9) |
+| Si administras un colegio o das clase en un aula: tu papel y las aulas a tu cargo | Darte acceso al panel del colegio (ver 2.9) |
 
 ### 2.3 Datos de visitantes sin cuenta
 
@@ -80,6 +88,7 @@ Es importante que lo sepas antes de registrarte:
 
   Nunca ven el punto exacto donde vas, ni el resto de tu biblioteca. Quien no es miembro no ve nada de esto. De una comunidad pública, cualquier usuario registrado ve el nombre, el libro que lee y cuántos miembros tiene, pero no quiénes son.
 - **Los mensajitos solo los ven quien los escribe y quien los recibe.** Ni los moderadores de la comunidad pueden leerlos.
+- **Un aula de tu colegio funciona como una comunidad**: tus compañeros ven lo mismo que se describe arriba. Tu profesor y la administración del colegio ven además lo que explica la sección 2.9.
 - **Tu progreso fuera de las comunidades, tu cuaderno de notas, tu biblioteca, tu álbum y tus mensajes privados no los ve nadie más que tú.**
 
 Ni tu correo, ni tu fecha de nacimiento, ni tu género son visibles para otros usuarios.
@@ -105,13 +114,33 @@ Qué **no** se registra: el contenido de tus notas, subrayados, reseñas, coment
 
 Como no se almacena nada en tu dispositivo, la normativa de cookies no nos obliga a pedirte consentimiento previo; la base legal es el interés legítimo (sección 3). Si algún día activamos una analítica que sí requiera almacenamiento, te lo pediremos antes.
 
-Tenemos previsto incorporar además **Sentry** (registro de errores) para detectar fallos. Antes de activarlo actualizaremos esta política.
+Usamos además **Sentry** para enterarnos cuando la aplicación falla. Solo se activa cuando ocurre un error, y envía la descripción técnica del fallo (qué pantalla, qué navegador, en qué parte del código), **sin tu dirección IP, sin tu nombre ni tu correo y sin grabar lo que haces en pantalla**. Los datos se guardan en la región europea de Sentry (Alemania).
 
 ### 2.8 Uso de inteligencia artificial (previsto)
 
 Actualmente Inmersia no utiliza inteligencia artificial para procesar tus datos. Si en el futuro incorporamos funcionalidades basadas en IA (recomendaciones más avanzadas, resúmenes, un asistente de lectura), podremos recurrir a proveedores externos.
 
 Antes de activar cualquier funcionalidad de este tipo actualizaremos esta política para detallar qué datos se procesan, con qué proveedor y bajo qué base legal, y pediremos tu consentimiento cuando la normativa lo exija.
+
+### 2.9 Si usas Inmersia con tu colegio
+
+Un colegio puede usar Inmersia para la lectura de sus cursos. Entras a tu aula con el código que te da tu colegio, y desde ese momento **tu profesor y la administración del colegio** tienen un panel con la lectura del aula.
+
+**Qué ve el colegio, solo sobre el libro que asignó tu aula:**
+
+- tu nombre como figura en la lista de tu curso;
+- cuánto llevas del libro y en qué capítulo vas;
+- si vas al día con la fecha que puso tu profesor;
+- cuántos minutos leíste y qué días, en la última semana, y cuántos días hace que no abres el libro;
+- si terminaste capítulos más rápido de lo que se puede leer (más de 600 palabras por minuto);
+- **cuántas** predicciones y subrayados hiciste, nunca su texto;
+- los párrafos más subrayados de la clase, solo cuando los marcaron 3 alumnos o más, y sin decir quién.
+
+**Qué no ve nunca:** el texto de tus notas, predicciones, anotaciones y reseñas; tus mensajitos y tu chat privado; lo que lees por tu cuenta fuera del aula; el resto de tu biblioteca; tu correo y tu fecha de nacimiento.
+
+**Quién es responsable de qué.** De lo que pasa dentro del aula (tu pertenencia, tu nombre en la lista y lo que muestra el panel) el responsable es **tu colegio**, e Inmersia lo trata por su encargo y según sus instrucciones, con un acuerdo de tratamiento de datos firmado (art. 28 RGPD). De tu cuenta y de todo lo demás sigue siendo responsable Inmersia, como dice el resto de esta política. Si tienes preguntas sobre el uso que hace tu colegio, puedes dirigirte a él o escribirnos y se las trasladamos.
+
+Si tu colegio te saca del aula o deja de usar Inmersia, el panel deja de mostrar tus datos. Tu cuenta sigue siendo tuya.
 
 ---
 
@@ -130,6 +159,9 @@ Antes de activar cualquier funcionalidad de este tipo actualizaremos esta polít
 | Sesiones de lectura y datos de comportamiento | Interés legítimo en conocer y mejorar el servicio (art. 6.1.f) |
 | Analítica de producto sin cookies (PostHog) | Interés legítimo en conocer y mejorar el servicio (art. 6.1.f). Al no almacenarse nada en tu dispositivo, no interviene el consentimiento de la normativa de cookies |
 | Funcionalidades de IA (cuando se implementen) | Consentimiento o interés legítimo, según el caso (art. 6.1.a / 6.1.f) |
+| Aulas y panel del colegio | Tratamiento por encargo del colegio (art. 28), que es el responsable y fija su propia base legal, según su normativa educativa y de protección de datos |
+| Cuentas de alumnos de 12 y 13 años | Autorización de los padres o tutores (art. 6.1.a y 8), que recaba y garantiza el colegio que entrega el código del aula |
+| Hora de cada capítulo terminado | Interés legítimo en ofrecer al colegio una lectura fiable de la actividad del aula (art. 6.1.f) |
 | Cumplimiento de obligaciones legales | Obligación legal (art. 6.1.c) |
 
 Frente a cualquier tratamiento basado en interés legítimo tienes derecho de oposición (sección 7).
@@ -146,6 +178,8 @@ Frente a cualquier tratamiento basado en interés legítimo tienes derecho de op
 | Mensajitos | Hasta que quien lo recibe lo borra. Si al escribirlo marcas «Se borra cuando lo lea», se borra en cuanto la otra persona lo cierra. Se borran también si cualquiera de las dos cuentas se elimina |
 | Denuncias (con la copia del contenido denunciado) | Mientras estén pendientes de revisión y, una vez resueltas, **6 meses** desde que se resuelven. Un proceso automático diario borra las antiguas |
 | Mensajes de chat, sesiones de chat e historial de conversaciones | **Máximo 90 días** desde su envío. Un proceso automático diario borra todo lo anterior |
+| Pertenencia a un aula y nombre en la lista del curso | Mientras sigas en el aula. Si el colegio te saca, o borra el aula, se borran; tu cuenta sigue |
+| Hora de cada capítulo terminado | Mientras la cuenta esté activa; se borra con ella |
 | Eventos analíticos seudonimizados (PostHog) | Máximo 12 meses |
 | Datos agregados y anonimizados | Indefinido, porque ya no permiten identificarte |
 | Cuenta eliminada | Se borra de inmediato al pulsar el botón; las copias de seguridad de nuestros proveedores se sobrescriben en un plazo máximo de 30 días |
@@ -172,7 +206,7 @@ Los correos de servicio (confirmación de cuenta, recuperación de contraseña) 
 
 **PostHog** (PostHog Inc., Estados Unidos) presta el servicio de analítica de producto como encargado del tratamiento. Usamos su nube europea: los datos se almacenan en Frankfurt (Alemania), sin cookies y sin perfiles de usuario, en los términos de la sección 2.7. Política de privacidad: [posthog.com/privacy](https://posthog.com/privacy).
 
-**Sentry** (registro de errores) todavía no está activo. Cuando lo esté, actualizaremos este apartado.
+**Sentry** (Functional Software, Inc., Estados Unidos) registra los errores técnicos de la aplicación como encargado del tratamiento, en su región europea (Alemania) y en los términos de la sección 2.7. Política de privacidad: [sentry.io/privacy](https://sentry.io/privacy/).
 
 ### 5.5 Procesadores de pago (futuro)
 
@@ -203,7 +237,7 @@ Sobre tus datos personales tienes derecho a:
 - **Acceso** — obtener una copia de los datos que tenemos sobre ti.
 - **Rectificación** — corregir datos inexactos o incompletos. Nombre y apellido los puedes editar tú mismo en tu perfil.
 - **Supresión** — que borremos tus datos. En *Perfil → Legal* tienes el botón **Eliminar mi cuenta**, que ejecuta el borrado en el acto.
-- **Portabilidad** — recibir tus datos en un formato estructurado y legible por máquina. En *Perfil → Legal*, el botón **Descargar mis datos** te entrega un archivo JSON con tu perfil, tu biblioteca, tu progreso, tus notas, tus subrayados, tus reseñas, tus comentarios, tus comunidades, los mensajitos que enviaste y las denuncias que hiciste. No incluye los mensajes de chat, los mensajitos que recibiste ni la copia del texto que denunciaste, porque son textos de otras personas.
+- **Portabilidad** — recibir tus datos en un formato estructurado y legible por máquina. En *Perfil → Legal*, el botón **Descargar mis datos** te entrega un archivo JSON con tu perfil, tu biblioteca, tu progreso, tus notas, tus subrayados, tus reseñas, tus comentarios, tus comunidades y aulas (con tu nombre en ellas), la hora de cada capítulo que terminaste, los mensajitos que enviaste y las denuncias que hiciste. No incluye los mensajes de chat, los mensajitos que recibiste ni la copia del texto que denunciaste, porque son textos de otras personas.
 - **Limitación** — pedir que restrinjamos el tratamiento.
 - **Oposición** — oponerte a los tratamientos basados en interés legítimo, incluido el análisis interno de la sección 2.4.
 - **Retirar el consentimiento** — cuando un tratamiento se base en él, sin que ello afecte a lo tratado antes.
@@ -216,13 +250,15 @@ También puedes reclamar ante una autoridad de control. La competente para nosot
 
 ## 8. Edad mínima
 
-Inmersia está abierta a partir de los **14 años**.
+Cualquier persona puede crear una cuenta a partir de los **14 años**.
 
-Como el chat privado uno a uno y los mensajitos de las comunidades ponen en contacto a dos personas sin supervisión, esas funciones están reservadas a los usuarios de **16 años o más**: un menor de 16 no puede enviar mensajitos ni recibirlos. El resto de la plataforma —lectura, cuaderno, álbum, reseñas, foro público y comentarios en las comunidades, que están moderados— es accesible desde los 14.
+**Con 12 o 13 años, solo a través del colegio.** La cuenta solo se crea con el código de un aula, que entrega un colegio que usa Inmersia. El colegio se compromete, en el acuerdo de tratamiento de datos que firma con nosotros, a contar con la **autorización de los padres o tutores** de sus alumnos de esa edad (art. 8 RGPD). Al registrarse, el alumno confirma además que sus padres o tutores están informados. Un alumno de 12 o 13 años no puede salir por su cuenta de su única aula: para eso tiene que hablar con su profesor.
 
-La edad se comprueba con la fecha de nacimiento que declaras al registrarte. No recopilamos conscientemente datos de menores de 14 años; si detectamos una cuenta así, la eliminaremos con todos sus datos.
+Como el chat privado uno a uno y los mensajitos de las comunidades ponen en contacto a dos personas sin supervisión, esas funciones están reservadas a los usuarios de **16 años o más**: un menor de 16 no puede enviar mensajitos ni recibirlos. El resto de la plataforma —lectura, cuaderno, álbum, reseñas, foro público y comentarios en las comunidades, que están moderados— es accesible desde la edad mínima.
 
-Si eres madre, padre o tutor y crees que tu hijo o hija nos ha dado datos personales, escríbenos a legal@inmersia.io y lo resolvemos.
+La edad se comprueba con la fecha de nacimiento que declaras al registrarte. No recopilamos conscientemente datos de menores de 12 años, ni de menores de 14 fuera de un aula de su colegio; si detectamos una cuenta así, la eliminaremos con todos sus datos.
+
+Si eres madre, padre o tutor y quieres saber qué datos tenemos de tu hijo o hija, pedir que los borremos o retirar tu autorización, escríbenos a legal@inmersia.io o habla con su colegio, y lo resolvemos.
 
 ---
 
