@@ -7,23 +7,29 @@
 //   · "Mis comunidades" sale de comunidad_miembros (RLS: solo las mías).
 //   · El buscador usa buscar_comunidades(): solo públicas, y es lo único
 //     que puede contar miembros de una comunidad a la que no pertenezco.
-//   · Unirse a una privada pasa por unirse_con_codigo().
+//   · Los códigos se canjean con canjear_codigo() (081/082): club privado,
+//     aula del colegio (pide nombre y apellido), profesor o administrador.
 //   · El tope de 5 lo impone un trigger en la base; TOPE_COMUNIDADES es
-//     solo para que la UI desactive "Unirme" antes de intentarlo.
+//     solo para que la UI desactive "Unirme" antes de intentarlo. Las aulas
+//     (c.aula) no cuentan: usar enTopeComunidades(mias).
 //   · La comunidad activa ("Leer como") vive en
 //     preferencias_usuario.comunidad_activa (057). NULL = solo yo.
 //
 // Queries sobre React Query con las claves de src/lib/queries.js, como
 // el resto de la app.
 // ─────────────────────────────────────────────────────────────
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase.js'
-import { queryKeys } from '../lib/queries.js'
+import { queryKeys, usePerfilQuery } from '../lib/queries.js'
 import { evento } from '../lib/analytics.js'
 
 // Debe coincidir con TOPE_COMUNIDADES de _comunidad_tope_miembro() (051).
 export const TOPE_COMUNIDADES = 5
+
+// Comunidades que cuentan para el tope: las aulas del colegio no (081).
+export const contarParaTope = (mias) => mias.filter(c => !c.aula).length
+export const enTopeComunidades = (mias) => contarParaTope(mias) >= TOPE_COMUNIDADES
 
 const STALE_TIME = 60_000
 
@@ -37,12 +43,17 @@ function mensajeError(error, generico = 'No pudimos unirte. Revisa tu conexión 
   if (error.hint === 'codigo_formato') return 'El código debe tener entre 6 y 20 letras o números, sin espacios.'
   if (error.hint === 'sin_permiso_creador') return 'Tu cuenta no tiene permiso para crear comunidades.'
   if (error.hint === 'sin_sesion') return 'Tu sesión caducó. Vuelve a iniciar sesión e inténtalo de nuevo.'
+  if (error.hint === 'falta_nombre_aula') return 'Escribe tu nombre y tu apellido para entrar al aula.'
+  if (error.hint === 'menor_unica_aula') return 'Para salir de tu aula, habla con tu profesor.'
   return generico
 }
 
 // Formato del código de invitación (mismo CHECK que comunidad_codigos, 054).
 export const CODIGO_RE = /^[A-Z0-9]{6,20}$/
 export const normalizarCodigo = (s) => (s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20)
+// En el campo «Tengo un código» se deja el guion: los del colegio lo llevan
+// (PROF-XXXXXXXX, ADMIN-XXXXXXXX).
+export const normalizarCanje = (s) => (s || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 20)
 
 // Forma común de una comunidad en la UI (lista y buscador).
 function aFila(c, extra = {}) {
@@ -50,6 +61,7 @@ function aFila(c, extra = {}) {
     id: c.id,
     nombre: c.nombre,
     privada: !!c.privada,
+    aula: !!c.colegio_id,
     libroTitulo: c.libros?.titulo || null,
     libroPortada: c.libros?.portada_url || null,
     libroColor: c.libros?.color || null,
@@ -65,7 +77,7 @@ export function useMisComunidadesQuery(userId) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('comunidad_miembros')
-        .select('rol, unido_at, comunidades(id, nombre, privada, libros(titulo, portada_url, color), comunidad_miembros(count))')
+        .select('rol, unido_at, comunidades(id, nombre, privada, colegio_id, libros(titulo, portada_url, color), comunidad_miembros(count))')
         .eq('user_id', userId)
         .order('unido_at', { ascending: true })
       if (error) throw error
@@ -132,7 +144,7 @@ export function useComunidadQuery(id, userId) {
     queryFn: async () => {
       const [comRes, lecRes, codRes, rolRes] = await Promise.all([
         supabase.from('comunidades')
-          .select('id, nombre, descripcion, privada, libro_id, libros(titulo, autor, portada_url, color, metadata), comunidad_miembros(count)')
+          .select('id, nombre, descripcion, privada, colegio_id, libro_id, libros(titulo, autor, portada_url, color, metadata), comunidad_miembros(count)')
           .eq('id', id).maybeSingle(),
         supabase.from('comunidad_lecturas')
           .select('fecha_meta, encuentro_lugar, encuentro_fecha')
@@ -201,6 +213,7 @@ export function useUnirseComunidad(userId) {
 
   const refrescar = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: queryKeys.misComunidades(userId) })
+    queryClient.invalidateQueries({ queryKey: queryKeys.misColegios(userId) })
     queryClient.invalidateQueries({ queryKey: ['buscarComunidades'] })
   }, [queryClient, userId])
 
@@ -217,19 +230,68 @@ export function useUnirseComunidad(userId) {
     return { id: comunidadId }
   }, [userId, refrescar])
 
-  const unirseConCodigo = useCallback(async (codigo) => {
-    const limpio = normalizarCodigo(codigo)
+  // Cualquier código (canjear_codigo, 081/082). Devuelve
+  //   { tipo, id, colegioId }  tipo: 'comunidad' | 'alumno' | 'profesor' | 'admin'
+  //   { faltaNombre: true }    es un aula: hay que pedir nombre y apellido
+  //   { error }
+  const canjear = useCallback(async (codigo, nombreEnAula = null) => {
+    const limpio = normalizarCanje(codigo)
     if (!limpio) return { error: 'Escribe el código de la invitación.' }
     setPendiente('codigo')
-    const { data, error } = await supabase.rpc('unirse_con_codigo', { p_codigo: limpio })
+    const { data, error } = await supabase.rpc('canjear_codigo', { p_codigo: limpio, p_nombre_en_aula: nombreEnAula })
     setPendiente(null)
+    if (error?.hint === 'falta_nombre_aula' && !nombreEnAula) return { faltaNombre: true }
     if (error) return { error: mensajeError(error) }
-    evento('comunidad_unida', { via: 'codigo' })
+    evento('comunidad_unida', { via: 'codigo', tipo: data.tipo })
     refrescar()
-    return { id: data }
+    return { tipo: data.tipo, id: data.comunidad_id, colegioId: data.colegio_id }
   }, [refrescar])
 
-  return { unirse, unirseConCodigo, pendiente }
+  return { unirse, canjear, pendiente }
+}
+
+// El formulario «Tengo una invitación» en dos pasos, para el menú de
+// escritorio y la hoja del móvil: primero el código; si es de un aula,
+// nombre y apellido (rellenos con los del perfil, que con Google ya vienen).
+//   onComunidad(id) → club o aula: queda activa y se abre su panel.
+//   onColegio()     → código de profesor o de administrador: al panel.
+export function useFormCanje({ userId, codigoInicial = '', onComunidad, onColegio }) {
+  const { canjear, pendiente } = useUnirseComunidad(userId)
+  const { data: perfil } = usePerfilQuery(userId)
+  const [codigo, setCodigoCrudo] = useState(normalizarCanje(codigoInicial))
+  const [paso, setPaso] = useState('codigo') // 'codigo' | 'nombre'
+  const [nombre, setNombre] = useState('')
+  const [apellido, setApellido] = useState('')
+  const [error, setError] = useState(null)
+
+  const setCodigo = (v) => { setCodigoCrudo(normalizarCanje(v)); setPaso('codigo'); setError(null) }
+
+  // El código de un enlace /unirse/… puede llegar después de montar.
+  useEffect(() => {
+    if (codigoInicial) setCodigoCrudo(normalizarCanje(codigoInicial))
+  }, [codigoInicial])
+
+  const enviar = async (e) => {
+    e?.preventDefault()
+    setError(null)
+    if (paso === 'nombre' && (!nombre.trim() || !apellido.trim())) {
+      setError('Escribe tu nombre y tu apellido.')
+      return
+    }
+    const r = await canjear(codigo, paso === 'nombre' ? `${nombre.trim()} ${apellido.trim()}` : null)
+    if (r.faltaNombre) {
+      setNombre(perfil?.nombre || '')
+      setApellido(perfil?.apellido || '')
+      setPaso('nombre')
+    } else if (r.error) setError(r.error)
+    else if (r.tipo === 'profesor' || r.tipo === 'admin') onColegio()
+    else onComunidad(r.id)
+  }
+
+  return {
+    codigo, setCodigo, paso, nombre, setNombre, apellido, setApellido,
+    error, setError, enviar, enviando: pendiente === 'codigo',
+  }
 }
 
 // ── Comunidad activa ("Leer como") ─────────────────────────

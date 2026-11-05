@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
-import { Routes, Route, Navigate, useNavigate, Outlet, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, Outlet, useLocation, useParams } from 'react-router-dom'
 import { supabase } from './lib/supabase.js'
 import { MANUAL_LIBRO_ID } from './lib/constants.js'
 import { LIMITE_PENDIENTES } from './hooks/useCompraLibro.js'
@@ -18,6 +18,7 @@ import { LectorRoute } from './components/LectorRoute.jsx'
 import AvisoRed from './components/AvisoRed.jsx'
 import AvisoGuardado from './components/AvisoGuardado.jsx'
 import NoEncontrada from './components/NoEncontrada.jsx'
+import { guardarCodigoPendiente } from './lib/codigoPendiente.js'
 // Carga diferida: lleva dentro el texto completo de los documentos legales.
 const PaginaLegal = lazy(() => import('./components/legal/PaginaLegal.jsx'))
 const PaginaSobre = lazy(() => import('./components/PaginaSobre.jsx'))
@@ -46,6 +47,7 @@ const LandingMobile         = lazy(() => import('./components/mobile/LandingMobi
 const VistaAlbum            = lazy(() => import('./components/Album.jsx'))
 const AlbumMobile           = lazy(() => import('./components/mobile/AlbumMobile.jsx'))
 const ComunidadesMobile     = lazy(() => import('./components/mobile/ComunidadesMobile.jsx'))
+const PanelColegio          = lazy(() => import('./components/colegio/PanelColegio.jsx'))
 
 const Fallback = (
   <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,background:'var(--bg-warm)'}}>
@@ -67,6 +69,17 @@ function AuthRedirect({ openAuth }) {
   const location = useLocation()
   useEffect(() => { openAuth(location.state?.tab ?? 'login') }, [openAuth, location.state])
   return <Navigate to="/" replace />
+}
+
+// Enlace directo de un aula o club: inmersia.io/unirse/CÓDIGO (lo copia el
+// profesor desde la Lista del colegio y lo manda por WhatsApp). Guarda el
+// código y lleva a la Biblioteca, que abre «Tengo una invitación» con él
+// escrito; sin sesión, antes pasa por el registro. Ver lib/codigoPendiente.js.
+function UnirseConEnlace({ user, openAuth }) {
+  const { codigo } = useParams()
+  guardarCodigoPendiente(codigo) // idempotente: da igual si se repite el render
+  useEffect(() => { if (!user) openAuth('registro') }, [user, openAuth])
+  return <Navigate to={user ? '/biblioteca' : '/'} replace />
 }
 
 export default function App() {
@@ -253,6 +266,8 @@ export default function App() {
           {/* Quién está detrás y cómo se hace cada libro (src/content/sobre.js). */}
           <Route path="/sobre" element={<PaginaSobre />} />
 
+          <Route path="/unirse/:codigo" element={<UnirseConEnlace user={user} openAuth={openAuth} />} />
+
           {/* Reset de contraseña (Supabase redirige aquí) */}
           <Route path="/reset-password" element={
             <ResetPassword onDone={() => navigate('/biblioteca', { replace: true })} />
@@ -311,6 +326,7 @@ export default function App() {
                 onGoInvestigacion={(book) => irA(`/investigacion/${book.slug || book.id}`, book)}
                 onGoNotebook={handleGoNotebook}
                 onGoComunidades={(vista) => navigate('/comunidades', { state: { from: location.pathname, vista } })}
+                onGoColegio={() => navigate('/colegio')}
               />
             } />
 
@@ -327,8 +343,15 @@ export default function App() {
                     vistaInicial={location.state?.vista || null}
                     onGoBack={() => volver()}
                     onListo={(id, bienvenida) => navigate('/biblioteca', { state: { verComunidad: id, bienvenida } })}
+                    onGoColegio={() => navigate('/colegio', { replace: true })}
                   />
                 : <Navigate to="/biblioteca" replace />
+            } />
+
+            {/* Panel del colegio: administración y profesores (migración 081).
+                A quien no es de ningún colegio le dice cómo entrar. */}
+            <Route path="/colegio" element={
+              <PanelColegio user={user} onGoBack={() => navigate('/biblioteca')} />
             } />
 
             <Route path="/album" element={

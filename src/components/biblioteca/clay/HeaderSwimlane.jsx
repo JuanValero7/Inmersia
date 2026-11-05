@@ -19,7 +19,10 @@ import { mapLibro } from '../../../lib/libros.js'
 // y el buscador encoge; si no, Salir se salía de la pantalla entre 821 y 1000px.
 const BARRA_ANCHO_COMPACTO = 1000
 
-function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, onGoPerfil, onSignOut, comunidades = null }) {
+// `onGoColegio`: solo llega si es administrador o profesor de un colegio
+// (mis_colegios); sin él, el botón «Mi colegio» no se pinta. En compacto
+// queda solo el ícono.
+function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, onGoPerfil, onSignOut, comunidades = null, onGoColegio = null }) {
   const ink = INK;
   const [barraRef, ancho] = useAnchoContenedor();
   // ancho 0 = todavía sin medir; asumimos holgado para no parpadear.
@@ -46,6 +49,12 @@ function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, on
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 11, flexShrink: 0 }}>
           {comunidades}
+          {onGoColegio && (
+            <button onClick={onGoColegio} style={{ ...navBtn, padding: compacto ? '8px 11px' : '8px 15px' }} title="Mi colegio" aria-label="Mi colegio">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10l9-6 9 6M5 9v10h14V9M9 19v-5h6v5"/></svg>
+              {!compacto && 'Mi colegio'}
+            </button>
+          )}
           <button onClick={onGoPerfil} style={{ ...navBtn, padding: compacto ? '7px 8px' : '7px 15px 7px 8px' }}
             title={compacto && displayName ? `Mi perfil · ${displayName}` : 'Mi perfil'} aria-label="Mi perfil">
             <span style={{ width: 27, height: 27, borderRadius: '50%', background: 'linear-gradient(135deg, #F2792A, #6f9457)', color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, border: `2px solid ${ink}` }}>{inicial}</span>

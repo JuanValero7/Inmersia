@@ -32,6 +32,8 @@ import LeerComoSheet from '../comunidades/LeerComoSheet.jsx'
 import ComunidadPanel from '../comunidades/ComunidadPanel.jsx'
 import { Sello } from '../comunidades/comunidadesShared.jsx'
 import { useComunidadActiva } from '../../hooks/useComunidades.js'
+import { useMisColegiosQuery } from '../../hooks/useColegio.js'
+import { hayCodigoPendiente } from '../../lib/codigoPendiente.js'
 import { useCatalogoLibrosQuery } from '../../lib/queries.js'
 
 // Tira inferior desacoplada del hero: "Seguir leyendo" queda solo en el hero;
@@ -91,7 +93,12 @@ function HeroLaneSkeleton({ gatoColor }) {
   )
 }
 
-export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, isSuperuser, onOpenBook, onGoTienda, onGoCatalogo, onGoPerfil, onGoAlbum, onGoForo, onGoInvestigacion, onGoNotebook, onGoComunidades }) {
+export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, isSuperuser, onOpenBook, onGoTienda, onGoCatalogo, onGoPerfil, onGoAlbum, onGoForo, onGoInvestigacion, onGoNotebook, onGoComunidades, onGoColegio }) {
+  const { data: colegios = [] } = useMisColegiosQuery(user?.id)
+  // Enlace /unirse/CÓDIGO: la hoja del código vive en /comunidades.
+  // Solo al montar: onGoComunidades llega nueva en cada render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => { if (hayCodigoPendiente()) onGoComunidades('invitacion') }, [])
   // Lógica de datos compartida con Biblioteca desktop (ver src/hooks/useBiblioteca.js)
   const {
     loadingBooks, categories, categoriasMap, books, featured, novedades, recomendaciones, elegiblesTienda, displayName, inicial,
@@ -236,6 +243,12 @@ export default function BibliotecaMobile({ user, gatoColor, lastOpenedBookIds, i
             <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="3" width="7" height="9" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="14" y="3" width="7" height="5" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="14" y="12" width="7" height="9" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="3" y="16" width="7" height="5" rx="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             Álbum
           </button>
+          {colegios.length > 0 && (
+            <button className="bibm-icon-btn" onClick={onGoColegio} title="Mi colegio">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10l9-6 9 6M5 9v10h14V9M9 19v-5h6v5"/></svg>
+              Colegio
+            </button>
+          )}
         </div>
       </div>
 

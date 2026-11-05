@@ -5,32 +5,45 @@
 //                  con "Ver comunidad" (abre ComunidadPanel). Al final,
 //                  "Tengo una invitación", "Buscar comunidades" y el botón
 //                  naranja "Crear comunidad" (solo para creadores)
-//   · invitacion → campo del código
+//   · invitacion → campo del código (club, aula, profesor o administrador;
+//                  con el de un aula pide además nombre y apellido)
 //   · buscar     → buscador de públicas
 // Al crear o unirse, la comunidad queda activa y se abre su panel.
 // El panel lo monta la Biblioteca (onVerComunidad), no este menú: desde
 // él se abren libros, y eso es cosa de la Biblioteca.
+// Si se llegó por un enlace /unirse/CÓDIGO, el menú se abre solo en la
+// vista del código, ya escrito.
 // En móvil lo mismo es la hoja LeerComoSheet + la pantalla /comunidades.
 import { useState, useEffect, useRef } from 'react'
 import {
-  useComunidadActiva, useBuscarComunidadesQuery, useUnirseComunidad, usePuedeCrearComunidadQuery,
-  TOPE_COMUNIDADES, normalizarCodigo,
+  useComunidadActiva, useBuscarComunidadesQuery, useUnirseComunidad, usePuedeCrearComunidadQuery, useFormCanje,
+  TOPE_COMUNIDADES, contarParaTope, enTopeComunidades,
 } from '../../hooks/useComunidades.js'
-import { FilaResultado, IconoComunidad, IconoLupa, Sello, MetaComunidad, useDebounced } from './comunidadesShared.jsx'
+import { tomarCodigoPendiente } from '../../lib/codigoPendiente.js'
+import { FilaResultado, IconoComunidad, IconoLupa, Sello, MetaComunidad, CamposNombreAula, useDebounced } from './comunidadesShared.jsx'
 import { CrearComunidadModal } from './CrearComunidad.jsx'
 import '../../styles/comunidades.css'
 import { ModalDenunciaComunidad } from './DenunciarComunidad.jsx'
 
 // onVerComunidad(id, bienvenida?): abre el panel. `bienvenida` va tras
 // crear ({ privada, codigo }) para mostrar la tarjeta con el código.
-export default function ComunidadesMenu({ user, onVerComunidad }) {
+// onGoColegio(): tras canjear un código de profesor o de administrador.
+export default function ComunidadesMenu({ user, onVerComunidad, onGoColegio }) {
   const { activa, setActiva } = useComunidadActiva(user?.id)
   const [abierto, setAbierto] = useState(false)
   const [vista, setVista] = useState('inicio') // 'inicio' | 'invitacion' | 'buscar'
   const [creando, setCreando] = useState(false)
+  const [codigoEnlace, setCodigoEnlace] = useState('')
   const cajaRef = useRef(null)
 
-  const cerrar = () => { setAbierto(false); setVista('inicio') }
+  const cerrar = () => { setAbierto(false); setVista('inicio'); setCodigoEnlace('') }
+
+  // Enlace /unirse/CÓDIGO: se toma una vez (en StrictMode el segundo pase
+  // ya no lo encuentra y no hace nada).
+  useEffect(() => {
+    const c = tomarCodigoPendiente()
+    if (c) { setCodigoEnlace(c); setVista('invitacion'); setAbierto(true) }
+  }, [])
 
   // Cerrar al hacer clic fuera o con Escape.
   useEffect(() => {
@@ -68,7 +81,10 @@ export default function ComunidadesMenu({ user, onVerComunidad }) {
             <Inicio user={user} onVer={ver} onVista={setVista} onElegida={cerrar}
               onCrear={() => { cerrar(); setCreando(true) }} />
           )}
-          {vista === 'invitacion' && <Invitacion user={user} onEntrar={entrar} onVolver={() => setVista('inicio')} />}
+          {vista === 'invitacion' && (
+            <Invitacion user={user} codigoInicial={codigoEnlace} onEntrar={entrar}
+              onColegio={() => { cerrar(); onGoColegio() }} onVolver={() => setVista('inicio')} />
+          )}
           {vista === 'buscar' && <Buscar user={user} onEntrar={entrar} onVolver={() => setVista('inicio')} />}
         </div>
       )}
@@ -118,11 +134,12 @@ export function LeerComo({ user, onVer, onElegida }) {
 function Inicio({ user, onVer, onVista, onCrear, onElegida }) {
   const { mias } = useComunidadActiva(user?.id)
   const { data: puedeCrear = false } = usePuedeCrearComunidadQuery(user?.id)
-  const enTope = mias.length >= TOPE_COMUNIDADES
+  const enTope = enTopeComunidades(mias)
+  const cuentan = contarParaTope(mias)
 
   return (
     <>
-      <div className="com-dd-head"><h3>Leer como</h3>{mias.length > 0 && <span>{mias.length} de {TOPE_COMUNIDADES} comunidades</span>}</div>
+      <div className="com-dd-head"><h3>Leer como</h3>{cuentan > 0 && <span>{cuentan} de {TOPE_COMUNIDADES} comunidades</span>}</div>
       <LeerComo user={user} onVer={onVer} onElegida={onElegida} />
       <div className="com-dd-acciones">
         <div className="com-fila">
@@ -149,43 +166,42 @@ function CabeceraVista({ titulo, onVolver }) {
   )
 }
 
-function Invitacion({ user, onEntrar, onVolver }) {
-  const { mias } = useComunidadActiva(user?.id)
-  const enTope = mias.length >= TOPE_COMUNIDADES
-  const { unirseConCodigo, pendiente } = useUnirseComunidad(user?.id)
-  const [codigo, setCodigo] = useState('')
-  const [error, setError] = useState(null)
-
-  const enviar = async (e) => {
-    e.preventDefault()
-    setError(null)
-    const r = await unirseConCodigo(codigo)
-    if (r.error) setError(r.error)
-    else onEntrar(r.id)
-  }
+// El botón no se desactiva en el tope: el código puede ser de un aula o del
+// colegio, que no cuentan. Si es de un club y no cabe, avisa la base.
+function Invitacion({ user, codigoInicial, onEntrar, onColegio, onVolver }) {
+  const form = useFormCanje({ userId: user?.id, codigoInicial, onComunidad: onEntrar, onColegio })
 
   return (
-    <form className="com-block com-dd-vista" onSubmit={enviar}>
+    <form className="com-block com-dd-vista" onSubmit={form.enviar}>
       <CabeceraVista titulo="Tengo una invitación" onVolver={onVolver} />
-      <label className="com-nota" htmlFor="com-codigo">Escribe el código que te compartió el moderador de la comunidad.</label>
+      <label className="com-nota" htmlFor="com-codigo">Escribe el código que te compartieron: el de una comunidad, el de tu aula o el de tu colegio.</label>
       <div className="com-fila">
         <span className="com-input code">
-          <input id="com-codigo" value={codigo} maxLength={20} autoComplete="off" spellCheck="false" autoFocus
-            placeholder="Código" onChange={e => { setCodigo(normalizarCodigo(e.target.value)); setError(null) }} />
+          <input id="com-codigo" value={form.codigo} maxLength={20} autoComplete="off" spellCheck="false" autoFocus={!codigoInicial}
+            placeholder="Código" onChange={e => form.setCodigo(e.target.value)} />
         </span>
-        <button type="submit" className="com-btn solid" disabled={enTope || pendiente === 'codigo'}>
-          {pendiente === 'codigo' ? 'Uniendo…' : 'Unirme'}
-        </button>
+        {form.paso === 'codigo' && (
+          <button type="submit" className="com-btn solid" disabled={form.enviando}>
+            {form.enviando ? 'Uniendo…' : 'Unirme'}
+          </button>
+        )}
       </div>
-      {error && <p className="com-error" role="alert">{error}</p>}
-      {enTope && <p className="com-nota">Ya estás en {TOPE_COMUNIDADES} comunidades, el máximo. Sal de una para unirte a otra.</p>}
+      {form.paso === 'nombre' && (
+        <>
+          <CamposNombreAula form={form} />
+          <button type="submit" className="com-btn solid" disabled={form.enviando}>
+            {form.enviando ? 'Entrando…' : 'Entrar al aula'}
+          </button>
+        </>
+      )}
+      {form.error && <p className="com-error" role="alert">{form.error}</p>}
     </form>
   )
 }
 
 function Buscar({ user, onEntrar, onVolver }) {
   const { mias } = useComunidadActiva(user?.id)
-  const enTope = mias.length >= TOPE_COMUNIDADES
+  const enTope = enTopeComunidades(mias)
   const { unirse, pendiente } = useUnirseComunidad(user?.id)
   const [texto, setTexto] = useState('')
   const [error, setError] = useState(null)

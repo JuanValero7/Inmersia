@@ -2,18 +2,21 @@
 // como" de la Biblioteca (LeerComoSheet) con `vistaInicial`:
 //   · 'buscar'     → buscador de públicas (máx. 20 resultados)
 //   · 'crear'      → formulario (solo creadores), con su selector de libro
-//   · 'invitacion' → la hoja del código abierta sobre la vista inicio
+//   · 'invitacion' → la hoja del código abierta sobre la vista inicio (si se
+//                    llegó por un enlace /unirse/CÓDIGO, con el código escrito)
 //   · sin vista    → inicio: Mis comunidades + los tres botones
 // Al unirse o crear, la comunidad queda activa y se vuelve a la Biblioteca
 // con su panel abierto (onListo). Tocar una de mis comunidades hace lo
-// mismo, sin cambiar la activa.
+// mismo, sin cambiar la activa. Un código de profesor o de administrador
+// lleva al panel del colegio (onGoColegio).
 // En escritorio lo mismo vive en la barra naranja (ComunidadesMenu.jsx).
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   useMisComunidadesQuery, useBuscarComunidadesQuery, useUnirseComunidad, usePuedeCrearComunidadQuery, useComunidadActiva,
-  TOPE_COMUNIDADES, normalizarCodigo,
+  useFormCanje, TOPE_COMUNIDADES, contarParaTope, enTopeComunidades,
 } from '../../hooks/useComunidades.js'
-import { FilaMiComunidad, FilaResultado, IconoLupa, useDebounced } from '../comunidades/comunidadesShared.jsx'
+import { tomarCodigoPendiente } from '../../lib/codigoPendiente.js'
+import { FilaMiComunidad, FilaResultado, IconoLupa, CamposNombreAula, useDebounced } from '../comunidades/comunidadesShared.jsx'
 import { CrearComunidadPantalla } from '../comunidades/CrearComunidad.jsx'
 import '../../styles/comunidades.css'
 import '../../styles/comunidades.mobile.css'
@@ -23,7 +26,15 @@ const TITULOS = { inicio: 'Comunidades', buscar: 'Buscar', crear: 'Crear comunid
 
 // onListo(id, bienvenida?): vuelve a la Biblioteca con el panel de esa
 // comunidad abierto. `bienvenida` = { privada, codigo } tras crearla.
-export default function ComunidadesMobile({ user, vistaInicial = null, onGoBack, onListo }) {
+export default function ComunidadesMobile({ user, vistaInicial = null, onGoBack, onListo, onGoColegio }) {
+  // El código del enlace se toma una vez al montar (en StrictMode el segundo
+  // pase ya no lo encuentra y no pisa nada).
+  const [codigoEnlace, setCodigoEnlace] = useState('')
+  useEffect(() => {
+    if (vistaInicial !== 'invitacion') return
+    const c = tomarCodigoPendiente()
+    if (c) setCodigoEnlace(c)
+  }, [vistaInicial])
   const [vista, setVista] = useState(vistaInicial === 'buscar' || vistaInicial === 'crear' ? vistaInicial : 'inicio')
   const [eligiendoLibro, setEligiendoLibro] = useState(false)
   const [hojaCodigo, setHojaCodigo] = useState(vistaInicial === 'invitacion')
@@ -41,7 +52,8 @@ export default function ComunidadesMobile({ user, vistaInicial = null, onGoBack,
   const entrar = (id, bienvenida) => { setActiva(id); onListo(id, bienvenida) }
 
   const { data: mias = [], isLoading, isError } = useMisComunidadesQuery(user?.id)
-  const enTope = mias.length >= TOPE_COMUNIDADES
+  const enTope = enTopeComunidades(mias)
+  const cuentan = contarParaTope(mias)
   const unirseApi = useUnirseComunidad(user?.id)
 
   return (
@@ -56,7 +68,7 @@ export default function ComunidadesMobile({ user, vistaInicial = null, onGoBack,
           <section className="comm-sec">
             <div className="comm-sec-head">
               <h2 className="com-label">Mis comunidades</h2>
-              {mias.length > 0 && <span className="comm-count">{mias.length} de {TOPE_COMUNIDADES}</span>}
+              {cuentan > 0 && <span className="comm-count">{cuentan} de {TOPE_COMUNIDADES}</span>}
             </div>
             {isLoading ? (
               <p className="com-dd-msg">Cargando tus comunidades…</p>
@@ -96,7 +108,7 @@ export default function ComunidadesMobile({ user, vistaInicial = null, onGoBack,
       )}
 
       {hojaCodigo && (
-        <HojaCodigo enTope={enTope} unirseApi={unirseApi} onOpen={entrar}
+        <HojaCodigo user={user} codigoInicial={codigoEnlace} onOpen={entrar} onColegio={onGoColegio}
           onClose={() => (vistaInicial === 'invitacion' ? onGoBack() : setHojaCodigo(false))} />
       )}
     </div>
@@ -144,35 +156,28 @@ function Buscar({ user, enTope, unirseApi, onOpen }) {
   )
 }
 
-function HojaCodigo({ enTope, unirseApi, onOpen, onClose }) {
-  const { unirseConCodigo, pendiente } = unirseApi
-  const [codigo, setCodigo] = useState('')
-  const [error, setError] = useState(null)
-
-  const enviar = async (e) => {
-    e.preventDefault()
-    setError(null)
-    const r = await unirseConCodigo(codigo)
-    if (r.error) setError(r.error)
-    else onOpen(r.id)
-  }
+// Sin desactivar en el tope: el código puede ser de un aula o del colegio,
+// que no cuentan. Si es de un club y no cabe, avisa la base.
+function HojaCodigo({ user, codigoInicial, onOpen, onColegio, onClose }) {
+  const form = useFormCanje({ userId: user?.id, codigoInicial, onComunidad: onOpen, onColegio })
+  const aula = form.paso === 'nombre'
 
   return (
     <div className="comm-sheet-wrap">
       <div className="comm-sheet-dim" onClick={onClose} />
-      <form className="comm-sheet" onSubmit={enviar} role="dialog" aria-label="Unirte con una invitación">
+      <form className="comm-sheet" onSubmit={form.enviar} role="dialog" aria-label="Unirte con una invitación">
         <span className="comm-grab" aria-hidden="true" />
-        <h2>Unirte con una invitación</h2>
-        <p>Escribe el código que te compartió el moderador de la comunidad.</p>
+        <h2>{aula ? 'Entrar al aula' : 'Unirte con una invitación'}</h2>
+        {!aula && <p>Escribe el código que te compartieron: el de una comunidad, el de tu aula o el de tu colegio.</p>}
         <span className="com-input code">
-          <input value={codigo} maxLength={20} autoComplete="off" spellCheck="false" autoFocus
+          <input value={form.codigo} maxLength={20} autoComplete="off" spellCheck="false" autoFocus={!codigoInicial}
             placeholder="Código" aria-label="Código de invitación"
-            onChange={e => { setCodigo(normalizarCodigo(e.target.value)); setError(null) }} />
+            onChange={e => form.setCodigo(e.target.value)} />
         </span>
-        {error && <p className="com-error" role="alert">{error}</p>}
-        {enTope && <p className="com-nota">Ya estás en {TOPE_COMUNIDADES} comunidades, el máximo.</p>}
-        <button type="submit" className="com-btn solid comm-big" disabled={enTope || pendiente === 'codigo'}>
-          {pendiente === 'codigo' ? 'Uniendo…' : 'Unirme'}
+        {aula && <CamposNombreAula form={form} />}
+        {form.error && <p className="com-error" role="alert">{form.error}</p>}
+        <button type="submit" className="com-btn solid comm-big" disabled={form.enviando}>
+          {form.enviando ? 'Uniendo…' : aula ? 'Entrar al aula' : 'Unirme'}
         </button>
       </form>
     </div>

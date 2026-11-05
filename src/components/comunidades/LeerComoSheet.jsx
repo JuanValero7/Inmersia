@@ -4,14 +4,15 @@
 // pantalla /comunidades (ComunidadesMobile), donde ya viven esos flujos.
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { useComunidadActiva, usePuedeCrearComunidadQuery, TOPE_COMUNIDADES } from '../../hooks/useComunidades.js'
+import { useComunidadActiva, usePuedeCrearComunidadQuery, TOPE_COMUNIDADES, contarParaTope } from '../../hooks/useComunidades.js'
 import { LeerComo } from './ComunidadesMenu.jsx'
 import '../../styles/comunidades.css'
 
 export default function LeerComoSheet({ user, onClose, onVer, onIr }) {
   const { mias } = useComunidadActiva(user?.id)
   const { data: puedeCrear = false } = usePuedeCrearComunidadQuery(user?.id)
-  const enTope = mias.length >= TOPE_COMUNIDADES
+  const cuentan = contarParaTope(mias)
+  const enTope = cuentan >= TOPE_COMUNIDADES
 
   useEffect(() => {
     const esc = (e) => { if (e.key === 'Escape') onClose() }
@@ -24,7 +25,7 @@ export default function LeerComoSheet({ user, onClose, onVer, onIr }) {
       <div className="cp-dim" onClick={onClose} />
       <div className="cp-panel lcs" role="dialog" aria-label="Leer como">
         <span className="cp-grab" aria-hidden="true" />
-        <div className="com-dd-head"><h3>Leer como</h3>{mias.length > 0 && <span>{mias.length} de {TOPE_COMUNIDADES}</span>}</div>
+        <div className="com-dd-head"><h3>Leer como</h3>{cuentan > 0 && <span>{cuentan} de {TOPE_COMUNIDADES}</span>}</div>
         <LeerComo user={user} onVer={(id) => { onClose(); onVer(id) }} onElegida={onClose} />
         <div className="com-dd-acciones">
           <div className="com-fila">

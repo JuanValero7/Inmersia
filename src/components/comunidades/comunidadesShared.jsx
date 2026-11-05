@@ -29,8 +29,31 @@ export function Etiquetas({ c }) {
   return (
     <span className="com-chips">
       {c.rol === 'moderador' && <span className="com-chip mod">Moderas</span>}
-      <span className={'com-chip ' + (c.privada ? 'priv' : 'pub')}>{c.privada ? 'Privada' : 'Pública'}</span>
+      {c.aula
+        ? <span className="com-chip priv">Aula</span>
+        : <span className={'com-chip ' + (c.privada ? 'priv' : 'pub')}>{c.privada ? 'Privada' : 'Pública'}</span>}
     </span>
+  )
+}
+
+// Segundo paso de «Tengo una invitación» cuando el código es de un aula
+// (useFormCanje). Va rellenado con el perfil; el profesor lo usa para
+// reconocer a cada alumno en su lista.
+export function CamposNombreAula({ form }) {
+  return (
+    <div className="com-block">
+      <p className="com-nota">Es el código de un aula. Escribe tu nombre como aparece en la lista de tu curso, así tu profesor te reconoce.</p>
+      <div className="com-fila">
+        <span className="com-input">
+          <input value={form.nombre} maxLength={40} autoComplete="given-name" placeholder="Nombre" aria-label="Nombre" autoFocus
+            onChange={e => { form.setNombre(e.target.value); form.setError(null) }} />
+        </span>
+        <span className="com-input">
+          <input value={form.apellido} maxLength={39} autoComplete="family-name" placeholder="Apellido" aria-label="Apellido"
+            onChange={e => { form.setApellido(e.target.value); form.setError(null) }} />
+        </span>
+      </div>
+    </div>
   )
 }
 

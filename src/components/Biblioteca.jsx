@@ -16,6 +16,7 @@ import { LateralHome, LateralHomeSkeleton } from './biblioteca/clay/LateralHome.
 import ComunidadesMenu from './comunidades/ComunidadesMenu.jsx'
 import ComunidadPanel from './comunidades/ComunidadPanel.jsx'
 import { useCatalogoLibrosQuery } from '../lib/queries.js'
+import { useMisColegiosQuery } from '../hooks/useColegio.js'
 import { INK, Skel } from './biblioteca/clay/helpers.jsx'
 import { useOnboarding } from '../context/onboarding.jsx'
 import { usePistas } from '../context/pistas.jsx'
@@ -48,11 +49,13 @@ import { TEXTO_ALBUM_HINT, TEXTO_TIENDA_FINAL } from './onboarding/textos.js'
  * @param {() => void} props.onGoCatalogo   entra directo al interior de la Tienda (sin la fachada)
  * @param {() => void} props.onGoPerfil
  * @param {() => void} props.onGoAlbum
+ * @param {() => void} props.onGoColegio   panel del colegio (solo se ofrece a administración y profesores)
  * @param {(libro: object) => void} props.onGoForo
  * @param {(libro: object) => void} props.onGoInvestigacion   la Cartelera del libro (nota del hero)
  * @param {(libro: object) => void} props.onGoNotebook
  */
-function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSignOut, onOpenBook, onGoTienda, onGoCatalogo, onGoPerfil, onGoAlbum, onGoForo, onGoInvestigacion, onGoNotebook }) {
+function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSignOut, onOpenBook, onGoTienda, onGoCatalogo, onGoPerfil, onGoAlbum, onGoForo, onGoInvestigacion, onGoNotebook, onGoColegio }) {
+  const { data: colegios = [] } = useMisColegiosQuery(user?.id)
   // Lógica de datos compartida con BibliotecaMobile (ver src/hooks/useBiblioteca.js)
   const {
     loadingBooks, categories, books, featured, novedades, recomendaciones, elegiblesTienda, displayName, inicial,
@@ -167,8 +170,9 @@ function VistaBiblioteca({ user, gatoColor, lastOpenedBookIds, isSuperuser, onSi
   return (
     <div className="bib-body" style={{ fontFamily: "'Baloo 2', cursive", color: INK, minHeight: '100%', backgroundColor: '#FBF5EC' }}>
       <InmHeader search={search} onSearch={setSearch} onSearchKeyDown={handleSearchKeyDown} displayName={displayName} inicial={inicial}
-        onGoPerfil={onGoPerfil} onSignOut={onSignOut}
-        comunidades={<ComunidadesMenu user={user} onVerComunidad={(id, bienvenida) => setPanelComunidad({ id, bienvenida })} />} />
+        onGoPerfil={onGoPerfil} onSignOut={onSignOut} onGoColegio={colegios.length > 0 ? onGoColegio : null}
+        comunidades={<ComunidadesMenu user={user} onGoColegio={onGoColegio}
+          onVerComunidad={(id, bienvenida) => setPanelComunidad({ id, bienvenida })} />} />
 
       <div style={{ padding: '26px 32px 56px' }}>
         {/* Justo bajo el buscador: lo que coincide en la Tienda y aún no tiene. */}

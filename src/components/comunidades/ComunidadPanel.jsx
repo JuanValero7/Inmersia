@@ -327,6 +327,9 @@ function Editar({ c, user, onVolver }) {
         <Campo id="cp-desc" label="Descripción" extra={`Opcional · ${f.descripcion.length} / ${DESC_MAX}`}>
           <span className="com-input cc-box"><textarea id="cp-desc" rows={3} value={f.descripcion} maxLength={DESC_MAX} onChange={e => set('descripcion', e.target.value)} /></span>
         </Campo>
+        {c.aula ? (
+          <p className="com-nota">Es un aula del colegio: siempre se entra con código.</p>
+        ) : (
         <div className="cc-field">
           <span className="cc-label" id="cp-tipo-lbl">¿Quién puede entrar?</span>
           <div className="cc-tipos" role="radiogroup" aria-labelledby="cp-tipo-lbl">
@@ -341,6 +344,7 @@ function Editar({ c, user, onVolver }) {
             <p className="com-nota">Se entrará con el código <b>{c.codigo}</b>. Puedes cambiarlo en «Código».</p>
           )}
         </div>
+        )}
         <Guardar ocupado={ocupado === 'editar'} error={error} />
       </form>
     </Subvista>
@@ -511,7 +515,9 @@ function Salir({ c, user, onVolver, onFuera }) {
   return (
     <Subvista titulo="Salir de la comunidad" onVolver={onVolver}>
       <p className="cp-desc">
-        {c.miembros <= 1
+        {c.aula
+          ? `Dejarás de ver todo lo de «${c.nombre}». Para volver, necesitarás el código del aula.`
+          : c.miembros <= 1
           ? `Eres el único miembro de «${c.nombre}». Si sales, la comunidad se borra con todo lo que tiene.`
           : c.rol === 'moderador'
             ? `Si sales de «${c.nombre}», la moderación pasa al miembro más antiguo.`
@@ -521,7 +527,7 @@ function Salir({ c, user, onVolver, onFuera }) {
       <div className="cp-foot">
         <button type="button" className="com-btn cc-ghost" onClick={onVolver}>Cancelar</button>
         <button type="button" className="com-btn cp-peligro" disabled={ocupado === 'salir'} onClick={confirmar}>
-          {ocupado === 'salir' ? 'Saliendo…' : c.miembros <= 1 ? 'Salir y borrar' : 'Salir'}
+          {ocupado === 'salir' ? 'Saliendo…' : c.miembros <= 1 && !c.aula ? 'Salir y borrar' : 'Salir'}
         </button>
       </div>
     </Subvista>

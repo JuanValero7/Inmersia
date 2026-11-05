@@ -32,6 +32,12 @@ export const queryKeys = {
   comunidadActiva: (userId) => ['comunidadActiva', userId],
   progresoComunidad: (id) => ['progresoComunidad', id],
   lecturasAnteriores: (id) => ['lecturasAnteriores', id],
+  // Colegios (ver src/hooks/useColegio.js)
+  misColegios: (userId) => ['misColegios', userId],
+  listaColegio: (colegioId) => ['listaColegio', colegioId],
+  adminsColegio: (colegioId) => ['adminsColegio', colegioId],
+  salonAula: (aulaId) => ['salonAula', aulaId],
+  resumenColegio: (colegioId) => ['resumenColegio', colegioId],
   // Capa de comunidad en el lector (ver src/hooks/useCapaComunidad.js)
   comunidadesDelLibro: (userId, libroId, mias) => ['comunidadesDelLibro', userId, libroId, mias],
   miembrosCapa: (comunidadId) => ['miembrosCapa', comunidadId],
