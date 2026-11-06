@@ -221,6 +221,34 @@ export function BlueprintBg({ rect }) {
   )
 }
 
+// ── Zona «Mis notas»: post-its de relleno, uno por predicción anotada ──
+// Huecos estables en una grilla con jitter (seed fijo → siempre igual).
+export function postitSlots({ x0, y0, cols, rows, gx, gy, seed = 818181 }) {
+  const r = rng(seed)
+  const out = []
+  for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
+    out.push({
+      x: x0 + col * gx + (r() * 2 - 1) * 6,
+      y: y0 + row * gy + (r() * 2 - 1) * 5,
+      rot: (r() * 2 - 1) * 9,
+      color: Math.floor(r() * 5),
+      raya: `${45 + Math.floor(r() * 40)}%`,
+    })
+  }
+  return out
+}
+
+// Post-it decorativo (no interactivo): el click lo captura la zona única.
+export function PostIt({ s, w = 50, h = 54 }) {
+  return (
+    <div className={`cart-postit c${s.color}`} aria-hidden="true"
+      style={{ left: s.x, top: s.y, width: w, height: h, '--rot': `${s.rot}deg` }}>
+      <span className="cart-pin" />
+      <span className="cart-postit-raya" style={{ width: s.raya }} />
+    </div>
+  )
+}
+
 // Pop-up genérico de zona: media grande + título + botón a la lista
 export function ZonePopup({ media, title, listLabel, onOpenList, onClose }) {
   useEffect(() => {

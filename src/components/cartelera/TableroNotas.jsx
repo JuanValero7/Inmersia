@@ -137,9 +137,34 @@ function FlatsheetContent({ items, pct = 0 }) {
   )
 }
 
+// Carpeta de la mesa de investigación (el estándar desde nov. 2026): mismo
+// dibujo, otro rótulo y el avance de las deducciones. Sin `onAbrir` es un
+// relleno que no se puede tocar (el libro todavía no tiene mesa).
+function MesaContent({ centro }) {
+  return (
+    <>
+      <span className="cart-file-peek" aria-hidden="true" />
+      <span className="cart-file-tab is-larga">Mesa de investigación</span>
+      <span className="cart-file-clip" aria-hidden="true" />
+      {centro.sello && <span className={`cart-file-stamp ${centro.sello.cls}`}>{centro.sello.txt}</span>}
+      <span className="cart-file-face">
+        {centro.cuenta && <span className="cart-file-count">{centro.cuenta}</span>}
+        {centro.abrir && <span className="cart-file-open">{centro.abrir}</span>}
+      </span>
+    </>
+  )
+}
+
+/**
+ * @param {object} props
+ * @param {{ cuenta?: string, abrir?: string, sello?: { txt: string, cls: string }|null,
+ *           onAbrir?: (() => void)|null }} [props.centro]
+ *   Si llega, la carpeta del centro es la de la mesa de investigación en vez de
+ *   las predicciones. Sin `onAbrir`, queda de relleno y no se puede tocar.
+ */
 export default function TableroNotas({
   pct = 0, scale = 1, principal = {}, stats, onOpenSection, esNoficcion = false,
-  notasItems = [], onOpenNotas,
+  notasItems = [], onOpenNotas, centro = null,
   boardW = DEF_BOARD_W, boardH = DEF_BOARD_H, cols = DEF_COLS, rows = DEF_ROWS,
   embeds: embedsProp, center = DEF_CENTER, excludeRects, decorNotas = true, threads = true,
 }) {
@@ -167,12 +192,19 @@ export default function TableroNotas({
 
   return (
     <div className="cart-canvas cart-cork" style={{ width: boardW, height: boardH, transform: `scale(${scale})` }}>
-      {/* hoja rayada plana al centro: predicciones reales del usuario */}
-      <button type="button" className="cart-flatsheet" onClick={() => onOpenNotas?.()}
-        style={{ left: center.cx, top: center.cy, width: center.w, height: center.h, transform: `translate(-50%,-50%) rotate(${center.rot}deg)` }}
-        aria-label="Ver tus predicciones">
-        <FlatsheetContent items={notasItems} pct={pct} />
-      </button>
+      {/* carpeta al centro: la mesa de investigación (o, sin `centro`, las predicciones) */}
+      {centro && !centro.onAbrir ? (
+        <div className="cart-flatsheet is-relleno" aria-label="Mesa de investigación: pronto en este libro"
+          style={{ left: center.cx, top: center.cy, width: center.w, height: center.h, transform: `translate(-50%,-50%) rotate(${center.rot}deg)` }}>
+          <MesaContent centro={centro} />
+        </div>
+      ) : (
+        <button type="button" className="cart-flatsheet" onClick={() => (centro ? centro.onAbrir() : onOpenNotas?.())}
+          style={{ left: center.cx, top: center.cy, width: center.w, height: center.h, transform: `translate(-50%,-50%) rotate(${center.rot}deg)` }}
+          aria-label={centro ? 'Abrir la mesa de investigación' : 'Ver tus predicciones'}>
+          {centro ? <MesaContent centro={centro} /> : <FlatsheetContent items={notasItems} pct={pct} />}
+        </button>
+      )}
 
       {/* notas decorativas (sin datos, reveladas por pct) */}
       {visibleNotas.map((n, i) => (

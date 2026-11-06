@@ -9,7 +9,10 @@ import { useBookBySlug } from '../hooks/useBookBySlug.js'
 
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
 import { useCartelera } from '../hooks/useCartelera.js'
-import { getSecciones } from './cartelera/carteleraHelpers.js'
+import { useMesaInvestigacion, resumenMesa } from '../hooks/useMesaInvestigacion.js'
+import { getSecciones, carpetaMesa } from './cartelera/carteleraHelpers.js'
+import MesaInvestigacion from './mesa/MesaInvestigacion.jsx'
+import ExplorarPopup from './cartelera/ExplorarPopup.jsx'
 import CarteleraLanding from './cartelera/CarteleraLanding.jsx'
 import Ficha from './cartelera/Ficha.jsx'
 import { useOnboarding } from '../context/onboarding.jsx'
@@ -49,10 +52,14 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
   const esNoficcion = book?.es_ficcion === false
   const secciones  = getSecciones(esNoficcion)
   const data = useCartelera(book?.libro_id || null, user?.id || null, isSuperuser)
+  // La carpeta del centro es la mesa de investigación. Misma query que usa la
+  // mesa: React Query la comparte, así que abrirla no vuelve a pedir nada.
+  const mesa = useMesaInvestigacion(book?.libro_id || null, user?.id || null)
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
   const [view, setView] = useState(() => {
     const s = searchParams.get('seccion')
+    if (s === 'mesa') return { kind: 'mesa', key: 'mesa' }
     return s && VALID_SECCIONES.includes(s) ? { kind: 'ficha', key: s } : { kind: 'landing', key: null }
   })
   const [fichaInitItemId, setFichaInitItemId] = useState(null)
@@ -130,12 +137,34 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
     </div>
   )
 
+  const centro = carpetaMesa(resumenMesa(mesa.estado), mesa.cargando,
+    mesa.tieneMesa ? () => setView({ kind: 'mesa', key: 'mesa' }) : null)
+
   let content
   if (view.kind === 'landing') {
-    content = <CarteleraLanding subtitle={book?.title} data={data} esNoficcion={esNoficcion}
+    content = <CarteleraLanding subtitle={book?.title} data={data} esNoficcion={esNoficcion} centro={centro}
       onOpenSection={abrirSeccion}
       onOpenList={abrirSeccion}
       onGoLectura={onGoLectura} onGoForo={onGoForo} onGoBiblioteca={onGoBiblioteca} />
+  } else if (view.kind === 'mesa') {
+    content = (
+      <div className="cart-scene">
+        <div className="topbar">
+          {/* El recuadro del título es también el botón de volver, como en el lector. */}
+          <button type="button" className="cart-portada-tag is-volver" onClick={() => setView({ kind: 'landing', key: null })}
+            aria-label="Volver al tablero" title="Volver al tablero">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+            <span className="cpt-label">Mesa de investigación</span>
+            {book?.title && <><span className="cpt-sep">·</span><span className="cpt-book">{book.title}</span></>}
+          </button>
+          <div className="actions">
+            <ExplorarPopup onGoForo={onGoForo} onGoLectura={onGoLectura} onGoBiblioteca={onGoBiblioteca} btnClass="back-btn" />
+          </div>
+        </div>
+        <MesaInvestigacion libroId={book?.libro_id || null} userId={user?.id || null}
+          personajesCartelera={data.itemsBySeccion.personajes || []} />
+      </div>
+    )
   } else {
     content = <Ficha key={view.key} section={secciones.find(s => s.key === view.key)} items={data.itemsBySeccion[view.key] || []}
       initialItemId={fichaInitItemId}

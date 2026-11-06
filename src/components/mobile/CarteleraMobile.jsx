@@ -16,7 +16,9 @@ import { useBookBySlug } from '../../hooks/useBookBySlug.js'
 
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
 import { useCartelera } from '../../hooks/useCartelera.js'
-import { SECCIONES, getSecciones } from '../cartelera/carteleraHelpers.js'
+import { useMesaInvestigacion, resumenMesa } from '../../hooks/useMesaInvestigacion.js'
+import { SECCIONES, getSecciones, carpetaMesa } from '../cartelera/carteleraHelpers.js'
+import MesaInvestigacion from '../mesa/MesaInvestigacion.jsx'
 import CarteleraLandingMobile from './CarteleraLandingMobile.jsx'
 import CarteleraMobileFicha, { CarteleraMobileLista } from './CarteleraMobileFicha.jsx'
 import { useOnboarding } from '../../context/onboarding.jsx'
@@ -262,12 +264,15 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
   const esNoficcion = book?.es_ficcion === false
   const secciones  = getSecciones(esNoficcion)
   const data = useCartelera(book?.libro_id || null, user?.id || null, isSuperuser)
+  // La carpeta del centro es la mesa de investigación (misma query que la mesa).
+  const mesa = useMesaInvestigacion(book?.libro_id || null, user?.id || null)
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
   // Lazy init: jumpToItemId tiene prioridad; si no, lee ?seccion= de la URL.
   const [view, setView] = useState(() => {
     if (jumpToItemId) return { kind: 'board', key: secciones[0].key }
     const s = searchParams.get('seccion')
+    if (s === 'mesa') return { kind: 'mesa', key: 'mesa' }
     return s && VALID_SECCIONES.includes(s) ? { kind: 'board', key: s } : { kind: 'landing', key: null }
   })
   const [explore, setExplore] = useState(false)
@@ -342,6 +347,8 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
     : { onClose: () => setExplore(false), onGoLectura, onGoForo, onGoBiblioteca }
   const backProp = tutorialInvestigacion ? null : onGoBack
   const dataWithBook = { ...data, book }
+  const centro = carpetaMesa(resumenMesa(mesa.estado), mesa.cargando,
+    mesa.tieneMesa ? () => setView({ kind: 'mesa', key: 'mesa' }) : null)
 
   return (
     <div className="cart-root cm-root">
@@ -349,7 +356,14 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
         <div className="cm-screen">
           <Header book={book} onBack={backProp} backLabel="Volver"
                   onExplore={() => setExplore(true)} />
-          <CarteleraLandingMobile data={dataWithBook} esNoficcion={esNoficcion} onOpenSection={openSection} />
+          <CarteleraLandingMobile data={dataWithBook} esNoficcion={esNoficcion} centro={centro} onOpenSection={openSection} />
+        </div>
+      ) : view.kind === 'mesa' ? (
+        <div className="cm-screen">
+          <Header book={book} onBack={() => setView({ kind: 'landing', key: null })} backLabel="Volver al tablero"
+                  onExplore={() => setExplore(true)} />
+          <MesaInvestigacion movil libroId={book?.libro_id || null} userId={user?.id || null}
+            personajesCartelera={data.itemsBySeccion.personajes || []} />
         </div>
       ) : (
         <SectionView

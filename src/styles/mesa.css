@@ -1,0 +1,164 @@
+/* ── Mesa de investigación (método Anderson) ─────────────────────────
+   Estilos de la maqueta combinada (Documents/Inmersia_maquetas/colegios/
+   maqueta-mesa-combinada.html): papel, tinta marrón y una mesa de madera para
+   las 3 cartas. Todo vive bajo .mesa-root. */
+.mesa-root{
+  --m-ink:#4a3622; --m-ink-soft:rgba(74,54,34,.62); --m-accent:#f2792a; --m-paper:#fffdf8;
+  --m-board:#f3efe6; --m-ok:#3e7a52; --m-ok-bg:#e6f2e9; --m-ok-ink:#24533a; --m-bad:#c0392b; --m-bad-bg:#fbe5e1;
+  --m-sombra:1.5px 2px 0 rgba(74,54,34,.25);
+  color:var(--m-ink); font-family:'Baloo 2','Trebuchet MS',sans-serif; min-height:0; }
+.mesa-root button{ font-family:inherit; color:inherit; }
+.mesa-root button:focus-visible, .mesa-root [role="button"]:focus-visible{ outline:3px solid var(--m-accent); outline-offset:2px; }
+.mesa-cargando{ display:flex; align-items:center; justify-content:center; padding:60px; }
+.mesa-vacio{ grid-column:1 / -1; text-align:center; font-weight:700; font-size:13px; color:var(--m-ink-soft);
+  padding:14px; border:2px dashed rgba(74,54,34,.3); border-radius:12px; margin:0; }
+
+/* ── Disposición ── */
+.mesa-root.is-movil{ display:flex; flex-direction:column; gap:8px; padding:4px 8px 16px;
+  /* La pantalla móvil de Investigación corta lo que sobra (el tablero cabe
+     entero); la mesa es más alta que la pantalla y tiene que desplazarse. */
+  flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+/* En PC, el perfil y la mesa de las 3 cartas ocupan un tercio del ancho y
+   todo el alto; el corcho de pistas, los otros dos tercios. */
+.mesa-root.is-pc{ display:grid; grid-template-columns:minmax(420px, 1fr) minmax(0, 2fr); gap:24px; padding:8px 30px 22px;
+  height:calc(100vh - 88px); min-height:600px; }
+.is-pc .mesa-chip{ font-size:15px; min-height:42px; padding-right:14px; }
+.is-pc .mesa-chip img, .is-pc .mesa-chip-ini{ width:34px; height:34px; }
+.is-pc .mesa-pend{ font-size:15px; padding:7px 12px; }
+.is-pc .mesa-ficha{ padding:14px 16px; gap:9px; }
+.is-pc .mesa-ficha-h{ font-size:13px; }
+.is-pc .mesa-ficha-h b{ font-size:21px; }
+.is-pc .mesa-concl{ font-size:15.5px; padding:8px 12px; }
+.is-pc .mesa-falta{ font-size:14px; }
+.is-pc .mesa-tabla{ padding:16px; gap:12px; }
+.is-pc .mesa-slots{ gap:14px; width:100%; }
+/* Las 3 cartas se encogen con la columna si la pantalla es estrecha. */
+.is-pc .mesa-cartax{ width:min(148px, calc((100% - 28px) / 3)); height:196px; padding:24px 10px 8px; }
+.is-pc .mesa-cartax-t{ font-size:14.5px; }
+.is-pc .mesa-slots.is-mini .mesa-cartax{ height:132px; }
+.is-pc .mesa-q{ font-size:17px; }
+.is-pc .mesa-opt{ font-size:15px; padding:8px 12px; }
+.mesa-izq{ display:flex; flex-direction:column; gap:12px; min-height:0; }
+.mesa-izq .mesa-ficha{ flex:1; min-height:0; overflow:auto; }
+.mesa-der{ background:var(--m-board); border:12px solid #5b3a1e; border-radius:12px; padding:14px 16px;
+  display:flex; flex-direction:column; gap:8px; min-height:0; }
+.mesa-washi{ display:inline-block; font-weight:800; font-size:15px; padding:1px 14px; border-radius:2px;
+  transform:rotate(-2deg); background:rgba(213,106,82,.55); align-self:flex-start; }
+.mesa-bajo{ display:flex; flex-direction:column; gap:8px; }
+/* Móvil: la mesa de las 3 cartas se queda fija arriba al bajar por las pistas,
+   así siempre ves con qué estás conectando. Cartas algo más bajas para que
+   quede sitio para la lista. */
+.is-movil .mesa-tabla{ position:sticky; top:-4px; z-index:5; padding:10px; gap:8px;
+  box-shadow:0 8px 14px -6px rgba(40,26,12,.45); }
+.is-movil .mesa-cartax{ width:104px; height:118px; padding-top:18px; }
+.is-movil .mesa-slots.is-mini .mesa-cartax{ height:92px; }
+
+/* ── Personajes ── */
+.mesa-chips{ display:flex; gap:6px; flex-wrap:wrap; }
+.is-movil .mesa-chips{ justify-content:center; }
+.mesa-chip{ display:inline-flex; align-items:center; gap:6px; position:relative; border:2px solid var(--m-ink);
+  border-radius:999px; padding:2px 10px 2px 2px; background:var(--m-paper); font-weight:800; font-size:13px;
+  line-height:1; min-height:36px; cursor:pointer; box-shadow:var(--m-sombra); }
+.mesa-chip img, .mesa-chip-ini{ width:28px; height:28px; border-radius:50%; object-fit:cover; object-position:50% 8%; }
+.mesa-chip-ini{ display:inline-flex; align-items:center; justify-content:center; background:#f6ecd8; font-size:13px; }
+.mesa-chip small{ font-weight:700; opacity:.75; }
+.mesa-chip[aria-selected="true"]{ background:var(--m-ink); color:var(--m-paper); }
+.mesa-chip:disabled{ opacity:.45; cursor:not-allowed; }
+.mesa-chip-nuevo{ position:absolute; top:-2px; right:-2px; width:10px; height:10px; border-radius:50%;
+  background:var(--m-accent); border:2px solid var(--m-paper); }
+
+/* ── Mesa de madera ── */
+.mesa-tabla{ background:radial-gradient(ellipse at 50% 40%, #8a5f36, #6b4423 70%); border:4px solid var(--m-ink);
+  border-radius:16px; display:grid; gap:10px; justify-items:center; align-content:start; padding:12px; flex-shrink:0; }
+.mesa-slots{ display:flex; gap:8px; justify-content:center; }
+.mesa-cartax{ position:relative; width:108px; height:144px; background:var(--m-paper); border:2.5px solid var(--m-ink);
+  border-radius:12px; padding:20px 7px 6px; display:flex; flex-direction:column; gap:3px; text-align:left; cursor:pointer;
+  box-shadow:2px 4px 0 rgba(0,0,0,.3); flex-shrink:0; overflow:hidden; }
+.mesa-cartax-cp{ position:absolute; top:4px; left:7px; font-size:9.5px; font-weight:800; color:var(--m-ink-soft); }
+.mesa-cartax-palo{ position:absolute; top:3px; right:7px; font-size:12px; color:var(--m-accent); }
+.mesa-cartax-t{ font-size:12px; font-weight:700; line-height:1.16; }
+.mesa-cartax-x{ position:absolute; bottom:3px; right:6px; font-size:13px; font-weight:800; color:var(--m-ink-soft); }
+.mesa-cartax.is-comp{ background:var(--m-ok-bg); border-color:var(--m-ok); color:var(--m-ok-ink); }
+.mesa-cartax.is-comp .mesa-cartax-palo{ color:var(--m-ok); }
+.mesa-cartax.is-vacia{ border:2.5px dashed rgba(255,255,255,.55); background:rgba(255,255,255,.08); color:rgba(255,255,255,.85);
+  align-items:center; justify-content:center; text-align:center; font-weight:700; font-size:12px; cursor:default; box-shadow:none; padding:6px; }
+.mesa-slots.is-mini .mesa-cartax{ height:100px; cursor:default; }
+.mesa-q{ color:#fff; font-weight:800; font-size:15px; text-align:center; }
+.mesa-btns{ display:flex; gap:10px; align-items:center; justify-content:center; }
+.mesa-ovillo{ width:20px; height:20px; }
+.mesa-ovillo-bola{ fill:#d9536a; stroke:#4a3622; stroke-width:2.4; }
+.mesa-ovillo-hebra, .mesa-ovillo-hebra path{ fill:none; stroke:#a83246; stroke-width:2; stroke-linecap:round; }
+.mesa-saldo{ display:inline-flex; align-items:center; gap:4px; border:2px solid var(--m-ink); background:var(--m-paper);
+  border-radius:999px; padding:0 9px 0 4px; font-weight:800; font-size:14px; box-shadow:var(--m-sombra); white-space:nowrap; }
+.mesa-jugar{ border:2.5px solid var(--m-ink); background:var(--m-accent); color:#fff !important; font-weight:800; font-size:16px;
+  border-radius:999px; padding:6px 16px; cursor:pointer; box-shadow:2px 3px 0 rgba(0,0,0,.35); display:inline-flex; align-items:center; gap:8px; }
+.mesa-jugar small{ font-size:12.5px; font-weight:700; display:inline-flex; align-items:center; gap:2px;
+  background:rgba(255,255,255,.25); border-radius:999px; padding:0 8px; }
+.mesa-jugar small .mesa-ovillo{ width:16px; height:16px; }
+.mesa-jugar:disabled{ background:#e8dccb; color:rgba(74,54,34,.5) !important; cursor:not-allowed; box-shadow:none; }
+.mesa-jugar:disabled small{ background:transparent; }
+.mesa-sin-ovillos{ color:#fff; font-weight:700; font-size:13px; }
+.mesa-opts{ display:grid; gap:6px; width:100%; }
+.mesa-opt{ display:flex; align-items:center; gap:9px; text-align:left; background:var(--m-paper); border:2px solid var(--m-ink);
+  border-radius:12px; padding:6px 10px; font-weight:700; font-size:13.5px; cursor:pointer; line-height:1.2; box-shadow:var(--m-sombra); }
+.mesa-opt-lt{ flex-shrink:0; width:24px; height:24px; border-radius:50%; border:2px solid var(--m-ink); background:#f6ecd8;
+  display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; }
+.mesa-opt:disabled{ text-decoration:line-through; opacity:.5; cursor:not-allowed; box-shadow:none; }
+.mesa-res{ border-radius:12px; padding:7px 12px; display:grid; gap:2px; font-weight:700; font-size:13px; line-height:1.25; width:100%; }
+.mesa-res.is-ok{ background:var(--m-ok-bg); border:2.5px solid var(--m-ok); color:var(--m-ok-ink); }
+.mesa-res.is-bad{ background:var(--m-bad-bg); border:2.5px solid var(--m-bad); color:#8a2418; }
+.mesa-res-big{ font-size:15px; font-weight:800; }
+.mesa-res-k{ font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+
+/* ── Aviso de lo que hay por descubrir ── */
+.mesa-pend{ background:#fff3e6; border:2px solid var(--m-accent); border-radius:10px; padding:5px 10px;
+  font-weight:700; font-size:13px; line-height:1.25; flex-shrink:0; }
+.mesa-pend b{ color:#b4520f; }
+
+/* ── Pestañas (móvil) ── */
+.mesa-seg{ display:flex; border:2px solid var(--m-ink); border-radius:999px; overflow:hidden; background:var(--m-paper); min-height:34px; }
+.mesa-seg button{ flex:1; border:none; background:transparent; padding:3px 0; font-weight:800; font-size:13px; cursor:pointer; }
+.mesa-seg button + button{ border-left:2px solid var(--m-ink); }
+.mesa-seg button[aria-selected="true"]{ background:var(--m-ink); color:var(--m-paper); }
+
+/* ── Pistas ── */
+.mesa-lista{ display:grid; grid-template-columns:1fr 1fr; gap:14px 8px; align-content:start; padding-top:8px; }
+.is-pc .mesa-lista{ grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:18px 12px; flex:1; min-height:0; overflow:auto; padding:10px 4px 4px; }
+.mesa-carta{ position:relative; background:var(--m-paper); border:2px solid var(--m-ink); border-radius:6px; padding:8px 9px;
+  text-align:left; cursor:pointer; box-shadow:var(--m-sombra); display:grid; gap:4px; align-content:start; }
+.mesa-carta-t{ font-size:13px; font-weight:700; line-height:1.2; }
+.is-pc .mesa-carta-t{ font-size:14px; }
+.mesa-carta-pin{ position:absolute; top:-6px; left:50%; width:12px; height:12px; margin-left:-6px; border-radius:50%;
+  background:radial-gradient(circle at 35% 35%, #ffd27a, #d99a1e 70%); border:1px solid #8a5a10; }
+.mesa-carta.is-comp{ background:var(--m-ok-bg); border-color:var(--m-ok); color:var(--m-ok-ink); }
+.mesa-carta-tag{ position:absolute; top:-9px; right:8px; font-size:10px; font-weight:800; padding:0 6px;
+  border:1.5px solid var(--m-ink); border-radius:3px; background:#ffd2b8; }
+.mesa-carta.is-comp .mesa-carta-tag{ background:#bfe6c9; }
+.mesa-carta.en-mesa{ opacity:.3; cursor:default; }
+.mesa-carta-cap{ display:inline-block; border:1.5px solid var(--m-ink); border-radius:999px; padding:0 7px; font-weight:800;
+  font-size:10.5px; background:var(--m-paper); }
+.mesa-carta-ver{ font-size:11px; font-weight:700; color:var(--m-accent) !important; text-decoration:underline; cursor:pointer;
+  justify-self:start; background:none; border:none; padding:0; }
+.mesa-carta-cita{ font-family:'Crimson Text',Georgia,serif; font-size:13.5px; line-height:1.25; font-style:italic;
+  background:#f6ecd8; border-radius:4px; padding:4px 6px; }
+.mesa-pars{ display:flex; gap:4px; flex-wrap:wrap; }
+.mesa-pars:empty{ display:none; }
+.mesa-par{ color:#fff; font-size:10.5px; font-weight:800; border-radius:999px; padding:0 6px; border:1.5px solid var(--m-ink); }
+.mesa-par.par-0{ background:#2f7fd1; } .mesa-par.par-1{ background:#c2410c; } .mesa-par.par-2{ background:#7c3aed; }
+.mesa-par.par-3{ background:#0f766e; } .mesa-par.par-4{ background:#be185d; } .mesa-par.par-5{ background:#a16207; }
+
+/* ── Ficha ── */
+.mesa-ficha{ background:var(--m-paper); border:2px solid var(--m-ink); border-radius:12px; box-shadow:2px 4px 0 rgba(74,54,34,.22);
+  padding:10px 12px; display:grid; gap:7px; align-content:start; }
+.mesa-ficha-h{ font-family:'Special Elite','Courier New',monospace; font-size:12px; border-bottom:2px dashed rgba(74,54,34,.25); padding-bottom:5px; }
+.mesa-ficha-h b{ display:block; font-family:'Baloo 2','Trebuchet MS',sans-serif; font-size:16px; }
+.mesa-concl{ background:var(--m-ok-bg); border:2px solid var(--m-ok); border-radius:10px; padding:5px 9px; font-weight:800;
+  font-size:13px; color:var(--m-ok-ink); line-height:1.2; display:grid; gap:2px; }
+.mesa-concl small{ font-weight:700; opacity:.8; }
+.mesa-falta{ border:2px dashed rgba(74,54,34,.3); border-radius:10px; padding:5px 9px; font-weight:700; font-size:12.5px;
+  color:var(--m-ink-soft); text-align:center; }
+.mesa-falta.is-leer{ border-style:dotted; font-style:italic; }
+.mesa-faltaron{ border-top:2px dashed rgba(74,54,34,.25); padding-top:8px; display:grid; gap:8px; }
+.mesa-faltaron-h{ font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--m-bad); }
+.mesa-faltaron-it{ font-size:13px; }
+.mesa-faltaron-it ul{ margin:4px 0 0; padding-left:1.1em; font-weight:500; }

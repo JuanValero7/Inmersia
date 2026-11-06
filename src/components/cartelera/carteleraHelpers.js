@@ -69,3 +69,18 @@ export function deltaDesc(prev, curr) {
   }
   return c
 }
+
+// Textos de la carpeta del centro del tablero (la mesa de investigación).
+// `resumen` sale de resumenMesa() (hooks/useMesaInvestigacion.js); sin él, el
+// libro no tiene mesa y la carpeta queda de relleno, sin clic.
+export function carpetaMesa(resumen, cargando, onAbrir) {
+  if (cargando) return { cuenta: '', abrir: '', sello: null, onAbrir: null }
+  if (!resumen) return { cuenta: 'Pronto en este libro', abrir: '', sello: null, onAbrir: null }
+  const { hechas, total, porDescubrir, sello, hayPersonajes } = resumen
+  return {
+    sello,
+    cuenta: hayPersonajes ? `${hechas} de ${total} deducciones` : 'Aún no hay nadie en la mesa',
+    abrir: porDescubrir ? `🔎 ${porDescubrir} por descubrir →` : 'Toca para abrir →',
+    onAbrir,
+  }
+}

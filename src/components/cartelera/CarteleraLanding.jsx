@@ -23,6 +23,7 @@ import {
   HECHOS_TYPES, HECHOS_SIZE, POLA_COLORS,
   threadChain, pick3,
   Pin, PassportPhoto, DocSheetCard, HechoItem, BlueprintBg, ZonePopup,
+  PostIt, postitSlots,
 } from './carteleraZonas.jsx'
 import { pinAbs, docPinAbs, hechoPinAbs } from '../../lib/carteleraGeometria.js'
 
@@ -194,6 +195,23 @@ const SHEET_TIE_MAP    = { x: CENTER.cx + CENTER.w / 2 - TIE_IN, y: CENTER.cy - 
 const SHEET_TIE_DATOS  = { x: CENTER.cx - CENTER.w / 2 + TIE_IN, y: CENTER.cy + 42 }  // borde izq, abajo
 const SHEET_TIE_HECHOS = { x: CENTER.cx + CENTER.w / 2 - TIE_IN, y: CENTER.cy + 42 }  // borde der, abajo
 
+// ── Zona MIS NOTAS (arriba al centro, encima de la carpeta) ───────
+// Las predicciones dejaron el centro a la mesa de investigación (nov. 2026) y
+// viven aquí como una zona más: chip + post-its de relleno, uno por predicción
+// anotada (hasta llenar la grilla). Su hilo baja al borde superior de la carpeta.
+const NOTAS_CHIP = { x: 628, y: 46 }
+const NOTAS_SLOTS = postitSlots({ x0: 540, y0: 106, cols: 4, rows: 2, gx: 58, gy: 74, seed: 818181 })
+const NOTAS_PRIORITY = (() => { const r = rng(717171); return NOTAS_SLOTS.map(() => r()) })()
+const POSTIT_W = 50, POSTIT_H = 54
+const NOTAS_AREA = (() => {
+  const pad = 12
+  const xs = NOTAS_SLOTS.map(s => s.x), ys = NOTAS_SLOTS.map(s => s.y)
+  const x0 = Math.min(...xs) - POSTIT_W / 2 - pad, y0 = Math.min(...ys) - POSTIT_H / 2 - pad
+  const x1 = Math.max(...xs) + POSTIT_W / 2 + pad, y1 = Math.max(...ys) + POSTIT_H / 2 + pad
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }
+})()
+const SHEET_TIE_NOTAS = { x: CENTER.cx + 6, y: CENTER.cy - CENTER.h / 2 + TIE_IN }        // borde superior, al medio
+
 // Las tres funciones de geometría viven en lib/carteleraGeometria.js, que las
 // comparte con el tablero móvil. Reciben MAP y DOC_H por PARÁMETRO: móvil usa
 // un tablero de otro tamaño con constantes del mismo nombre y otros valores,
@@ -224,8 +242,12 @@ function useFitScale(ref, totalW, totalH, reservaAbajo = 0) {
 const SHOW_DATOS = true
 const SHOW_HECHOS = true
 
+/**
+ * @param {object} props
+ * @param {object} props.centro   textos y clic de la carpeta central (carpetaMesa() de carteleraHelpers)
+ */
 export default function CarteleraLanding({
-  subtitle, data, esNoficcion = false,
+  subtitle, data, esNoficcion = false, centro,
   onOpenSection, onOpenList, onGoLectura, onGoForo, onGoBiblioteca,
 }) {
   const stageRef = useRef(null)
@@ -279,6 +301,17 @@ export default function CarteleraLanding({
   const goListPerson = () => onOpenList(personSeccion)
   const goListDatos = () => onOpenList(datosSeccion)
   const goListHechos = () => onOpenList(hechosSeccion)
+  const goListNotas = () => onOpenList('notas')
+
+  const notasCount = (data.itemsBySeccion?.notas || []).length
+  const visiblePostits = NOTAS_SLOTS.slice(0, Math.min(NOTAS_SLOTS.length, notasCount))
+  // Hilo de Mis notas: 3 post-its (o los que haya) → borde superior de la carpeta
+  const notasThreads = (() => {
+    const n = visiblePostits.length
+    if (n === 0) return []
+    const idx = n >= 3 ? pick3(n, NOTAS_PRIORITY) : [...Array(n).keys()]
+    return threadChain(SHEET_TIE_NOTAS, idx.map(i => ({ x: visiblePostits[i].x, y: visiblePostits[i].y - POSTIT_H / 2 + 6 })))
+  })()
 
   // Hilo de Personajes: 3 fotos al azar (o sólo la primera si hay <3) → hoja.
   // Se amarra justo POR DEBAJO del pin (borde inferior de la chincheta), así la
@@ -338,7 +371,8 @@ export default function CarteleraLanding({
               esNoficcion={esNoficcion}
               notasItems={data.itemsBySeccion?.notas || []}
               onOpenSection={onOpenSection}
-              onOpenNotas={() => onOpenList('notas')}
+              onOpenNotas={goListNotas}
+              centro={centro}
               boardW={BOARD_W} boardH={BOARD_H} cols={COLS} rows={ROWS}
               embeds={embedsForNotas} center={CENTER} decorNotas={false} threads={false} />
 
@@ -357,11 +391,19 @@ export default function CarteleraLanding({
                 </mask>
               </defs>
               <g mask="url(#cartThreadMask)">
-                {[...personThreads, ...mapThreads, ...datosThreads, ...hechosThreads].map((d, i) => (
+                {[...personThreads, ...mapThreads, ...datosThreads, ...hechosThreads, ...notasThreads].map((d, i) => (
                   <path key={i} d={d} fill="none" stroke="#c23b2e" strokeWidth="2.4" strokeLinecap="round" opacity="0.85" />
                 ))}
               </g>
             </svg>
+
+            {/* ── ZONA MIS NOTAS (predicciones) ── */}
+            <button type="button" className="cart-zone-tag is-notas" style={{ left: NOTAS_CHIP.x, top: NOTAS_CHIP.y, '--tape-rot': '1.5deg' }}
+              onClick={goListNotas}>Mis notas</button>
+            {visiblePostits.map((s, i) => <PostIt key={i} s={s} w={POSTIT_W} h={POSTIT_H} />)}
+            <button type="button" className="cart-pass-zone" aria-label="Ver tus notas"
+              style={{ left: NOTAS_AREA.x, top: NOTAS_AREA.y, width: NOTAS_AREA.w, height: NOTAS_AREA.h }}
+              onClick={goListNotas} />
 
             {/* ── ZONA PERSONAJES ── */}
             <button type="button" className="cart-zone-tag" style={{ left: PERSON_CHIP.x, top: PERSON_CHIP.y, '--tag': '#d56a52', '--tape-rot': '-2.5deg' }}

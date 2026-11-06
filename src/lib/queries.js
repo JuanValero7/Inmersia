@@ -48,6 +48,8 @@ export const queryKeys = {
   // Hero "Seguir leyendo" de la Biblioteca (ver useBiblioteca)
   tiempoLibro: (userId, libroId) => ['tiempoLibro', userId, libroId],
   investigacionReciente: (libroId, completados) => ['investigacionReciente', libroId, completados],
+  // Mesa de investigación, el método Anderson (ver src/hooks/useMesaInvestigacion.js)
+  mesaInvestigacion: (libroId, userId) => ['mesaInvestigacion', libroId, userId],
   // «Anteriormente en…» de la ficha (ver useRepasoQuery)
   repaso: (userId, libroId, completados) => ['repaso', userId, libroId, completados],
   // Tienda (ver Documentation/tienda/plan-implementacion.md)

@@ -215,6 +215,22 @@
 .cart-root .cart-file-face{ position:relative; z-index:3; display:flex; flex-direction:column; align-items:center; gap:2px; }
 .cart-root .cart-file-count{ font-size:12px; font-weight:800; color:#5a4326; letter-spacing:.01em; }
 .cart-root .cart-file-open{ font-size:10px; font-weight:700; color:rgba(74,54,34,.55); text-transform:uppercase; letter-spacing:.04em; }
+/* Carpeta de la mesa de investigación: rótulo más largo que «Mis predicciones»,
+   así que se aprieta para no chocar con el clip. */
+.cart-root .cart-file-tab.is-larga{ font-size:9px; letter-spacing:.02em; padding:5px 10px 7px; left:14px; }
+/* Libro sin mesa todavía: la carpeta se queda de relleno, apagada y sin clic. */
+.cart-root .cart-flatsheet.is-relleno{ cursor:default; filter:saturate(.55); opacity:.8; }
+
+/* ── Zona «Mis notas» (las predicciones, encima de la carpeta) ─────────── */
+.cart-root .cart-zone-tag.is-notas{ --tag:#BE6173; }
+.cart-root .cart-postit{ position:absolute; z-index:6; transform:translate(-50%,-50%) rotate(var(--rot,0deg));
+  padding:8px 8px 10px; box-shadow:0 6px 12px rgba(40,26,12,.30), 0 1px 0 rgba(255,255,255,.4) inset; pointer-events:none;
+  background-image:repeating-linear-gradient(0deg, transparent 0 11px, rgba(74,90,140,.16) 11px 12px); }
+.cart-root .cart-postit.c0{ background-color:#f7e98b; } .cart-root .cart-postit.c1{ background-color:#f7c9d4; }
+.cart-root .cart-postit.c2{ background-color:#c9e4f2; } .cart-root .cart-postit.c3{ background-color:#d6ecc0; }
+.cart-root .cart-postit.c4{ background-color:#f9d9a8; }
+.cart-root .cart-postit .cart-pin{ top:-6px; width:13px; height:13px; }
+.cart-root .cart-postit-raya{ display:block; height:3px; border-radius:2px; background:rgba(74,54,34,.28); margin:6px 0 4px; }
 
 /* ── LANDING (cartelera apaisada con marco de madera) ────────────── */
 .cart-root .cart-landing{ background:var(--paper); }
@@ -505,3 +521,6 @@
 .cart-root .empty-pane .ek{ font-size:calc(22px * var(--fscale)); font-weight:800; color:#8a7355; }
 .cart-root .empty-pane p{ margin:0; font-size:15px; font-weight:600; max-width:38ch; line-height:1.4; }
 .cart-root .empty-arrow{ color:#cdbb9a; }
+.cart-root .cart-postit .cart-pin{ background:radial-gradient(circle at 35% 30%, #fff7, #c23b2e 62%, rgba(0,0,0,.35)); }
+.cart-root .cart-portada-tag.is-volver{ font-family:inherit; cursor:pointer; color:#8a7355; }
+.cart-root .cart-portada-tag.is-volver:hover{ transform:translateY(-1px); box-shadow:2px 3px 0 rgba(74,54,34,.25); }
