@@ -12,7 +12,7 @@
 // página; esa elección se guarda y pasa a su cuenta al registrarse (ver
 // hooks/useGatoColor.js). En móvil no hay selector: cada gato sale de un color.
 //
-// Maqueta aprobada: Documentation/landing/maqueta-gatos/index.html
+// Maqueta aprobada: Documents/Inmersia_maquetas/landing/maqueta-gatos/index.html (fuera del repo)
 // ─────────────────────────────────────────────────────────────
 import { useRef, useEffect, useState, useMemo } from 'react'
 import {

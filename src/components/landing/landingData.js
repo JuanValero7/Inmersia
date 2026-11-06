@@ -4,7 +4,7 @@
 // Las capturas y los gatos reducidos viven en public/assets/landing/.
 //
 // Maqueta de referencia (aprobada el 2026-10-01):
-// Documentation/landing/maqueta-gatos/index.html
+// Documents/Inmersia_maquetas/landing/maqueta-gatos/index.html (fuera del repo)
 // ─────────────────────────────────────────────────────────────
 
 // Mundos que rotan dentro del portal
