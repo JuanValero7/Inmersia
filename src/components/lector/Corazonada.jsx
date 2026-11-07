@@ -33,7 +33,8 @@ function Corazon() {
   )
 }
 
-function Ovillo() {
+// También lo usa el concurso (Concurso.jsx).
+export function Ovillo() {
   return (
     <svg className="cz-ovillo" viewBox="0 0 48 48" aria-hidden="true">
       <path d="M33 33 q5 9 13 7" className="cz-ovillo-hebra" />

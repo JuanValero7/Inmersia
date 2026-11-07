@@ -37,6 +37,7 @@ import SuperuserSoundsPanel from '../lector/SuperuserSoundsPanel.jsx'
 import MobileBookPage from './lector/MobileBookPage.jsx'
 import { useCapaMovil } from '../comunidades/capa/CapaMovil.jsx'
 import { useCorazonadasLector } from '../lector/Corazonada.jsx'
+import { useConcursoLector } from '../lector/Concurso.jsx'
 import { conCorazonadas, sinCorazonadas } from '../../utils/corazonadas.js'
 import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, FotoAsomada, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
 import '../../styles/lector.mobile.css'
@@ -173,6 +174,12 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     visibles: paginasConChips[pageIndex] || [], clavePagina: `${chapterIndex}:${pageIndex}`,
     gatoColor, movil: true, deshabilitada: guestMode || onboarding.active,
+  })
+  // El concurso: el foco salta al intentar pasar la página de la frase (Concurso.jsx).
+  const concurso = useConcursoLector({
+    libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
+    visibles: paginasConChips[pageIndex] || [], clavePagina: `${chapterIndex}:${pageIndex}`,
+    movil: true, deshabilitado: guestMode || onboarding.active,
   })
 
   // ── Geometría de página (medida del DOM) ──
@@ -396,6 +403,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   }
   function handleNext() {
     setCatOpen(false)
+    if (concurso.interceptar?.(handleNext)) return
     if (pageIndex < total - 1) { setPageIndex(p => p + 1); return }
     // fin del capítulo → se avanza sin abrir el Cuaderno: la predicción se
     // ofreció ANTES, con la tira de la última página (ver `tira` más abajo)
@@ -668,6 +676,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* Corazonada abierta (hoja de abajo) */}
       {corazonadas.panel}
+
+      {/* El concurso: luces apagadas y foco sobre la frase */}
+      {concurso.panel}
 
       {/* Tira de predicción (fin de capítulo) y pista de primera vez */}
       {tira && <TiraPrediccion movil capNum={tira.capNum} onAnotar={anotarDesdeTira} onCerrar={() => setTiraCerrada(chapterIndex)} />}

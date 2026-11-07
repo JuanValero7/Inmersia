@@ -28,3 +28,6 @@ _originales/
 
 # Capturas del barrido de adaptabilidad (no se publican)
 capturas-revision/
+
+# Archivos locales del CLI de Supabase
+supabase/.temp/

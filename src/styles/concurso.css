@@ -1,0 +1,85 @@
+/* El concurso en el lector (escritorio y móvil). Ver src/components/lector/Concurso.jsx
+   y la maqueta Documents/Inmersia_maquetas/colegios/maqueta-concurso.html.
+   Usa los colores de corazonada.css (--cz-*), que el lector ya carga. */
+
+/* ── Las luces se apagan: noche con huecos donde está la frase ── */
+.cc-escena { position: fixed; inset: 0; z-index: 1200; animation: cc-entra 0.5s ease-out; }
+.cc-noche { position: absolute; inset: 0; display: block; }
+.cc-noche > rect { fill: rgba(16,11,7,0.86); }
+/* Tinte cálido encima del texto (transparente, para que se lea) y halo de luz alrededor. */
+.cc-foco { position: fixed; pointer-events: none; border-radius: 5px; background: rgba(255,236,170,0.3);
+  box-shadow: 0 0 26px 10px rgba(255,226,140,0.4); }
+.cc-foco.is-ctx { background: rgba(255,236,170,0.15); box-shadow: 0 0 14px 4px rgba(255,226,140,0.18); }
+@keyframes cc-entra { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── Tarjeta (escritorio) y hoja (móvil) ── */
+.cc-tarjeta { position: fixed; width: 380px; max-height: calc(100vh - 24px); overflow-y: auto; background: var(--cz-paper);
+  border: 2.5px solid var(--cz-ink); border-radius: 18px; box-shadow: 0 14px 40px rgba(0,0,0,0.5); padding: 16px 18px; box-sizing: border-box; }
+.cc-hoja { position: fixed; left: 8px; right: 8px; bottom: 8px; max-height: 62vh; overflow-y: auto; background: var(--cz-paper);
+  border: 2.5px solid var(--cz-ink); border-radius: 18px; box-shadow: 0 14px 40px rgba(0,0,0,0.5); padding: 12px 14px; box-sizing: border-box; }
+.cc-hoja.is-arriba { bottom: auto; top: 8px; }
+
+.cc-panel { display: grid; gap: 10px; font-family: 'Baloo 2', sans-serif; color: var(--cz-ink); }
+.cc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.cc-kicker { font-size: 11.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cz-accent); }
+.cc-head h3 { margin: 0; font-size: 21px; font-weight: 800; line-height: 1.12; }
+.cc-hoja .cc-head h3 { font-size: 18px; }
+.cc-saldo { display: inline-flex; align-items: center; gap: 3px; border: 2px solid var(--cz-ink); background: var(--cz-paper); border-radius: 999px;
+  padding: 0 9px 0 4px; font-weight: 800; font-size: 14px; box-shadow: var(--cz-sombra-s); white-space: nowrap; }
+
+.cc-texto { width: 100%; min-height: 104px; resize: none; box-sizing: border-box; border: 2px solid var(--cz-ink); border-radius: 12px;
+  padding: 8px 10px; font-family: inherit; font-size: 16px; line-height: 1.35; color: var(--cz-ink); background: #fffaf1; }
+.cc-hoja .cc-texto { min-height: 78px; }
+.cc-texto:focus-visible { outline: 3px solid var(--cz-accent); outline-offset: 1px; }
+.cc-pista { display: flex; justify-content: space-between; gap: 8px; margin-top: -5px; font-size: 11.5px; font-weight: 700; color: var(--cz-ink-soft); }
+.cc-pista.is-pasado span:last-child { color: var(--cz-bad); }
+.cc-ctx { margin: 0; display: grid; gap: 2px; font-family: 'Crimson Text', Georgia, serif; font-size: 15px; line-height: 1.3; color: #3a2a18;
+  background: #fff3c9; border-radius: 10px; padding: 6px 10px; }
+.cc-ctx small, .cc-mia small, .cc-ref small { font-family: 'Baloo 2', sans-serif; font-style: normal; font-weight: 800; font-size: 10.5px;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--cz-ink-soft); }
+
+.cc-comodines { display: flex; gap: 6px; flex-wrap: wrap; }
+.cc-com { display: inline-flex; align-items: center; gap: 5px; border: 2px solid var(--cz-ink); background: var(--cz-paper); border-radius: 999px;
+  padding: 3px 10px; font-family: inherit; font-weight: 800; font-size: 12.5px; color: var(--cz-ink); cursor: pointer; box-shadow: var(--cz-sombra-s); }
+.cc-com span { display: inline-flex; align-items: center; gap: 1px; }
+.cc-com .cz-ovillo { width: 15px; height: 15px; }
+.cc-com:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+.cc-com.is-usado { background: #fff1e4; border-color: var(--cz-accent); opacity: 1; }
+
+.cc-opts { display: grid; gap: 6px; }
+.cc-opt { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: 2px solid var(--cz-ink); background: var(--cz-paper);
+  border-radius: 12px; padding: 7px 10px; font-family: inherit; font-weight: 700; font-size: 14.5px; line-height: 1.25; color: var(--cz-ink);
+  cursor: pointer; box-shadow: var(--cz-sombra-s); }
+.cc-opt:disabled { opacity: 0.6; cursor: wait; }
+.cc-lt { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--cz-ink); background: var(--cz-cream);
+  display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; }
+
+.cc-error { margin: 0; font-size: 13px; font-weight: 700; color: var(--cz-bad); }
+.cc-btns { display: flex; gap: 8px; }
+.cc-btn { border: 2px solid var(--cz-ink); border-radius: 999px; padding: 6px 16px; font-family: inherit; font-weight: 800; font-size: 14px;
+  cursor: pointer; box-shadow: var(--cz-sombra-s); }
+.cc-btn.is-luego { background: var(--cz-paper); color: var(--cz-ink); }
+.cc-btn.is-main { flex: 1; background: var(--cz-accent); color: #fff; font-size: 15.5px; border-width: 2.5px; }
+.cc-btn.is-main:disabled { background: #e8dccb; color: rgba(74,54,34,0.5); cursor: not-allowed; box-shadow: none; }
+
+/* El jurado delibera */
+.cc-jurado { display: grid; justify-items: center; gap: 6px; padding: 16px 0; text-align: center; }
+.cc-tambor { font-size: 34px; letter-spacing: 6px; animation: cc-pulso 0.6s infinite alternate; }
+.cc-jurado b { font-size: 18px; }
+.cc-jurado span { font-size: 13px; font-weight: 600; color: var(--cz-ink-soft); }
+@keyframes cc-pulso { from { transform: scale(1); } to { transform: scale(1.12); } }
+
+/* Veredicto */
+.cc-mia { display: grid; gap: 2px; font-family: 'Crimson Text', Georgia, serif; font-size: 15px; font-style: italic; line-height: 1.3;
+  background: var(--cz-cream); border-radius: 10px; padding: 6px 10px; max-height: 5.4em; overflow: hidden; }
+.cc-veredicto { display: grid; gap: 3px; border: 2.5px solid; border-radius: 14px; padding: 9px 12px; }
+.cc-veredicto span { font-size: 14px; font-weight: 700; line-height: 1.3; }
+.cc-big { font-size: 23px !important; font-weight: 800 !important; line-height: 1.1 !important; }
+.cc-gana { justify-self: start; display: inline-flex; align-items: center; gap: 4px; font-weight: 800 !important; font-size: 13px !important; }
+.cc-veredicto.is-ok { background: var(--cz-ok-bg); border-color: var(--cz-ok); color: var(--cz-ok-ink); }
+.cc-veredicto.is-casi { background: #fdf1d8; border-color: #b7791f; color: #7a4f10; }
+.cc-veredicto.is-no { background: var(--cz-bad-bg); border-color: var(--cz-bad); color: #8a2418; }
+.cc-ref { display: grid; gap: 3px; border: 2px dashed rgba(74,54,34,0.4); border-radius: 12px; padding: 8px 10px; }
+.cc-ref p { margin: 0; font-family: 'Crimson Text', Georgia, serif; font-size: 15.5px; line-height: 1.35; color: #3a2a18; }
+
+@media (prefers-reduced-motion: reduce) { .cc-escena, .cc-tambor { animation: none; } }

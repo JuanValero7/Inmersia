@@ -52,6 +52,8 @@ export const queryKeys = {
   mesaInvestigacion: (libroId, userId) => ['mesaInvestigacion', libroId, userId],
   // Corazonadas del lector (ver src/hooks/useCorazonadas.js)
   corazonadas: (libroId, userId) => ['corazonadas', libroId, userId],
+  // El concurso del lector (ver src/hooks/useConcurso.js)
+  concurso: (libroId, userId) => ['concurso', libroId, userId],
   // «Anteriormente en…» de la ficha (ver useRepasoQuery)
   repaso: (userId, libroId, completados) => ['repaso', userId, libroId, completados],
   // Tienda (ver Documentation/tienda/plan-implementacion.md)

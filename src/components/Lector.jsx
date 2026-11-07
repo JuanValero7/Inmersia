@@ -22,6 +22,7 @@ import { theme, ClayButton, getReaderPalette } from './lector/clay.jsx'
 import SuperuserSoundsPanel from './lector/SuperuserSoundsPanel.jsx'
 import { useCapaEscritorio } from './comunidades/capa/CapaEscritorio.jsx'
 import { useCorazonadasLector } from './lector/Corazonada.jsx'
+import { useConcursoLector } from './lector/Concurso.jsx'
 import { conCorazonadas, sinCorazonadas } from '../utils/corazonadas.js'
 
 // Geometría de página.
@@ -160,6 +161,13 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     visibles: visiblesCz, clavePagina: `${chapterIndex}:${pageIndex}`,
     gatoColor, deshabilitada: guestMode || onboarding.active,
   })
+  // El concurso: el foco salta al intentar pasar la página de la frase (Concurso.jsx).
+  const concurso = useConcursoLector({
+    libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
+    visibles: visiblesCz, clavePagina: `${chapterIndex}:${pageIndex}`,
+    deshabilitado: guestMode || onboarding.active,
+  })
+  const interceptarConcurso = concurso.interceptar
 
   // Pie de página: % del libro o del capítulo según Aa (null = número de página).
   // En doble página cuenta hasta el final de la de la derecha.
@@ -294,8 +302,12 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   // callback de avanzar (y el listener de teclado) en cada render.
   const persistRef = useRef(persistChapterAdvance)
   persistRef.current = persistChapterAdvance
+  // Al cerrar el concurso se repite lo que se interceptó (pasar página o capítulo).
+  const paginaRef = useRef(null)
+  const capituloRef = useRef(null)
   const handleNextPage = useCallback(() => {
     if (polaroidRef.current?.interceptForward()) { marcarPista('ilustracion'); return }
+    if (interceptarConcurso?.(() => paginaRef.current?.())) return
     const step = doubleView ? 2 : 1
     const next = pageIndex + step
     if (next < currentPaginas.length) {
@@ -304,11 +316,12 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       anotarMuestra(book?.libro_id, chapterIndex + 1)   // terminó la muestra
       setShowPaywall(true)
     }
-  }, [doubleView, pageIndex, currentPaginas.length, guestMode, chapterIndex, capitulos.length, book?.libro_id, marcarPista, setPageIndex, setShowPaywall])
+  }, [doubleView, pageIndex, currentPaginas.length, guestMode, chapterIndex, capitulos.length, book?.libro_id, marcarPista, setPageIndex, setShowPaywall, interceptarConcurso])
   // Fin de capítulo: se avanza sin abrir el Cuaderno. La predicción se ofrece
   // ANTES, con la tira que aparece en la última página (ver `tira` más abajo).
   const handleNextChapter = useCallback(() => {
     if (polaroidRef.current?.interceptForward()) { marcarPista('ilustracion'); return }
+    if (interceptarConcurso?.(() => capituloRef.current?.())) return
     const next = chapterIndex + 1
     if (next >= capitulos.length) {
       if (guestMode) { anotarMuestra(book?.libro_id, next); setShowPaywall(true) }
@@ -318,7 +331,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     persistRef.current(next)
     setGoToLastPage(false)
     setChapterIndex(next); setPageIndex(0)
-  }, [chapterIndex, capitulos, guestMode, book?.libro_id, marcarPista, setChapterIndex, setGoToLastPage, setPageIndex, setShowPaywall])
+  }, [chapterIndex, capitulos, guestMode, book?.libro_id, marcarPista, setChapterIndex, setGoToLastPage, setPageIndex, setShowPaywall, interceptarConcurso])
+  paginaRef.current = handleNextPage
+  capituloRef.current = handleNextChapter
 
 
   // ── Teclado: flechas para paginar, espacio para SFX ─────────
@@ -697,6 +712,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* Corazonada abierta (tarjeta sobre la mesa) */}
       {corazonadas.panel}
+
+      {/* El concurso: luces apagadas y foco sobre la frase */}
+      {concurso.panel}
 
       {/* Onboarding (paso 'manual'): recuerda que las instrucciones están en el libro */}
       {tutorialManual && !manualHintVisto && (
