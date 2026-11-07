@@ -38,6 +38,8 @@ import MobileBookPage from './lector/MobileBookPage.jsx'
 import { useCapaMovil } from '../comunidades/capa/CapaMovil.jsx'
 import { useCorazonadasLector } from '../lector/Corazonada.jsx'
 import { useConcursoLector } from '../lector/Concurso.jsx'
+import { useMapaTesoroLector } from '../lector/MapaTesoro.jsx'
+import { motivoNoMapa } from '../../utils/mapaTesoro.js'
 import { conCorazonadas, sinCorazonadas } from '../../utils/corazonadas.js'
 import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, FotoAsomada, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
 import '../../styles/lector.mobile.css'
@@ -152,7 +154,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const pageAnchorRef = useRef(null)
 
   const setSheet   = (v) => { setSheetRaw(v); setCatOpen(false) }
-  const openNotebook = () => { setNotebookOpen(true); setCatOpen(false) }
+  // El mapa vive en el Cuaderno: si la página brilla al abrirlo, se abre en «Tesoros».
+  const [tipoCuaderno, setTipoCuaderno] = useState(null)
+  const openNotebook = () => { setTipoCuaderno(mapa.brilla ? 'tes' : null); setNotebookOpen(true); setCatOpen(false) }
 
   const esNoficcion = book?.es_ficcion === false
   const xrayItems = useXrayItems(sheet === 'xray', book?.libro_id, currentChapter?.numero ?? chapterIndex + 1, esNoficcion ? 'glosario' : 'personajes')
@@ -180,6 +184,12 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     visibles: paginasConChips[pageIndex] || [], clavePagina: `${chapterIndex}:${pageIndex}`,
     movil: true, deshabilitado: guestMode || onboarding.active,
+  })
+  // El mapa del tesoro: lista del capítulo, página que brilla y subrayar al mapa (MapaTesoro.jsx).
+  const mapa = useMapaTesoroLector({
+    libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
+    visibles: paginasConChips[pageIndex] || [], parrafos: currentChapData?.parrafos,
+    gatoColor, movil: true, deshabilitado: guestMode || onboarding.active,
   })
 
   // ── Geometría de página (medida del DOM) ──
@@ -432,8 +442,10 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         if (!bookBox?.contains(sel.anchorNode)) return
         const text = sel.toString().trim()
         const parrafoId = sel.anchorNode?.parentElement?.closest('[data-parrafo-id]')?.dataset?.parrafoId || null
+        // Dónde termina: el mapa del tesoro solo acepta subrayados de un párrafo.
+        const parrafoFinId = sel.focusNode?.parentElement?.closest('[data-parrafo-id]')?.dataset?.parrafoId || parrafoId
         window.getSelection()?.removeAllRanges()
-        setPendingConfirm({ text, parrafoId })
+        setPendingConfirm({ text, parrafoId, parrafoFinId })
       }, 1500) // 1.5s: tiempo para arrastrar los handles de Chrome; al capturar, limpia la selección para restaurar la navegación
     }
     document.addEventListener('selectionchange', onSelChange)
@@ -467,6 +479,16 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       setGuardandoSub(false); setModoSubrayado(false); setSegmentos([]); setPendingConfirm(null)
       window.getSelection()?.removeAllRanges()
     }
+  }
+
+  // Mandar el subrayado al mapa del tesoro, en vez de guardarlo en el Cuaderno.
+  const segmentosMapa = pendingConfirm
+    ? [...segmentos, pendingConfirm].flatMap(s => [{ text: s.text, parrafoId: s.parrafoId }, { text: '', parrafoId: s.parrafoFinId ?? s.parrafoId }])
+    : []
+  async function mandarAlMapa() {
+    const todos = [...segmentos, pendingConfirm]
+    descartarSubrayado()
+    await mapa.enviar({ parrafoId: todos[0].parrafoId, texto: todos.map(s => s.text).join(' ') })
   }
 
   // Capa de comunidad (comentarios por párrafo y mensajitos). Nunca en modo
@@ -586,13 +608,14 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
                 overlay={capa.overlay}
                 renderChip={corazonadas.renderChip}
                 renderCorazon={corazonadas.renderCorazon}
+                brillo={mapa.brilla}
               />
         )}
 
         {/* Mascota (gato) + bandeja horizontal de herramientas */}
         {!loading && !error && book?.libro_id && (
           <div className="lm-cat-dock">
-            <button className="lm-cat-btn" onClick={() => { if (!catOpen) marcarPista('herramientas'); setCatOpen(o => !o) }} title="Herramientas" aria-label="Herramientas">
+            <button className={'lm-cat-btn mt-halo' + (mapa.brilla ? ' mt-brilla' : '')} onClick={() => { if (!catOpen) marcarPista('herramientas'); setCatOpen(o => !o) }} title="Herramientas" aria-label="Herramientas">
               <img className="lm-cat-img" src={`/assets/lector/gato-${gatoColor}-6.webp`} alt="Mascota de Inmersia" onLoad={measureGeom} />
             </button>
             {catOpen && (
@@ -643,6 +666,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
           onContinuar={continuarSiguientePagina}
           onGuardar={guardarSubrayado}
           guardando={guardandoSub}
+          mapa={mapa.quedan ? { motivo: motivoNoMapa(segmentosMapa), onMandar: mandarAlMapa, ocupado: mapa.ocupado } : null}
         />
       )}
 
@@ -671,7 +695,8 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         capituloNum={capitulos[chapterIndex]?.numero ?? chapterIndex + 1}
         capitulos={capitulos}
         gatoColor={gatoColor}
-       
+        tesoros={mapa.cuaderno}
+        tipoInicial={tipoCuaderno}
       />
 
       {/* Corazonada abierta (hoja de abajo) */}
@@ -680,8 +705,11 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       {/* El concurso: luces apagadas y foco sobre la frase */}
       {concurso.panel}
 
+      {/* Mapa del tesoro: la lista del capítulo y la respuesta del gato */}
+      {mapa.panel}
+
       {/* Tira de predicción (fin de capítulo) y pista de primera vez */}
-      {tira && <TiraPrediccion movil capNum={tira.capNum} onAnotar={anotarDesdeTira} onCerrar={() => setTiraCerrada(chapterIndex)} />}
+      {tira && <TiraPrediccion movil capNum={tira.capNum} onAnotar={() => { setTipoCuaderno('pred'); anotarDesdeTira() }} onCerrar={() => setTiraCerrada(chapterIndex)} />}
       {pistaLector && <Pista id={pistaLector} movil bottom={78} accion={accionPista[pistaLector]} />}
 
       {/* Paywall de invitado */}

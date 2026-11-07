@@ -19,8 +19,10 @@ const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, subray
     const text = sel.toString().trim()
     const anchorEl = sel.anchorNode?.parentElement?.closest('[data-parrafo-id]')
     const parrafoId = anchorEl?.dataset?.parrafoId || null
+    // Dónde termina: el mapa del tesoro solo acepta subrayados de un párrafo.
+    const parrafoFinId = sel.focusNode?.parentElement?.closest('[data-parrafo-id]')?.dataset?.parrafoId || null
     const rect = sel.getRangeAt(0).getBoundingClientRect()
-    onTextSelect({ text, parrafoId, rect })
+    onTextSelect({ text, parrafoId, parrafoFinId, rect })
   }
 
   return (
@@ -273,7 +275,7 @@ export const BookReader = memo(function BookReader({
   onFontSize, onReadingFont, readingTheme = 'light', onReadingTheme,
   pageW = 470, pageH = 560, fontSize = 18, readingFont = "'Crimson Text', Georgia, serif",
   xrayOpen = false, xrayItems = [], onToggleXray, onXrayItemClick, xrayLocked = false,
-  ambiente = null, esNoficcion = false,
+  ambiente = null, esNoficcion = false, brillo = false,
   whiteNoise = null, chapterLocked = false,
   comunidadChip = null, renderCapa = null,
   renderChip = null, renderCorazon = null,
@@ -381,7 +383,7 @@ export const BookReader = memo(function BookReader({
         </div>
       </div>
 
-      <div className="book-shadow" style={{ display: 'flex', position: 'relative', filter: 'drop-shadow(0 16px 30px rgba(70,46,20,0.4))' }}>
+      <div className={'book-shadow' + (brillo ? ' mt-brilla' : '')} style={{ display: 'flex', position: 'relative', filter: 'drop-shadow(0 16px 30px rgba(70,46,20,0.4))' }}>
         {doubleView && <div style={edge('5px 0 0 5px')} />}
         <Leaf parrafos={left} side={doubleView ? 'left' : 'single'} pageNum={pieIzq} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onPrev={onPrevPage} onNext={!doubleView ? (isLast ? onNextChapter : onNextPage) : undefined} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={pageIndex === 0} chapterTitle={chapter.titulo} chapterNum={chapter.numero ?? chapterIndex + 1} overlay={renderCapa?.(pageIndex, doubleView ? 'izq' : 'der')} renderChip={renderChip} renderCorazon={renderCorazon} pal={pal} />
         {doubleView && <div style={{ width: 20, height: pageH, background: 'linear-gradient(to right, rgba(0,0,0,0.34) 0%, rgba(90,55,20,0.12) 45%, rgba(0,0,0,0.28) 100%)', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.42)', flexShrink: 0 }} />}

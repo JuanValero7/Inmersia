@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase.js'
 import { guardar, avisar, AVISOS } from '../../lib/guardar.js'
 import { useSubrayadosLibroQuery, queryKeys, SUBRAYADOS_MAX } from '../../lib/queries.js'
 import { theme, ClayButton } from './clay.jsx'
+import { FichasTesoro, AYUDA_MAPA } from './MapaTesoro.jsx'
 
 // Tipos (arriba, horizontal)
 const TYPES = [
@@ -12,14 +13,19 @@ const TYPES = [
   { id: 'anot', label: 'Anotaciones',  col: '#2F4A6B', txt: '#223850' },
   { id: 'sub',  label: 'Subrayados',   col: '#F5A623', txt: '#9a6310' },
 ]
+// Solo en los libros con mapa del tesoro (lector/MapaTesoro.jsx).
+const TIPO_TESOROS = { id: 'tes', label: 'Tesoros', col: '#D99A1E', txt: '#7a5208' }
 
 // Cuaderno de lectura — clay. Tipos arriba en horizontal; los capítulos con
 // notas (o el que estás leyendo) son las pestañas laterales.
 // Mantiene las queries Supabase: predicciones / anotaciones / subrayados.
 const SIN_SUBRAYADOS = []
 
-const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capituloNum, capitulos = [], gatoColor = 'negro' }) {
+// `tesoros`: fichas del mapa de los capítulos ya leídos (sin las de más adelante).
+// `tipoInicial`: con qué pestaña abrir ('tes' si el libro brillaba al abrirlo).
+const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capituloNum, capitulos = [], gatoColor = 'negro', tesoros = null, tipoInicial = null }) {
   const [type, setType] = useState('pred')
+  const tipos = useMemo(() => tesoros?.length ? [...TYPES, TIPO_TESOROS] : TYPES, [tesoros])
   const [selCap, setSelCap] = useState(capituloNum)
   const [capsConNotas, setCapsConNotas] = useState([])
   // Subrayados: la misma consulta que pinta las marcas en el lector, así que
@@ -37,16 +43,17 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
   useEffect(() => {
     if (!isOpen) return
     setSelCap(capituloNum)
+    if (tipoInicial) setType(tipoInicial)
     if (userId && libroId) loadIndex()
   // Sin loadIndex a propósito: es una función nueva en cada render y meterla
   // aquí repetiría las tres consultas en bucle. Se va al pasar el cuaderno a
   // React Query (revisión de arquitectura, M1).
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, libroId, capituloNum, userId])
+  }, [isOpen, libroId, capituloNum, userId, tipoInicial])
 
-  // Pestañas: capítulos con predicción o anotación, más los que tienen subrayados.
-  const tabCaps = useMemo(() => [...new Set([...capsConNotas, ...subrayados.map(s => s.capitulo_num)])]
-    .sort((a, b) => a - b), [capsConNotas, subrayados])
+  // Pestañas: capítulos con predicción o anotación, más los que tienen subrayados o tesoros.
+  const tabCaps = useMemo(() => [...new Set([...capsConNotas, ...subrayados.map(s => s.capitulo_num), ...(tesoros ?? []).map(t => t.cap)])]
+    .sort((a, b) => a - b), [capsConNotas, subrayados, tesoros])
 
   async function loadIndex() {
     const [predList, anotList] = await Promise.all([
@@ -148,7 +155,10 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
   const nt = drafts[selCap] || { pred: '', anot: '', anotId: null }
   const subsCap = subrayados.filter(s => s.capitulo_num === selCap)
   const lined = 'repeating-linear-gradient(0deg, transparent, transparent 31px, #b9c6d6 31px, #b9c6d6 32px)'
-  const activeMeta = TYPES.find(t => t.id === type)
+  // Si quedó en «Tesoros» y este libro no tiene mapa, vuelve a la primera.
+  const activeMeta = tipos.find(t => t.id === type) ?? tipos[0]
+  const tipo = activeMeta.id
+  const tesorosCap = (tesoros ?? []).filter(t => t.cap === selCap)
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(20,12,4,0.7)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -161,21 +171,19 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
         </div>
 
         {/* tipos: arriba horizontal, SIEMPRE en una sola fila.
-            Las tres pastillas medían 112+108+104 px y no encogían: como ítems
-            flex heredan `min-width:auto`, que equivale a su min-content, y su
-            texto es una palabra sin puntos de corte. La fila pedía 375px dentro
-            de una tarjeta de 335px (93vw en un móvil de 360), así que
-            "Subrayados" quedaba cortado por el `overflow:hidden` de la tarjeta.
-            Con `flex:1 1 0` + `minWidth:0` las tres se reparten el ancho por
-            igual y encogen de verdad; la fuente y el padding acompañan con
-            clamp. Medido: entra completo desde 320px, y por debajo de eso
-            (Fold cerrado) recorta con «…» antes que salirse o partir la fila. */}
+            Con `minWidth:0` las pastillas pueden encoger (como ítems flex
+            heredan `min-width:auto` = su texto, y la fila se salía de la
+            tarjeta). Con la 4.ª pastilla («Tesoros», libros con mapa del
+            tesoro) el reparto por igual (`flex:1 1 0`) cortaba con «…» las
+            tres primeras en todo móvil; repartir según el texto
+            (`flex:1 1 auto`) con letra y relleno algo menores las deja
+            enteras desde 320px. Medido con Baloo 2 real (8 nov). */}
         <div style={{ display: 'flex', gap: 'clamp(5px, 1.6vw, 8px)', padding: '12px clamp(10px, 4vw, 18px) 10px', flexShrink: 0, minWidth: 0, borderBottom: '1px solid rgba(74,54,34,0.12)' }}>
-          {TYPES.map(t => {
-            const active = type === t.id
+          {tipos.map(t => {
+            const active = tipo === t.id
             return (
               <button key={t.id} onClick={() => setType(t.id)} title={t.label}
-                style={{ flex: '1 1 0', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: "'Baloo 2', sans-serif", fontWeight: active ? 800 : 600, fontSize: 'clamp(11px, 3.1vw, 13px)', cursor: 'pointer', padding: '7px clamp(6px, 2.4vw, 16px)', borderRadius: 999, border: `2px solid ${active ? theme.ink : 'transparent'}`, background: active ? t.col : `${t.col}44`, color: active ? '#fff' : t.txt, boxShadow: active ? `1.4px 1.8px 0 ${theme.ink}33` : 'none', textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none' }}>
+                style={{ flex: '1 1 auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: "'Baloo 2', sans-serif", fontWeight: active ? 800 : 600, fontSize: 'clamp(10px, 2.9vw, 13px)', cursor: 'pointer', padding: '7px clamp(3px, 1.4vw, 16px)', borderRadius: 999, border: `2px solid ${active ? theme.ink : 'transparent'}`, background: active ? t.col : `${t.col}44`, color: active ? '#fff' : t.txt, boxShadow: active ? `1.4px 1.8px 0 ${theme.ink}33` : 'none', textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none' }}>
                 {t.label}
               </button>
             )
@@ -185,7 +193,14 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
         {/* body: contenido + solapas de capítulo */}
         <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-            {type === 'sub' ? (
+            {tipo === 'tes' ? (
+              <div className="cz-panel" style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', alignContent: 'start' }}>
+                {tesorosCap.length === 0
+                  ? <p style={{ fontFamily: "'Baloo 2',sans-serif", fontStyle: 'italic', fontSize: 13, color: 'rgba(74,54,34,0.5)' }}>Este capítulo no tiene tesoros.</p>
+                  : <FichasTesoro fichas={tesorosCap} />}
+                <p className="cz-nota">{AYUDA_MAPA}</p>
+              </div>
+            ) : tipo === 'sub' ? (
               <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
                 {subTruncated && (
                   <p style={{ fontFamily: "'Baloo 2',sans-serif", fontSize: 12, color: 'rgba(160,100,40,0.8)', background: 'rgba(224,178,86,0.15)', borderRadius: 8, padding: '8px 12px', marginBottom: 12 }}>
@@ -204,12 +219,12 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
             ) : (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '14px 24px 12px', minHeight: 0 }}>
                 <p style={{ fontFamily: "'Baloo 2',sans-serif", fontSize: 13, color: 'rgba(74,54,34,0.6)', marginBottom: 10, fontWeight: 600 }}>
-                  {type === 'pred' ? '¿Qué crees que pasará en el próximo capítulo?' : 'Tus notas sobre este capítulo.'}
+                  {tipo === 'pred' ? '¿Qué crees que pasará en el próximo capítulo?' : 'Tus notas sobre este capítulo.'}
                 </p>
                 <textarea
-                  value={type === 'pred' ? nt.pred : nt.anot}
-                  onChange={e => editDraft(selCap, type === 'pred' ? 'pred' : 'anot', e.target.value)}
-                  placeholder={type === 'pred' ? 'Escribe tus predicciones…' : 'Escribe tus anotaciones…'}
+                  value={tipo === 'pred' ? nt.pred : nt.anot}
+                  onChange={e => editDraft(selCap, tipo === 'pred' ? 'pred' : 'anot', e.target.value)}
+                  placeholder={tipo === 'pred' ? 'Escribe tus predicciones…' : 'Escribe tus anotaciones…'}
                   maxLength={2000}
                   style={{ flex: 1, border: 'none', outline: 'none', resize: 'none', background: lined, fontFamily: "'Poppins', system-ui, sans-serif", fontSize: 14, lineHeight: '32px', color: '#2a1f12' }} />
               </div>

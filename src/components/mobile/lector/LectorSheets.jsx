@@ -346,7 +346,8 @@ export function ResenaSheet({ form, setForm, enviando, miResena, onSubmit, onClo
   )
 }
 
-export function ConfirmSubrayadoSheet({ segmentos, pendingConfirm, onDescartar, onContinuar, onGuardar, guardando }) {
+// `mapa`: { motivo, onMandar, ocupado } si al capítulo le quedan tesoros (ver lector/MapaTesoro.jsx).
+export function ConfirmSubrayadoSheet({ segmentos, pendingConfirm, onDescartar, onContinuar, onGuardar, guardando, mapa = null }) {
   const textoAcumulado = segmentos.map(s => s.text).join(' ')
   return (
     <div className="lm-backdrop" onClick={onDescartar}>
@@ -368,6 +369,13 @@ export function ConfirmSubrayadoSheet({ segmentos, pendingConfirm, onDescartar, 
             <p className="lm-csub-text">{pendingConfirm.text}</p>
           </div>
         </div>
+        {mapa && (
+          <div className="lm-csub-mapa">
+            {mapa.motivo
+              ? <span>{mapa.motivo === 'varios_parrafos' ? 'Para el mapa del tesoro, subraya dentro de un solo párrafo.' : 'Para el mapa del tesoro, subraya al menos tres palabras.'}</span>
+              : <button type="button" className="lm-csub-btn lm-csub-btn--mapa" onClick={mapa.onMandar} disabled={mapa.ocupado}>Mapa del tesoro</button>}
+          </div>
+        )}
         <div className="lm-csub-actions">
           <button className="lm-csub-btn lm-csub-btn--discard" onClick={onDescartar}>Descartar</button>
           <button className="lm-csub-btn lm-csub-btn--continue" onClick={onContinuar}>+ Sig. página</button>

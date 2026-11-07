@@ -54,6 +54,8 @@ export const queryKeys = {
   corazonadas: (libroId, userId) => ['corazonadas', libroId, userId],
   // El concurso del lector (ver src/hooks/useConcurso.js)
   concurso: (libroId, userId) => ['concurso', libroId, userId],
+  // El mapa del tesoro del lector (ver src/hooks/useMapaTesoro.js)
+  mapaTesoro: (libroId, userId) => ['mapaTesoro', libroId, userId],
   // «Anteriormente en…» de la ficha (ver useRepasoQuery)
   repaso: (userId, libroId, completados) => ['repaso', userId, libroId, completados],
   // Tienda (ver Documentation/tienda/plan-implementacion.md)

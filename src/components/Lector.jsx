@@ -23,6 +23,8 @@ import SuperuserSoundsPanel from './lector/SuperuserSoundsPanel.jsx'
 import { useCapaEscritorio } from './comunidades/capa/CapaEscritorio.jsx'
 import { useCorazonadasLector } from './lector/Corazonada.jsx'
 import { useConcursoLector } from './lector/Concurso.jsx'
+import { useMapaTesoroLector } from './lector/MapaTesoro.jsx'
+import { motivoNoMapa } from '../utils/mapaTesoro.js'
 import { conCorazonadas, sinCorazonadas } from '../utils/corazonadas.js'
 
 // Geometría de página.
@@ -168,6 +170,12 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     deshabilitado: guestMode || onboarding.active,
   })
   const interceptarConcurso = concurso.interceptar
+  // El mapa del tesoro: lista del capítulo, borde que brilla y subrayar al mapa (MapaTesoro.jsx).
+  const mapa = useMapaTesoroLector({
+    libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
+    visibles: visiblesCz, parrafos: currentChapData?.parrafos,
+    gatoColor, deshabilitado: guestMode || onboarding.active,
+  })
 
   // Pie de página: % del libro o del capítulo según Aa (null = número de página).
   // En doble página cuenta hasta el final de la de la derecha.
@@ -248,8 +256,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   // Qué tramo de ambiente suena (hooks/useAmbiente.js).
   useAmbienteEnPagina(lector, currentPaginas)
 
-  const handleTextSelect = useCallback(({ text, parrafoId, rect }) => {
-    setPendingSelection({ text, parrafoId, rect })
+  const handleTextSelect = useCallback(({ text, parrafoId, parrafoFinId, rect }) => {
+    setPendingSelection({ text, parrafoId, parrafoFinId, rect })
   }, [])
 
   async function handleSubrayar() {
@@ -258,6 +266,26 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     setPendingSelection(null)
     window.getSelection()?.removeAllRanges()
   }
+
+  // Mandar el subrayado al mapa del tesoro, en vez de guardarlo en el Cuaderno.
+  async function handleMapa() {
+    if (!pendingSelection) return
+    const { text, parrafoId } = pendingSelection
+    setPendingSelection(null)
+    window.getSelection()?.removeAllRanges()
+    await mapa.enviar({ parrafoId, texto: text })
+  }
+  // El mapa vive en el Cuaderno: si el libro brilla al abrirlo, se abre en «Tesoros».
+  const [tipoCuaderno, setTipoCuaderno] = useState(null)
+  const abrirCuaderno = () => { setTipoCuaderno(mapa.brilla ? 'tes' : null); setNotebookOpen(true) }
+  const anotarTira = () => { setTipoCuaderno('pred'); anotarDesdeTira() }
+
+  const motivoMapa = pendingSelection && mapa.quedan
+    ? motivoNoMapa([
+        { text: pendingSelection.text, parrafoId: pendingSelection.parrafoId },
+        { text: '', parrafoId: pendingSelection.parrafoFinId ?? pendingSelection.parrafoId },
+      ])
+    : null
 
   useEffect(() => {
     if (!pendingSelection) return
@@ -574,6 +602,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   renderCapa={capa.activa ? capa.renderHoja : null}
                   renderChip={corazonadas.renderChip}
                   renderCorazon={corazonadas.renderCorazon}
+                  brillo={mapa.brilla}
                 />
           )}
         </div>
@@ -589,9 +618,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       {/* BOTTOM BAR */}
       {!loading && !error && book?.libro_id && !guestMode && (
         <div style={{ position: 'relative', zIndex: 20, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: '8px 26px 18px' }}>
-          <button type="button" onClick={() => setNotebookOpen(true)}
+          <button type="button" onClick={abrirCuaderno}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-            <NotebookIcon />
+            <span className={'mt-halo' + (mapa.brilla ? ' mt-brilla' : '')}><NotebookIcon /></span>
             <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11.5, color: '#000' }}>Cuaderno</span>
           </button>
         </div>
@@ -605,7 +634,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
         capituloNum={capitulos[chapterIndex]?.numero ?? chapterIndex + 1}
         capitulos={capitulos}
         gatoColor={gatoColor}
-       
+        tesoros={mapa.cuaderno}
+        tipoInicial={tipoCuaderno}
       />
 
       {/* Reseña */}
@@ -641,11 +671,18 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
             {'"'}{pendingSelection.text.length > 45 ? pendingSelection.text.slice(0, 45) + '...' : pendingSelection.text}{'"'}
           </span>
           <ClayButton variant="primary" onClick={handleSubrayar} style={{ padding: '5px 13px', fontSize: 12 }}>Subrayar</ClayButton>
+          {mapa.quedan && (motivoMapa
+            ? <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11.5, color: theme.navText, maxWidth: 170, lineHeight: 1.2 }}>
+                {motivoMapa === 'varios_parrafos' ? 'Para el mapa, subraya dentro de un solo párrafo' : 'Para el mapa, subraya al menos tres palabras'}
+              </span>
+            : <ClayButton onClick={handleMapa} disabled={mapa.ocupado} title="Mandar al mapa del tesoro" style={{ padding: '5px 13px', fontSize: 12 }}>
+                Mapa del tesoro
+              </ClayButton>)}
         </div>
       )}
 
       {/* Tira de predicción (fin de capítulo) y pista de primera vez */}
-      {tira && <TiraPrediccion capNum={tira.capNum} onAnotar={anotarDesdeTira} onCerrar={() => setTiraCerrada(chapterIndex)} />}
+      {tira && <TiraPrediccion capNum={tira.capNum} onAnotar={anotarTira} onCerrar={() => setTiraCerrada(chapterIndex)} />}
       {pistaLector && <Pista id={pistaLector} accion={accionPista[pistaLector]} />}
 
       {/* Paywall de invitado */}
@@ -715,6 +752,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* El concurso: luces apagadas y foco sobre la frase */}
       {concurso.panel}
+
+      {/* Mapa del tesoro: la lista del capítulo y la respuesta del gato */}
+      {mapa.panel}
 
       {/* Onboarding (paso 'manual'): recuerda que las instrucciones están en el libro */}
       {tutorialManual && !manualHintVisto && (

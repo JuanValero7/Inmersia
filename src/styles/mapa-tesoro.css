@@ -1,0 +1,58 @@
+/* El mapa del tesoro en el lector (escritorio y móvil). Ver src/components/lector/MapaTesoro.jsx.
+   Usa las piezas de la corazonada (cz-panel, cz-tarjeta, cz-btn…) y sus colores. */
+:root {
+  --mt-oro: #d99a1e;
+  --mt-oro-bg: #fff6df;
+  --mt-oro-ink: #7a5208;
+}
+
+/* Lista y respuesta */
+.mt-kicker { color: var(--mt-oro); }
+.mt-cuenta { margin: 0; font-size: 13.5px; font-weight: 800; color: var(--cz-ink-soft); }
+.mt-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.mt-ficha { display: flex; gap: 9px; align-items: flex-start; border: 2px solid var(--cz-ink); background: var(--cz-paper); border-radius: 12px;
+  padding: 7px 10px; box-shadow: var(--cz-sombra-s); }
+.mt-ficha.is-encontrado { background: var(--mt-oro-bg); border-color: var(--mt-oro); }
+.mt-n { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--cz-ink); background: var(--cz-cream);
+  display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
+.mt-ficha.is-encontrado .mt-n { background: var(--mt-oro); border-color: var(--mt-oro); color: #fff; }
+.mt-tag { display: inline-block; font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 0 7px;
+  border: 1.5px solid currentColor; }
+.mt-tag.is-vista { color: #2f6f8f; }
+.mt-tag.is-escondido { color: #8a4fa3; }
+.mt-q { margin: 2px 0 0; font-size: 14.5px; font-weight: 700; line-height: 1.25; }
+.mt-estado { margin: 2px 0 0; font-size: 12.5px; font-weight: 700; color: var(--cz-ink-soft); }
+.mt-cita { margin: 4px 0 0; font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 14.5px; line-height: 1.3; color: #3a2a18; }
+.mt-porque { margin: 4px 0 0; font-size: 13px; font-weight: 600; line-height: 1.3; color: var(--mt-oro-ink); }
+.mt-hallado { background: var(--mt-oro-bg); border: 2px solid var(--mt-oro); border-radius: 12px; padding: 7px 10px; }
+.mt-delta.is-gana { background: var(--mt-oro-bg); border-color: var(--mt-oro); color: var(--mt-oro-ink); }
+.mt-tarjeta { max-height: calc(100vh - 24px); }
+
+/* El borde del libro brilla: hay un tesoro cerca (la luz LED que se quitó del menú Aa).
+   La sombra dorada va fija en una capa aparte y solo late su opacidad: así lo mueve la
+   tarjeta gráfica sin repintar el libro. Animar la sombra en sí costaba ~30 % de CPU
+   mientras brillaba (medido el 7 nov, CPU ×4); así, ~1 %. */
+.book-shadow.mt-brilla::after, .lm-page.mt-brilla::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 8;
+  opacity: 0.45; animation: mt-latido 2.8s ease-in-out infinite; will-change: opacity;
+}
+.book-shadow.mt-brilla::after { box-shadow: 0 0 14px 2px rgba(240,176,48,0.6), 0 0 36px 6px rgba(240,176,48,0.3); }
+/* La página del móvil recorta lo que sale de ella (overflow: hidden): el brillo va por dentro del borde. */
+.lm-page.mt-brilla::after { box-shadow: inset 0 0 0 2px rgba(240,176,48,0.55), inset 0 0 22px 4px rgba(240,176,48,0.45); }
+@keyframes mt-latido { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+
+/* La entrada al Cuaderno (escritorio) y el gato (móvil) brillan con el libro: un halo
+   detrás, también con solo la opacidad animada. */
+.mt-halo { position: relative; display: inline-block; }
+.mt-halo.mt-brilla::before { content: ''; position: absolute; inset: -16px; border-radius: 50%; pointer-events: none; z-index: -1;
+  background: radial-gradient(closest-side, rgba(240,176,48,0.6), rgba(240,176,48,0)); opacity: 0.4;
+  animation: mt-latido 2.8s ease-in-out infinite; will-change: opacity; }
+
+@media (prefers-reduced-motion: reduce) {
+  .book-shadow.mt-brilla::after, .lm-page.mt-brilla::after { animation: none; opacity: 1; }
+  .mt-halo.mt-brilla::before { animation: none; opacity: 1; }
+}
+
+/* Móvil: la opción del mapa en la hoja de subrayado (LectorSheets.jsx → ConfirmSubrayadoSheet) */
+.lm-csub-mapa { display: flex; padding: 10px 20px 0; font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 13px; color: var(--cz-ink-soft); }
+.lm-csub-btn--mapa { background: var(--mt-oro-bg); color: var(--mt-oro-ink); border-color: var(--mt-oro); }

@@ -111,7 +111,7 @@ ALTER TABLE public.concurso_llamadas ENABLE ROW LEVEL SECURITY;
 --             contexto: {parrafo, cita}, referencia,
 --             rubrica: {ideas_clave[], casi, errores[], no_hace_falta[]},
 --             cincuenta: {opciones[2], correcta}}]
---   parrafo = parrafos.numero dentro del libro.
+--   parrafo = parrafos.numero dentro del capítulo (cada capítulo empieza en 1).
 
 -- Las frases que le tocan a un alumno: 1 o 2 por capítulo, siempre las mismas.
 -- Las que ya tienen fila se quedan aunque el contenido cambie de versión.

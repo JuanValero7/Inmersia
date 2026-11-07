@@ -5,11 +5,11 @@ const LINE = 1.72  // alto de línea (coincide con .lm-para en el CSS)
 
 export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaByParrafo, subrayados = [], isFirst, pageNum, fontSize, font,
                     atStart, nextIsChapter, onPrev, onNext, hideArrows, onPlaySfx, overlay = null,
-                    renderChip = null, renderCorazon = null }) {
+                    renderChip = null, renderCorazon = null, brillo = false }) {
   const lineH = Math.round(fontSize * LINE)
 
   return (
-    <div className="lm-page" data-screen-label={`Lector cap ${chapter?.numero ?? chapterIndex + 1}`}>
+    <div className={'lm-page' + (brillo ? ' mt-brilla' : '')} data-screen-label={`Lector cap ${chapter?.numero ?? chapterIndex + 1}`}>
       <div className="lm-page-lines" style={{ backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent ${lineH-1}px, rgba(150,110,60,0.05) ${lineH-1}px, rgba(150,110,60,0.05) ${lineH}px)` }} />
       <div className="lm-page-inner" data-lm-pagebox translate="no" style={{ fontSize, lineHeight: LINE }} onContextMenu={(e) => e.preventDefault()}>
         {isFirst && (
