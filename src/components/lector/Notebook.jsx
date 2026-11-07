@@ -14,6 +14,7 @@ const TYPES = [
   { id: 'sub',  label: 'Subrayados',   col: '#F5A623', txt: '#9a6310' },
 ]
 // Solo en los libros con mapa del tesoro (lector/MapaTesoro.jsx).
+// eslint-disable-next-line no-restricted-syntax -- hex a propósito: el tono claro se arma con `${col}44`, que no funciona con var(--…)
 const TIPO_TESOROS = { id: 'tes', label: 'Tesoros', col: '#D99A1E', txt: '#7a5208' }
 
 // Cuaderno de lectura — clay. Tipos arriba en horizontal; los capítulos con
