@@ -50,6 +50,8 @@ export const queryKeys = {
   investigacionReciente: (libroId, completados) => ['investigacionReciente', libroId, completados],
   // Mesa de investigación, el método Anderson (ver src/hooks/useMesaInvestigacion.js)
   mesaInvestigacion: (libroId, userId) => ['mesaInvestigacion', libroId, userId],
+  // Corazonadas del lector (ver src/hooks/useCorazonadas.js)
+  corazonadas: (libroId, userId) => ['corazonadas', libroId, userId],
   // «Anteriormente en…» de la ficha (ver useRepasoQuery)
   repaso: (userId, libroId, completados) => ['repaso', userId, libroId, completados],
   // Tienda (ver Documentation/tienda/plan-implementacion.md)

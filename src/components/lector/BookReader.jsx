@@ -6,10 +6,12 @@ import { READING_FONTS, MODOS_PROGRESO } from './readerConstants.js'
 import { marcasDelParrafo } from '../../utils/readerHelpers.js'
 import { RecorderPlayer } from './RecorderPlayer.jsx'
 import WhiteNoisePlayer from './WhiteNoisePlayer.jsx'
+import { CHIP_ALTO } from '../../utils/corazonadas.js'
 import '../../styles/lector.css'
 
 // ── Contenido de una página (datos reales) ──────────────────
-const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, subrayados = [], onPlaySfx, onTextSelect, fontSize, readingFont, isFirst, chapterTitle, chapterNum, pal = getReaderPalette('light') }) {
+// `renderChip` / `renderCorazon`: corazonadas (components/lector/Corazonada.jsx).
+const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, subrayados = [], onPlaySfx, onTextSelect, fontSize, readingFont, isFirst, chapterTitle, chapterNum, renderChip = null, renderCorazon = null, pal = getReaderPalette('light') }) {
   function handleMouseUp() {
     if (!onTextSelect) return
     const sel = window.getSelection()
@@ -34,6 +36,10 @@ const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, subray
         const sfx = (mediaByParrafo[p.id] || []).filter(m => m.origen === 'explicito' && m.tipo === 'audio')
         if (p.tipo === 'separador')
           return <div key={p.id ?? `sep-${pIdx}`} style={{ textAlign: 'center', color: pal.pageMeta, margin: '20px 0', letterSpacing: '0.4em' }}>❧</div>
+        // El chip ocupa siempre su alto: el paginador ya lo contó.
+        if (p.tipo === 'corazonada')
+          return renderChip ? renderChip(p) : <div key={p.id} style={{ height: CHIP_ALTO }} />
+        const corazon = renderCorazon?.(p.numero) ?? null
         const isDlg = p.tipo === 'dialogo'
         const text = p.contenido || ''
         const { segmentos, sfxSinAnclar, anclados } = marcasDelParrafo(text, sfx, subrayados)
@@ -43,7 +49,7 @@ const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, subray
           <p key={p.id ?? `p-${pIdx}`} data-parrafo-id={p.id}
             onClick={paraGlow ? handleParaClick : undefined}
             className={paraGlow ? 'sfx-glow' : undefined}
-            style={{ whiteSpace: 'pre-line', margin: '0 0 0.7em', textAlign: 'justify', hyphens: 'auto', textIndent: isDlg ? 0 : '1.2em', fontStyle: isDlg ? 'italic' : 'normal', color: pal.pageInk }}>
+            style={{ whiteSpace: 'pre-line', margin: '0 0 0.7em', textAlign: 'justify', hyphens: 'auto', textIndent: isDlg ? 0 : '1.2em', fontStyle: isDlg ? 'italic' : 'normal', color: pal.pageInk, position: corazon ? 'relative' : undefined }}>
             {segmentos
               ? segmentos.map(seg => (
                 <span key={seg.start}
@@ -53,6 +59,7 @@ const PageContent = memo(function PageContent({ parrafos, mediaByParrafo, subray
                 </span>
               ))
               : text}
+            {corazon}
           </p>
         )
       })}
@@ -239,7 +246,7 @@ function SideTurn({ side, onClick, kind, pal = getReaderPalette('light') }) {
 
 // `overlay`: capa superpuesta a la hoja (la de la comunidad). Va encima de
 // las zonas de pasar página, pero fuera del flujo del texto.
-const Leaf = memo(function Leaf({ parrafos, side, pageNum, fontSize, readingFont, pageW, pageH, mediaByParrafo, subrayados, onPlaySfx, onTextSelect, onPrev, onNext, nextKind, chapterTitle, chapterNum, isFirst, empty, overlay = null, pal = getReaderPalette('light') }) {
+const Leaf = memo(function Leaf({ parrafos, side, pageNum, fontSize, readingFont, pageW, pageH, mediaByParrafo, subrayados, onPlaySfx, onTextSelect, onPrev, onNext, nextKind, chapterTitle, chapterNum, isFirst, empty, overlay = null, renderChip = null, renderCorazon = null, pal = getReaderPalette('light') }) {
   const radius = side === 'left' ? '5px 2px 2px 5px' : side === 'right' ? '2px 5px 5px 2px' : '5px'
   const innerShadow = side === 'left' ? 'inset -16px 0 26px -14px rgba(60,35,12,0.38)' : side === 'right' ? 'inset 16px 0 26px -14px rgba(60,35,12,0.30)' : 'none'
   const pad = Math.round(pageW * 0.11)
@@ -249,7 +256,7 @@ const Leaf = memo(function Leaf({ parrafos, side, pageNum, fontSize, readingFont
       <div style={{ position: 'absolute', inset: 0, padding: `${Math.round(pageH*0.075)}px ${pad}px ${Math.round(pageH*0.085)}px`, overflow: 'hidden' }}>
         {empty
           ? <div style={{ color: pal.pageMeta, fontFamily: "'Playfair Display', serif", fontSize: 14, textAlign: 'center', marginTop: pageH/2 - 80 }}>— fin del capítulo —</div>
-          : <PageContent parrafos={parrafos} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} fontSize={fontSize} readingFont={readingFont} isFirst={isFirst} chapterTitle={chapterTitle} chapterNum={chapterNum} pal={pal} />}
+          : <PageContent parrafos={parrafos} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} fontSize={fontSize} readingFont={readingFont} isFirst={isFirst} chapterTitle={chapterTitle} chapterNum={chapterNum} renderChip={renderChip} renderCorazon={renderCorazon} pal={pal} />}
       </div>
       {pageNum && <div style={{ position: 'absolute', bottom: 20, [side === 'right' ? 'right' : 'left']: pad, fontSize: 11, color: pal.pageMeta, fontFamily: "'Playfair Display', serif" }}>{pageNum}</div>}
       {(side === 'left' || side === 'single') && onPrev && <SideTurn side="left" onClick={onPrev} kind="prev" pal={pal} />}
@@ -269,6 +276,7 @@ export const BookReader = memo(function BookReader({
   ambiente = null, esNoficcion = false,
   whiteNoise = null, chapterLocked = false,
   comunidadChip = null, renderCapa = null,
+  renderChip = null, renderCorazon = null,
   modoProgreso = 'pagina', onModoProgreso = null, etiquetaProgreso = null,
 }) {
   const [soundOpen, setSoundOpen] = useState(false)
@@ -375,10 +383,10 @@ export const BookReader = memo(function BookReader({
 
       <div className="book-shadow" style={{ display: 'flex', position: 'relative', filter: 'drop-shadow(0 16px 30px rgba(70,46,20,0.4))' }}>
         {doubleView && <div style={edge('5px 0 0 5px')} />}
-        <Leaf parrafos={left} side={doubleView ? 'left' : 'single'} pageNum={pieIzq} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onPrev={onPrevPage} onNext={!doubleView ? (isLast ? onNextChapter : onNextPage) : undefined} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={pageIndex === 0} chapterTitle={chapter.titulo} chapterNum={chapter.numero ?? chapterIndex + 1} overlay={renderCapa?.(pageIndex, doubleView ? 'izq' : 'der')} pal={pal} />
+        <Leaf parrafos={left} side={doubleView ? 'left' : 'single'} pageNum={pieIzq} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onPrev={onPrevPage} onNext={!doubleView ? (isLast ? onNextChapter : onNextPage) : undefined} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={pageIndex === 0} chapterTitle={chapter.titulo} chapterNum={chapter.numero ?? chapterIndex + 1} overlay={renderCapa?.(pageIndex, doubleView ? 'izq' : 'der')} renderChip={renderChip} renderCorazon={renderCorazon} pal={pal} />
         {doubleView && <div style={{ width: 20, height: pageH, background: 'linear-gradient(to right, rgba(0,0,0,0.34) 0%, rgba(90,55,20,0.12) 45%, rgba(0,0,0,0.28) 100%)', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.42)', flexShrink: 0 }} />}
         {doubleView && (
-          <Leaf parrafos={right} side="right" pageNum={pieDer} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onNext={isLast ? onNextChapter : onNextPage} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={false} empty={!showRight} overlay={showRight ? renderCapa?.(pageIndex + 1, 'der') : null} pal={pal} />
+          <Leaf parrafos={right} side="right" pageNum={pieDer} fontSize={fontSize} readingFont={readingFont} pageW={pageW} pageH={pageH} mediaByParrafo={mediaByParrafo} subrayados={subrayados} onPlaySfx={onPlaySfx} onTextSelect={onTextSelect} onNext={isLast ? onNextChapter : onNextPage} nextKind={isLast ? 'next-chapter' : 'next'} isFirst={false} empty={!showRight} overlay={showRight ? renderCapa?.(pageIndex + 1, 'der') : null} renderChip={renderChip} renderCorazon={renderCorazon} pal={pal} />
         )}
         <div style={edge('0 5px 5px 0')} />
       </div>

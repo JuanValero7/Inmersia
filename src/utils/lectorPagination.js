@@ -1,6 +1,7 @@
 // Plain JavaScript (.js)
 // Paginación por altura en píxeles, medida directamente desde el DOM real
 // (offsetHeight) — ver paginarParrafosDesktopDOM más abajo.
+import { CHIP_ALTO } from './corazonadas.js'
 
 const MIN_SPLIT_LINES = 2      // mínimo de líneas en cada mitad al dividir un párrafo
 
@@ -69,6 +70,9 @@ export function paginarParrafosDesktopDOM(parrafos, opts = {}) {
         if (p.tipo === 'separador') {
           pEl.style.cssText = `margin:0 0 0.7em;text-align:center;letter-spacing:0.4em;`
           pEl.textContent   = '❧'
+        } else if (p.tipo === 'corazonada') {
+          // Chip de corazonada (utils/corazonadas.js): bloque de alto fijo.
+          pEl.style.cssText = `margin:0;height:${CHIP_ALTO}px;`
         } else {
           pEl.style.cssText =
             `margin:0 0 0.7em;white-space:pre-line;text-align:justify;hyphens:auto;` +
@@ -85,7 +89,7 @@ export function paginarParrafosDesktopDOM(parrafos, opts = {}) {
 
         // No cabe entero — intentar dividir por palabra
         const huecoUtil = (maxH - baseH) >= MIN_SPLIT_LINES * lineH
-        if (p.tipo === 'separador' || (pageItems.length > 0 && !huecoUtil)) {
+        if (p.tipo === 'separador' || p.tipo === 'corazonada' || (pageItems.length > 0 && !huecoUtil)) {
           pageEl.removeChild(pEl)
           break
         }

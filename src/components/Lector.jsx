@@ -21,6 +21,8 @@ import { Notebook }        from './lector/Notebook.jsx'
 import { theme, ClayButton, getReaderPalette } from './lector/clay.jsx'
 import SuperuserSoundsPanel from './lector/SuperuserSoundsPanel.jsx'
 import { useCapaEscritorio } from './comunidades/capa/CapaEscritorio.jsx'
+import { useCorazonadasLector } from './lector/Corazonada.jsx'
+import { conCorazonadas, sinCorazonadas } from '../utils/corazonadas.js'
 
 // Geometría de página.
 // <PolaroidStack> mide 160 de ancho y se mete 110 por encima del canto del
@@ -142,7 +144,22 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     window.addEventListener('resize', onResize)
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize) }
   }, [doubleView])
-  const [currentPaginas, setCurrentPaginas] = useState([[]])
+  // Las páginas tal como se pintan (con los chips de corazonada entre párrafos)
+  // y sin ellos, que es lo que usa todo lo demás (posición, comunidad, % leído…).
+  // Las dos tienen el mismo número de páginas: ver utils/corazonadas.js.
+  const [paginasConChips, setPaginasConChips] = useState([[]])
+  const currentPaginas = useMemo(() => sinCorazonadas(paginasConChips), [paginasConChips])
+
+  // Corazonadas: el chip ocupa sitio, así que se pagina cuando ya se sabe dónde va.
+  const visiblesCz = useMemo(() => [
+    ...(paginasConChips[pageIndex] || []),
+    ...(doubleView ? (paginasConChips[pageIndex + 1] || []) : []),
+  ], [paginasConChips, pageIndex, doubleView])
+  const corazonadas = useCorazonadasLector({
+    libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
+    visibles: visiblesCz, clavePagina: `${chapterIndex}:${pageIndex}`,
+    gatoColor, deshabilitada: guestMode || onboarding.active,
+  })
 
   // Pie de página: % del libro o del capítulo según Aa (null = número de página).
   // En doble página cuenta hasta el final de la de la derecha.
@@ -156,8 +173,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   // binaria). Reemplaza el sistema previo de measuredHeights + estimación, que
   // dejaba espacios en blanco al sobreestimar alturas de párrafos fragmentados.
   useEffect(() => {
-    const parrafos = currentChapData?.parrafos
-    if (!parrafos?.length || !currentChapter) { setCurrentPaginas([[]]); return }
+    if (!corazonadas.listo) return
+    const parrafos = conCorazonadas(currentChapData?.parrafos, corazonadas.chips)
+    if (!parrafos?.length || !currentChapter) { setPaginasConChips([[]]); return }
     let cancelled = false
     ;(async () => {
       // Esperar solo las caras que la paginación mide (lectura normal/itálica y
@@ -177,10 +195,10 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
         readingFont,
         chapterHead: { numero: currentChapter.numero ?? chapterIndex + 1, titulo: currentChapter.titulo },
       })
-      if (!cancelled) setCurrentPaginas(pages)
+      if (!cancelled) setPaginasConChips(pages)
     })()
     return () => { cancelled = true }
-  }, [currentChapData?.parrafos, currentChapter, chapterIndex, fontSize, readingFont, geom.pageW, geom.pageH])
+  }, [currentChapData?.parrafos, currentChapter, chapterIndex, fontSize, readingFont, geom.pageW, geom.pageH, corazonadas.listo, corazonadas.chips])
 
   // Restaurar posición de lectura guardada una vez que currentPaginas está lista.
   // El ancla es { parrafoId, offset }: el primer párrafo visible de la página
@@ -505,7 +523,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   chapter={currentChapter}
                   chapters={capitulos}
                   chapterIndex={chapterIndex}
-                  paginas={currentPaginas}
+                  paginas={paginasConChips}
                   pageIndex={pageIndex}
                   doubleView={doubleView}
                   mediaByParrafo={currentMedia}
@@ -539,6 +557,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   whiteNoise={whiteNoise}
                   comunidadChip={capa.chip}
                   renderCapa={capa.activa ? capa.renderHoja : null}
+                  renderChip={corazonadas.renderChip}
+                  renderCorazon={corazonadas.renderCorazon}
                 />
           )}
         </div>
@@ -674,6 +694,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* Capa de comunidad: hilo, mensajito o formulario abierto */}
       {capa.flotante}
+
+      {/* Corazonada abierta (tarjeta sobre la mesa) */}
+      {corazonadas.panel}
 
       {/* Onboarding (paso 'manual'): recuerda que las instrucciones están en el libro */}
       {tutorialManual && !manualHintVisto && (

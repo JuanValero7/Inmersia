@@ -1,9 +1,11 @@
 import { marcasDelParrafo } from '../../../utils/readerHelpers.js'
+import { CHIP_ALTO } from '../../../utils/corazonadas.js'
 
 const LINE = 1.72  // alto de línea (coincide con .lm-para en el CSS)
 
 export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaByParrafo, subrayados = [], isFirst, pageNum, fontSize, font,
-                    atStart, nextIsChapter, onPrev, onNext, hideArrows, onPlaySfx, overlay = null }) {
+                    atStart, nextIsChapter, onPrev, onNext, hideArrows, onPlaySfx, overlay = null,
+                    renderChip = null, renderCorazon = null }) {
   const lineH = Math.round(fontSize * LINE)
 
   return (
@@ -20,6 +22,9 @@ export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaB
         {parrafos.length === 0 && <div className="lm-page-msg">— fin del capítulo —</div>}
         {parrafos.map((p, i) => {
           if (p.tipo === 'separador') return <div key={p.id ?? `s${i}`} className="lm-sep">❧</div>
+          // Corazonadas (components/lector/Corazonada.jsx). El chip ocupa siempre su alto: el paginador ya lo contó.
+          if (p.tipo === 'corazonada') return renderChip ? renderChip(p) : <div key={p.id} style={{ height: CHIP_ALTO }} />
+          const corazon = renderCorazon?.(p.numero) ?? null
           const sfx = (mediaByParrafo[p.id] || []).filter(m => m.origen === 'explicito' && m.tipo === 'audio')
           const text = p.contenido || ''
           const { segmentos, sfxSinAnclar, anclados } = marcasDelParrafo(text, sfx, subrayados)
@@ -29,7 +34,7 @@ export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaB
             <p key={p.id ?? `p${i}`} data-parrafo-id={p.id}
               onClick={paraGlow ? handleParaClick : undefined}
               className={'lm-para' + (p.tipo==='dialogo'?' dlg':'') + (paraGlow ? ' sfx-glow' : '')}
-              style={{ fontFamily: font }}>
+              style={{ fontFamily: font, position: corazon ? 'relative' : undefined }}>
               {segmentos
                 ? segmentos.map(seg => (
                   <span key={seg.start}
@@ -39,6 +44,7 @@ export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaB
                   </span>
                 ))
                 : text}
+              {corazon}
             </p>
           )
         })}

@@ -36,6 +36,8 @@ import { INK, ACCENT } from '../lector/clay.jsx'
 import SuperuserSoundsPanel from '../lector/SuperuserSoundsPanel.jsx'
 import MobileBookPage from './lector/MobileBookPage.jsx'
 import { useCapaMovil } from '../comunidades/capa/CapaMovil.jsx'
+import { useCorazonadasLector } from '../lector/Corazonada.jsx'
+import { conCorazonadas, sinCorazonadas } from '../../utils/corazonadas.js'
 import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, FotoAsomada, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
 import '../../styles/lector.mobile.css'
 
@@ -160,8 +162,18 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   // página NUNCA desborda. `paginas` es estado (no memo) porque la cómputa un
   // efecto que toca el DOM. `paginadoChap` = id del capítulo ya paginado: la
   // restauración de progreso espera a que la paginación de ESTE capítulo exista.
-  const [paginas,      setPaginas]      = useState([[]])
+  // `paginasConChips` = como se pintan (con los chips de corazonada entre
+  // párrafos); `paginas` = sin ellos, que es lo que usa todo lo demás. Mismo
+  // número de páginas: ver utils/corazonadas.js.
+  const [paginasConChips, setPaginas] = useState([[]])
+  const paginas = useMemo(() => sinCorazonadas(paginasConChips), [paginasConChips])
   const [paginadoChap, setPaginadoChap] = useState(null)
+
+  const corazonadas = useCorazonadasLector({
+    libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
+    visibles: paginasConChips[pageIndex] || [], clavePagina: `${chapterIndex}:${pageIndex}`,
+    gatoColor, movil: true, deshabilitada: guestMode || onboarding.active,
+  })
 
   // ── Geometría de página (medida del DOM) ──
   const [geom, setGeom] = useState({ lineHeight: Math.round(19*LINE), maxH: 480, titleH: 90 })
@@ -241,7 +253,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const measuredReady = paginadoChap === currentChapter?.id
 
   useEffect(() => {
-    const parrafos = currentChapData?.parrafos
+    // Corazonadas: el chip ocupa sitio, así que se pagina cuando ya se sabe dónde va.
+    if (!corazonadas.listo) return
+    const parrafos = conCorazonadas(currentChapData?.parrafos, corazonadas.chips)
     if (!parrafos?.length || !currentChapter) { setPaginas([[]]); setPaginadoChap(null); return }
     const box = screenRef.current?.querySelector('[data-lm-pagebox]')
     if (!box) return
@@ -279,7 +293,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       paginar()
     })()
     return () => { cancelled = true }
-  }, [currentChapData?.parrafos, currentChapter, fontSize, readingFont, geom.maxH, geom.lineHeight])
+  }, [currentChapData?.parrafos, currentChapter, fontSize, readingFont, geom.maxH, geom.lineHeight, corazonadas.listo, corazonadas.chips])
 
   // restaurar página exacta al volver.
   // Espera a que la paginación DEFINITIVA (medida) esté lista: con la paginación
@@ -369,7 +383,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         const cs  = box ? window.getComputedStyle(box) : null
         const padX = cs ? parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) : 60
         const contentW = box ? Math.max(120, box.clientWidth - padX) : 320
-        const prevPages = paginarParrafosMobileDOM(prevEntry.parrafos, {
+        const prevPages = paginarParrafosMobileDOM(conCorazonadas(prevEntry.parrafos, corazonadas.chipsDe(prevCap?.numero)), {
           contentW, maxH: geom.maxH, fontSize, readingFont, lineHeightRatio: LINE, lineHeight: geom.lineHeight,
           chapterHead: { kicker: `Capítulo ${prevCap?.numero ?? ''}`, titulo: prevCap?.titulo || '' },
         })
@@ -467,7 +481,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     ...(capa.herramienta ? [capa.herramienta] : []),
   ]
 
-  const page = paginas[pageIndex] || []
+  const page = paginasConChips[pageIndex] || []
 
   // Pista de primera vez del lector: una sola a la vez, y nunca encima de otra
   // capa (hojas, Cuaderno, muro, reseña) ni a la vez que la tira de predicción.
@@ -562,6 +576,8 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
                 hideArrows={modoSubrayado}
                 onPlaySfx={tocarSfx}
                 overlay={capa.overlay}
+                renderChip={corazonadas.renderChip}
+                renderCorazon={corazonadas.renderCorazon}
               />
         )}
 
@@ -649,6 +665,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         gatoColor={gatoColor}
        
       />
+
+      {/* Corazonada abierta (hoja de abajo) */}
+      {corazonadas.panel}
 
       {/* Tira de predicción (fin de capítulo) y pista de primera vez */}
       {tira && <TiraPrediccion movil capNum={tira.capNum} onAnotar={anotarDesdeTira} onCerrar={() => setTiraCerrada(chapterIndex)} />}

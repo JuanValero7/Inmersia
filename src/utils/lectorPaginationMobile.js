@@ -20,6 +20,8 @@
 // la hoja y lo re-ejecuta en `document.fonts.ready`.
 // ─────────────────────────────────────────────────────────────────────
 
+import { CHIP_ALTO } from './corazonadas.js'
+
 const SAFETY_PX = 2        // colchón mínimo anti-redondeo sub-pixel
 const MIN_SPLIT_LINES = 2  // hueco mínimo (en líneas) para que valga la pena partir
                            // un párrafo y rellenar la página en curso
@@ -30,6 +32,9 @@ function crearParrafoEl(p) {
   const el = document.createElement('p')
   if (p.tipo === 'separador') {
     el.style.cssText = `margin:0 0 0.85em;text-align:center;letter-spacing:0.4em;line-height:1.4`
+  } else if (p.tipo === 'corazonada') {
+    // Chip de corazonada (utils/corazonadas.js): bloque de alto fijo.
+    el.style.cssText = `margin:0;height:${CHIP_ALTO}px`
   } else {
     el.style.cssText =
       `margin:0 0 0.85em;white-space:pre-line;text-align:justify;hyphens:auto;` +
@@ -99,7 +104,7 @@ export function paginarParrafosMobileDOM(parrafos, opts = {}) {
         const p     = queue[qi]
         const baseH = pageEl.offsetHeight   // alto de la página SIN este párrafo
         const pEl   = crearParrafoEl(p)
-        pEl.textContent = p.tipo === 'separador' ? '❧' : (p.contenido || '')
+        pEl.textContent = p.tipo === 'separador' ? '❧' : p.tipo === 'corazonada' ? '' : (p.contenido || '')
         pageEl.appendChild(pEl)
 
         if (pageEl.offsetHeight <= budget) {
@@ -114,7 +119,7 @@ export function paginarParrafosMobileDOM(parrafos, opts = {}) {
         // página siguiente. En cualquier otro caso lo PARTIMOS para aprovechar
         // el espacio (incl. una página corta seguida de un párrafo largo).
         const huecoUtil = (budget - baseH) >= MIN_SPLIT_LINES * lineH
-        if (p.tipo === 'separador' || (pageItems.length > 0 && !huecoUtil)) {
+        if (p.tipo === 'separador' || p.tipo === 'corazonada' || (pageItems.length > 0 && !huecoUtil)) {
           pageEl.removeChild(pEl)
           break
         }
