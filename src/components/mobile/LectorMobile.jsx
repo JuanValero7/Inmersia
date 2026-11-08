@@ -38,6 +38,8 @@ import MobileBookPage from './lector/MobileBookPage.jsx'
 import { useCapaMovil } from '../comunidades/capa/CapaMovil.jsx'
 import { useCorazonadasLector } from '../lector/Corazonada.jsx'
 import { useConcursoLector } from '../lector/Concurso.jsx'
+import { useDesafioLector } from '../lector/Desafio.jsx'
+import { useJuegosLibro } from '../../hooks/useJuegos.js'
 import { useMapaTesoroLector } from '../lector/MapaTesoro.jsx'
 import { motivoNoMapa } from '../../utils/mapaTesoro.js'
 import { conCorazonadas, sinCorazonadas } from '../../utils/corazonadas.js'
@@ -174,22 +176,31 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const paginas = useMemo(() => sinCorazonadas(paginasConChips), [paginasConChips])
   const [paginadoChap, setPaginadoChap] = useState(null)
 
+  // Qué juegos salen en este libro: los del Perfil, o los del profe si es un
+  // libro de su aula (hooks/useJuegos.js, migración 093).
+  const juegosLibro = useJuegosLibro(book?.libro_id, userId)
+  const jg = juegosLibro.juegos
   const corazonadas = useCorazonadasLector({
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     visibles: paginasConChips[pageIndex] || [], clavePagina: `${chapterIndex}:${pageIndex}`,
-    gatoColor, movil: true, deshabilitada: guestMode || onboarding.active,
+    gatoColor, movil: true, deshabilitada: guestMode || onboarding.active || !jg.corazonadas,
   })
   // El concurso: el foco salta al intentar pasar la página de la frase (Concurso.jsx).
   const concurso = useConcursoLector({
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     visibles: paginasConChips[pageIndex] || [], clavePagina: `${chapterIndex}:${pageIndex}`,
-    movil: true, deshabilitado: guestMode || onboarding.active,
+    movil: true, deshabilitado: guestMode || onboarding.active || !jg.concurso,
+  })
+  // El desafío del gato: salta al pasar de la última página del capítulo de la mitad y del libro (Desafio.jsx).
+  const desafio = useDesafioLector({
+    libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
+    gatoColor, movil: true, deshabilitado: guestMode || onboarding.active || !jg.desafio,
   })
   // El mapa del tesoro: lista del capítulo, página que brilla y subrayar al mapa (MapaTesoro.jsx).
   const mapa = useMapaTesoroLector({
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     visibles: paginasConChips[pageIndex] || [], parrafos: currentChapData?.parrafos,
-    gatoColor, movil: true, deshabilitado: guestMode || onboarding.active,
+    gatoColor, movil: true, deshabilitado: guestMode || onboarding.active || !jg.mapa,
   })
 
   // ── Geometría de página (medida del DOM) ──
@@ -271,7 +282,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
   useEffect(() => {
     // Corazonadas: el chip ocupa sitio, así que se pagina cuando ya se sabe dónde va.
-    if (!corazonadas.listo) return
+    if (!corazonadas.listo || !juegosLibro.listo) return
     const parrafos = conCorazonadas(currentChapData?.parrafos, corazonadas.chips)
     if (!parrafos?.length || !currentChapter) { setPaginas([[]]); setPaginadoChap(null); return }
     const box = screenRef.current?.querySelector('[data-lm-pagebox]')
@@ -310,7 +321,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       paginar()
     })()
     return () => { cancelled = true }
-  }, [currentChapData?.parrafos, currentChapter, fontSize, readingFont, geom.maxH, geom.lineHeight, corazonadas.listo, corazonadas.chips])
+  }, [currentChapData?.parrafos, currentChapter, fontSize, readingFont, geom.maxH, geom.lineHeight, corazonadas.listo, juegosLibro.listo, corazonadas.chips])
 
   // restaurar página exacta al volver.
   // Espera a que la paginación DEFINITIVA (medida) esté lista: con la paginación
@@ -415,6 +426,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     setCatOpen(false)
     if (concurso.interceptar?.(handleNext)) return
     if (pageIndex < total - 1) { setPageIndex(p => p + 1); return }
+    if (desafio.interceptar?.(handleNext)) return
     // fin del capítulo → se avanza sin abrir el Cuaderno: la predicción se
     // ofreció ANTES, con la tira de la última página (ver `tira` más abajo)
     if (chapterIndex < capitulos.length - 1) {
@@ -602,7 +614,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
                 fontSize={fontSize} font={readingFont}
                 atStart={atStart} nextIsChapter={atChapterEnd && !atEndOfBook}
                 onPrev={handlePrev}
-                onNext={atEndOfBook && !guestMode ? undefined : handleNext}
+                onNext={atEndOfBook && !guestMode && !desafio.hayPendiente ? undefined : handleNext}
                 hideArrows={modoSubrayado}
                 onPlaySfx={tocarSfx}
                 overlay={capa.overlay}
@@ -696,11 +708,15 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         capitulos={capitulos}
         gatoColor={gatoColor}
         tesoros={mapa.cuaderno}
+        desafio={desafio.cuaderno}
         tipoInicial={tipoCuaderno}
       />
 
       {/* Corazonada abierta (hoja de abajo) */}
       {corazonadas.panel}
+
+      {/* El desafío del gato: la charla a mitad del libro y al final */}
+      {desafio.panel}
 
       {/* El concurso: luces apagadas y foco sobre la frase */}
       {concurso.panel}

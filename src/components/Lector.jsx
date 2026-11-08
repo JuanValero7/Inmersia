@@ -24,6 +24,8 @@ import { useCapaEscritorio } from './comunidades/capa/CapaEscritorio.jsx'
 import { useCorazonadasLector } from './lector/Corazonada.jsx'
 import { useConcursoLector } from './lector/Concurso.jsx'
 import { useMapaTesoroLector } from './lector/MapaTesoro.jsx'
+import { useDesafioLector } from './lector/Desafio.jsx'
+import { useJuegosLibro } from '../hooks/useJuegos.js'
 import { motivoNoMapa } from '../utils/mapaTesoro.js'
 import { conCorazonadas, sinCorazonadas } from '../utils/corazonadas.js'
 
@@ -158,23 +160,33 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     ...(paginasConChips[pageIndex] || []),
     ...(doubleView ? (paginasConChips[pageIndex + 1] || []) : []),
   ], [paginasConChips, pageIndex, doubleView])
+  // Qué juegos salen en este libro: los del Perfil, o los del profe si es un
+  // libro de su aula (hooks/useJuegos.js, migración 093).
+  const juegosLibro = useJuegosLibro(book?.libro_id, userId)
+  const jg = juegosLibro.juegos
   const corazonadas = useCorazonadasLector({
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     visibles: visiblesCz, clavePagina: `${chapterIndex}:${pageIndex}`,
-    gatoColor, deshabilitada: guestMode || onboarding.active,
+    gatoColor, deshabilitada: guestMode || onboarding.active || !jg.corazonadas,
   })
   // El concurso: el foco salta al intentar pasar la página de la frase (Concurso.jsx).
   const concurso = useConcursoLector({
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     visibles: visiblesCz, clavePagina: `${chapterIndex}:${pageIndex}`,
-    deshabilitado: guestMode || onboarding.active,
+    deshabilitado: guestMode || onboarding.active || !jg.concurso,
   })
   const interceptarConcurso = concurso.interceptar
+  // El desafío del gato: salta al pasar del final del capítulo de la mitad y del libro (Desafio.jsx).
+  const desafio = useDesafioLector({
+    libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
+    gatoColor, deshabilitado: guestMode || onboarding.active || !jg.desafio,
+  })
+  const interceptarDesafio = desafio.interceptar
   // El mapa del tesoro: lista del capítulo, borde que brilla y subrayar al mapa (MapaTesoro.jsx).
   const mapa = useMapaTesoroLector({
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     visibles: visiblesCz, parrafos: currentChapData?.parrafos,
-    gatoColor, deshabilitado: guestMode || onboarding.active,
+    gatoColor, deshabilitado: guestMode || onboarding.active || !jg.mapa,
   })
 
   // Pie de página: % del libro o del capítulo según Aa (null = número de página).
@@ -189,7 +201,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   // binaria). Reemplaza el sistema previo de measuredHeights + estimación, que
   // dejaba espacios en blanco al sobreestimar alturas de párrafos fragmentados.
   useEffect(() => {
-    if (!corazonadas.listo) return
+    if (!corazonadas.listo || !juegosLibro.listo) return
     const parrafos = conCorazonadas(currentChapData?.parrafos, corazonadas.chips)
     if (!parrafos?.length || !currentChapter) { setPaginasConChips([[]]); return }
     let cancelled = false
@@ -214,7 +226,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       if (!cancelled) setPaginasConChips(pages)
     })()
     return () => { cancelled = true }
-  }, [currentChapData?.parrafos, currentChapter, chapterIndex, fontSize, readingFont, geom.pageW, geom.pageH, corazonadas.listo, corazonadas.chips])
+  }, [currentChapData?.parrafos, currentChapter, chapterIndex, fontSize, readingFont, geom.pageW, geom.pageH, corazonadas.listo, juegosLibro.listo, corazonadas.chips])
 
   // Restaurar posición de lectura guardada una vez que currentPaginas está lista.
   // El ancla es { parrafoId, offset }: el primer párrafo visible de la página
@@ -350,6 +362,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const handleNextChapter = useCallback(() => {
     if (polaroidRef.current?.interceptForward()) { marcarPista('ilustracion'); return }
     if (interceptarConcurso?.(() => capituloRef.current?.())) return
+    if (interceptarDesafio?.(() => capituloRef.current?.())) return
     const next = chapterIndex + 1
     if (next >= capitulos.length) {
       if (guestMode) { anotarMuestra(book?.libro_id, next); setShowPaywall(true) }
@@ -359,7 +372,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     persistRef.current(next)
     setGoToLastPage(false)
     setChapterIndex(next); setPageIndex(0)
-  }, [chapterIndex, capitulos, guestMode, book?.libro_id, marcarPista, setChapterIndex, setGoToLastPage, setPageIndex, setShowPaywall, interceptarConcurso])
+  }, [chapterIndex, capitulos, guestMode, book?.libro_id, marcarPista, setChapterIndex, setGoToLastPage, setPageIndex, setShowPaywall, interceptarConcurso, interceptarDesafio])
   paginaRef.current = handleNextPage
   capituloRef.current = handleNextChapter
 
@@ -635,6 +648,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
         capitulos={capitulos}
         gatoColor={gatoColor}
         tesoros={mapa.cuaderno}
+        desafio={desafio.cuaderno}
         tipoInicial={tipoCuaderno}
       />
 
@@ -755,6 +769,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* Mapa del tesoro: la lista del capítulo y la respuesta del gato */}
       {mapa.panel}
+
+      {/* El desafío del gato: la charla a mitad del libro y al final */}
+      {desafio.panel}
 
       {/* Onboarding (paso 'manual'): recuerda que las instrucciones están en el libro */}
       {tutorialManual && !manualHintVisto && (

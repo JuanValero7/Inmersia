@@ -24,6 +24,7 @@ import { useOnboarding } from '../context/onboarding.jsx'
 import LegalModal from './legal/LegalModal.jsx'
 import SecDenuncias from './comunidades/SecDenuncias.jsx'
 import { useDenunciasQuery } from '../hooks/useDenuncias.js'
+import { useMisJuegos, JUEGOS } from '../hooks/useJuegos.js'
 import { tint } from './lector/clay.jsx'
 import '../styles/perfil.css'
 
@@ -91,7 +92,34 @@ const GATOS = [
 ]
 
 // ════════════════════ Sección: Datos ════════════════════════
-export function SecDatos({ nombre, apellido, email, miembroDesde, cargando, onSave, gatoColor, onChangeGatoColor }) {
+// Los interruptores de los juegos de lectura (migración 093). Fuera del aula
+// manda esto; en los libros de su aula, lo que elija el profe.
+function JuegosLectura({ userId }) {
+  const { juegos, enAula, error, cambiar, fallo } = useMisJuegos(userId)
+  if (!userId || error) return null
+  return (
+    <div className="pf-field-row">
+      <label className="pf-field-label">Juegos de lectura</label>
+      <div className="pf-juegos">
+        {JUEGOS.map(j => {
+          const encendido = !!juegos?.[j.id]
+          return (
+            <div key={j.id} className="pf-juego">
+              <div className="pf-juego-txt"><b>{j.nombre}</b><span>{j.texto}</span></div>
+              <button type="button" role="switch" aria-checked={encendido} aria-label={j.nombre}
+                className={clsx('pf-switch', encendido && 'is-on')} disabled={!juegos}
+                onClick={() => cambiar(j.id, !encendido)}><span /></button>
+            </div>
+          )
+        })}
+      </div>
+      {fallo && <div className="pf-err" style={{ marginTop: 8 }}>No se pudo guardar. Prueba otra vez.</div>}
+      {enAula && <div className="pf-lock-note">En los libros de tu aula, los juegos los elige tu profe.</div>}
+    </div>
+  )
+}
+
+export function SecDatos({ nombre, apellido, email, miembroDesde, cargando, onSave, gatoColor, onChangeGatoColor, userId = null }) {
   const [editing, setEditing] = useState(false)
   const [dN, setDN] = useState(nombre)
   const [dA, setDA] = useState(apellido)
@@ -178,6 +206,7 @@ export function SecDatos({ nombre, apellido, email, miembroDesde, cargando, onSa
           </div>
         </div>
       )}
+      <JuegosLectura userId={userId} />
       {fb && <div className={fb.t === 'ok' ? 'pf-ok' : 'pf-err'} style={{ marginTop: 14 }}>{fb.m}</div>}
     </div>
   )
@@ -463,7 +492,7 @@ export default function Perfil({ user, isSuperuser = false, gatoColor, onChangeG
               <SecDatos
                 nombre={nombre} apellido={apellido} email={email}
                 miembroDesde={miembroDesde} cargando={cargando} onSave={guardarDatos}
-                gatoColor={gatoColor} onChangeGatoColor={onChangeGatoColor}/>
+                gatoColor={gatoColor} onChangeGatoColor={onChangeGatoColor} userId={user?.id ?? null}/>
             )}
             {sec === 'seguridad' && <SecSeguridad/>}
             {sec === 'transac' && <SecTransac/>}

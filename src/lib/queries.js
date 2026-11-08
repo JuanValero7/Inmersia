@@ -56,6 +56,12 @@ export const queryKeys = {
   concurso: (libroId, userId) => ['concurso', libroId, userId],
   // El mapa del tesoro del lector (ver src/hooks/useMapaTesoro.js)
   mapaTesoro: (libroId, userId) => ['mapaTesoro', libroId, userId],
+  // El desafío del gato (ver src/hooks/useDesafio.js)
+  desafio: (libroId, userId) => ['desafio', libroId, userId],
+  // Juegos encendidos o apagados (ver src/hooks/useJuegos.js). Mismo prefijo
+  // para que cambiar un interruptor refresque todos los libros.
+  juegosLibro: (libroId, userId) => ['juegos', 'libro', libroId, userId],
+  misJuegos: (userId) => ['juegos', 'mios', userId],
   // «Anteriormente en…» de la ficha (ver useRepasoQuery)
   repaso: (userId, libroId, completados) => ['repaso', userId, libroId, completados],
   // Tienda (ver Documentation/tienda/plan-implementacion.md)

@@ -10,6 +10,7 @@ import { useBookBySlug } from '../hooks/useBookBySlug.js'
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
 import { useCartelera } from '../hooks/useCartelera.js'
 import { useMesaInvestigacion, resumenMesa } from '../hooks/useMesaInvestigacion.js'
+import { useJuegosLibro } from '../hooks/useJuegos.js'
 import { getSecciones, carpetaMesa } from './cartelera/carteleraHelpers.js'
 import MesaInvestigacion from './mesa/MesaInvestigacion.jsx'
 import ExplorarPopup from './cartelera/ExplorarPopup.jsx'
@@ -54,7 +55,10 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
   const data = useCartelera(book?.libro_id || null, user?.id || null, isSuperuser)
   // La carpeta del centro es la mesa de investigación. Misma query que usa la
   // mesa: React Query la comparte, así que abrirla no vuelve a pedir nada.
-  const mesa = useMesaInvestigacion(book?.libro_id || null, user?.id || null)
+  // Apagada en el Perfil (o por el profe, en su aula): carpeta de relleno y sin pedir nada.
+  const juegosLibro = useJuegosLibro(book?.libro_id || null, user?.id || null)
+  const conMesa = juegosLibro.juegos.mesa
+  const mesa = useMesaInvestigacion(conMesa ? (book?.libro_id || null) : null, user?.id || null)
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
   const [view, setView] = useState(() => {
@@ -63,6 +67,11 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
     return s && VALID_SECCIONES.includes(s) ? { kind: 'ficha', key: s } : { kind: 'landing', key: null }
   })
   const [fichaInitItemId, setFichaInitItemId] = useState(null)
+
+  // Con la mesa apagada, el enlace ?seccion=mesa vuelve al tablero.
+  useEffect(() => {
+    if (view.kind === 'mesa' && juegosLibro.listo && !conMesa) setView({ kind: 'landing', key: null })
+  }, [view.kind, juegosLibro.listo, conMesa])
 
   // El `state` se repasa a propósito: setSearchParams reemplaza la entrada del
   // historial y DESCARTA el state si no se le pasa. Ahí viajan el "de dónde
@@ -137,8 +146,8 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
     </div>
   )
 
-  const centro = carpetaMesa(resumenMesa(mesa.estado), mesa.cargando,
-    mesa.tieneMesa ? () => setView({ kind: 'mesa', key: 'mesa' }) : null)
+  const centro = carpetaMesa(resumenMesa(mesa.estado), mesa.cargando || !juegosLibro.listo,
+    mesa.tieneMesa ? () => setView({ kind: 'mesa', key: 'mesa' }) : null, conMesa ? null : juegosLibro.fuente)
 
   let content
   if (view.kind === 'landing') {

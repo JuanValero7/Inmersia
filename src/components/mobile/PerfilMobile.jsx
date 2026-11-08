@@ -98,7 +98,7 @@ export default function PerfilMobile({ user, isSuperuser = false, gatoColor, onC
             <SecDatos
               nombre={nombre} apellido={apellido} email={email}
               miembroDesde={miembroDesde} cargando={cargando} onSave={guardarDatos}
-              gatoColor={gatoColor} onChangeGatoColor={onChangeGatoColor} />
+              gatoColor={gatoColor} onChangeGatoColor={onChangeGatoColor} userId={user?.id ?? null} />
           )}
           {sec === 'seguridad' && <SecSeguridad />}
           {sec === 'transac'   && <SecTransac />}

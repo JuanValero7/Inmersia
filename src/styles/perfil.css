@@ -111,6 +111,22 @@
 .pf-field-locked .pf-field-val{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pf-lock-note{ font-size:12.5px; font-weight:600; color:var(--muted); margin-top:5px;
   display:flex; align-items:center; gap:7px; }
+
+/* Juegos de lectura: un interruptor por juego (Perfil → Datos, migración 093) */
+.pf-juegos{ display:grid; gap:10px; margin-top:6px; }
+.pf-juego{ display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.pf-juego-txt{ min-width:0; display:grid; gap:1px; }
+.pf-juego-txt b{ font-size:15.5px; font-weight:700; color:var(--ink); }
+.pf-juego-txt span{ font-family:'Poppins', system-ui, sans-serif; font-size:12.5px; font-weight:500; color:var(--muted); line-height:1.35; }
+.pf-switch{ flex-shrink:0; position:relative; width:48px; height:28px; border-radius:999px; border:2px solid var(--ink);
+  background:#e8dccb; cursor:pointer; padding:0; transition:background .15s; }
+.pf-switch span{ position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff;
+  border:2px solid var(--ink); box-sizing:border-box; transition:transform .15s; }
+.pf-switch.is-on{ background:var(--accent); }
+.pf-switch.is-on span{ transform:translateX(20px); }
+.pf-switch:disabled{ opacity:.5; cursor:wait; }
+.pf-switch:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+@media (prefers-reduced-motion: reduce){ .pf-switch, .pf-switch span{ transition:none; } }
 .pf-input{ width:100%; background:var(--cream); border:2px solid var(--ink); border-radius:12px;
   padding:11px 14px; font-size:15.5px; color:var(--ink); font-family:inherit; font-weight:600; outline:none;
   transition:box-shadow .15s; }

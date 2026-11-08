@@ -6,6 +6,7 @@ import { guardar, avisar, AVISOS } from '../../lib/guardar.js'
 import { useSubrayadosLibroQuery, queryKeys, SUBRAYADOS_MAX } from '../../lib/queries.js'
 import { theme, ClayButton } from './clay.jsx'
 import { FichasTesoro, AYUDA_MAPA } from './MapaTesoro.jsx'
+import { ChatDesafio } from './Desafio.jsx'
 
 // Tipos (arriba, horizontal)
 const TYPES = [
@@ -16,6 +17,9 @@ const TYPES = [
 // Solo en los libros con mapa del tesoro (lector/MapaTesoro.jsx).
 // eslint-disable-next-line no-restricted-syntax -- hex a propósito: el tono claro se arma con `${col}44`, que no funciona con var(--…)
 const TIPO_TESOROS = { id: 'tes', label: 'Tesoros', col: '#D99A1E', txt: '#7a5208' }
+// Solo si ya empezó alguna charla del desafío del gato (lector/Desafio.jsx).
+// eslint-disable-next-line no-restricted-syntax -- hex a propósito, como TIPO_TESOROS
+const TIPO_DESAFIOS = { id: 'des', label: 'Desafíos', col: '#3E7A52', txt: '#24533a' }
 
 // Cuaderno de lectura — clay. Tipos arriba en horizontal; los capítulos con
 // notas (o el que estás leyendo) son las pestañas laterales.
@@ -23,10 +27,17 @@ const TIPO_TESOROS = { id: 'tes', label: 'Tesoros', col: '#D99A1E', txt: '#7a520
 const SIN_SUBRAYADOS = []
 
 // `tesoros`: fichas del mapa de los capítulos ya leídos (sin las de más adelante).
+// `desafio`: las charlas del desafío ya empezadas, para releerlas o seguirlas
+// (useDesafioLector().cuaderno). No dependen del capítulo.
 // `tipoInicial`: con qué pestaña abrir ('tes' si el libro brillaba al abrirlo).
-const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capituloNum, capitulos = [], gatoColor = 'negro', tesoros = null, tipoInicial = null }) {
+const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capituloNum, capitulos = [], gatoColor = 'negro', tesoros = null, desafio = null, tipoInicial = null }) {
   const [type, setType] = useState('pred')
-  const tipos = useMemo(() => tesoros?.length ? [...TYPES, TIPO_TESOROS] : TYPES, [tesoros])
+  const tipos = useMemo(() => [
+    ...TYPES,
+    ...(tesoros?.length ? [TIPO_TESOROS] : []),
+    ...(desafio ? [TIPO_DESAFIOS] : []),
+  ], [tesoros, desafio])
+  const deslizar = tipos.length > 4
   const [selCap, setSelCap] = useState(capituloNum)
   const [capsConNotas, setCapsConNotas] = useState([])
   // Subrayados: la misma consulta que pinta las marcas en el lector, así que
@@ -178,13 +189,16 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
             tesoro) el reparto por igual (`flex:1 1 0`) cortaba con «…» las
             tres primeras en todo móvil; repartir según el texto
             (`flex:1 1 auto`) con letra y relleno algo menores las deja
-            enteras desde 320px. Medido con Baloo 2 real (8 nov). */}
-        <div style={{ display: 'flex', gap: 'clamp(5px, 1.6vw, 8px)', padding: '12px clamp(10px, 4vw, 18px) 10px', flexShrink: 0, minWidth: 0, borderBottom: '1px solid rgba(74,54,34,0.12)' }}>
+            enteras desde 320px. Medido con Baloo 2 real (8 nov).
+            Con la 5.ª («Desafíos») ya no caben en ningún móvil (se cortaban
+            todas, medido de 320 a 430px): la fila se desliza de lado y cada
+            pastilla queda entera. */}
+        <div style={{ display: 'flex', gap: 'clamp(5px, 1.6vw, 8px)', padding: '12px clamp(10px, 4vw, 18px) 10px', flexShrink: 0, minWidth: 0, borderBottom: '1px solid rgba(74,54,34,0.12)', overflowX: deslizar ? 'auto' : undefined, scrollbarWidth: deslizar ? 'thin' : undefined }}>
           {tipos.map(t => {
             const active = tipo === t.id
             return (
               <button key={t.id} onClick={() => setType(t.id)} title={t.label}
-                style={{ flex: '1 1 auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: "'Baloo 2', sans-serif", fontWeight: active ? 800 : 600, fontSize: 'clamp(10px, 2.9vw, 13px)', cursor: 'pointer', padding: '7px clamp(3px, 1.4vw, 16px)', borderRadius: 999, border: `2px solid ${active ? theme.ink : 'transparent'}`, background: active ? t.col : `${t.col}44`, color: active ? '#fff' : t.txt, boxShadow: active ? `1.4px 1.8px 0 ${theme.ink}33` : 'none', textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none' }}>
+                style={{ flex: deslizar ? '0 0 auto' : '1 1 auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: "'Baloo 2', sans-serif", fontWeight: active ? 800 : 600, fontSize: 'clamp(10px, 2.9vw, 13px)', cursor: 'pointer', padding: '7px clamp(3px, 1.4vw, 16px)', borderRadius: 999, border: `2px solid ${active ? theme.ink : 'transparent'}`, background: active ? t.col : `${t.col}44`, color: active ? '#fff' : t.txt, boxShadow: active ? `1.4px 1.8px 0 ${theme.ink}33` : 'none', textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none' }}>
                 {t.label}
               </button>
             )
@@ -194,7 +208,14 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
         {/* body: contenido + solapas de capítulo */}
         <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-            {tipo === 'tes' ? (
+            {tipo === 'des' ? (
+              <div className="df-cuaderno">
+                {desafio.momentos.map(m => (
+                  <ChatDesafio key={m.momento} m={m} conProfe={desafio.conProfe} gatoColor={desafio.gatoColor} enCuaderno
+                    ocupado={desafio.ocupado} onEnviar={(t) => desafio.enviar(m.momento, t)} />
+                ))}
+              </div>
+            ) : tipo === 'tes' ? (
               <div className="cz-panel" style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', alignContent: 'start' }}>
                 {tesorosCap.length === 0
                   ? <p style={{ fontFamily: "'Baloo 2',sans-serif", fontStyle: 'italic', fontSize: 13, color: 'rgba(74,54,34,0.5)' }}>Este capítulo no tiene tesoros.</p>

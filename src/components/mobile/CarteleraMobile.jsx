@@ -17,6 +17,7 @@ import { useBookBySlug } from '../../hooks/useBookBySlug.js'
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
 import { useCartelera } from '../../hooks/useCartelera.js'
 import { useMesaInvestigacion, resumenMesa } from '../../hooks/useMesaInvestigacion.js'
+import { useJuegosLibro } from '../../hooks/useJuegos.js'
 import { SECCIONES, getSecciones, carpetaMesa } from '../cartelera/carteleraHelpers.js'
 import MesaInvestigacion from '../mesa/MesaInvestigacion.jsx'
 import CarteleraLandingMobile from './CarteleraLandingMobile.jsx'
@@ -265,7 +266,10 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
   const secciones  = getSecciones(esNoficcion)
   const data = useCartelera(book?.libro_id || null, user?.id || null, isSuperuser)
   // La carpeta del centro es la mesa de investigación (misma query que la mesa).
-  const mesa = useMesaInvestigacion(book?.libro_id || null, user?.id || null)
+  // Apagada en el Perfil (o por el profe, en su aula): carpeta de relleno y sin pedir nada.
+  const juegosLibro = useJuegosLibro(book?.libro_id || null, user?.id || null)
+  const conMesa = juegosLibro.juegos.mesa
+  const mesa = useMesaInvestigacion(conMesa ? (book?.libro_id || null) : null, user?.id || null)
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
   // Lazy init: jumpToItemId tiene prioridad; si no, lee ?seccion= de la URL.
@@ -276,6 +280,11 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
     return s && VALID_SECCIONES.includes(s) ? { kind: 'board', key: s } : { kind: 'landing', key: null }
   })
   const [explore, setExplore] = useState(false)
+
+  // Con la mesa apagada, el enlace ?seccion=mesa vuelve al tablero.
+  useEffect(() => {
+    if (view.kind === 'mesa' && juegosLibro.listo && !conMesa) setView({ kind: 'landing', key: null })
+  }, [view.kind, juegosLibro.listo, conMesa])
 
   // El `state` se repasa a propósito: setSearchParams reemplaza la entrada del
   // historial y DESCARTA el state si no se le pasa. Ahí viajan el "de dónde
@@ -347,8 +356,8 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
     : { onClose: () => setExplore(false), onGoLectura, onGoForo, onGoBiblioteca }
   const backProp = tutorialInvestigacion ? null : onGoBack
   const dataWithBook = { ...data, book }
-  const centro = carpetaMesa(resumenMesa(mesa.estado), mesa.cargando,
-    mesa.tieneMesa ? () => setView({ kind: 'mesa', key: 'mesa' }) : null)
+  const centro = carpetaMesa(resumenMesa(mesa.estado), mesa.cargando || !juegosLibro.listo,
+    mesa.tieneMesa ? () => setView({ kind: 'mesa', key: 'mesa' }) : null, conMesa ? null : juegosLibro.fuente)
 
   return (
     <div className="cart-root cm-root">

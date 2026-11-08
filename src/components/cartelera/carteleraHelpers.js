@@ -73,8 +73,10 @@ export function deltaDesc(prev, curr) {
 // Textos de la carpeta del centro del tablero (la mesa de investigación).
 // `resumen` sale de resumenMesa() (hooks/useMesaInvestigacion.js); sin él, el
 // libro no tiene mesa y la carpeta queda de relleno, sin clic.
-export function carpetaMesa(resumen, cargando, onAbrir) {
+// `apagada`: 'perfil' o 'aula' si el juego está apagado (hooks/useJuegos.js).
+export function carpetaMesa(resumen, cargando, onAbrir, apagada = null) {
   if (cargando) return { cuenta: '', abrir: '', sello: null, onAbrir: null }
+  if (apagada) return { cuenta: apagada === 'aula' ? 'Tu profe la apagó' : 'Apagada en tu perfil', abrir: '', sello: null, onAbrir: null }
   if (!resumen) return { cuenta: 'Pronto en este libro', abrir: '', sello: null, onAbrir: null }
   const { hechas, total, porDescubrir, sello, hayPersonajes } = resumen
   return {

@@ -1,0 +1,71 @@
+/* El desafío del gato (escritorio, móvil y Cuaderno). Ver src/components/lector/Desafio.jsx
+   y las maquetas Documents/Inmersia_maquetas/colegios/maqueta-desafio.html (PC) y
+   maqueta-todos-los-juegos.html (5 · Desafío). Usa los colores de corazonada.css (--cz-*). */
+:root { --df-azul: #2f5d8a; --df-azul-bg: #e6eef7; }
+
+/* ── Escritorio: pantalla entera, «Cómo funciona» a la izquierda y la charla ── */
+.df-escena { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center;
+  background: rgba(20,12,4,0.7); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); animation: df-entra 0.3s ease-out; }
+.df-mesa { width: min(1080px, 94vw); height: min(720px, 88vh); display: grid; grid-template-columns: 300px 1fr; gap: 22px; align-items: start; }
+.df-mesa > .df-chat { height: 100%; }
+@media (max-width: 860px) { .df-mesa { grid-template-columns: 1fr; } .df-info { display: none; } }
+.df-info { background: var(--cz-paper); border: 2px solid var(--cz-ink); border-radius: 14px; padding: 14px 16px; box-shadow: var(--cz-sombra);
+  font-family: 'Baloo 2', sans-serif; color: var(--cz-ink); }
+.df-info h3 { margin: 0 0 8px; font-size: 19px; font-weight: 800; }
+.df-info ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; font-size: 14px; font-weight: 600; line-height: 1.35; }
+@keyframes df-entra { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── Móvil: hoja alta (usa .lm-backdrop / .lm-sheet del lector) ── */
+.df-fondo-movil { z-index: 1200; }
+.df-hoja { height: calc(100% - 40px); }
+.df-hoja > .df-chat { flex: 1; min-height: 0; margin: 0 8px 8px; }
+
+/* ── La charla ── */
+.df-chat { display: flex; flex-direction: column; min-height: 0; background: var(--cz-paper); border: 2px solid var(--cz-ink); border-radius: 18px;
+  overflow: hidden; font-family: 'Baloo 2', sans-serif; color: var(--cz-ink); box-shadow: var(--cz-sombra); }
+.df-chat.is-cuaderno { height: 100%; box-shadow: none; }
+.df-chat-h { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 2px dashed rgba(74,54,34,0.2); flex-shrink: 0; }
+.df-ava { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--cz-ink); background: var(--cz-cream); object-fit: cover;
+  object-position: 30% 20%; flex-shrink: 0; }
+.df-who { flex: 1; min-width: 0; line-height: 1.1; }
+.df-who b { font-size: 15px; }
+.df-who span { display: block; font-size: 11.5px; color: var(--cz-ink-soft); font-weight: 600; }
+.df-profe { display: inline-flex; align-items: center; background: var(--df-azul-bg); color: var(--df-azul); border: 2px solid var(--df-azul);
+  border-radius: 999px; padding: 0 9px; font-weight: 800; font-size: 11.5px; white-space: nowrap; }
+.df-luego { border: 2px solid var(--cz-ink); background: var(--cz-paper); color: var(--cz-ink); border-radius: 999px; padding: 2px 12px;
+  font-family: inherit; font-weight: 800; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+.df-luego:disabled { opacity: 0.5; cursor: wait; }
+
+.df-msgs { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.df-bub { max-width: 82%; padding: 7px 12px; border-radius: 15px; font-size: 15px; font-weight: 600; line-height: 1.32; border: 2px solid var(--cz-ink);
+  flex-shrink: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.df-bub.is-gato { align-self: flex-start; background: #fff; border-bottom-left-radius: 4px; }
+.df-bub.is-yo { align-self: flex-end; background: var(--cz-accent); color: #fff; border-bottom-right-radius: 4px; }
+.df-escribe { letter-spacing: 4px; animation: df-pulso 0.7s infinite alternate; }
+@keyframes df-pulso { from { opacity: 0.45; } to { opacity: 1; } }
+.df-consigna { align-self: stretch; background: #fffaf0; border: 2.5px solid var(--cz-ink); border-radius: 14px; padding: 10px 12px; display: grid; gap: 5px;
+  box-shadow: var(--cz-sombra); flex-shrink: 0; }
+.df-k { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cz-accent); }
+.df-consigna p { margin: 0; font-family: 'Crimson Text', Georgia, serif; font-size: 20px; line-height: 1.25; color: #3a2a18; }
+.df-consigna small { font-size: 12.5px; font-weight: 600; color: var(--cz-ink-soft); line-height: 1.3; }
+.df-hecho { align-self: stretch; background: var(--cz-ok-bg); border: 2.5px solid var(--cz-ok); border-radius: 14px; padding: 9px 12px; display: grid; gap: 3px;
+  color: var(--cz-ok-ink); flex-shrink: 0; }
+.df-hecho b { font-size: 16px; }
+.df-hecho span { font-size: 13px; font-weight: 600; }
+
+.df-composer { border-top: 2px solid var(--cz-ink); background: var(--cz-cream); padding: 8px; display: grid; gap: 6px; flex-shrink: 0; }
+.df-composer textarea { width: 100%; box-sizing: border-box; min-height: 64px; resize: none; border: 2px solid var(--cz-ink); border-radius: 12px; padding: 7px 10px;
+  font-family: inherit; font-size: 16px; line-height: 1.32; color: var(--cz-ink); background: #fff; }
+.df-composer textarea:focus-visible { outline: 3px solid var(--cz-accent); outline-offset: 1px; }
+.df-fila { display: flex; align-items: center; gap: 8px; }
+.df-fila small { flex: 1; font-size: 11.5px; font-weight: 700; color: var(--cz-ink-soft); }
+.df-cuenta { font-size: 11.5px; font-weight: 700; color: var(--cz-ink-soft); white-space: nowrap; }
+.df-cuenta.is-pasado { color: var(--cz-bad); }
+.df-error { margin: 0; font-size: 13px; font-weight: 700; color: var(--cz-bad); }
+.df-seguir { justify-self: end; }
+
+/* ── Cuaderno: las dos charlas, una debajo de otra ── */
+.df-cuaderno { flex: 1; overflow-y: auto; padding: 14px 18px; display: grid; gap: 14px; align-content: start; }
+.df-cuaderno .df-chat { height: min(460px, 60vh); }
+
+@media (prefers-reduced-motion: reduce) { .df-escena, .df-escribe { animation: none; } }
