@@ -57,6 +57,7 @@ export default function VistaTiendaMobile({ vista = 'principal', onGoBack, user,
           bloqueado={accesoBloqueado}
           onEntrar={entrar}
           onGoBack={onGoBack}
+          onRecompensas={() => navigate('/recompensas')}
         />
         {showLimiteHint && (
           <TutorialHint

@@ -13,13 +13,15 @@
 // Estados (084): al día = en el capítulo de la meta o más adelante; un poco
 // atrás = 1 a 3 capítulos; atrasado = 4 o más. Nada de lo que escriben.
 // Con libro asignado hay dos pestañas: «Lectura» (todo lo de arriba) y
-// «Comprensión» (los juegos del libro, ComprensionAula, 094).
+// «Comprensión» (los juegos del libro, ComprensionAula, 094) y «Recompensas»
+// (los vales del profe y los canjes por entregar, RecompensasAula, 095).
 import { useState, useMemo } from 'react'
 import { useListaColegioQuery, useSalonQuery, useGestionColegio } from '../../hooks/useColegio.js'
 import { SelectorLibro, LibroElegido } from '../comunidades/CrearComunidad.jsx'
 import { imgUrl } from '../../lib/img.js'
 import { Kpi, Barras, EstadoPill, Dias, fmtMin, iniciales, fechaCorta } from './graficos.jsx'
 import ComprensionAula from './ComprensionAula.jsx'
+import RecompensasAula from './RecompensasAula.jsx'
 
 // Tono de cada alumno para colores y filtros. «Sin empezar» toma el color
 // de lo lejos que está de la meta.
@@ -68,12 +70,14 @@ export default function SalonColegio({ colegioId, aulaId, onAula, user }) {
         : !s.lectura ? <SinLibro alumnos={s.alumnos.length} />
         : <>
             <div className="col-filtros cmp-pestanas" role="tablist" aria-label="Qué ver del aula">
-              {[['lectura', 'Lectura'], ['comprension', 'Comprensión']].map(([k, t]) => (
+              {[['lectura', 'Lectura'], ['comprension', 'Comprensión'], ['recompensas', 'Recompensas']].map(([k, t]) => (
                 <button key={k} type="button" role="tab" className="col-chip" aria-selected={pestana === k} aria-pressed={pestana === k}
                   onClick={() => setPestana(k)}>{t}</button>
               ))}
             </div>
-            {pestana === 'lectura' ? <ConLectura s={s} /> : <ComprensionAula aulaId={actual.aula_id} />}
+            {pestana === 'lectura' ? <ConLectura s={s} />
+              : pestana === 'comprension' ? <ComprensionAula aulaId={actual.aula_id} />
+              : <RecompensasAula aulaId={actual.aula_id} libroTitulo={s.lectura.titulo} />}
           </>}
 
       <Privacidad />

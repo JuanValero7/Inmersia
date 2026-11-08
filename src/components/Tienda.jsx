@@ -60,6 +60,7 @@ export default function VistaTienda({ vista = 'principal', onGoBack, user, gatoC
           bloqueado={accesoBloqueado}
           onEntrar={entrar}
           onGoBack={onGoBack}
+          onRecompensas={() => navigate('/recompensas')}
         />
         {showLimiteHint && (
           <TutorialHint

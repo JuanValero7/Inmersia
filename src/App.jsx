@@ -48,6 +48,7 @@ const VistaAlbum            = lazy(() => import('./components/Album.jsx'))
 const AlbumMobile           = lazy(() => import('./components/mobile/AlbumMobile.jsx'))
 const ComunidadesMobile     = lazy(() => import('./components/mobile/ComunidadesMobile.jsx'))
 const PanelColegio          = lazy(() => import('./components/colegio/PanelColegio.jsx'))
+const TiendaRecompensas     = lazy(() => import('./components/recompensas/TiendaRecompensas.jsx'))
 
 const Fallback = (
   <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,background:'var(--bg-warm)'}}>
@@ -352,6 +353,14 @@ export default function App() {
                 A quien no es de ningún colegio le dice cómo entrar. */}
             <Route path="/colegio" element={
               <PanelColegio user={user} onGoBack={() => navigate('/biblioteca')} />
+            } />
+
+            {/* Tienda de recompensas: el local de la izquierda en la calle de
+                la Tienda (migración 095). Atrás vuelve a la calle (con el historial,
+                para no apilar entradas; si se abrió directo, la calle de nuevo). */}
+            <Route path="/recompensas" element={
+              <TiendaRecompensas user={user} gatoColor={gatoColor}
+                onVolver={() => location.key !== 'default' ? navigate(-1) : navigate('/tienda', { state: { calle: true } })} />
             } />
 
             <Route path="/album" element={

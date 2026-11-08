@@ -39,6 +39,10 @@ export const queryKeys = {
   salonAula: (aulaId) => ['salonAula', aulaId],
   comprensionAula: (aulaId) => ['comprensionAula', aulaId],
   charlaAula: (aulaId, userId, momento) => ['charlaAula', aulaId, userId, momento],
+  recompensasAula: (aulaId) => ['recompensasAula', aulaId],
+  // Tienda de recompensas del alumno (ver src/hooks/useRecompensas.js)
+  tiendaRecompensas: (userId, libroId) => ['tiendaRecompensas', userId, libroId],
+  expediente: (libroId, id) => ['expediente', libroId, id],
   resumenColegio: (colegioId) => ['resumenColegio', colegioId],
   // Capa de comunidad en el lector (ver src/hooks/useCapaComunidad.js)
   comunidadesDelLibro: (userId, libroId, mias) => ['comunidadesDelLibro', userId, libroId, mias],

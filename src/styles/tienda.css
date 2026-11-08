@@ -227,6 +227,23 @@
   animation:cmHint 2.4s ease-in-out infinite;}
 @keyframes cmHint{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-5px);}}
 
+/* ── Local de la izquierda: Recompensas (migración 095) ─────────
+   El letrero tapa el que viene pintado en el telón. Escritorio: medido
+   sobre 1024×700. Móvil: con el encuadre en 17.4% 70% (fondo al 362%),
+   el letrero queda centrado y su alto sale de 70% − 28.2vw. */
+.img-sign-rec,.cm-sign-rec{position:absolute;transform:translate(-50%,-50%);z-index:6;text-align:center;white-space:nowrap;
+  background:#fbf8ef;border:2.5px solid #222;border-radius:3px;padding:.15em .55em;color:#1d1d1d;
+  font-family:'Playfair Display',Georgia,serif;font-weight:800;letter-spacing:.08em;box-shadow:0 2px 6px rgba(0,0,0,0.25);
+  pointer-events:none;}
+.img-sign-rec{font-size:22px;}
+.cm-sign-rec{left:50%;top:calc(70% - 28.2vw);width:92vw;font-size:6.9vw;}
+.cm-plate{transition:opacity .8s ease,background-position .7s cubic-bezier(.5,0,.35,1);}
+.cm-pan{position:absolute;top:50%;transform:translateY(-50%);z-index:8;border:2px solid var(--ink);
+  background:rgba(255,253,248,0.92);color:var(--ink);border-radius:999px;padding:6px 12px;font-family:inherit;
+  font-weight:800;font-size:13px;cursor:pointer;box-shadow:1.5px 2px 0 rgba(74,54,34,0.18);}
+.cm-pan.izq{left:10px;}
+.cm-pan.der{right:10px;}
+
 @media(max-width:640px){
   /* Catálogo */
   .interior{overflow-x:hidden;}
