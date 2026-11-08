@@ -35,6 +35,7 @@ const TEXTOS = {
   completo: '¡Desafío completo!',
   completoProfe: 'Tu charla va para tu profe. Puedes releerla en tu cuaderno.',
   completoSolo: 'Puedes releerla en tu cuaderno.',
+  notaProfe: 'Tu profe',
 }
 const ERRORES = {
   vuelve_manana: 'Tu gato ya habló mucho hoy. Vuelve mañana y seguimos.',
@@ -106,6 +107,13 @@ export function ChatDesafio({ m, conProfe, gatoColor, ocupado, onEnviar, onCerra
           <div className="df-bub is-gato df-escribe" aria-label="Tu gato está escribiendo">• • •</div>
         </>}
         {terminada && <div className="df-hecho"><b>{TEXTOS.completo}</b><span>{conProfe ? TEXTOS.completoProfe : TEXTOS.completoSolo}</span></div>}
+        {/* La nota y el comentario que puso el profe en el Salón (094). */}
+        {terminada && (m.nota != null || m.comentario) && (
+          <div className="df-nota-profe">
+            <b>{TEXTOS.notaProfe}{m.nota != null && <span className="df-nota-n">{m.nota} / 20</span>}</b>
+            {m.comentario && <p>{m.comentario}</p>}
+          </div>
+        )}
       </div>
 
       {terminada

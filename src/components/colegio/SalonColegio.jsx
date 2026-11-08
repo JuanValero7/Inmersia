@@ -12,11 +12,14 @@
 // libro llega solo a la biblioteca de todos los del aula.
 // Estados (084): al día = en el capítulo de la meta o más adelante; un poco
 // atrás = 1 a 3 capítulos; atrasado = 4 o más. Nada de lo que escriben.
+// Con libro asignado hay dos pestañas: «Lectura» (todo lo de arriba) y
+// «Comprensión» (los juegos del libro, ComprensionAula, 094).
 import { useState, useMemo } from 'react'
 import { useListaColegioQuery, useSalonQuery, useGestionColegio } from '../../hooks/useColegio.js'
 import { SelectorLibro, LibroElegido } from '../comunidades/CrearComunidad.jsx'
 import { imgUrl } from '../../lib/img.js'
 import { Kpi, Barras, EstadoPill, Dias, fmtMin, iniciales, fechaCorta } from './graficos.jsx'
+import ComprensionAula from './ComprensionAula.jsx'
 
 // Tono de cada alumno para colores y filtros. «Sin empezar» toma el color
 // de lo lejos que está de la meta.
@@ -36,6 +39,7 @@ export default function SalonColegio({ colegioId, aulaId, onAula, user }) {
   const { data: s, isLoading, isError } = useSalonQuery(actual?.aula_id)
   const gestion = useGestionColegio(colegioId, user?.id)
   const [asignando, setAsignando] = useState(false)
+  const [pestana, setPestana] = useState('lectura')
 
   if (cargandoAulas) return <p className="com-dd-msg">Cargando las aulas…</p>
   if (!actual) return <p className="com-dd-msg">Todavía no hay aulas. Créalas en «Lista».</p>
@@ -62,7 +66,15 @@ export default function SalonColegio({ colegioId, aulaId, onAula, user }) {
         : isError || !s ? <p className="com-dd-msg">No pudimos cargar el aula. Revisa tu conexión.</p>
         : asignando ? <AsignarLectura key={actual.aula_id} s={s} gestion={gestion} onListo={() => setAsignando(false)} />
         : !s.lectura ? <SinLibro alumnos={s.alumnos.length} />
-        : <ConLectura s={s} />}
+        : <>
+            <div className="col-filtros cmp-pestanas" role="tablist" aria-label="Qué ver del aula">
+              {[['lectura', 'Lectura'], ['comprension', 'Comprensión']].map(([k, t]) => (
+                <button key={k} type="button" role="tab" className="col-chip" aria-selected={pestana === k} aria-pressed={pestana === k}
+                  onClick={() => setPestana(k)}>{t}</button>
+              ))}
+            </div>
+            {pestana === 'lectura' ? <ConLectura s={s} /> : <ComprensionAula aulaId={actual.aula_id} />}
+          </>}
 
       <Privacidad />
     </div>
@@ -429,6 +441,7 @@ function Privacidad() {
           <li>El texto de sus predicciones y notas: solo cuántas hizo.</li>
           <li>Quién subrayó qué. Un párrafo aparece solo si lo marcaron 3 o más.</li>
           <li>Lo que leen por su cuenta: solo cuenta el libro del aula.</li>
+          <li>Lo que escriben en las frases difíciles: solo si la comprendieron.</li>
         </ul>
       </div>
     </section>

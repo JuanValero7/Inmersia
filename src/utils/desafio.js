@@ -6,7 +6,8 @@
  * @typedef {{ de: 'gato'|'alumno', texto: string }} Turno
  * @typedef {{ momento: 'mitad'|'final', tras_capitulo: number,
  *   pregunta: { id: string, tipo: string, consigna: string },
- *   estado: 'nueva'|'abierta'|'evaluando'|'terminada', turnos: Turno[] }} Momento
+ *   estado: 'nueva'|'abierta'|'evaluando'|'terminada', turnos: Turno[],
+ *   nota?: number|null, comentario?: string|null }} Momento
  */
 
 export const MIN_PALABRAS = 2

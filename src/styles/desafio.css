@@ -52,6 +52,11 @@
   color: var(--cz-ok-ink); flex-shrink: 0; }
 .df-hecho b { font-size: 16px; }
 .df-hecho span { font-size: 13px; font-weight: 600; }
+.df-nota-profe { align-self: stretch; background: var(--cz-cream); border: 2.5px solid var(--cz-ink); border-radius: 14px; padding: 9px 12px;
+  display: grid; gap: 4px; flex-shrink: 0; }
+.df-nota-profe b { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 15px; }
+.df-nota-n { font-size: 18px; font-weight: 800; color: var(--cz-accent); font-variant-numeric: tabular-nums; }
+.df-nota-profe p { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.35; white-space: pre-wrap; }
 
 .df-composer { border-top: 2px solid var(--cz-ink); background: var(--cz-cream); padding: 8px; display: grid; gap: 6px; flex-shrink: 0; }
 .df-composer textarea { width: 100%; box-sizing: border-box; min-height: 64px; resize: none; border: 2px solid var(--cz-ink); border-radius: 12px; padding: 7px 10px;

@@ -9,12 +9,14 @@
 //     de profesor. Solo nombres y cantidades, nada de lo que escriben.
 //   · salon_aula() y resumen_colegio(): los datos de lectura. Solo el libro
 //     del aula, solo cantidades; los subrayados, por párrafo y con 3+.
+//   · comprension_aula() (094): los juegos del libro del aula. Del concurso
+//     solo el resultado; del desafío la charla, que el alumno sabe que lee el profe.
 //   · Un aula es una comunidad con colegio_id: quitar a alguien es borrar
 //     su fila de comunidad_miembros (la RLS deja al administrador y al
 //     profesor de esa aula).
 // ─────────────────────────────────────────────────────────────
 import { useState, useCallback } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase.js'
 import { queryKeys } from '../lib/queries.js'
 import { evento } from '../lib/analytics.js'
@@ -70,6 +72,54 @@ export function useSalonQuery(aulaId) {
     },
     enabled: !!aulaId,
     staleTime: STALE_TIME,
+  })
+}
+
+// Comprensión: los 5 juegos del libro del aula, alumno por alumno
+// (comprension_aula, 094). Las cuentas, en utils/comprension.js.
+export function useComprensionQuery(aulaId, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.comprensionAula(aulaId),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('comprension_aula', { p_aula: aulaId, p_zona: zona() })
+      if (error) throw error
+      return data
+    },
+    enabled: !!aulaId && enabled,
+    staleTime: STALE_TIME,
+  })
+}
+
+// La charla entera de un alumno en el desafío: solo al tocar «Ver la charla».
+export function useCharlaAulaQuery(aulaId, userId, momento, enabled) {
+  return useQuery({
+    queryKey: queryKeys.charlaAula(aulaId, userId, momento),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('desafio_charla_aula', { p_aula: aulaId, p_user: userId, p_momento: momento })
+      if (error) throw error
+      return data
+    },
+    enabled: !!aulaId && !!userId && enabled,
+    staleTime: STALE_TIME,
+  })
+}
+
+// Nota (0–20) y comentario del profe en un desafío. El alumno los ve en su Cuaderno.
+export function useCalificarDesafio(aulaId) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ userId, momento, nota, comentario }) => {
+      const { data, error } = await supabase.rpc('desafio_calificar', {
+        p_aula: aulaId, p_user: userId, p_momento: momento, p_nota: nota, p_comentario: comentario,
+      })
+      if (error) throw error
+      return data
+    },
+    onSuccess: (_, { userId, momento }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.comprensionAula(aulaId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.charlaAula(aulaId, userId, momento) })
+      evento('desafio_calificado')
+    },
   })
 }
 
