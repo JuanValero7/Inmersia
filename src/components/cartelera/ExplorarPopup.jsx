@@ -7,14 +7,15 @@
 // La integración con el tour de Foro vive aquí.
 import { useState, useEffect } from 'react'
 import { useOnboarding } from '../../context/onboarding.jsx'
+import { INK } from '../../lib/colores.js'
 
 const BTN_STYLE = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }
-const LBL_STYLE = { fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }
+const LBL_STYLE = { fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: 'var(--ink)' }
 
 function NavBtn({ onClick, icon, label }) {
   return (
     <button type="button" onClick={onClick} style={BTN_STYLE}>
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
       <span style={LBL_STYLE}>{label}</span>
     </button>
   )
@@ -50,7 +51,7 @@ export default function ExplorarPopup({ onGoForo, onGoLectura, onGoBiblioteca, b
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60,
-          background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 16,
+          background: 'var(--paper)', border: '2px solid #4a3622', borderRadius: 16,
           padding: '10px 14px', display: 'flex', gap: 20, alignItems: 'flex-end',
           boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)',
           whiteSpace: 'nowrap',

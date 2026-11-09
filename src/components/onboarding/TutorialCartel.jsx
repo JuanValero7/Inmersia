@@ -20,7 +20,7 @@ export default function TutorialCartel({ emoji = '🔎', title, body, onClose, i
   const tarjeta = (
       <div style={{
         pointerEvents: 'auto', position: 'relative', display: 'flex', alignItems: 'flex-start', gap: 14,
-        background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 20,
+        background: 'var(--paper)', border: '2px solid #4a3622', borderRadius: 20,
         padding: onClose ? '16px 46px 16px 20px' : '16px 20px',
         maxWidth: inline ? 'none' : 520, width: '100%',
         margin: inline ? '0 0 10px' : 0, boxSizing: 'border-box',
@@ -36,14 +36,14 @@ export default function TutorialCartel({ emoji = '🔎', title, body, onClose, i
           <p style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 15, color: '#6b4c34', margin: 0, lineHeight: 1.45 }}>{body}</p>
           {accion && (
             <button type="button" onClick={accion.onClick}
-              style={{ marginTop: 10, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13.5, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '6px 16px', boxShadow: '1.5px 2px 0 rgba(74,54,34,0.35)' }}>
+              style={{ marginTop: 10, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13.5, cursor: 'pointer', background: 'var(--accent)', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '6px 16px', boxShadow: '1.5px 2px 0 rgba(74,54,34,0.35)' }}>
               {accion.label}
             </button>
           )}
         </div>
         {onClose && (
           <button type="button" onClick={onClose} title="Entendido" aria-label="Cerrar pista"
-            style={{ position: 'absolute', top: 12, right: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 999, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', padding: 0 }}>
+            style={{ position: 'absolute', top: 12, right: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 999, cursor: 'pointer', background: 'var(--accent)', color: '#fff', border: '2px solid #4a3622', padding: 0 }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>

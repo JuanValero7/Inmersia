@@ -31,7 +31,7 @@ const s = {
   row: { display: 'flex', alignItems: 'center', gap: 8 },
   tipo: (t) => ({
     fontSize: 11, fontWeight: 700, minWidth: 32, flexShrink: 0,
-    color: t === 'audio' ? '#8B4D2A' : t === 'imagen' ? '#4a7c59' : '#3a5f9a',
+    color: t === 'audio' ? 'var(--brown-mid)' : t === 'imagen' ? '#4a7c59' : '#3a5f9a',
   }),
   nombre: {
     flex: 1, fontSize: 12, color: theme.ink,
@@ -48,7 +48,7 @@ const s = {
     width: 26, height: 26, flexShrink: 0,
     border: `1.5px solid ${theme.ink}44`, borderRadius: 6,
     cursor: 'pointer', fontSize: 12,
-    background: 'transparent', color: '#c0392b',
+    background: 'transparent', color: 'var(--danger)',
   },
   empty: { color: `${theme.ink}77`, fontSize: 13, textAlign: 'center', marginTop: 28 },
   label: { fontSize: 11, fontWeight: 700, color: `${theme.ink}88`, display: 'block', marginBottom: 4 },
@@ -90,19 +90,19 @@ const s = {
     border: `1.5px solid ${active ? '#c0392b' : `${theme.ink}44`}`,
     borderRadius: 5, cursor: 'pointer', fontSize: 10,
     background: active ? '#c0392b22' : 'transparent',
-    color: active ? '#c0392b' : `${theme.ink}88`,
+    color: active ? 'var(--danger)' : `${theme.ink}88`,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     lineHeight: 1,
   }),
   aviso: {
-    fontSize: 11, color: '#c0392b', marginTop: 4,
+    fontSize: 11, color: 'var(--danger)', marginTop: 4,
     padding: '4px 8px', background: '#c0392b11', borderRadius: 6,
     border: '1px solid #c0392b33',
   },
   borrarBtn: {
     padding: '5px 12px', alignSelf: 'flex-start',
     border: '1.5px solid #c0392b', borderRadius: 7,
-    background: 'transparent', color: '#c0392b',
+    background: 'transparent', color: 'var(--danger)',
     cursor: 'pointer', fontSize: 11, fontWeight: 700,
   },
   confirmRow: {
@@ -382,13 +382,13 @@ export default function SuperuserSoundsPanel({
               confirmDelete === sugerirParrafoId
                 ? (
                   <div style={s.confirmRow}>
-                    <span style={{ fontSize: 11, color: '#c0392b', flex: 1, fontWeight: 700 }}>
+                    <span style={{ fontSize: 11, color: 'var(--danger)', flex: 1, fontWeight: 700 }}>
                       ¿Borrar este párrafo permanentemente?
                     </span>
                     <button
                       type="button"
                       onClick={() => handleBorrar(sugerirParrafoId)}
-                      style={{ ...s.borrarBtn, background: '#c0392b', color: '#fff', border: 'none' }}
+                      style={{ ...s.borrarBtn, background: 'var(--danger)', color: '#fff', border: 'none' }}
                     >Sí</button>
                     <button
                       type="button"

@@ -71,23 +71,23 @@ export default function AvisoRed() {
   return (
     <div role="status" aria-live="polite"
       style={{ position: 'fixed', top: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 4000, maxWidth: 460, width: 'calc(100% - 32px)' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 14, padding: '14px 16px', boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)', fontFamily: "'Baloo 2', sans-serif" }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: 'var(--paper)', border: '2px solid #4a3622', borderRadius: 14, padding: '14px 16px', boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)', fontFamily: "'Baloo 2', sans-serif" }}>
         <span style={{ fontSize: 20, lineHeight: 1.2 }}>{sinConexion ? '📡' : '🌧️'}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: 14, color: '#4a3622', lineHeight: 1.45 }}>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--ink)', lineHeight: 1.45 }}>
             {sinConexion
               ? 'Parece que no tienes conexión. Volveremos a cargar tus datos en cuanto regreses.'
               : 'No pudimos cargar tus datos.'}
           </p>
           {!sinConexion && (
             <button type="button" onClick={reintentar} disabled={reintentando}
-              style={{ marginTop: 8, background: '#4a3622', border: 'none', borderRadius: 9, color: '#fffdf8', cursor: reintentando ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, opacity: reintentando ? 0.6 : 1, padding: '7px 14px' }}>
+              style={{ marginTop: 8, background: 'var(--ink)', border: 'none', borderRadius: 9, color: 'var(--paper)', cursor: reintentando ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, opacity: reintentando ? 0.6 : 1, padding: '7px 14px' }}>
               {reintentando ? 'Reintentando…' : 'Reintentar'}
             </button>
           )}
         </div>
         <button type="button" onClick={() => setDescartado(true)} aria-label="Cerrar"
-          style={{ background: 'transparent', border: 'none', color: '#9a6a4a', cursor: 'pointer', fontSize: 20, fontWeight: 700, lineHeight: 1, padding: 0 }}>×</button>
+          style={{ background: 'transparent', border: 'none', color: 'var(--brown-soft)', cursor: 'pointer', fontSize: 20, fontWeight: 700, lineHeight: 1, padding: 0 }}>×</button>
       </div>
     </div>
   )

@@ -206,7 +206,9 @@ Deno.serve(async (req) => {
     if (m.includes('limite_alumno') || m.includes('limite_global')) return responder(429, { error: 'vuelve_manana' })
     if (m.includes('muy_corta')) return responder(400, { error: 'muy_corta' })
     if (m.includes('muy_larga')) return responder(400, { error: 'muy_larga' })
-    return responder(409, { error: 'no_se_puede', detalle: m })
+    // El motivo queda en el registro del servidor; al navegador solo el código (revisión 9 nov).
+    console.warn('desafio-evaluar: no se puede', m)
+    return responder(409, { error: 'no_se_puede' })
   }
 
   let salida = null

@@ -40,7 +40,7 @@ export function XraySheet({ items, chapterNum, esNoficcion, onClose, onItemClick
                 <span style={{ flexShrink: 0, width: 34, height: 34, borderRadius: '50%', background: '#d56a52', color: '#fff', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid rgba(74,54,34,0.3)' }}>
                   {ini(it.nombre)}
                 </span>
-                <span style={{ fontFamily: 'inherit', fontWeight: 700, fontSize: 15, color: '#4a3622' }}>{it.nombre}</span>
+                <span style={{ fontFamily: 'inherit', fontWeight: 700, fontSize: 15, color: 'var(--ink)' }}>{it.nombre}</span>
               </button>
             ))}
           {bloqueado && items.length > 0 && (

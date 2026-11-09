@@ -29,7 +29,7 @@ function UltimosAbiertos({ books, onOpen }) {
           <div key={b.id} onClick={(e) => onOpen(b, e.currentTarget.getBoundingClientRect())} style={{
             position: 'relative', overflow: 'hidden',
             flex: '1 1 240px', minWidth: 240, display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer',
-            background: '#f1e8d4', border: `2px solid ${ink}`, borderRadius: 16,
+            background: 'var(--cream)', border: `2px solid ${ink}`, borderRadius: 16,
             padding: '12px 16px', boxShadow: `2px 5px 0 ${ink}1a`,
           }}>
             {b.heroUrl && (

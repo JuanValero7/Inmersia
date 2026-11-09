@@ -10,10 +10,11 @@ import React from 'react'
 import { INK, inmTint, hashOf, spineColor, tituloBaseFontSize, autorFontSize } from '../../biblioteca/coverHelpers.shared.js'
 import CoverTitle from '../../CoverTitle.jsx'
 import { imgUrl } from '../../../lib/img.js'
+import { ACCENT } from '../../../lib/colores.js'
 
 export { INK, inmTint, hashOf, spineColor }
 
-export const ACCENT = '#F2792A'
+export { ACCENT }
 export const GREEN = '#6f9457'
 export const WALL = '#f1e8d4' // mismo fondo de estante que la versión desktop
 

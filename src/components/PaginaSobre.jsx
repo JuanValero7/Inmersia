@@ -10,9 +10,8 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { SOBRE } from '../content/sobre.js'
+import { INK, ACCENT } from '../lib/colores.js'
 
-const INK = '#4a3622'
-const ACCENT = '#F2792A'
 
 const h2 = { fontSize: 19, fontWeight: 800, margin: '30px 0 10px' }
 const p = { margin: '0 0 12px' }
@@ -40,7 +39,7 @@ export default function PaginaSobre() {
       </header>
 
       <main style={{ width: 'min(760px, 100% - 32px)', margin: '0 auto', padding: '28px 0 64px' }}>
-        <article style={{ background: '#fffdf8', border: `2px solid ${INK}`, borderRadius: 20, padding: 'clamp(18px, 4vw, 34px)', boxShadow: `3px 6px 0 ${INK}22`, fontSize: 15.5, lineHeight: 1.65 }}>
+        <article style={{ background: 'var(--paper)', border: `2px solid ${INK}`, borderRadius: 20, padding: 'clamp(18px, 4vw, 34px)', boxShadow: `3px 6px 0 ${INK}22`, fontSize: 15.5, lineHeight: 1.65 }}>
           <h1 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 12px' }}>{SOBRE.titulo}</h1>
           {SOBRE.intro.map((t, i) => <p key={i} style={p}>{t}</p>)}
 

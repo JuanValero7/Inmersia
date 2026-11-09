@@ -13,6 +13,7 @@ import {
 } from './capaShared.jsx'
 import '../../../styles/comunidades.css'
 import '../../../styles/comunidades.mobile.css'
+import { INK, ACCENT } from '../../../lib/colores.js'
 
 const IcGente = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -26,8 +27,8 @@ const IcCerrar = () => (
 export const IconoComunidadBandeja = () => (
   <span style={{ width: 48, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
     <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-      <path d="M20 8h18a5 5 0 015 5v11a5 5 0 01-5 5h-2v6l-6-6h-10a5 5 0 01-5-5V13a5 5 0 015-5z" fill="#e7dcc2" stroke="#4a3622" strokeWidth="2.4" strokeLinejoin="round"/>
-      <path d="M9 17h17a5 5 0 015 5v10a5 5 0 01-5 5H16l-7 6v-6a5 5 0 01-5-5V22a5 5 0 015-5z" fill="#F2792A" stroke="#4a3622" strokeWidth="2.4" strokeLinejoin="round"/>
+      <path d="M20 8h18a5 5 0 015 5v11a5 5 0 01-5 5h-2v6l-6-6h-10a5 5 0 01-5-5V13a5 5 0 015-5z" fill="#e7dcc2" stroke={INK} strokeWidth="2.4" strokeLinejoin="round"/>
+      <path d="M9 17h17a5 5 0 015 5v10a5 5 0 01-5 5H16l-7 6v-6a5 5 0 01-5-5V22a5 5 0 015-5z" fill={ACCENT} stroke={INK} strokeWidth="2.4" strokeLinejoin="round"/>
       <g fill="#fff"><circle cx="12.5" cy="27" r="2"/><circle cx="19" cy="27" r="2"/><circle cx="25.5" cy="27" r="2"/></g>
     </svg>
   </span>
@@ -113,12 +114,12 @@ export function useCapaMovil({ userId, libroId, capituloId, paginas, pageIndex, 
     <Hoja titulo="Dejar algo" sub={`En ${comunidad.nombre}`} onCerrar={cerrar}>
       <div className="lm-nav-grid cl-elegir">
         <button type="button" onClick={empezarAElegir}>
-          <svg width="36" height="36" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M9 8h30a5 5 0 015 5v18a5 5 0 01-5 5H20l-9 7v-7H9a5 5 0 01-5-5V13a5 5 0 015-5z" fill="#F2792A" stroke="#4a3622" strokeWidth="2.6" strokeLinejoin="round"/><g stroke="#fff" strokeWidth="2.8" strokeLinecap="round"><path d="M13 18h22M13 26h14"/></g></svg>
+          <svg width="36" height="36" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M9 8h30a5 5 0 015 5v18a5 5 0 01-5 5H20l-9 7v-7H9a5 5 0 01-5-5V13a5 5 0 015-5z" fill={ACCENT} stroke={INK} strokeWidth="2.6" strokeLinejoin="round"/><g stroke="#fff" strokeWidth="2.8" strokeLinecap="round"><path d="M13 18h22M13 26h14"/></g></svg>
           Comentario
           <span className="sub">Queda en el párrafo,<br />lo ve toda la comunidad</span>
         </button>
         <button type="button" onClick={nuevoMensajito}>
-          <svg width="36" height="36" viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="5" y="20" width="38" height="22" rx="4" fill="#e7dcc2" stroke="#4a3622" strokeWidth="2.6"/><rect x="19" y="20" width="10" height="22" fill="#BE6173" stroke="#4a3622" strokeWidth="2.2"/><rect x="3" y="14" width="42" height="9" rx="3" fill="#f3ead6" stroke="#4a3622" strokeWidth="2.4"/><rect x="19" y="14" width="10" height="9" fill="#BE6173" stroke="#4a3622" strokeWidth="2.2"/><ellipse cx="18" cy="9" rx="6.5" ry="4.6" transform="rotate(-22 18 9)" fill="#d98a99" stroke="#4a3622" strokeWidth="2.2"/><ellipse cx="30" cy="9" rx="6.5" ry="4.6" transform="rotate(22 30 9)" fill="#d98a99" stroke="#4a3622" strokeWidth="2.2"/><circle cx="24" cy="11" r="3.2" fill="#BE6173" stroke="#4a3622" strokeWidth="2"/></svg>
+          <svg width="36" height="36" viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="5" y="20" width="38" height="22" rx="4" fill="#e7dcc2" stroke={INK} strokeWidth="2.6"/><rect x="19" y="20" width="10" height="22" fill="#BE6173" stroke={INK} strokeWidth="2.2"/><rect x="3" y="14" width="42" height="9" rx="3" fill="#f3ead6" stroke={INK} strokeWidth="2.4"/><rect x="19" y="14" width="10" height="9" fill="#BE6173" stroke={INK} strokeWidth="2.2"/><ellipse cx="18" cy="9" rx="6.5" ry="4.6" transform="rotate(-22 18 9)" fill="#d98a99" stroke={INK} strokeWidth="2.2"/><ellipse cx="30" cy="9" rx="6.5" ry="4.6" transform="rotate(22 30 9)" fill="#d98a99" stroke={INK} strokeWidth="2.2"/><circle cx="24" cy="11" r="3.2" fill="#BE6173" stroke={INK} strokeWidth="2"/></svg>
           Mensajito
           <span className="sub">Solo para quien<br />tú elijas</span>
         </button>

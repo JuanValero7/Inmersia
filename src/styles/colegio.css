@@ -557,8 +557,44 @@
 .rcp-ref {
   margin: 0; font-size: 13.5px; font-weight: 600; line-height: 1.45; color: var(--ink);
   background: var(--sand); border-radius: 12px; padding: 8px 12px;
+  display: flex; flex-direction: column; gap: 6px;
 }
+.rcp-ref p { margin: 0; }
 .rcp-ref i { font-family: var(--f-book); font-size: 15px; }
+/* 097: vale o bote, precios sugeridos, desglose de la cuenta y barra del bote */
+.rcp-tipo { display: inline-flex; align-self: flex-start; border: 2px solid var(--ink); border-radius: 999px; overflow: hidden; }
+.rcp-tipo button {
+  font-family: inherit; font-size: 13.5px; font-weight: 800; color: var(--ink); background: #fff;
+  border: none; padding: 6px 14px; cursor: pointer;
+}
+.rcp-tipo button + button { border-left: 2px solid var(--ink); }
+.rcp-tipo button.is-on { background: var(--accent); }
+.rcp-tipo button:focus-visible, .rcp-sug:focus-visible { outline: 3px solid rgba(242,121,42,0.45); outline-offset: 2px; }
+.rcp-tipo-txt { margin: -4px 0 0; font-size: 13px; font-weight: 600; line-height: 1.4; color: var(--muted); }
+.rcp-sugeridos { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: -4px; }
+.rcp-sugeridos > span, .rcp-sugeridos > small { font-size: 12.5px; font-weight: 800; color: var(--muted); }
+.rcp-sugeridos > small { font-weight: 600; }
+.rcp-sug {
+  font-family: inherit; font-size: 13px; font-weight: 800; color: var(--ink); background: #fff;
+  border: 1.5px solid var(--ink); border-radius: 999px; padding: 3px 10px; cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.rcp-sug.is-on { background: var(--sand); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.rcp-desglose summary { cursor: pointer; font-weight: 800; font-size: 13px; }
+.rcp-desglose ul { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.rcp-desglose li { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+.rcp-desglose-total { border-top: 1.5px dashed rgba(0,0,0,.25); padding-top: 3px; margin-top: 2px; font-weight: 800; }
+.rcp-desglose small { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.rcp-barra {
+  display: block; height: 8px; margin-top: 5px; max-width: 220px; border-radius: 999px;
+  border: 1.5px solid var(--ink); background: #fff; overflow: hidden;
+}
+.rcp-barra span { display: block; height: 100%; background: var(--accent); }
+.rcp-aportes { margin-top: 4px; font-size: 12.5px; }
+.rcp-aportes summary { cursor: pointer; font-weight: 800; color: var(--muted); }
+.rcp-aportes ul { list-style: none; margin: 4px 0 0; padding: 0; max-width: 260px; }
+.rcp-aportes li { display: flex; justify-content: space-between; gap: 12px; padding: 1px 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rcp-ini-clase { background: var(--accent); }
 .rcp-agregar { align-self: flex-start; }
 .rcp-fallo { margin: 0; font-weight: 700; font-size: 13.5px; color: var(--bad); }
 .rcp-canjes { display: flex; flex-direction: column; gap: 10px; }

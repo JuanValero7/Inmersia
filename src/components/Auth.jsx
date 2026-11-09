@@ -205,7 +205,7 @@ export function AuthCard({ onAuthSuccess, initialTab = 'login', onBack, onClose 
               style={{
                 position: 'absolute', top: 14, left: 16, zIndex: 2,
                 background: 'transparent', border: '1.5px solid rgba(74,54,34,0.35)',
-                color: '#9a6a4a', borderRadius: 8, padding: '5px 11px', cursor: 'pointer',
+                color: 'var(--brown-soft)', borderRadius: 8, padding: '5px 11px', cursor: 'pointer',
                 fontFamily: "'Baloo 2', system-ui, sans-serif", fontWeight: 700, fontSize: 13,
               }}
             >← Volver</button>

@@ -83,7 +83,7 @@ export default function CatalogoInterior({ catalogo, loading, user, gatoColor = 
               <div className="int-chips">
                 {availableCats.map(c => (
                   <button key={c} className={clsx('int-chip', selCats.has(c) && 'on')} onClick={() => toggleCat(c)}>
-                    <span className="dot" style={{ background: CAT_COLOR[c] || '#F2792A' }} />
+                    <span className="dot" style={{ background: CAT_COLOR[c] || 'var(--accent)' }} />
                     {c}
                   </button>
                 ))}

@@ -26,7 +26,7 @@ function CoverCard({ book, onOpen }) {
     <div onClick={(e) => onOpen(book, e.currentTarget.getBoundingClientRect())} style={{
       position: 'relative', overflow: 'hidden', cursor: 'pointer', flex: 1, minHeight: 0,
       display: 'flex', alignItems: 'center', gap: 16,
-      background: '#f1e8d4', borderRadius: 16, padding: '12px 16px',
+      background: 'var(--cream)', borderRadius: 16, padding: '12px 16px',
       boxShadow: `0 8px 20px ${ink}1c`,
     }}>
       {book.heroUrl && (
@@ -76,7 +76,7 @@ function AccessTile({ renderIcon, label, onClick }) {
     <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{
       position: 'relative', overflow: 'hidden', flex: 1,
       display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 14,
-      background: '#f1e8d4', color: ink, border: `2px solid ${ink}`, borderRadius: 16, cursor: 'pointer',
+      background: 'var(--cream)', color: ink, border: `2px solid ${ink}`, borderRadius: 16, cursor: 'pointer',
       fontFamily: 'inherit', fontWeight: 800, fontSize: 18, padding: '10px 16px',
       boxShadow: hov ? `1px 1.4px 0 ${ink}33` : `2.4px 3.2px 0 ${ink}26`,
       transform: hov ? 'translateY(1.4px)' : 'none', transition: 'box-shadow .12s, transform .12s',
@@ -122,7 +122,7 @@ function LateralHomeSkeleton({ onGoTienda, onGoAlbum }) {
   const ink = INK
   const ficha = {
     flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', gap: 16,
-    background: '#f1e8d4', borderRadius: 16, padding: '12px 16px', boxShadow: `0 8px 20px ${ink}1c`,
+    background: 'var(--cream)', borderRadius: 16, padding: '12px 16px', boxShadow: `0 8px 20px ${ink}1c`,
   }
   return (
     <div style={{ height: PANEL_H, marginTop: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>

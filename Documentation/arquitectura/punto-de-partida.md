@@ -64,7 +64,7 @@ Documentos de referencia, en este orden:
 ```bash
 npm run dev        # contra PRUEBAS
 npm run humo       # recorridos de punta a punta contra PRUEBAS (antes de tocar lector, sesión o Biblioteca)
-npm run lint       # 0 errores y no más de 504 hex (bajar el tope al quitar hex)
+npm run lint       # 0 errores y no más de 285 hex (bajar el tope al quitar hex; #fff y #000 no cuentan)
 npm test           # 96 tests
 npm run respaldo   # copia de producción ahora mismo
 npm run esquema    # foto de la estructura de producción en supabase/esquema/

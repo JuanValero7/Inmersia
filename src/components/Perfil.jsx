@@ -81,7 +81,7 @@ const TXN_DEMO = [
 const HIST_DEMO = [
   { id: 1, title: 'El nombre del viento', author: 'Patrick Rothfuss', fecha: '12 may 2025', pages: 662, color: '#d56a52' },
   { id: 2, title: 'La sombra del viento', author: 'Carlos Ruiz Zafón',  fecha: '3 mar 2025',  pages: 544, color: '#7d8db5' },
-  { id: 3, title: 'Dune',                 author: 'Frank Herbert',       fecha: '11 ene 2025', pages: 688, color: '#e0b256' },
+  { id: 3, title: 'Dune',                 author: 'Frank Herbert',       fecha: '11 ene 2025', pages: 688, color: 'var(--gold)' },
   { id: 4, title: 'Ficciones',            author: 'Jorge Luis Borges',   fecha: '20 oct 2024', pages: 256, color: '#86ad9e' },
 ]
 

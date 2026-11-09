@@ -3,14 +3,15 @@ import { inmTint } from './clay/helpers.jsx'
 import { useResena } from '../../hooks/useResena.js'
 import { MANUAL_LIBRO_ID } from './constants.js'
 import { useAnteriormente, AvisoAnteriormente, RepasoHistorias } from './AnteriormenteEn.jsx'
+import { INK, ACCENT } from '../../lib/colores.js'
 
 // =============================================================
 // ACUARELA · BibBookModal
 // Reseñas, asignar categoría, abrir libro, ir al foro, cuaderno.
 // =============================================================
 
-const _MK_INK = '#4a3622';
-const _MK_ACCENT = '#F2792A';
+const _MK_INK = INK;
+const _MK_ACCENT = ACCENT;
 const _MK_PANEL = '#fffdf8';
 const COLOR_BOOK_FALLBACK = '#5a3d28';
 

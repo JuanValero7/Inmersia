@@ -344,11 +344,11 @@ export const BookReader = memo(function BookReader({
           {/* X-ray */}
           <div ref={xrayRef} style={{ position: 'relative' }}>
             <button type="button" onClick={onToggleXray}
-              style={{ whiteSpace: 'nowrap', fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: xrayOpen ? theme.ink : theme.navBg, color: xrayOpen ? '#fffdf8' : theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
+              style={{ whiteSpace: 'nowrap', fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', border: `1.5px solid ${theme.ink}`, borderRadius: 999, padding: '4px 12px', background: xrayOpen ? theme.ink : theme.navBg, color: xrayOpen ? 'var(--paper)' : theme.navText, boxShadow: `1px 1.5px 0 ${theme.ink}26` }}>
               Fichas
             </button>
             {xrayOpen && (
-              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60, background: '#fffdf8', border: `2px solid ${theme.ink}`, borderRadius: 16, padding: '12px 16px', minWidth: 210, maxWidth: 290, maxHeight: 320, overflowY: 'auto', boxShadow: `2px 4px 0 ${theme.ink}22, 0 14px 30px rgba(0,0,0,0.22)`, fontFamily: "'Baloo 2', sans-serif" }}>
+              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60, background: 'var(--paper)', border: `2px solid ${theme.ink}`, borderRadius: 16, padding: '12px 16px', minWidth: 210, maxWidth: 290, maxHeight: 320, overflowY: 'auto', boxShadow: `2px 4px 0 ${theme.ink}22, 0 14px 30px rgba(0,0,0,0.22)`, fontFamily: "'Baloo 2', sans-serif" }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(74,54,34,0.5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
                   {esNoficcion ? 'Glosario' : 'Personajes'} · cap. {chapter.numero ?? chapterIndex + 1}
                 </div>
@@ -361,7 +361,7 @@ export const BookReader = memo(function BookReader({
                       <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', background: '#d56a52', color: '#fff', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid rgba(74,54,34,0.35)' }}>
                         {xrayInitial(it.nombre)}
                       </span>
-                      <span style={{ fontWeight: 700, fontSize: 14, color: '#4a3622', lineHeight: 1.2 }}>{it.nombre}</span>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)', lineHeight: 1.2 }}>{it.nombre}</span>
                     </button>
                   ))}
                 {/* Tutorial: el X-ray se puede mirar, pero no es un atajo a la

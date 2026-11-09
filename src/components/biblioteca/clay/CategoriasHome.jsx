@@ -127,12 +127,12 @@ function CategoryPager({ groups, onOpen }) {
 
   const navBtn = (disabled) => ({
     display: 'flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: 12,
-    background: '#fffdf8', color: INK, border: `2px solid ${INK}`, cursor: disabled ? 'default' : 'pointer',
+    background: 'var(--paper)', color: INK, border: `2px solid ${INK}`, cursor: disabled ? 'default' : 'pointer',
     opacity: disabled ? 0.4 : 1, boxShadow: `1.5px 2px 0 ${INK}26`, fontFamily: 'inherit',
   })
   const numBtn = (active) => ({
     minWidth: 38, height: 38, padding: '0 12px', borderRadius: 12, fontFamily: 'inherit', fontWeight: 800, fontSize: 15,
-    background: active ? '#F2792A' : '#fffdf8', color: active ? '#fff' : INK, border: `2px solid ${INK}`, cursor: 'pointer',
+    background: active ? 'var(--accent)' : 'var(--paper)', color: active ? '#fff' : INK, border: `2px solid ${INK}`, cursor: 'pointer',
     boxShadow: active ? `1px 1.4px 0 ${INK}33` : `1.5px 2px 0 ${INK}26`, textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none',
   })
 
@@ -224,7 +224,7 @@ function CategoriasHome({ groups, activeCat, onOpen }) {
     return (
       <div>
         {!activeCat && (
-          <button onClick={() => setOpenedId(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fffdf8', color: '#5a4632', border: `2px solid ${INK}`, borderRadius: 12, padding: '8px 15px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', boxShadow: `1.5px 2px 0 ${INK}2e`, marginBottom: 18 }}>
+          <button onClick={() => setOpenedId(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--paper)', color: '#5a4632', border: `2px solid ${INK}`, borderRadius: 12, padding: '8px 15px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', boxShadow: `1.5px 2px 0 ${INK}2e`, marginBottom: 18 }}>
             <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.4"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
             Categorías
           </button>

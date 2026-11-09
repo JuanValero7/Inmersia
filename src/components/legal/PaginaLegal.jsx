@@ -11,9 +11,8 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { DOCS, Doc } from './LegalModal.jsx'
+import { INK, ACCENT } from '../../lib/colores.js'
 
-const INK = '#4a3622'
-const ACCENT = '#F2792A'
 const RUTA = { privacidad: '/privacidad', terminos: '/terminos', impressum: '/impressum' }
 
 export default function PaginaLegal({ doc }) {
@@ -43,7 +42,7 @@ export default function PaginaLegal({ doc }) {
         </div>
       </header>
       <main style={{ width: 'min(760px, 100% - 32px)', margin: '0 auto', padding: '28px 0 64px' }}>
-        <div style={{ background: '#fffdf8', border: `2px solid ${INK}`, borderRadius: 20, padding: 'clamp(18px, 4vw, 34px)', boxShadow: `3px 6px 0 ${INK}22` }}>
+        <div style={{ background: 'var(--paper)', border: `2px solid ${INK}`, borderRadius: 20, padding: 'clamp(18px, 4vw, 34px)', boxShadow: `3px 6px 0 ${INK}22` }}>
           <Doc raw={DOCS[actual].raw} onNavigate={(k) => navigate(RUTA[k])} />
         </div>
       </main>

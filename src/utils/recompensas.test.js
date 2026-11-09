@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cuentaCanje, textoBloqueo, textoLimite, sinPrefijo, ovillos, POCOS_OVILLOS } from './recompensas.js'
+import { cuentaCanje, textoBloqueo, textoLimite, sinPrefijo, ovillos, POCOS_OVILLOS, redondear, preciosSugeridos, boteSugerido, nombreJuego } from './recompensas.js'
 
 describe('cuentaCanje', () => {
   it('alcanza con margen: sin aviso', () => {
@@ -42,5 +42,30 @@ describe('textos', () => {
   it('plural', () => {
     expect(ovillos(1)).toBe('1 ovillo')
     expect(ovillos(5)).toBe('5 ovillos')
+  })
+})
+
+describe('precios sugeridos (097)', () => {
+  it('redondea de 1 en 1 bajo 10 y de 5 en 5 desde ahí', () => {
+    expect(redondear(7.3)).toBe(7)
+    expect(redondear(0.2)).toBe(1)
+    expect(redondear(11.3)).toBe(10)
+    expect(redondear(68)).toBe(70)
+  })
+  it('El signo de los cuatro (34 solo leyendo): 10 / 35 / 70', () => {
+    expect(preciosSugeridos(34)).toEqual([['Pequeña', 10], ['Mediana', 35], ['Grande', 70]])
+  })
+  it('Noches blancas (22): 7 / 20 / 45', () => {
+    expect(preciosSugeridos(22).map(([, n]) => n)).toEqual([7, 20, 45])
+  })
+  it('bote: la mitad de lo que junta la clase leyendo, nunca menos que un alumno', () => {
+    expect(boteSugerido(34, 30)).toBe(510)
+    expect(boteSugerido(34, 0)).toBe(35)
+  })
+  it('textos del bote', () => {
+    expect(textoLimite('bote')).toBe('Bote de la clase')
+    expect(textoBloqueo({ bloqueo: 'lleno' })).toMatch(/Lleno/)
+    expect(textoBloqueo({ bloqueo: 'entregado' })).toBe('Ya se entregó')
+    expect(nombreJuego('concurso')).toBe('Frases difíciles')
   })
 })

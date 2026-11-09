@@ -14,6 +14,7 @@ import {
 } from './capaShared.jsx'
 import { Sello } from '../comunidadesShared.jsx'
 import '../../../styles/comunidades.css'
+import { INK } from '../../../lib/colores.js'
 
 const ANCHO = 290
 
@@ -23,10 +24,10 @@ const IcGente = () => (
   </svg>
 )
 const IcGlobo = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
 )
 const IcRegalo = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12v9H4v-9"/><path d="M2 7h20v5H2z"/><path d="M12 21V7"/><path d="M12 7a3 3 0 10-3-3c0 2 1.2 3 3 3z"/><path d="M12 7a3 3 0 113-3c0 2-1.2 3-3 3z"/></svg>
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12v9H4v-9"/><path d="M2 7h20v5H2z"/><path d="M12 21V7"/><path d="M12 7a3 3 0 10-3-3c0 2 1.2 3 3 3z"/><path d="M12 7a3 3 0 113-3c0 2-1.2 3-3 3z"/></svg>
 )
 
 // Al lado de afuera de la hoja donde está el ancla; si no cabe en la mesa,

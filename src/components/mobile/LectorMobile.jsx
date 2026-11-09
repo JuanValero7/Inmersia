@@ -580,7 +580,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
           <button className="lm-explore lm-resena-btn" onClick={() => { setSheetRaw(null); setCatOpen(false); setResenaOpen(true) }} title="Escribir reseña" aria-label="Escribir reseña"><IcStar /></button>
         )}
         {isSuperuser && !loading && !error && book?.libro_id && (
-          <button className="lm-explore" onClick={() => setAdminPanelOpen(v => !v)} title="Panel de media" style={{ fontSize: 14, fontWeight: 700, background: adminPanelOpen ? '#8b4d2a' : undefined, color: adminPanelOpen ? '#fff' : undefined }}>⚙</button>
+          <button className="lm-explore" onClick={() => setAdminPanelOpen(v => !v)} title="Panel de media" style={{ fontSize: 14, fontWeight: 700, background: adminPanelOpen ? 'var(--brown-mid)' : undefined, color: adminPanelOpen ? '#fff' : undefined }}>⚙</button>
         )}
       </header>
 
@@ -731,9 +731,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       {/* Paywall de invitado */}
       {showPaywall && (
         <div onClick={() => setShowPaywall(false)} style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(20,12,4,0.82)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative', background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 20, padding: '36px 32px', maxWidth: 380, width: '100%', textAlign: 'center', boxShadow: '3px 6px 0 rgba(74,54,34,0.25), 0 20px 40px rgba(0,0,0,0.35)' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative', background: 'var(--paper)', border: '2px solid #4a3622', borderRadius: 20, padding: '36px 32px', maxWidth: 380, width: '100%', textAlign: 'center', boxShadow: '3px 6px 0 rgba(74,54,34,0.25), 0 20px 40px rgba(0,0,0,0.35)' }}>
             <button type="button" onClick={() => setShowPaywall(false)} aria-label="Cerrar" title="Cerrar"
-              style={{ position: 'absolute', top: 10, right: 12, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1.5px solid rgba(74,54,34,0.3)', color: '#9a6a4a', borderRadius: '50%', cursor: 'pointer', fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1 }}>×</button>
+              style={{ position: 'absolute', top: 10, right: 12, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1.5px solid rgba(74,54,34,0.3)', color: 'var(--brown-soft)', borderRadius: '50%', cursor: 'pointer', fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1 }}>×</button>
             <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ display: 'block', height: 40, width: 'auto', margin: '0 auto 16px' }} />
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: '#2c1a0e', margin: '0 0 10px' }}>
               {muestraMotivo === 'sin-adquirir' ? 'Suma este libro a tu biblioteca' : 'Sigue leyendo en Inmersia'}
@@ -749,7 +749,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
               {muestraMotivo === 'sin-adquirir' ? (
                 <>
                   <button type="button" onClick={() => onGoTienda?.()}
-                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
+                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: 'var(--accent)', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
                     Ir a la Tienda
                   </button>
                   <button type="button" onClick={() => onGoBack?.()}
@@ -760,7 +760,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
               ) : (
                 <>
                   <button type="button" onClick={() => onRequestAuth?.('registro')}
-                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
+                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: 'var(--accent)', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 20px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
                     Crear cuenta
                   </button>
                   <button type="button" onClick={() => onRequestAuth?.('login')}

@@ -86,13 +86,13 @@ function NovedadesSpotlight({ novedades = [], idx, setIdx, onOpen, onPreview }) 
 
           <div style={{ flexShrink: 0, display: 'flex', gap: 11, flexWrap: 'wrap' }}>
             <button onClick={(e) => onOpen(libro, e.currentTarget.getBoundingClientRect())}
-              style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#F2792A', color: '#fff',
+              style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'var(--accent)', color: '#fff',
                 border: `2px solid ${ink}`, borderRadius: 999, padding: estrecho ? '11px 19px' : '13px 26px', fontWeight: 700, fontSize: estrecho ? 14 : 15,
                 fontFamily: 'inherit', cursor: 'pointer', textShadow: '0 1px 1px rgba(0,0,0,0.2)', boxShadow: `2px 2.8px 0 ${ink}33` }}>
               Ver detalle
             </button>
             <button onClick={() => onPreview(libro)}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fffdf8', color: ink,
+              style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--paper)', color: ink,
                 border: `2px solid ${ink}`, borderRadius: 999, padding: estrecho ? '11px 15px' : '13px 20px', fontWeight: 700, fontSize: 14,
                 fontFamily: 'inherit', cursor: 'pointer', boxShadow: `1.6px 2px 0 ${ink}33` }}>
               <EyeIcon /> Preview
@@ -125,7 +125,7 @@ function NovedadesSpotlight({ novedades = [], idx, setIdx, onOpen, onPreview }) 
                   <div style={{ display: 'flex', gap: 10, marginTop: 5 }}>
                     <button onClick={(e) => onOpen(l, e.currentTarget.getBoundingClientRect())}
                       style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit',
-                        fontWeight: 700, fontSize: 11.5, color: '#F2792A' }}>Ver detalle</button>
+                        fontWeight: 700, fontSize: 11.5, color: 'var(--accent)' }}>Ver detalle</button>
                     <button onClick={() => onPreview(l)}
                       style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', padding: 0,
                         cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 11.5, color: 'rgba(74,54,34,0.6)' }}>

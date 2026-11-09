@@ -14,6 +14,7 @@ import React from 'react'
 import { INK, inmTint, BookCover, WALL } from './bibmHelpers.jsx'
 import { imgUrl } from '../../../lib/img.js'
 import { SIN_CATEGORIA_ID } from '../../biblioteca/constants.js'
+import { PlankMobile as Plank } from '../../biblioteca/clay/Shelves.jsx'
 
 const PER_PAGE = 6
 const PER_SHELF = 4    // portadas por repisa en el drill-in
@@ -97,17 +98,6 @@ function CategoryPager({ groups, onOpen }) {
 }
 
 // ── Nivel 2: portadas sobre estantes de madera ──────────────
-function Plank() {
-  return (
-    <div style={{ position: 'relative', width: '100%', height: 16 }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,#d8a86a,#c98f4f)', border: `2px solid ${INK}`, borderRadius: '4px 4px 6px 6px', boxShadow: '0 11px 16px -10px rgba(70,46,20,0.42)' }}>
-        <div style={{ position: 'absolute', top: 5, left: 0, right: 0, height: 2, background: INK, opacity: 0.3 }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '32%', background: '#9c6a36', opacity: 0.5, borderRadius: '0 0 5px 5px' }} />
-      </div>
-    </div>
-  )
-}
-
 function ShelfRow({ books, onOpen, last }) {
   return (
     <div style={{ position: 'relative', marginBottom: last ? 0 : 14 }}>

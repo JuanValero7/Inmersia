@@ -156,7 +156,7 @@ function SearchBar({ items, onPick }) {
           ? <div className="noresL">Sin coincidencias</div>
           : hits.map(({ e, i }) => (
             <div key={e.libro.libro_id ?? i} className="resL" onMouseDown={() => { onPick(i); setQ(''); setOpen(false) }}>
-              <img src={e.libro.cover || ''} alt="" style={{ background: e.libro._baseColor || '#F2792A' }} />
+              <img src={e.libro.cover || ''} alt="" style={{ background: e.libro._baseColor || 'var(--accent)' }} />
               <div><div className="rt">{e.libro.title}</div><div className="ra">{e.libro.author}</div></div>
             </div>
           ))}
@@ -337,7 +337,7 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
                 <div className="placaL-art">
                   {libro.cover
                     ? <img src={libro.cover} alt="" />
-                    : <div style={{ position: 'absolute', inset: 0, background: libro._baseColor || '#F2792A' }} />}
+                    : <div style={{ position: 'absolute', inset: 0, background: libro._baseColor || 'var(--accent)' }} />}
                   <div className="vig" />
                 </div>
               </div>

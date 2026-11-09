@@ -21,8 +21,10 @@ import useIsMobile from '../../hooks/useIsMobile.js'
 // EL LOCAL DE LA IZQUIERDA es la tienda de recompensas (migración 095):
 // letrero «RECOMPENSAS» encima del que viene pintado. En escritorio tiene su
 // propia zona para entrar; en el móvil se pasa de un local a otro con la
-// flecha (el encuadre se desliza por la calle). Recompensas nunca está
-// «Cerrado»: el límite de lecturas pendientes es solo para los libros.
+// flecha. El letrero del local aparece primero y los chips («Toca para
+// entrar», la flecha) medio segundo después (.cm-tarde en tienda.css).
+// Recompensas nunca está «Cerrado»: el límite de lecturas pendientes es
+// solo para los libros.
 //
 // Props:
 //   pendientes  · nº de lecturas sin terminar (solo informativo)
@@ -132,17 +134,18 @@ export default function CalleEscena({ pendientes = 0, limite = 5, bloqueado = fa
             ))}
             {/* Letrero del local enfocado */}
             {enfoque === 'inm'
-              ? <div className="cm-sign"><div className="img-sign-board"><img src="/assets/inmersia-logo.png" alt="Inmersia" /></div></div>
-              : <span className="cm-sign-rec">RECOMPENSAS</span>}
+              ? <div key="inm" className="cm-sign cm-aparece"><div className="img-sign-board"><img src="/assets/inmersia-logo.png" alt="Inmersia" /></div></div>
+              : <span key="rec" className="cm-sign-rec cm-aparece">RECOMPENSAS</span>}
           </div>
 
           {/* Tap = todo el escaparate */}
           <button className="cm-tap" type="button" onClick={() => enter(enfoque)}
             aria-label={enfoque === 'rec' ? 'Entrar a Recompensas' : 'Entrar a la tienda'} />
-          {!opening && <button className="cm-hint" type="button" onClick={() => enter(enfoque)}>Toca para entrar ✦</button>}
+          {/* Los chips, medio segundo después del letrero (key: se repite al cambiar de local) */}
+          {!opening && <button key={'hint-' + enfoque} className="cm-hint cm-tarde" type="button" onClick={() => enter(enfoque)}>Toca para entrar ✦</button>}
           {conRec && !opening && (enfoque === 'inm'
-            ? <button type="button" className="cm-pan izq" onClick={() => setLado('rec')}>‹ Recompensas</button>
-            : <button type="button" className="cm-pan der" onClick={() => setLado('inm')}>Libros ›</button>)}
+            ? <button key="pan-rec" type="button" className="cm-pan izq cm-tarde" onClick={() => setLado('rec')}>‹ Recompensas</button>
+            : <button key="pan-inm" type="button" className="cm-pan der cm-tarde" onClick={() => setLado('inm')}>Libros ›</button>)}
 
           <div className={`warmflash ${zooming ? 'on' : ''}`}
             style={{ background: 'radial-gradient(circle at 52% 72%, rgba(255,216,130,0.98), rgba(255,196,110,0) 52%)' }} />

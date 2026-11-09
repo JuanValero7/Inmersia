@@ -105,12 +105,15 @@ export default [
     // tope al número nuevo para que no se pueda volver a subir.
     //
     // Cuando el contador llegue a cero, súbela a "error" y quita el tope.
+    //
+    // El blanco y el negro puros (#fff, #ffffff, #000, #000000) no cuentan:
+    // no son colores de marca y no hay nada que centralizar (9 nov 2026).
     files: ["src/**/*.jsx"],
     rules: {
       "no-restricted-syntax": [
         "warn",
         {
-          selector: "Literal[value=/^#[0-9a-fA-F]{3,8}$/]",
+          selector: "Literal[value=/^#(?!(?:fff|ffffff|000|000000)$)[0-9a-fA-F]{3,8}$/i]",
           message: "Usa una variable CSS var(--…) de index.css en vez de un hex literal.",
         },
       ],

@@ -31,7 +31,7 @@ export default function NoEncontrada() {
       minHeight: '100svh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', gap: 18,
       padding: '2rem', textAlign: 'center',
-      background: '#f5efe2', color: '#4a3622',
+      background: 'var(--bg-warm)', color: 'var(--ink)',
       fontFamily: "'Baloo 2', system-ui, sans-serif",
     }}>
       <p style={{ fontSize: 64, margin: 0, lineHeight: 1 }}>📖</p>
@@ -43,7 +43,7 @@ export default function NoEncontrada() {
       </p>
       <Link to="/" style={{
         marginTop: 8, padding: '12px 26px', borderRadius: 999,
-        background: '#f2792a', color: '#fffdf8',
+        background: 'var(--accent)', color: 'var(--paper)',
         textDecoration: 'none', fontWeight: 600,
       }}>
         Volver al inicio

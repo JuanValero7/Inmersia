@@ -1,4 +1,5 @@
 import React from 'react'
+import { INK, ACCENT } from '../../lib/colores.js'
 
 // =============================================================
 // ACUARELA · ManageCategoriasModal — MISMO contrato async
@@ -6,8 +7,8 @@ import React from 'react'
 // vía VistaBiblioteca). Solo cambia la estética.
 // =============================================================
 
-const _CAT_INK = '#4a3622';
-const _CAT_ACCENT = '#F2792A';
+const _CAT_INK = INK;
+const _CAT_ACCENT = ACCENT;
 const SUGGESTED_PALETTE = ['#F5A623', '#7C8A4F', '#2F4A6B', '#BE6173', '#d56a52'];
 
 function ClayColorPicker({ value, onChange }) {
@@ -43,7 +44,7 @@ function ManageCategoriasModal({ categories, onClose, onCreate, onUpdate, onDele
   const ink = _CAT_INK;
   const inputStyle = { flex: 1, minWidth: 0, background: '#f4ecda', borderRadius: 12, padding: '10px 14px', border: `2px solid ${ink}`, color: ink, fontFamily: 'inherit', fontSize: 14, fontWeight: 600, outline: 'none' };
   const btnAccent = { background: _CAT_ACCENT, color: '#fff', border: `2px solid ${ink}`, borderRadius: 13, padding: '9px 17px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap', textShadow: '0 1px 1px rgba(0,0,0,0.2)', boxShadow: `1.6px 2px 0 ${ink}33` };
-  const btnGhost = { background: '#fffdf8', color: '#5a4632', border: `2px solid ${ink}`, borderRadius: 12, padding: '8px 14px', fontFamily: 'inherit', fontWeight: 700, fontSize: 13, cursor: 'pointer', boxShadow: `1.6px 2px 0 ${ink}26` };
+  const btnGhost = { background: 'var(--paper)', color: '#5a4632', border: `2px solid ${ink}`, borderRadius: 12, padding: '8px 14px', fontFamily: 'inherit', fontWeight: 700, fontSize: 13, cursor: 'pointer', boxShadow: `1.6px 2px 0 ${ink}26` };
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -74,7 +75,7 @@ function ManageCategoriasModal({ categories, onClose, onCreate, onUpdate, onDele
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(50,34,18,0.45)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Baloo 2', cursive" }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: 560, maxWidth: '100%', maxHeight: '86vh', overflowY: 'auto', background: '#fffdf8', borderRadius: 26, border: `2px solid ${ink}`, padding: 26, boxShadow: `3px 5px 0 ${ink}1f, 14px 20px 40px rgba(40,26,12,0.3)`, color: ink }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: 560, maxWidth: '100%', maxHeight: '86vh', overflowY: 'auto', background: 'var(--paper)', borderRadius: 26, border: `2px solid ${ink}`, padding: 26, boxShadow: `3px 5px 0 ${ink}1f, 14px 20px 40px rgba(40,26,12,0.3)`, color: ink }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
           <div style={{ fontWeight: 800, fontSize: 23 }}>Gestiona tu colección</div>
           <button onClick={onClose} style={{ width: 38, height: 38, borderRadius: '50%', background: '#f4ecda', border: `2px solid ${ink}`, cursor: 'pointer', color: 'rgba(74,54,34,0.7)', fontSize: 20, lineHeight: 1 }}>×</button>

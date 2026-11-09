@@ -1,5 +1,5 @@
 // @ts-check
-// Tienda de recompensas (migración 095).
+// Tienda de recompensas (migraciones 095 y 097: bote de la clase).
 //
 // Alumno: la tienda entera en una llamada (tienda_recompensas): libros con
 // los que puede pagar, saldo, vales de su profe, expedientes y sus canjes.
@@ -16,10 +16,11 @@ import { evento } from '../lib/analytics.js'
 /**
  * @typedef {{ id: string, titulo: string, de_aula: boolean }} LibroTienda
  * @typedef {{ id: string, titulo: string, precio: number, limite: string, aula: string,
- *   bloqueo: null|'ya_canjeado'|'esta_semana'|'agotado', desde: string|null }} Vale
+ *   bloqueo: null|'ya_canjeado'|'esta_semana'|'agotado'|'lleno'|'entregado', desde: string|null,
+ *   juntado: number|null, mio: number|null }} Vale   juntado/mio solo en botes
  * @typedef {{ id: string, titulo: string, descripcion: string, precio: number, comprado: boolean }} Expediente
- * @typedef {{ tipo: 'vale'|'expediente', id: string, titulo: string, precio: number,
- *   estado: 'pendiente'|'entregado'|'devuelto'|'abierto', fecha: string }} Canje
+ * @typedef {{ tipo: 'vale'|'expediente'|'bote', id: string, titulo: string, precio: number,
+ *   estado: 'pendiente'|'entregado'|'devuelto'|'abierto'|'aportado'|'lleno', fecha: string }} Canje
  * @typedef {{ libros: LibroTienda[], libro_id: string|null, saldo?: number, solo_leyendo?: number,
  *   recompensas?: Vale[], expedientes?: Expediente[], canjes?: Canje[] }} Tienda
  */
@@ -70,7 +71,18 @@ export function useTiendaRecompensas(userId, libroId) {
     onSettled: () => despues(query.data?.libro_id ?? null),
   })
 
-  return { tienda: query.data ?? null, cargando: query.isLoading, error: query.isError, canjearVale, comprarExpediente }
+  // Bote de la clase: pone los ovillos que quiera (si pide más de lo que falta, pone lo que falta).
+  const aportarBote = useMutation({
+    mutationFn: async (/** @type {{ vale: Vale, cantidad: number }} */ { vale, cantidad }) => {
+      const { data, error } = await supabase.rpc('recompensa_aportar', { p_recompensa: vale.id, p_cantidad: cantidad })
+      if (error) throw error
+      return /** @type {{ saldo: number, puesto: number, juntado: number, lleno: boolean }} */ (data)
+    },
+    onSuccess: () => evento('bote_aportado'),
+    onSettled: () => despues(query.data?.libro_id ?? null),
+  })
+
+  return { tienda: query.data ?? null, cargando: query.isLoading, error: query.isError, canjearVale, comprarExpediente, aportarBote }
 }
 
 /**
@@ -123,5 +135,6 @@ export function useGestionRecompensas(aulaId) {
   const activar = useMutation(opciones('recompensa_activar', 'recompensa_activada'))
   const borrar = useMutation(opciones('recompensa_borrar', 'recompensa_borrada'))
   const resolver = useMutation(opciones('canje_resolver', 'canje_resuelto'))
-  return { crear, activar, borrar, resolver }
+  const entregarBote = useMutation(opciones('bote_entregar', 'bote_entregado'))
+  return { crear, activar, borrar, resolver, entregarBote }
 }

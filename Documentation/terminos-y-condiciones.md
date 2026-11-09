@@ -1,6 +1,6 @@
 # Términos y Condiciones de Inmersia
 
-**Última actualización:** 3 de noviembre de 2026
+**Última actualización:** 9 de noviembre de 2026
 
 ---
 
@@ -28,6 +28,7 @@ Inmersia es una plataforma de lectura inmersiva. **Hoy todas sus funciones son g
 - **Tienda** — catálogo de libros disponibles para añadir a tu biblioteca.
 - **Cuaderno** — notas y frases subrayadas durante la lectura.
 - **Álbum y predicciones** — barajitas coleccionables y predicciones sobre cada libro.
+- **Juegos de lectura** — la mesa de investigación, las corazonadas, el mapa del tesoro, el concurso y el desafío del gato, con sus ovillos y su tienda de recompensas (ver 2.3). Se encienden y apagan en tu Perfil, o los decide tu profesor en un aula.
 - **Cartelera de investigación** — contenido curado y análisis literario de cada obra.
 - **Foro de la comunidad** — comentarios públicos por libro.
 - **Chat privado** — conversaciones uno a uno entre lectores del mismo libro, **reservado a usuarios de 16 años o más** (ver 3.1).
@@ -48,9 +49,21 @@ Si eso ocurre:
 - **Lo que ya tengas en tu biblioteca seguirá siendo accesible sin coste.** No cobraremos retroactivamente por algo que ya obtuviste gratis.
 - Los precios y condiciones se mostrarán con claridad antes de que puedas contratar nada, y la sección 4 pasará a aplicarse.
 
-### 2.2 Funcionalidades basadas en inteligencia artificial (futuras)
+### 2.2 Funcionalidades basadas en inteligencia artificial
 
-Inmersia podrá incorporar funcionalidades que utilicen inteligencia artificial. El contenido o las sugerencias generadas por IA pueden contener errores; estas funcionalidades se ofrecerán "tal cual", no sustituyen tu criterio y no garantizamos la exactitud de sus resultados. La Política de Privacidad detallará el tratamiento de datos correspondiente antes de que se activen.
+El **concurso** y el **desafío del gato** usan inteligencia artificial para valorar lo que escribes y para contestarte. La IA puede equivocarse: sus resultados se ofrecen "tal cual", no sustituyen tu criterio ni el de tu profesor y no garantizamos su exactitud. **La IA no pone notas.** En un aula, la nota la pone tu profesor. Qué datos se envían y a quién lo explica la Política de Privacidad (sección 2.8).
+
+Escribe en estos juegos como respuesta a lo que se pregunta. Intentar manipular a la IA con órdenes o trucos es un uso indebido (ver sección 7). Hay un límite diario de usos por persona.
+
+### 2.3 Ovillos y recompensas
+
+Los **ovillos** son la moneda de los juegos de lectura. Se ganan leyendo y jugando, y se gastan dentro de los juegos y en la tienda de recompensas. Cada libro tiene sus propios ovillos.
+
+- Los ovillos **no son dinero**: no se compran, no se venden, no se pasan a otra persona ni se pueden cambiar por nada fuera de la Plataforma.
+- Inmersia puede ajustar las reglas de los juegos y cuántos ovillos da o cuesta cada cosa.
+- Si borras tu cuenta, tus ovillos se pierden. Apagar un juego solo lo esconde: lo jugado se conserva.
+- Los **expedientes** de la tienda los pone Inmersia. Una vez comprados, quedan en tu cuenta.
+- Los **vales** de la tienda de un aula los crea, los cumple y los entrega **tu profesor**. Inmersia solo registra el canje y no responde de lo que promete el vale. Si tu profesor no puede darte un vale, te devuelve los ovillos.
 
 ---
 
@@ -85,7 +98,8 @@ Eres responsable de mantener la confidencialidad de tu contraseña y de la activ
 Un colegio puede usar Inmersia para la lectura de sus cursos. Entras a tu aula con un código que te da el colegio, escribiendo tu nombre y apellido como figuran en la lista de tu curso. Dentro del aula:
 
 - tu profesor elige el libro, que aparece solo en tu biblioteca, y la fecha en la que la clase debería terminarlo;
-- tu profesor y la administración del colegio ven cómo va tu lectura de ese libro, nunca lo que escribes (ver la Política de Privacidad, sección 2.9);
+- tu profesor y la administración del colegio ven cómo va tu lectura de ese libro y tus resultados en sus juegos. No ven lo que escribes, salvo la charla del desafío del gato: esa la lee tu profesor, que puede ponerle nota (ver la Política de Privacidad, sección 2.9);
+- tu profesor decide qué juegos de lectura están encendidos en el libro del aula y puede crear vales para la tienda del aula;
 - el colegio puede sacarte del aula, cambiar sus códigos o borrarla.
 
 Los códigos del aula, de profesor y de administración son personales del colegio: no los compartas fuera de él. Si tienes 12 o 13 años, para salir de tu única aula habla con tu profesor.
@@ -212,6 +226,8 @@ Queda prohibido usar Inmersia para:
 - Usar scripts, bots o medios automatizados para acceder a la Plataforma o extraer su contenido.
 - Interferir con la seguridad o la disponibilidad de los servidores.
 - Hacerse pasar por otra persona o entidad.
+- Intentar manipular la inteligencia artificial de los juegos, o usarla para algo distinto de responder a lo que pregunta el juego.
+- Usar varias cuentas para conseguir ovillos o saltarse los límites de los juegos.
 - Cualquier actividad ilegal o que perjudique a otros usuarios.
 
 ---

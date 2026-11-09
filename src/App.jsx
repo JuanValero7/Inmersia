@@ -52,8 +52,8 @@ const TiendaRecompensas     = lazy(() => import('./components/recompensas/Tienda
 
 const Fallback = (
   <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,background:'var(--bg-warm)'}}>
-    <div className="spinner" style={{width:32,height:32,borderWidth:3,borderColor:'rgba(139,77,42,0.2)',borderTopColor:'#8b4d2a'}}/>
-    <p style={{fontFamily:"'Playfair Display',serif",color:'#9a6a4a',fontSize:'1rem'}}>Abriendo la biblioteca…</p>
+    <div className="spinner" style={{width:32,height:32,borderWidth:3,borderColor:'rgba(139,77,42,0.2)',borderTopColor:'var(--brown-mid)'}}/>
+    <p style={{fontFamily:"'Playfair Display',serif",color:'var(--brown-soft)',fontSize:'1rem'}}>Abriendo la biblioteca…</p>
   </div>
 )
 
@@ -458,13 +458,13 @@ export default function App() {
       {/* Aviso: llegó al límite de lecturas pendientes al intentar sumar un libro. */}
       {limiteAviso && (
         <div style={{ position: 'fixed', top: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 4000, maxWidth: 460, width: 'calc(100% - 32px)' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 14, padding: '14px 16px', boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)', fontFamily: "'Baloo 2', sans-serif" }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: 'var(--paper)', border: '2px solid #4a3622', borderRadius: 14, padding: '14px 16px', boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)', fontFamily: "'Baloo 2', sans-serif" }}>
             <span style={{ fontSize: 20, lineHeight: 1.2 }}>📚</span>
-            <p style={{ margin: 0, flex: 1, fontSize: 14, color: '#4a3622', lineHeight: 1.45 }}>
+            <p style={{ margin: 0, flex: 1, fontSize: 14, color: 'var(--ink)', lineHeight: 1.45 }}>
               Alcanzaste tu límite de {LIMITE_PENDIENTES} lecturas pendientes. Termina alguna para sumar este libro a tu biblioteca.
             </p>
             <button type="button" onClick={cerrarLimiteAviso} aria-label="Cerrar"
-              style={{ background: 'transparent', border: 'none', color: '#9a6a4a', cursor: 'pointer', fontSize: 20, fontWeight: 700, lineHeight: 1, padding: 0 }}>×</button>
+              style={{ background: 'transparent', border: 'none', color: 'var(--brown-soft)', cursor: 'pointer', fontSize: 20, fontWeight: 700, lineHeight: 1, padding: 0 }}>×</button>
           </div>
         </div>
       )}

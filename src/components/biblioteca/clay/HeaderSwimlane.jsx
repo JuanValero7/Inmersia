@@ -3,6 +3,7 @@ import { INK, inmTint, BookCover, CornerMounts, Skel, useAnchoContenedor } from 
 import { NovedadesSpotlight } from './NovedadesSpotlight.jsx'
 import { imgUrl } from '../../../lib/img.js'
 import { mapLibro } from '../../../lib/libros.js'
+import { ACCENT } from '../../../lib/colores.js'
 // =============================================================
 // ACUARELA · Header (logo + buscador + nav) y Swimlane (hero).
 // Header cableado: search, Tienda, Perfil, Salir.
@@ -29,12 +30,12 @@ function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, on
   const compacto = ancho !== 0 && ancho < BARRA_ANCHO_COMPACTO;
   const bar = {
     display: 'flex', alignItems: 'center', gap: 16, borderRadius: 22, padding: '13px 17px',
-    backgroundColor: '#F2792A',
+    backgroundColor: 'var(--accent)',
     border: `2px solid ${ink}`,
     boxShadow: `5px 7px 0 ${ink}12, inset 0 1px 0 rgba(255,255,255,0.5)`,
   };
   const navBtn = {
-    display: 'flex', alignItems: 'center', gap: 8, background: '#fffdf8', color: ink,
+    display: 'flex', alignItems: 'center', gap: 8, background: 'var(--paper)', color: ink,
     border: `2px solid ${ink}`, borderRadius: 999, padding: '8px 16px', fontFamily: 'inherit',
     fontWeight: 700, fontSize: 13.5, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: `1.5px 2px 0 ${ink}1f`,
   };
@@ -141,13 +142,13 @@ function RecomendacionSpotlight({ recomendaciones, idx, setIdx, onOpen, onPrevie
 
         <div style={{ flexShrink: 0, display: 'flex', gap: 11, flexWrap: 'wrap' }}>
           <button onClick={(e) => onOpen(libro, e.currentTarget.getBoundingClientRect())}
-            style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#F2792A', color: '#fff', border: `2px solid ${ink}`,
+            style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'var(--accent)', color: '#fff', border: `2px solid ${ink}`,
               borderRadius: 999, padding: estrecho ? '11px 19px' : '13px 26px', fontWeight: 700, fontSize: estrecho ? 14 : 15, fontFamily: 'inherit', cursor: 'pointer',
               textShadow: '0 1px 1px rgba(0,0,0,0.2)', boxShadow: `2px 2.8px 0 ${ink}33` }}>
             Ver detalle
           </button>
           <button onClick={() => onPreview(libro)}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fffdf8', color: ink, border: `2px solid ${ink}`,
+            style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--paper)', color: ink, border: `2px solid ${ink}`,
               borderRadius: 999, padding: estrecho ? '11px 15px' : '13px 20px', fontWeight: 700, fontSize: 14, fontFamily: 'inherit', cursor: 'pointer',
               boxShadow: `1.6px 2px 0 ${ink}33` }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" strokeLinecap="round" strokeLinejoin="round" /><circle cx="12" cy="12" r="3" /></svg>
@@ -223,7 +224,7 @@ function NotaInvestigacion({ investigacion, onClick, lateral }) {
 }
 
 function HeroFeatured({ book, onOpen, onGoInvestigacion }) {
-  const ink = INK, accent = '#F2792A';
+  const ink = INK, accent = ACCENT;
   const [hov, setHov] = React.useState(false);
   const [cajaRef, ancho] = useAnchoContenedor();
   const cat = book.categoryName;
@@ -301,11 +302,11 @@ const GATO_H = 230;  // gato contenido dentro del hero (más pequeño, sin sangr
 const surface = {
   position: 'relative', overflow: 'hidden', borderRadius: CARD_R, padding: '20px 22px 22px', height: CARD_H,
   display: 'flex', flexDirection: 'column',
-  backgroundColor: '#f1e8d4', boxShadow: `0 10px 26px ${ink}1f`,
+  backgroundColor: 'var(--cream)', boxShadow: `0 10px 26px ${ink}1f`,
 };
 const tabBtn = (active) => ({
   border: `2px solid ${active ? ink : 'transparent'}`, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 14,
-  padding: '8px 18px', borderRadius: 999, background: active ? '#F2792A' : 'transparent', color: active ? '#fff' : 'rgba(74,54,34,0.6)',
+  padding: '8px 18px', borderRadius: 999, background: active ? 'var(--accent)' : 'transparent', color: active ? '#fff' : 'rgba(74,54,34,0.6)',
   whiteSpace: 'nowrap', textShadow: active ? '0 1px 1px rgba(0,0,0,0.2)' : 'none', boxShadow: active ? `1.4px 1.8px 0 ${ink}33` : 'none', transition: 'all .15s',
 });
 // Gato contenido dentro del hero (sin sangrado por debajo): asoma en la

@@ -28,6 +28,7 @@ import { useDesafioLector } from './lector/Desafio.jsx'
 import { useJuegosLibro } from '../hooks/useJuegos.js'
 import { motivoNoMapa } from '../utils/mapaTesoro.js'
 import { conCorazonadas, sinCorazonadas } from '../utils/corazonadas.js'
+import { INK } from '../lib/colores.js'
 
 // Geometría de página.
 // <PolaroidStack> mide 160 de ancho y se mete 110 por encima del canto del
@@ -511,7 +512,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
           )}
           {guestMode ? (
             <button type="button" onClick={() => onRequestAuth?.('registro')}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#F2792A', border: '2px solid #4a3622', borderRadius: 999, padding: '9px 16px', color: '#fff', fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '1.5px 2px 0 rgba(74,54,34,0.30)' }}>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'var(--accent)', border: '2px solid #4a3622', borderRadius: 999, padding: '9px 16px', color: '#fff', fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '1.5px 2px 0 rgba(74,54,34,0.30)' }}>
               Crear cuenta
             </button>
           ) : explorarVisible && (
@@ -519,7 +520,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
               {explorarOpen && (
                 <div style={{
                   position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60,
-                  background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 16,
+                  background: 'var(--paper)', border: '2px solid #4a3622', borderRadius: 16,
                   padding: '10px 14px', display: 'flex', gap: 20, alignItems: 'flex-end',
                   boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)',
                   whiteSpace: 'nowrap',
@@ -527,19 +528,19 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   {!tutorialManual && (
                     <button type="button" onClick={() => { setExplorarOpen(false); onGoBack() }}
                       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                       <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#000' }}>Biblioteca</span>
                     </button>
                   )}
                   <button type="button" onClick={irInvestigacion}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                     <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#000' }}>Investigación</span>
                   </button>
                   {!tutorialManual && (
                     <button type="button" onClick={() => { setExplorarOpen(false); onGoForo() }}
                       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
                       <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#000' }}>Foro</span>
                     </button>
                   )}
@@ -661,7 +662,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
             </h3>
             <EstrellaLector valor={resenaForm.rating} onChange={r => setResenaForm(f => ({...f, rating: r}))} />
             <textarea
-              style={{ width: '100%', marginTop: 14, boxSizing: 'border-box', background: '#fffdf8', border: `1.5px solid ${theme.ink}55`, borderRadius: 10, padding: '10px 12px', fontSize: 14, color: theme.ink, resize: 'vertical', fontFamily: "'Playfair Display',serif", lineHeight: 1.5, outline: 'none' }}
+              style={{ width: '100%', marginTop: 14, boxSizing: 'border-box', background: 'var(--paper)', border: `1.5px solid ${theme.ink}55`, borderRadius: 10, padding: '10px 12px', fontSize: 14, color: theme.ink, resize: 'vertical', fontFamily: "'Playfair Display',serif", lineHeight: 1.5, outline: 'none' }}
               placeholder="Escribe tu reseña (opcional)…"
               maxLength={1000}
               value={resenaForm.texto}
@@ -702,9 +703,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       {/* Paywall de invitado */}
       {showPaywall && (
         <div onClick={() => setShowPaywall(false)} style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(20,12,4,0.82)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative', background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 20, padding: '40px 48px', maxWidth: 420, width: '100%', textAlign: 'center', boxShadow: '3px 6px 0 rgba(74,54,34,0.25), 0 20px 40px rgba(0,0,0,0.35)' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative', background: 'var(--paper)', border: '2px solid #4a3622', borderRadius: 20, padding: '40px 48px', maxWidth: 420, width: '100%', textAlign: 'center', boxShadow: '3px 6px 0 rgba(74,54,34,0.25), 0 20px 40px rgba(0,0,0,0.35)' }}>
             <button type="button" onClick={() => setShowPaywall(false)} aria-label="Cerrar" title="Cerrar"
-              style={{ position: 'absolute', top: 12, right: 14, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1.5px solid rgba(74,54,34,0.3)', color: '#9a6a4a', borderRadius: '50%', cursor: 'pointer', fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1 }}>×</button>
+              style={{ position: 'absolute', top: 12, right: 14, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1.5px solid rgba(74,54,34,0.3)', color: 'var(--brown-soft)', borderRadius: '50%', cursor: 'pointer', fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1 }}>×</button>
             <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ display: 'block', height: 46, width: 'auto', margin: '0 auto 18px' }} />
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: '#2c1a0e', margin: '0 0 12px' }}>
               {muestraMotivo === 'sin-adquirir' ? 'Suma este libro a tu biblioteca' : 'Sigue leyendo en Inmersia'}
@@ -720,7 +721,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
               {muestraMotivo === 'sin-adquirir' ? (
                 <>
                   <button type="button" onClick={() => onGoTienda?.()}
-                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
+                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: 'var(--accent)', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
                     Ir a la Tienda
                   </button>
                   <button type="button" onClick={() => onGoBack?.()}
@@ -731,7 +732,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
               ) : (
                 <>
                   <button type="button" onClick={() => onRequestAuth?.('registro')}
-                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#F2792A', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
+                    style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer', background: 'var(--accent)', color: '#fff', border: '2px solid #4a3622', borderRadius: 999, padding: '10px 22px', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
                     Crear cuenta
                   </button>
                   <button type="button" onClick={() => onRequestAuth?.('login')}

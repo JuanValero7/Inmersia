@@ -8,7 +8,7 @@
     "build": "vite build && node scripts/generar-seo.mjs",
     "preview": "vite preview",
     "test": "vitest run",
-    "lint": "eslint src --max-warnings 504",
+    "lint": "eslint src --max-warnings 285",
     "esquema": "node scripts/volcar-esquema.mjs",
     "humo": "node scripts/humo.mjs",
     "respaldo": "node scripts/respaldar.mjs",

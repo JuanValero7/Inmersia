@@ -270,7 +270,7 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
         {/* footer */}
         <div style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(74,54,34,0.12)', background: 'rgba(245,235,210,0.6)', flexShrink: 0 }}>
           <span style={{ fontFamily: "'Baloo 2',sans-serif", fontSize: 11.5, color: 'rgba(74,54,34,0.55)' }}>Cap. {selCap}{selCap === capituloNum ? ' (estás leyendo)' : ''}</span>
-          <ClayButton variant="primary" onClick={handleClose} style={{ fontSize: 13, background: '#F2792A' }}>Guardar y continuar →</ClayButton>
+          <ClayButton variant="primary" onClick={handleClose} style={{ fontSize: 13, background: 'var(--accent)' }}>Guardar y continuar →</ClayButton>
         </div>
       </div>
       <img src={`/assets/lector/gato-${gatoColor}-3.webp`} alt=""

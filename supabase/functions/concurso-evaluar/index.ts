@@ -190,7 +190,9 @@ Deno.serve(async (req) => {
   if (errReserva) {
     const m = errReserva.message || ''
     if (m.includes('limite_alumno') || m.includes('limite_global')) return responder(429, { error: 'vuelve_manana' })
-    return responder(409, { error: 'no_se_puede', detalle: m })
+    // El motivo queda en el registro del servidor; al navegador solo el código (revisión 9 nov).
+    console.warn('concurso-evaluar: no se puede', m)
+    return responder(409, { error: 'no_se_puede' })
   }
 
   let juicio = null

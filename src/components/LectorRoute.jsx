@@ -18,8 +18,8 @@ import { mapLibro } from '../hooks/useBookBySlug.js'
 
 const LoadingScreen = (
   <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,background:'var(--bg-warm)'}}>
-    <div className="spinner" style={{width:32,height:32,borderWidth:3,borderColor:'rgba(139,77,42,0.2)',borderTopColor:'#8b4d2a'}}/>
-    <p style={{fontFamily:"'Playfair Display',serif",color:'#9a6a4a',fontSize:'1rem'}}>Abriendo la biblioteca…</p>
+    <div className="spinner" style={{width:32,height:32,borderWidth:3,borderColor:'rgba(139,77,42,0.2)',borderTopColor:'var(--brown-mid)'}}/>
+    <p style={{fontFamily:"'Playfair Display',serif",color:'var(--brown-soft)',fontSize:'1rem'}}>Abriendo la biblioteca…</p>
   </div>
 )
 

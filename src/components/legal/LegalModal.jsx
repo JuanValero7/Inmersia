@@ -4,6 +4,7 @@ import terminosRaw from '../../../Documentation/terminos-y-condiciones.md?raw'
 import privacidadRaw from '../../../Documentation/politica-de-privacidad.md?raw'
 import impressumRaw from '../../../Documentation/impressum.md?raw'
 import { parseMarkdown, INLINE_RE } from './parseMarkdown.js'
+import { INK, ACCENT } from '../../lib/colores.js'
 
 // =============================================================
 // LegalModal — visor de Términos y Condiciones / Política de Privacidad.
@@ -13,8 +14,6 @@ import { parseMarkdown, INLINE_RE } from './parseMarkdown.js'
 // sin sumar una dependencia de markdown completa.
 // =============================================================
 
-const INK = '#4a3622'
-const ACCENT = '#F2792A'
 
 export const DOCS = {
   terminos:   { label: 'Términos y Condiciones', raw: terminosRaw },
@@ -108,7 +107,7 @@ export default function LegalModal({ initialDoc = 'terminos', onClose }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Baloo 2', cursive",
     }}>
       <div onClick={e => e.stopPropagation()} style={{
-        background: '#fffdf8', border: `2px solid ${INK}`, borderRadius: 20, width: '100%', maxWidth: 640,
+        background: 'var(--paper)', border: `2px solid ${INK}`, borderRadius: 20, width: '100%', maxWidth: 640,
         maxHeight: '86vh', display: 'flex', flexDirection: 'column', boxShadow: `3px 6px 0 ${INK}33`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px', borderBottom: `2px solid ${INK}22` }}>
@@ -120,7 +119,7 @@ export default function LegalModal({ initialDoc = 'terminos', onClose }) {
             }}>{label}</button>
           ))}
           <button type="button" onClick={onClose} aria-label="Cerrar" style={{
-            background: '#fffdf8', border: `2px solid ${INK}`, borderRadius: 10, width: 34, height: 34,
+            background: 'var(--paper)', border: `2px solid ${INK}`, borderRadius: 10, width: 34, height: 34,
             cursor: 'pointer', fontFamily: 'inherit', fontWeight: 800, fontSize: 15, color: INK, flexShrink: 0,
           }}>✕</button>
         </div>

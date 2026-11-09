@@ -22,7 +22,7 @@ function BibCard({ book, heroUrl, onClick, children }) {
     <div onClick={onClick} style={{
       position: 'relative', overflow: 'hidden',
       display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer',
-      background: '#f1e8d4', border: `2px solid ${INK}`, borderRadius: 16,
+      background: 'var(--cream)', border: `2px solid ${INK}`, borderRadius: 16,
       padding: '12px 16px', boxShadow: `2px 5px 0 ${INK}1a`,
     }}>
       {heroUrl && (

@@ -15,7 +15,7 @@ import '../styles/album.css'
 function LoadingScreen() {
   return (
     <div className="album-loading">
-      <div className="spinner" style={{ width: 28, height: 28, borderWidth: 2.5, borderColor: 'rgba(242,121,42,0.28)', borderTopColor: '#F2792A' }} />
+      <div className="spinner" style={{ width: 28, height: 28, borderWidth: 2.5, borderColor: 'rgba(242,121,42,0.28)', borderTopColor: 'var(--accent)' }} />
       <p>Abriendo el álbum…</p>
     </div>
   )
@@ -54,7 +54,7 @@ function SearchBar({ items, onPick }) {
       </div>
       {open && term && (
         <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 40,
-          background: '#fffdf8', border: '2.5px solid #4a3622', borderRadius: 16,
+          background: 'var(--paper)', border: '2.5px solid #4a3622', borderRadius: 16,
           boxShadow: '0 22px 48px rgba(74,54,34,.22), 3px 5px 0 rgba(74,54,34,.16)', overflow: 'hidden' }}>
           {hits.length === 0 ? (
             <div style={{ padding: 16, textAlign: 'center', fontWeight: 600, color: '#6b4f34' }}>Sin coincidencias en tu álbum</div>
@@ -62,11 +62,11 @@ function SearchBar({ items, onPick }) {
             <button key={e.libro.libro_id} onMouseDown={() => { onPick(i); setQ(''); setOpen(false) }}
               style={{ display: 'flex', alignItems: 'center', gap: 13, width: '100%', textAlign: 'left',
                 padding: '10px 14px', border: 'none', borderBottom: '1.5px solid #efe7d4', background: 'transparent', cursor: 'pointer' }}>
-              <span style={{ width: 34, height: 48, flex: 'none', borderRadius: 4, overflow: 'hidden', border: '2px solid #4a3622', background: e.libro._baseColor || '#F2792A' }}>
+              <span style={{ width: 34, height: 48, flex: 'none', borderRadius: 4, overflow: 'hidden', border: '2px solid #4a3622', background: e.libro._baseColor || 'var(--accent)' }}>
                 {e.libro.cover && <img src={e.libro.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
               </span>
               <span>
-                <span style={{ display: 'block', fontFamily: "'Baloo 2', system-ui, sans-serif", fontWeight: 700, fontSize: 17, lineHeight: 1.05, color: '#4a3622' }}>{e.libro.title}</span>
+                <span style={{ display: 'block', fontFamily: "'Baloo 2', system-ui, sans-serif", fontWeight: 700, fontSize: 17, lineHeight: 1.05, color: 'var(--ink)' }}>{e.libro.title}</span>
                 <span style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: '#6b4f34' }}>{e.libro.author}</span>
               </span>
             </button>

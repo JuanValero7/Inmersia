@@ -37,7 +37,7 @@ export default class ErrorBoundary extends React.Component {
           <button
             onClick={() => window.location.reload()}
             style={{
-              marginTop: 8, padding: '10px 28px', background: '#F2792A',
+              marginTop: 8, padding: '10px 28px', background: 'var(--accent)',
               color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer',
               fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: '0.95rem', letterSpacing: '0.02em',
             }}

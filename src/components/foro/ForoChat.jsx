@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase.js'
 import { Avatar, timeAgo, fetchNombre } from './foroUtils.jsx'
 import { puedeUsarChat, EDAD_MINIMA_CHAT } from '../../lib/edad.js'
 import { useFechaNacimientoQuery } from '../../lib/queries.js'
+import { ACCENT } from '../../lib/colores.js'
 
 export default function ForoChat({ foro, book, user, miNombre, onSesionChange }) {
   const [enSala,       setEnSala]       = useState(false)
@@ -386,7 +387,7 @@ export default function ForoChat({ foro, book, user, miNombre, onSesionChange })
 
           <div className={clsx('sala-container', 'centered', historial.length > 0 && 'compact')}>
             <div className="sala-intro-icon">
-              <svg width="38" height="38" fill="none" viewBox="0 0 24 24" stroke="#F2792A" strokeWidth="1.8">
+              <svg width="38" height="38" fill="none" viewBox="0 0 24 24" stroke={ACCENT} strokeWidth="1.8">
                 <path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>

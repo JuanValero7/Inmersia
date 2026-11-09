@@ -12,7 +12,7 @@ export default function WelcomePopup({ user, manualReady = true, onOpenManual, o
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 3200, background: 'rgba(20,12,4,0.82)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ position: 'relative', background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 20, padding: '38px 40px 30px', maxWidth: 440, width: '100%', textAlign: 'center', boxShadow: '3px 6px 0 rgba(74,54,34,0.25), 0 20px 40px rgba(0,0,0,0.35)' }}>
+      <div style={{ position: 'relative', background: 'var(--paper)', border: '2px solid #4a3622', borderRadius: 20, padding: '38px 40px 30px', maxWidth: 440, width: '100%', textAlign: 'center', boxShadow: '3px 6px 0 rgba(74,54,34,0.25), 0 20px 40px rgba(0,0,0,0.35)' }}>
         <img src="/assets/inmersia-logo.png" alt="Inmersia" style={{ display: 'block', height: 44, width: 'auto', margin: '0 auto 20px' }} />
         <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 23, color: '#2c1a0e', margin: '0 0 12px', lineHeight: 1.25 }}>
           ¡Hola{nombre ? `, ${nombre}` : ''}!
@@ -21,7 +21,7 @@ export default function WelcomePopup({ user, manualReady = true, onOpenManual, o
           Gracias por elegirnos. ¿Por dónde quieres empezar?
         </p>
         <button type="button" onClick={onStartReading}
-          style={{ ...boton, background: '#F2792A', color: '#fff', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
+          style={{ ...boton, background: 'var(--accent)', color: '#fff', boxShadow: '2px 3px 0 rgba(74,54,34,0.4)' }}>
           Empezar a leer
         </button>
         <button type="button" onClick={onOpenManual} disabled={!manualReady}

@@ -68,6 +68,13 @@ export async function reunirMisDatos(user) {
     datos[clave] = error ? { _error: error.message } : (data ?? [])
   })
 
+  // Juegos de lectura (087–095): sus tablas no se leen desde el navegador,
+  // así que llegan juntas por una función que solo devuelve lo propio (096).
+  // Trae ovillos, las jugadas de los cinco juegos, la charla del desafío con
+  // la nota y el comentario del profe, expedientes y vales canjeados.
+  const { data: juegos, error: errJuegos } = await supabase.rpc('mis_datos_juegos')
+  datos.juegos = errJuegos ? { _error: errJuegos.message } : (juegos ?? {})
+
   // Los mensajes de chat no se incluyen: son una conversación de dos, y
   // entregarlos completos daría copia de lo que escribió la otra persona.
   // Se conservan un máximo de 90 días (Política de Privacidad, sección 4).

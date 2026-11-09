@@ -23,6 +23,7 @@ import { usePistas } from '../../context/pistas.jsx'
 import Pista from '../onboarding/Pista.jsx'
 import '../../styles/foro.css'        // base (clases que usan las sub-vistas)
 import '../../styles/foro.mobile.css'  // overrides responsive del chrome
+import { INK } from '../../lib/colores.js'
 
 export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera, isSuperuser = false }) {
   const { book, loading: bookLoading } = useBookBySlug(bookProp)
@@ -52,7 +53,7 @@ export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura
 
   if (bookLoading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-warm)' }}>
-      <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3, borderColor: 'rgba(139,77,42,0.2)', borderTopColor: '#8b4d2a' }} />
+      <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3, borderColor: 'rgba(139,77,42,0.2)', borderTopColor: 'var(--brown-mid)' }} />
     </div>
   )
 
@@ -113,19 +114,19 @@ export default function ForoMobile({ book: bookProp, user, onGoBack, onGoLectura
             <div className="foro-m-sheet-nav">
               {onGoBiblioteca && (
                 <button type="button" onClick={() => goNav(tutorialForo ? irBibliotecaFin : onGoBiblioteca)}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                   <span>Biblioteca</span>
                 </button>
               )}
               {onGoLectura && !tutorialForo && (
                 <button type="button" onClick={() => goNav(onGoLectura)}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0118 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0118 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
                   <span>Lectura</span>
                 </button>
               )}
               {onGoCartelera && !tutorialForo && (
                 <button type="button" onClick={() => goNav(onGoCartelera)}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                   <span>Investigación</span>
                 </button>
               )}

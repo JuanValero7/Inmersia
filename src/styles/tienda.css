@@ -238,6 +238,11 @@
 .img-sign-rec{font-size:22px;}
 .cm-sign-rec{left:50%;top:calc(70% - 28.2vw);width:92vw;font-size:6.9vw;}
 .cm-plate{transition:opacity .8s ease,background-position .7s cubic-bezier(.5,0,.35,1);}
+/* El letrero del local aparece enseguida; los chips, medio segundo después. */
+.cm-aparece{animation:cmAparece .25s ease-out both;}
+.cm-tarde{animation:cmAparece .25s ease-out .5s both;}
+.cm-hint.cm-tarde{animation:cmAparece .25s ease-out .5s both,cmHint 2.4s ease-in-out .75s infinite;}
+@keyframes cmAparece{from{opacity:0;}to{opacity:1;}}
 .cm-pan{position:absolute;top:50%;transform:translateY(-50%);z-index:8;border:2px solid var(--ink);
   background:rgba(255,253,248,0.92);color:var(--ink);border-radius:999px;padding:6px 12px;font-family:inherit;
   font-weight:800;font-size:13px;cursor:pointer;box-shadow:1.5px 2px 0 rgba(74,54,34,0.18);}

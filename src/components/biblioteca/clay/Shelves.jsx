@@ -64,6 +64,20 @@ function CartoonPlank() {
   );
 }
 
+// ── La misma tabla, más fina, para el móvil ─────────────────
+// (Biblioteca móvil y tienda de recompensas.)
+function PlankMobile() {
+  const ink = ACUA.ink;
+  return (
+    <div style={{ position: 'relative', width: '100%', height: 16 }}>
+      <div style={{ position: 'absolute', inset: 0, background: ACUA.wood.body, border: `2px solid ${ink}`, borderRadius: '4px 4px 6px 6px', boxShadow: '0 11px 16px -10px rgba(70,46,20,0.42)' }}>
+        <div style={{ position: 'absolute', top: 5, left: 0, right: 0, height: 2, background: ink, opacity: 0.3 }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '32%', background: ACUA.wood.under, opacity: 0.5, borderRadius: '0 0 5px 5px' }} />
+      </div>
+    </div>
+  );
+}
+
 function cartoonTag(cat, ink) {
   return { display: 'inline-flex', alignItems: 'center', background: cat.color, color: '#fff',
     fontWeight: 700, fontSize: 12, padding: '4px 13px 5px', borderRadius: 11, whiteSpace: 'nowrap',
@@ -194,4 +208,4 @@ function FlatShelves({ groups, activeCat, onOpen }) {
 // (useCallback), así que se salta esos re-renders.
 const FlatShelvesMemo = React.memo(FlatShelves)
 
-export { FlatShelvesMemo as FlatShelves, ShSpine, CartoonPlank };
+export { FlatShelvesMemo as FlatShelves, ShSpine, CartoonPlank, PlankMobile };

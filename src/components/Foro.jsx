@@ -10,6 +10,7 @@ import { useOnboarding } from '../context/onboarding.jsx'
 import { MANUAL_LIBRO_ID } from '../lib/constants.js'
 import { usePistas } from '../context/pistas.jsx'
 import Pista from './onboarding/Pista.jsx'
+import { INK } from '../lib/colores.js'
 
 export default function VistaForo({ book: bookProp, user, onGoBack, onGoLectura, onGoBiblioteca, onGoCartelera, isSuperuser = false }) {
   const { book, loading: bookLoading } = useBookBySlug(bookProp)
@@ -47,7 +48,7 @@ export default function VistaForo({ book: bookProp, user, onGoBack, onGoLectura,
 
   if (bookLoading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-warm)' }}>
-      <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3, borderColor: 'rgba(139,77,42,0.2)', borderTopColor: '#8b4d2a' }} />
+      <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3, borderColor: 'rgba(139,77,42,0.2)', borderTopColor: 'var(--brown-mid)' }} />
     </div>
   )
 
@@ -73,7 +74,7 @@ export default function VistaForo({ book: bookProp, user, onGoBack, onGoLectura,
             {navOpen && (
               <div style={{
                 position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60,
-                background: '#fffdf8', border: '2px solid #4a3622', borderRadius: 16,
+                background: 'var(--paper)', border: '2px solid #4a3622', borderRadius: 16,
                 padding: '10px 14px', display: 'flex', gap: 20, alignItems: 'flex-end',
                 boxShadow: '2px 4px 0 rgba(74,54,34,0.22), 0 14px 30px rgba(0,0,0,0.22)',
                 whiteSpace: 'nowrap',
@@ -81,22 +82,22 @@ export default function VistaForo({ book: bookProp, user, onGoBack, onGoLectura,
                 {onGoBiblioteca && (
                   <button type="button" onClick={() => { setNavOpen(false); tutorialForo ? irBibliotecaFin() : onGoBiblioteca() }}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Biblioteca</span>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: 'var(--ink)' }}>Biblioteca</span>
                   </button>
                 )}
                 {onGoLectura && !tutorialForo && (
                   <button type="button" onClick={() => { setNavOpen(false); onGoLectura() }}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0118 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
-                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Lectura</span>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0118 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: 'var(--ink)' }}>Lectura</span>
                   </button>
                 )}
                 {onGoCartelera && !tutorialForo && (
                   <button type="button" onClick={() => { setNavOpen(false); onGoCartelera() }}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#4a3622' }}>Investigación</span>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: 'var(--ink)' }}>Investigación</span>
                   </button>
                 )}
               </div>

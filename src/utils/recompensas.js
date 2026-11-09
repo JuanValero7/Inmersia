@@ -1,9 +1,9 @@
 // @ts-check
-// Tienda de recompensas (migración 095): textos y cuentas que comparten la
-// tienda del alumno (components/recompensas) y el Salón del profe
-// (colegio/RecompensasAula.jsx).
+// Tienda de recompensas (migraciones 095 y 097): textos y cuentas que
+// comparten la tienda del alumno (components/recompensas) y el Salón del
+// profe (colegio/RecompensasAula.jsx).
 
-/** @typedef {'alumno'|'semana'|'clase'|'libre'} Limite */
+/** @typedef {'alumno'|'semana'|'clase'|'libre'|'bote'} Limite */
 
 /** Las opciones del profe al crear un vale, en el orden del desplegable. */
 export const LIMITES = /** @type {const} */ ([
@@ -15,8 +15,50 @@ export const LIMITES = /** @type {const} */ ([
 
 /** @param {string} limite */
 export function textoLimite(limite) {
+  if (limite === 'bote') return 'Bote de la clase'
   return LIMITES.find(([k]) => k === limite)?.[1] ?? ''
 }
+
+/** El profe pone el precio que quiera (1 a 9.999); Inmersia solo sugiere. */
+export const PRECIO_MAX = 9999
+
+/** Redondeo de los precios sugeridos: de 1 en 1 por debajo de 10, de 5 en 5 desde ahí. */
+export function redondear(/** @type {number} */ n) {
+  return n < 10 ? Math.max(1, Math.round(n)) : Math.round(n / 5) * 5
+}
+
+/**
+ * Precios sugeridos para un vale, a partir de lo que da solo leer el libro
+ * del aula: la pequeña y la mediana se alcanzan leyendo; la grande pide
+ * jugar bien o ahorrar todo el libro.
+ * @param {number} soloLeyendo
+ * @returns {Array<[string, number]>}
+ */
+export function preciosSugeridos(soloLeyendo) {
+  return [['Pequeña', redondear(soloLeyendo / 3)], ['Mediana', redondear(soloLeyendo)], ['Grande', redondear(soloLeyendo * 2)]]
+}
+
+/**
+ * Precio sugerido para un bote de la clase: la mitad de lo que junta toda la
+ * clase solo leyendo, de 10 en 10 (nunca menos que lo de un alumno).
+ * @param {number} soloLeyendo
+ * @param {number} alumnos
+ */
+export function boteSugerido(soloLeyendo, alumnos) {
+  return Math.max(redondear(soloLeyendo), Math.round((soloLeyendo * alumnos) / 2 / 10) * 10)
+}
+
+/** Nombres de las partes de la cuenta de ovillos (desglose de _referencia_ovillos). */
+export const PARTES_OVILLOS = /** @type {const} */ ([
+  ['lectura', 'Leer los capítulos'],
+  ['mesa', 'Mesa de investigación'],
+  ['corazonadas', 'Corazonadas'],
+  ['mapa', 'Mapa del tesoro'],
+  ['concurso', 'Frases difíciles'],
+])
+
+/** @param {string} juego */
+export const nombreJuego = (juego) => PARTES_OVILLOS.find(([k]) => k === juego)?.[1] ?? juego
 
 /** Por debajo de esto, la tienda avisa de que se queda sin ovillos para jugar. */
 export const POCOS_OVILLOS = 10
@@ -40,6 +82,8 @@ export function cuentaCanje(saldo, precio) {
 export function textoBloqueo(r, hoy = new Date()) {
   if (r.bloqueo === 'ya_canjeado') return 'Ya lo canjeaste'
   if (r.bloqueo === 'agotado') return 'Ya se lo llevó alguien de tu clase'
+  if (r.bloqueo === 'lleno') return '¡Lleno! Tu profe ya lo ve'
+  if (r.bloqueo === 'entregado') return 'Ya se entregó'
   if (r.bloqueo === 'esta_semana') {
     if (!r.desde) return 'Vuelve la semana que viene'
     const d = new Date(r.desde)
