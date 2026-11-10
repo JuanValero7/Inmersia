@@ -1080,6 +1080,118 @@ $$;
 
 
 --
+-- Name: _hilo_armadas(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._hilo_armadas(p_user uuid, p_libro uuid) RETURNS text[]
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  SELECT coalesce(array_agg(idea), '{}') FROM hilo_jugadas
+  WHERE user_id = p_user AND libro_id = p_libro AND resultado IN ('acierto', 'sola');
+$$;
+
+
+--
+-- Name: _hilo_estado(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._hilo_estado(p_user uuid, p_libro uuid) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  d       jsonb;
+  v_ver   int;
+  v_cc    int;
+  v_total int;
+  v_saldo int;
+  v_arm   text[];
+  v_ayu   text[];
+  v_ideas text[];
+BEGIN
+  SELECT datos, version INTO d, v_ver FROM hilo_contenido WHERE libro_id = p_libro;
+  IF d IS NULL THEN RETURN NULL; END IF;
+
+  SELECT coalesce(max(capitulos_completados), 0) INTO v_cc
+  FROM progreso_lectura WHERE user_id = p_user AND libro_id = p_libro;
+  SELECT count(*) INTO v_total FROM capitulos WHERE libro_id = p_libro;
+  v_saldo := _ovillos_saldo(p_user, p_libro);
+  v_arm   := _hilo_armadas(p_user, p_libro);
+  SELECT coalesce(array_agg(idea), '{}') INTO v_ayu FROM hilo_ayudas WHERE user_id = p_user AND libro_id = p_libro;
+  v_ideas := ARRAY(SELECT x->>'id' FROM jsonb_array_elements(d->'ideas') x);
+
+  RETURN (
+    WITH
+    pi AS (
+      SELECT x->>'id' AS id, (x->>'cap')::int AS cap, x->>'t' AS t, x->>'cita' AS cita
+      FROM jsonb_array_elements(d->'pistas') x
+    ),
+    id_ AS (
+      SELECT x->>'id' AS id, x, o, (x->>'abre')::int AS abre,
+             ARRAY(SELECT jsonb_array_elements_text(x->'piezas')) AS piezas,
+             (x->>'id') = ANY (v_arm) AS armada
+      FROM jsonb_array_elements(d->'ideas') WITH ORDINALITY t(x, o)
+    ),
+    jug AS (
+      SELECT * FROM hilo_jugadas WHERE user_id = p_user AND libro_id = p_libro
+    )
+    SELECT jsonb_build_object(
+      'version', v_ver,
+      'capitulos_completados', v_cc,
+      'total_capitulos', v_total,
+      'saldo', v_saldo,
+      -- Mezcladas siempre igual para cada libro (no agrupadas por capítulo).
+      'pistas', coalesce((
+        SELECT jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
+                 'id', pi.id, 'cap', pi.cap, 't', pi.t, 'cita', pi.cita,
+                 'usada_en', (SELECT i.id FROM id_ i WHERE i.armada AND pi.id = ANY (i.piezas) LIMIT 1)))
+               ORDER BY md5(p_libro::text || pi.id))
+        FROM pi WHERE pi.cap <= v_cc), '[]'::jsonb),
+      'ideas', coalesce((
+        SELECT jsonb_agg(
+                 jsonb_build_object(
+                   'id', i.id,
+                   'final', i.x->'final',
+                   'previas', to_jsonb(ARRAY(SELECT p FROM unnest(i.piezas) p WHERE p = ANY (v_ideas))),
+                   'huecos', (SELECT count(*) FROM unnest(i.piezas) p WHERE NOT (p = ANY (v_ideas))),
+                   'abre', i.abre,
+                   'estado', CASE WHEN i.armada THEN 'armada' WHEN i.abre <= v_cc THEN 'abierta' ELSE 'cerrada' END)
+                 || CASE WHEN i.armada OR i.abre <= v_cc
+                         THEN jsonb_build_object('titulo', i.x->>'titulo', 'pregunta', i.x->>'pregunta') ELSE '{}'::jsonb END
+                 || CASE WHEN i.armada
+                         THEN jsonb_build_object('conclusion', i.x->>'conclusion', 'piezas', to_jsonb(i.piezas)) ELSE '{}'::jsonb END
+                 || CASE WHEN NOT i.armada AND i.id = ANY (v_ayu)
+                         THEN jsonb_build_object('falta', i.x->>'falta') ELSE '{}'::jsonb END
+                 || CASE WHEN NOT i.armada THEN jsonb_strip_nulls(jsonb_build_object(
+                         'ultima', (SELECT jsonb_build_object('pistas', to_jsonb(j.pistas), 'resultado', j.resultado)
+                                    FROM jug j WHERE j.idea = i.id ORDER BY j.created_at DESC LIMIT 1),
+                         'pareja', (SELECT j.pareja FROM jug j WHERE j.idea = i.id AND j.resultado = 'casi'
+                                    ORDER BY j.created_at DESC LIMIT 1))) ELSE '{}'::jsonb END
+               ORDER BY i.o)
+        FROM id_ i), '[]'::jsonb),
+      -- Como la 088: solo con el libro terminado Y sin ovillos.
+      'faltaron', CASE WHEN v_total > 0 AND v_cc >= v_total AND v_saldo < 1 THEN coalesce((
+        SELECT jsonb_agg(jsonb_build_object('id', i.id, 'titulo', i.x->>'titulo',
+                                            'conclusion', i.x->>'conclusion', 'piezas', to_jsonb(i.piezas)) ORDER BY i.o)
+        FROM id_ i WHERE NOT i.armada), '[]'::jsonb) END
+    ));
+END;
+$$;
+
+
+--
+-- Name: _hilo_premio(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._hilo_premio(p_idea jsonb) RETURNS integer
+    LANGUAGE sql IMMUTABLE
+    AS $$
+  SELECT CASE WHEN p_idea->>'final' = 'principal' THEN 5 ELSE 2 END;
+$$;
+
+
+--
 -- Name: _juegos_aula_por_defecto(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1361,6 +1473,7 @@ DECLARE
   v_cz    int;
   v_mapa  int;
   v_fx    int;
+  v_hilo  int;
   v_cc    int := 0;
   v_ccmin int := 0;
   v_ccmax int := 0;
@@ -1372,6 +1485,13 @@ BEGIN
   v_cz   := coalesce((SELECT jsonb_array_length(datos->'corazonadas') * 3 FROM corazonadas_contenido WHERE libro_id = p_libro), 0);
   v_mapa := coalesce((SELECT jsonb_array_length(datos->'tesoros') FROM mapa_contenido WHERE libro_id = p_libro), 0);
   v_fx   := coalesce((SELECT jsonb_array_length(datos->'items') FROM falsificador_contenido WHERE libro_id = p_libro), 0);
+  v_hilo := coalesce((
+    SELECT sum(_hilo_premio(x)
+               - CASE WHEN EXISTS (SELECT 1 FROM jsonb_array_elements_text(x->'piezas') p
+                                   WHERE NOT EXISTS (SELECT 1 FROM jsonb_array_elements(c.datos->'ideas') y WHERE y->>'id' = p))
+                      THEN 1 ELSE 0 END)
+    FROM hilo_contenido c, jsonb_array_elements(c.datos->'ideas') x
+    WHERE c.libro_id = p_libro), 0)::int;
   SELECT coalesce(round(sum(CASE WHEN n >= 2 THEN 1.5 ELSE 1 END) * 3), 0)::int,
          coalesce(count(*) * 3, 0)::int,
          coalesce(sum(least(n, 2)) * 3, 0)::int
@@ -1384,15 +1504,16 @@ BEGIN
   IF NOT (v_on->>'corazonadas')::boolean  AND v_cz   > 0 THEN v_apag := v_apag || 'corazonadas'::text;  v_cz   := 0; END IF;
   IF NOT (v_on->>'mapa')::boolean         AND v_mapa > 0 THEN v_apag := v_apag || 'mapa'::text;         v_mapa := 0; END IF;
   IF NOT (v_on->>'falsificador')::boolean AND v_fx   > 0 THEN v_apag := v_apag || 'falsificador'::text; v_fx   := 0; END IF;
+  IF NOT (v_on->>'hilo')::boolean         AND v_hilo > 0 THEN v_apag := v_apag || 'hilo'::text;         v_hilo := 0; END IF;
   IF NOT (v_on->>'concurso')::boolean     AND v_cc   > 0 THEN
     v_apag := v_apag || 'concurso'::text; v_cc := 0; v_ccmin := 0; v_ccmax := 0;
   END IF;
 
   RETURN jsonb_build_object(
     'solo_leyendo', v_leer,
-    'maximo', v_leer + v_mesa + v_cz + v_mapa + v_cc + v_fx,
+    'maximo', v_leer + v_mesa + v_cz + v_mapa + v_cc + v_fx + v_hilo,
     'desglose', jsonb_build_object('lectura', v_leer, 'mesa', v_mesa, 'corazonadas', v_cz,
-                                   'mapa', v_mapa, 'concurso', v_cc, 'falsificador', v_fx),
+                                   'mapa', v_mapa, 'concurso', v_cc, 'falsificador', v_fx, 'hilo', v_hilo),
     'concurso_rango', jsonb_build_array(v_ccmin, v_ccmax),
     'apagados', to_jsonb(v_apag));
 END;
@@ -3476,6 +3597,259 @@ $$;
 
 
 --
+-- Name: hilo_aula(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hilo_aula(p_aula uuid) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_libro uuid;
+  d       jsonb;
+  v_ideas text[];
+BEGIN
+  PERFORM _profe_de_aula(p_aula);
+  SELECT libro_id INTO v_libro FROM _meta_aula(p_aula, 'UTC');
+  IF v_libro IS NULL THEN
+    RETURN jsonb_build_object('libro_id', NULL);
+  END IF;
+  SELECT datos INTO d FROM hilo_contenido WHERE libro_id = v_libro;
+  v_ideas := ARRAY(SELECT x->>'id' FROM jsonb_array_elements(d->'ideas') x);
+
+  RETURN jsonb_build_object(
+    'libro_id', v_libro,
+    'encendido', (_juegos_mezclar(_juegos_aula_por_defecto(),
+                                  (SELECT juegos FROM comunidades WHERE id = p_aula))->>'hilo')::boolean,
+    'ideas', (SELECT jsonb_agg(jsonb_build_object(
+                       'id', x->>'id', 'titulo', x->>'titulo', 'final', x->'final',
+                       'huecos', (SELECT count(*) FROM jsonb_array_elements_text(x->'piezas') p WHERE NOT (p = ANY (v_ideas))))
+                     ORDER BY o)
+              FROM jsonb_array_elements(d->'ideas') WITH ORDINALITY AS t(x, o)),
+    'alumnos', coalesce((
+      SELECT jsonb_object_agg(cm.user_id, jsonb_build_object(
+        'armadas', coalesce((SELECT jsonb_agg(j.idea ORDER BY j.created_at) FROM hilo_jugadas j
+                             WHERE j.user_id = cm.user_id AND j.libro_id = v_libro AND j.resultado IN ('acierto', 'sola')), '[]'::jsonb),
+        'fallos', coalesce((SELECT jsonb_object_agg(s.idea, s.n) FROM (
+                              SELECT j.idea, count(*) AS n FROM hilo_jugadas j
+                              WHERE j.user_id = cm.user_id AND j.libro_id = v_libro AND j.resultado IN ('casi', 'no_encajan')
+                              GROUP BY j.idea) s), '{}'::jsonb),
+        'ayudas', coalesce((SELECT jsonb_agg(a.idea ORDER BY a.created_at) FROM hilo_ayudas a
+                            WHERE a.user_id = cm.user_id AND a.libro_id = v_libro), '[]'::jsonb),
+        'senuelos', (SELECT count(*) FROM hilo_jugadas j
+                     WHERE j.user_id = cm.user_id AND j.libro_id = v_libro AND j.senuelos > 0)))
+      FROM comunidad_miembros cm
+      WHERE cm.comunidad_id = p_aula AND cm.rol = 'miembro'
+        AND EXISTS (SELECT 1 FROM hilo_jugadas j WHERE j.user_id = cm.user_id AND j.libro_id = v_libro)), '{}'::jsonb));
+END;
+$$;
+
+
+--
+-- Name: hilo_ayuda(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hilo_ayuda(p_libro uuid, p_idea text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_user uuid := auth.uid();
+  d      jsonb;
+  v_x    jsonb;
+  v_cc   int;
+  v_id   uuid;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'Hace falta iniciar sesión.' USING ERRCODE = '42501';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtext('hilo:' || v_user || ':' || p_libro));
+
+  SELECT datos INTO d FROM hilo_contenido WHERE libro_id = p_libro;
+  SELECT x INTO v_x FROM jsonb_array_elements(d->'ideas') x WHERE x->>'id' = p_idea;
+  IF v_x IS NULL THEN
+    RAISE EXCEPTION 'Esa idea no está en el juego.';
+  END IF;
+  SELECT coalesce(max(capitulos_completados), 0) INTO v_cc
+  FROM progreso_lectura WHERE user_id = v_user AND libro_id = p_libro;
+  IF (v_x->>'abre')::int > v_cc THEN
+    RAISE EXCEPTION 'Esa idea todavía no se abre: sigue leyendo.';
+  END IF;
+  IF p_idea = ANY (_hilo_armadas(v_user, p_libro)) THEN
+    RAISE EXCEPTION 'Esa idea ya está armada.';
+  END IF;
+  IF EXISTS (SELECT 1 FROM hilo_ayudas WHERE user_id = v_user AND libro_id = p_libro AND idea = p_idea) THEN
+    RAISE EXCEPTION 'ya_pedida';
+  END IF;
+  IF _ovillos_saldo(v_user, p_libro) < 1 THEN
+    RAISE EXCEPTION 'Te quedaste sin ovillos.';
+  END IF;
+
+  INSERT INTO hilo_ayudas (user_id, libro_id, idea) VALUES (v_user, p_libro, p_idea) RETURNING id INTO v_id;
+  INSERT INTO ovillos_movimientos (user_id, libro_id, cantidad, motivo, referencia, detalle)
+  VALUES (v_user, p_libro, -1, 'hilo_ayuda', v_id, jsonb_build_object('idea', p_idea));
+
+  RETURN jsonb_build_object('estado', _hilo_estado(v_user, p_libro));
+END;
+$$;
+
+
+--
+-- Name: hilo_jugar(uuid, text, text[]); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hilo_jugar(p_libro uuid, p_idea text, p_pistas text[]) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_user   uuid := auth.uid();
+  d        jsonb;
+  v_ver    int;
+  v_cc     int;
+  v_x      jsonb;
+  v_y      jsonb;
+  v_ideas  text[];
+  v_arm    text[];
+  v_piezas text[];
+  v_prev   text[];
+  v_mias   text[];
+  v_disp   text[];
+  v_buenas text[];
+  v_sen    int;
+  v_res    text;
+  v_id     uuid;
+  v_nuevas text[] := '{}';
+  v_premio int := 0;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'Hace falta iniciar sesión.' USING ERRCODE = '42501';
+  END IF;
+  -- Una jugada a la vez por alumno y libro (dos pestañas no gastan dos veces el mismo ovillo).
+  PERFORM pg_advisory_xact_lock(hashtext('hilo:' || v_user || ':' || p_libro));
+
+  SELECT datos, version INTO d, v_ver FROM hilo_contenido WHERE libro_id = p_libro;
+  IF d IS NULL THEN
+    RAISE EXCEPTION 'Este libro no tiene hilo de ideas.';
+  END IF;
+  SELECT x INTO v_x FROM jsonb_array_elements(d->'ideas') x WHERE x->>'id' = p_idea;
+  IF v_x IS NULL THEN
+    RAISE EXCEPTION 'Esa idea no está en el juego.';
+  END IF;
+
+  SELECT coalesce(max(capitulos_completados), 0) INTO v_cc
+  FROM progreso_lectura WHERE user_id = v_user AND libro_id = p_libro;
+  v_ideas  := ARRAY(SELECT x->>'id' FROM jsonb_array_elements(d->'ideas') x);
+  v_arm    := _hilo_armadas(v_user, p_libro);
+  v_piezas := ARRAY(SELECT jsonb_array_elements_text(v_x->'piezas'));
+  v_prev   := ARRAY(SELECT p FROM unnest(v_piezas) p WHERE p = ANY (v_ideas));
+  v_mias   := ARRAY(SELECT p FROM unnest(v_piezas) p WHERE NOT (p = ANY (v_ideas)));
+  p_pistas := coalesce(p_pistas, '{}');
+
+  IF p_idea = ANY (v_arm) THEN
+    RAISE EXCEPTION 'Esa idea ya está armada.';
+  END IF;
+  IF (v_x->>'abre')::int > v_cc THEN
+    RAISE EXCEPTION 'Esa idea todavía no se abre: sigue leyendo.';
+  END IF;
+  IF cardinality(v_mias) = 0 THEN
+    RAISE EXCEPTION 'Esta idea se arma sola.';
+  END IF;
+  IF NOT (v_prev <@ v_arm) THEN
+    RAISE EXCEPTION 'Primero arma la idea que llega por el hilo.';
+  END IF;
+  IF cardinality(p_pistas) <> cardinality(v_mias)
+     OR (SELECT count(DISTINCT x) FROM unnest(p_pistas) x) <> cardinality(v_mias) THEN
+    RAISE EXCEPTION 'Hacen falta % pistas distintas.', cardinality(v_mias);
+  END IF;
+
+  -- Pistas libres: ya llegaron y no están en una idea armada.
+  v_disp := ARRAY(
+    SELECT q->>'id' FROM jsonb_array_elements(d->'pistas') q
+    WHERE (q->>'cap')::int <= v_cc
+      AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(d->'ideas') y
+                      WHERE (y->>'id') = ANY (v_arm) AND y->'piezas' ? (q->>'id')));
+  IF NOT (p_pistas <@ v_disp) THEN
+    RAISE EXCEPTION 'Alguna de esas pistas no está en tu mesa.';
+  END IF;
+  IF _ovillos_saldo(v_user, p_libro) < 1 THEN
+    RAISE EXCEPTION 'Te quedaste sin ovillos.';
+  END IF;
+
+  v_buenas := ARRAY(SELECT p FROM unnest(p_pistas) p WHERE p = ANY (v_mias));
+  SELECT count(*) INTO v_sen FROM jsonb_array_elements(d->'pistas') q
+  WHERE (q->>'id') = ANY (p_pistas) AND coalesce((q->>'senuelo')::boolean, false);
+
+  v_res := CASE
+    WHEN cardinality(v_buenas) = cardinality(v_mias) THEN 'acierto'
+    -- Dos piezas van juntas (una idea que llega por el hilo cuenta). Con un solo hueco no hay «casi».
+    WHEN cardinality(v_mias) >= 2 AND cardinality(v_buenas) + cardinality(v_prev) = 2 THEN 'casi'
+    ELSE 'no_encajan' END;
+
+  INSERT INTO hilo_jugadas (user_id, libro_id, version, idea, pistas, resultado, pareja, senuelos, pistas_en_mesa, capitulo)
+  VALUES (v_user, p_libro, v_ver, p_idea, p_pistas, v_res,
+          CASE WHEN v_res = 'casi' THEN to_jsonb(v_buenas) END,
+          v_sen, cardinality(v_disp), v_cc)
+  RETURNING id INTO v_id;
+
+  INSERT INTO ovillos_movimientos (user_id, libro_id, cantidad, motivo, referencia, detalle)
+  VALUES (v_user, p_libro, -1, 'hilo_jugar', v_id, jsonb_build_object('idea', p_idea));
+
+  IF v_res = 'acierto' THEN
+    v_premio := _hilo_premio(v_x);
+    INSERT INTO ovillos_movimientos (user_id, libro_id, cantidad, motivo, referencia, detalle)
+    VALUES (v_user, p_libro, v_premio, 'hilo_premio', v_id, jsonb_build_object('idea', p_idea));
+    v_nuevas := ARRAY[p_idea];
+    v_arm := v_arm || p_idea;
+
+    -- Las que solo esperaban ideas (la conclusión final) se arman solas, en cadena.
+    LOOP
+      SELECT y INTO v_y
+      FROM jsonb_array_elements(d->'ideas') WITH ORDINALITY t(y, o)
+      WHERE NOT ((y->>'id') = ANY (v_arm))
+        AND (y->>'abre')::int <= v_cc
+        AND ARRAY(SELECT jsonb_array_elements_text(y->'piezas')) <@ v_arm
+      ORDER BY o LIMIT 1;
+      EXIT WHEN v_y IS NULL;
+      INSERT INTO hilo_jugadas (user_id, libro_id, version, idea, pistas, resultado, pistas_en_mesa, capitulo)
+      VALUES (v_user, p_libro, v_ver, v_y->>'id', '{}', 'sola', 0, v_cc)
+      RETURNING id INTO v_id;
+      INSERT INTO ovillos_movimientos (user_id, libro_id, cantidad, motivo, referencia, detalle)
+      VALUES (v_user, p_libro, _hilo_premio(v_y), 'hilo_premio', v_id, jsonb_build_object('idea', v_y->>'id'));
+      v_premio := v_premio + _hilo_premio(v_y);
+      v_nuevas := v_nuevas || (v_y->>'id');
+      v_arm := v_arm || (v_y->>'id');
+    END LOOP;
+  END IF;
+
+  RETURN jsonb_strip_nulls(jsonb_build_object(
+    'resultado', v_res,
+    'pareja', CASE WHEN v_res = 'casi' THEN to_jsonb(v_buenas) END,
+    'armadas', to_jsonb(v_nuevas),
+    'premio', v_premio))
+    || jsonb_build_object('estado', _hilo_estado(v_user, p_libro));
+END;
+$$;
+
+
+--
+-- Name: hilo_tablero(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hilo_tablero(p_libro uuid) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Hace falta iniciar sesión.' USING ERRCODE = '42501';
+  END IF;
+  RETURN _hilo_estado(auth.uid(), p_libro);
+END;
+$$;
+
+
+--
 -- Name: invitar_admin(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3801,6 +4175,11 @@ BEGIN
     -- 099: qué dijo en cada párrafo sospechoso y si acertó.
     'falsificador',         (SELECT coalesce(jsonb_agg(to_jsonb(t) - 'user_id' ORDER BY t.created_at), '[]'::jsonb)
                              FROM falsificador_jugadas t WHERE t.user_id = v_user),
+    -- 100: cada «Jugar» del hilo de ideas y las ayudas que pidió.
+    'hilo_de_ideas',        (SELECT coalesce(jsonb_agg(to_jsonb(t) - 'user_id' ORDER BY t.created_at), '[]'::jsonb)
+                             FROM hilo_jugadas t WHERE t.user_id = v_user),
+    'hilo_de_ideas_ayudas', (SELECT coalesce(jsonb_agg(to_jsonb(t) - 'user_id' ORDER BY t.created_at), '[]'::jsonb)
+                             FROM hilo_ayudas t WHERE t.user_id = v_user),
     'expedientes_comprados', (SELECT coalesce(jsonb_agg(to_jsonb(t) - 'user_id' ORDER BY t.created_at), '[]'::jsonb)
                              FROM expedientes_compras t WHERE t.user_id = v_user),
     -- Sin quién del colegio lo entregó.
@@ -5742,6 +6121,79 @@ CREATE TABLE public.foros_comentarios (
 
 
 --
+-- Name: hilo_ayudas; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hilo_ayudas (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    libro_id uuid NOT NULL,
+    idea text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE hilo_ayudas; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hilo_ayudas IS 'Hilo de ideas: las ayudas que pidió cada alumno (una por idea, 1 ovillo). Solo escribe hilo_ayuda. Ver migración 100.';
+
+
+--
+-- Name: hilo_contenido; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hilo_contenido (
+    libro_id uuid NOT NULL,
+    version integer DEFAULT 1 NOT NULL,
+    datos jsonb NOT NULL,
+    actualizado_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT hilo_contenido_datos_check CHECK (((jsonb_typeof((datos -> 'pistas'::text)) = 'array'::text) AND ((jsonb_array_length((datos -> 'pistas'::text)) >= 1) AND (jsonb_array_length((datos -> 'pistas'::text)) <= 80)))),
+    CONSTRAINT hilo_contenido_datos_check1 CHECK (((jsonb_typeof((datos -> 'ideas'::text)) = 'array'::text) AND ((jsonb_array_length((datos -> 'ideas'::text)) >= 1) AND (jsonb_array_length((datos -> 'ideas'::text)) <= 30)))),
+    CONSTRAINT hilo_contenido_version_check CHECK ((version >= 1))
+);
+
+
+--
+-- Name: TABLE hilo_contenido; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hilo_contenido IS 'Hilo de ideas de cada libro de no ficción (lo sube cargar_hilo.py). Lleva las respuestas: solo lo leen las funciones hilo_*. Los ids de pistas e ideas no se cambian una vez publicado. Ver migración 100.';
+
+
+--
+-- Name: hilo_jugadas; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hilo_jugadas (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    libro_id uuid NOT NULL,
+    version integer NOT NULL,
+    idea text NOT NULL,
+    pistas text[] NOT NULL,
+    resultado text NOT NULL,
+    pareja jsonb,
+    senuelos smallint DEFAULT 0 NOT NULL,
+    pistas_en_mesa integer NOT NULL,
+    capitulo integer NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT hilo_jugadas_check CHECK (((resultado = 'sola'::text) = (cardinality(pistas) = 0))),
+    CONSTRAINT hilo_jugadas_check1 CHECK (((resultado = 'casi'::text) = (pareja IS NOT NULL))),
+    CONSTRAINT hilo_jugadas_pistas_check CHECK (((cardinality(pistas) >= 0) AND (cardinality(pistas) <= 3))),
+    CONSTRAINT hilo_jugadas_resultado_check CHECK ((resultado = ANY (ARRAY['acierto'::text, 'casi'::text, 'no_encajan'::text, 'sola'::text])))
+);
+
+
+--
+-- Name: TABLE hilo_jugadas; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hilo_jugadas IS 'Hilo de ideas: una fila por cada «Jugar» y por cada idea que se armó sola. Solo escribe hilo_jugar. Ver migración 100.';
+
+
+--
 -- Name: libro_reels; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -5930,7 +6382,7 @@ CREATE TABLE public.ovillos_movimientos (
     detalle jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT ovillos_movimientos_cantidad_check CHECK ((cantidad <> 0)),
-    CONSTRAINT ovillos_movimientos_motivo_check CHECK ((motivo = ANY (ARRAY['mesa_jugar'::text, 'mesa_premio'::text, 'corazonada'::text, 'concurso'::text, 'tesoro'::text, 'comodin'::text, 'pista_gato'::text, 'expediente'::text, 'recompensa'::text, 'falsificador'::text])))
+    CONSTRAINT ovillos_movimientos_motivo_check CHECK ((motivo = ANY (ARRAY['mesa_jugar'::text, 'mesa_premio'::text, 'corazonada'::text, 'concurso'::text, 'tesoro'::text, 'comodin'::text, 'pista_gato'::text, 'expediente'::text, 'recompensa'::text, 'falsificador'::text, 'hilo_jugar'::text, 'hilo_premio'::text, 'hilo_ayuda'::text])))
 );
 
 
@@ -6723,6 +7175,38 @@ ALTER TABLE ONLY public.foros
 
 
 --
+-- Name: hilo_ayudas hilo_ayudas_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hilo_ayudas
+    ADD CONSTRAINT hilo_ayudas_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hilo_ayudas hilo_ayudas_user_id_libro_id_idea_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hilo_ayudas
+    ADD CONSTRAINT hilo_ayudas_user_id_libro_id_idea_key UNIQUE (user_id, libro_id, idea);
+
+
+--
+-- Name: hilo_contenido hilo_contenido_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hilo_contenido
+    ADD CONSTRAINT hilo_contenido_pkey PRIMARY KEY (libro_id);
+
+
+--
+-- Name: hilo_jugadas hilo_jugadas_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hilo_jugadas
+    ADD CONSTRAINT hilo_jugadas_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: libro_reels libro_reels_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7240,6 +7724,13 @@ CREATE INDEX idx_foros_comentarios_foro_parent_fecha ON public.foros_comentarios
 
 
 --
+-- Name: idx_hilo_jugadas_user_libro; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hilo_jugadas_user_libro ON public.hilo_jugadas USING btree (user_id, libro_id);
+
+
+--
 -- Name: idx_interactivos_media; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7412,6 +7903,13 @@ CREATE UNIQUE INDEX uq_colegio_codigos_profesor ON public.colegio_codigos USING 
 --
 
 CREATE UNIQUE INDEX uq_comunidades_aula_nombre ON public.comunidades USING btree (colegio_id, nombre) WHERE (colegio_id IS NOT NULL);
+
+
+--
+-- Name: uq_hilo_idea_armada; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_hilo_idea_armada ON public.hilo_jugadas USING btree (user_id, libro_id, idea) WHERE (resultado = ANY (ARRAY['acierto'::text, 'sola'::text]));
 
 
 --
@@ -8167,6 +8665,46 @@ ALTER TABLE ONLY public.foros_comentarios
 
 ALTER TABLE ONLY public.foros
     ADD CONSTRAINT foros_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
+-- Name: hilo_ayudas hilo_ayudas_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hilo_ayudas
+    ADD CONSTRAINT hilo_ayudas_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
+-- Name: hilo_ayudas hilo_ayudas_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hilo_ayudas
+    ADD CONSTRAINT hilo_ayudas_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: hilo_contenido hilo_contenido_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hilo_contenido
+    ADD CONSTRAINT hilo_contenido_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
+-- Name: hilo_jugadas hilo_jugadas_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hilo_jugadas
+    ADD CONSTRAINT hilo_jugadas_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
+-- Name: hilo_jugadas hilo_jugadas_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hilo_jugadas
+    ADD CONSTRAINT hilo_jugadas_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
 
 --
@@ -9141,6 +9679,24 @@ CREATE POLICY foros_select ON public.foros FOR SELECT TO authenticated USING (tr
 
 
 --
+-- Name: hilo_ayudas; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.hilo_ayudas ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: hilo_contenido; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.hilo_contenido ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: hilo_jugadas; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.hilo_jugadas ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: elementos_interactivos interactivos_select; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -9880,6 +10436,30 @@ GRANT ALL ON FUNCTION public._falsificador_estado(p_user uuid, p_libro uuid) TO 
 
 
 --
+-- Name: FUNCTION _hilo_armadas(p_user uuid, p_libro uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._hilo_armadas(p_user uuid, p_libro uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._hilo_armadas(p_user uuid, p_libro uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION _hilo_estado(p_user uuid, p_libro uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._hilo_estado(p_user uuid, p_libro uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._hilo_estado(p_user uuid, p_libro uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION _hilo_premio(p_idea jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._hilo_premio(p_idea jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._hilo_premio(p_idea jsonb) TO service_role;
+
+
+--
 -- Name: FUNCTION _juegos_aula_por_defecto(); Type: ACL; Schema: public; Owner: -
 --
 
@@ -10484,6 +11064,42 @@ GRANT ALL ON FUNCTION public.falsificador_responder(p_libro uuid, p_item text, p
 GRANT ALL ON FUNCTION public.foro_recortar_tags() TO anon;
 GRANT ALL ON FUNCTION public.foro_recortar_tags() TO authenticated;
 GRANT ALL ON FUNCTION public.foro_recortar_tags() TO service_role;
+
+
+--
+-- Name: FUNCTION hilo_aula(p_aula uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.hilo_aula(p_aula uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.hilo_aula(p_aula uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.hilo_aula(p_aula uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION hilo_ayuda(p_libro uuid, p_idea text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.hilo_ayuda(p_libro uuid, p_idea text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.hilo_ayuda(p_libro uuid, p_idea text) TO authenticated;
+GRANT ALL ON FUNCTION public.hilo_ayuda(p_libro uuid, p_idea text) TO service_role;
+
+
+--
+-- Name: FUNCTION hilo_jugar(p_libro uuid, p_idea text, p_pistas text[]); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.hilo_jugar(p_libro uuid, p_idea text, p_pistas text[]) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.hilo_jugar(p_libro uuid, p_idea text, p_pistas text[]) TO authenticated;
+GRANT ALL ON FUNCTION public.hilo_jugar(p_libro uuid, p_idea text, p_pistas text[]) TO service_role;
+
+
+--
+-- Name: FUNCTION hilo_tablero(p_libro uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.hilo_tablero(p_libro uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.hilo_tablero(p_libro uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.hilo_tablero(p_libro uuid) TO service_role;
 
 
 --
@@ -11272,6 +11888,33 @@ GRANT ALL ON TABLE public.foros TO service_role;
 GRANT ALL ON TABLE public.foros_comentarios TO anon;
 GRANT ALL ON TABLE public.foros_comentarios TO authenticated;
 GRANT ALL ON TABLE public.foros_comentarios TO service_role;
+
+
+--
+-- Name: TABLE hilo_ayudas; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.hilo_ayudas TO anon;
+GRANT ALL ON TABLE public.hilo_ayudas TO authenticated;
+GRANT ALL ON TABLE public.hilo_ayudas TO service_role;
+
+
+--
+-- Name: TABLE hilo_contenido; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.hilo_contenido TO anon;
+GRANT ALL ON TABLE public.hilo_contenido TO authenticated;
+GRANT ALL ON TABLE public.hilo_contenido TO service_role;
+
+
+--
+-- Name: TABLE hilo_jugadas; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.hilo_jugadas TO anon;
+GRANT ALL ON TABLE public.hilo_jugadas TO authenticated;
+GRANT ALL ON TABLE public.hilo_jugadas TO service_role;
 
 
 --
