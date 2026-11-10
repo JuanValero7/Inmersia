@@ -38,12 +38,14 @@ import MobileBookPage from './lector/MobileBookPage.jsx'
 import { useCapaMovil } from '../comunidades/capa/CapaMovil.jsx'
 import { useCorazonadasLector } from '../lector/Corazonada.jsx'
 import { useConcursoLector } from '../lector/Concurso.jsx'
+import { useFalsificadorLector } from '../lector/Falsificador.jsx'
 import { useDesafioLector } from '../lector/Desafio.jsx'
 import { useCapsulaLector } from '../lector/Capsula.jsx'
 import { useJuegosLibro } from '../../hooks/useJuegos.js'
 import { useMapaTesoroLector } from '../lector/MapaTesoro.jsx'
 import { motivoNoMapa } from '../../utils/mapaTesoro.js'
-import { conCorazonadas, sinCorazonadas } from '../../utils/corazonadas.js'
+import { conCorazonadas, sinInsertos } from '../../utils/corazonadas.js'
+import { conFalsos } from '../../utils/falsificador.js'
 import { XraySheet, ChapterSheet, TypoSheet, WhiteNoiseSheet, AudioSheet, NavSheet, ImageOverlay, FotoAsomada, ResenaSheet, ConfirmSubrayadoSheet } from './lector/LectorSheets.jsx'
 import '../../styles/lector.mobile.css'
 
@@ -174,7 +176,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   // párrafos); `paginas` = sin ellos, que es lo que usa todo lo demás. Mismo
   // número de páginas: ver utils/corazonadas.js.
   const [paginasConChips, setPaginas] = useState([[]])
-  const paginas = useMemo(() => sinCorazonadas(paginasConChips), [paginasConChips])
+  const paginas = useMemo(() => sinInsertos(paginasConChips), [paginasConChips])
   const [paginadoChap, setPaginadoChap] = useState(null)
 
   // Qué juegos salen en este libro: los del Perfil, o los del profe si es un
@@ -191,6 +193,16 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     visibles: paginasConChips[pageIndex] || [], clavePagina: `${chapterIndex}:${pageIndex}`,
     movil: true, deshabilitado: guestMode || onboarding.active || !jg.concurso,
+  })
+  // El falsificador (no ficción): el falso entra en el capítulo antes de paginar
+  // y el foco salta al intentar pasar su página (Falsificador.jsx).
+  const atrasRef = useRef(null)
+  const falsificador = useFalsificadorLector({
+    libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
+    visibles: paginasConChips[pageIndex] || [], previas: paginasConChips[pageIndex - 1] || [],
+    siguientes: paginasConChips[pageIndex + 1] || [], clavePagina: `${chapterIndex}:${pageIndex}`,
+    atras: () => atrasRef.current?.(), gatoColor, movil: true,
+    deshabilitado: guestMode || onboarding.active || !jg.falsificador,
   })
   // El desafío del gato: salta al pasar de la última página del capítulo de la mitad y del libro (Desafio.jsx).
   const desafio = useDesafioLector({
@@ -290,8 +302,8 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
   useEffect(() => {
     // Corazonadas: el chip ocupa sitio, así que se pagina cuando ya se sabe dónde va.
-    if (!corazonadas.listo || !juegosLibro.listo) return
-    const parrafos = conCorazonadas(currentChapData?.parrafos, corazonadas.chips)
+    if (!corazonadas.listo || !falsificador.listo || !juegosLibro.listo) return
+    const parrafos = conFalsos(conCorazonadas(currentChapData?.parrafos, corazonadas.chips), falsificador.falsos)
     if (!parrafos?.length || !currentChapter) { setPaginas([[]]); setPaginadoChap(null); return }
     const box = screenRef.current?.querySelector('[data-lm-pagebox]')
     if (!box) return
@@ -329,7 +341,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       paginar()
     })()
     return () => { cancelled = true }
-  }, [currentChapData?.parrafos, currentChapter, fontSize, readingFont, geom.maxH, geom.lineHeight, corazonadas.listo, juegosLibro.listo, corazonadas.chips])
+  }, [currentChapData?.parrafos, currentChapter, fontSize, readingFont, geom.maxH, geom.lineHeight, corazonadas.listo, falsificador.listo, juegosLibro.listo, corazonadas.chips, falsificador.falsos])
 
   // restaurar página exacta al volver.
   // Espera a que la paginación DEFINITIVA (medida) esté lista: con la paginación
@@ -419,7 +431,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         const cs  = box ? window.getComputedStyle(box) : null
         const padX = cs ? parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) : 60
         const contentW = box ? Math.max(120, box.clientWidth - padX) : 320
-        const prevPages = paginarParrafosMobileDOM(conCorazonadas(prevEntry.parrafos, corazonadas.chipsDe(prevCap?.numero)), {
+        const prevPages = paginarParrafosMobileDOM(conFalsos(conCorazonadas(prevEntry.parrafos, corazonadas.chipsDe(prevCap?.numero)), falsificador.falsosDe(prevCap?.numero)), {
           contentW, maxH: geom.maxH, fontSize, readingFont, lineHeightRatio: LINE, lineHeight: geom.lineHeight,
           chapterHead: { kicker: `Capítulo ${prevCap?.numero ?? ''}`, titulo: prevCap?.titulo || '' },
         })
@@ -430,9 +442,11 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       }
     }
   }
+  atrasRef.current = handlePrev
   function handleNext() {
     setCatOpen(false)
     if (concurso.interceptar?.(handleNext)) return
+    if (falsificador.interceptar?.(handleNext)) return
     if (pageIndex < total - 1) { setPageIndex(p => p + 1); return }
     if (desafio.interceptar?.(handleNext)) return
     if (capsula.interceptar?.(handleNext)) return
@@ -629,6 +643,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
                 overlay={capa.overlay}
                 renderChip={corazonadas.renderChip}
                 renderCorazon={corazonadas.renderCorazon}
+                renderFalso={falsificador.renderFalso}
                 brillo={mapa.brilla}
               />
         )}
@@ -725,6 +740,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
       {/* Corazonada abierta (hoja de abajo) */}
       {corazonadas.panel}
 
+      {/* El falsificador: luces apagadas y foco sobre el párrafo sospechoso */}
+      {falsificador.panel}
+
       {/* El desafío del gato: la charla a mitad del libro y al final */}
       {desafio.panel}
 
@@ -739,7 +757,8 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* Tira de predicción (fin de capítulo) y pista de primera vez */}
       {tira && <TiraPrediccion movil capNum={tira.capNum} onAnotar={() => { setTipoCuaderno('pred'); anotarDesdeTira() }} onCerrar={() => setTiraCerrada(chapterIndex)} />}
-      {pistaLector && <Pista id={pistaLector} movil bottom={78} accion={accionPista[pistaLector]} />}
+      {/* Con el foco del concurso o del falsificador encendido, las pistas esperan: tapaban el párrafo. */}
+      {pistaLector && !concurso.panel && !falsificador.panel && <Pista id={pistaLector} movil bottom={78} accion={accionPista[pistaLector]} />}
 
       {/* Paywall de invitado */}
       {showPaywall && (

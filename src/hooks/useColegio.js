@@ -105,6 +105,21 @@ export function useCapsulaAulaQuery(aulaId, enabled = true) {
   })
 }
 
+// El falsificador (no ficción, migración 099): qué respondió cada alumno en
+// cada párrafo sospechoso. Sin la 099, null.
+export function useFalsificadorAulaQuery(aulaId, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.falsificadorAula(aulaId),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('falsificador_aula', { p_aula: aulaId })
+      if (error) return null
+      return data
+    },
+    enabled: !!aulaId && enabled,
+    staleTime: STALE_TIME,
+  })
+}
+
 // La charla entera de un alumno en el desafío: solo al tocar «Ver la charla».
 export function useCharlaAulaQuery(aulaId, userId, momento, enabled) {
   return useQuery({

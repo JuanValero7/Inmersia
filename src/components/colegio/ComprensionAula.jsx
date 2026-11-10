@@ -12,7 +12,8 @@
 //      alumno, antes y ahora, lado a lado. Solo para leer: sin conteos.
 // Las cuentas viven en utils/comprension.js.
 import { useState, useMemo } from 'react'
-import { useComprensionQuery, useCharlaAulaQuery, useCalificarDesafio, useCapsulaAulaQuery } from '../../hooks/useColegio.js'
+import { useComprensionQuery, useCharlaAulaQuery, useCalificarDesafio, useCapsulaAulaQuery, useFalsificadorAulaQuery } from '../../hooks/useColegio.js'
+import { resumenFalsificador } from '../../utils/falsificador.js'
 import {
   capituloPorDefecto, resumenMesa, resumenFrases, frasesPorTipo, resumenTesoros, resumenCorazonadas,
   corazonadasAlumno, estadoFrase, evidenciaAlumno, habilidades, NOTA_APROBADO, pct, num,
@@ -32,13 +33,15 @@ const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`
 export default function ComprensionAula({ aulaId }) {
   const { data: c, isLoading, isError } = useComprensionQuery(aulaId)
   const { data: capsula, isLoading: cargandoCapsula } = useCapsulaAulaQuery(aulaId)
+  const { data: falsificador, isLoading: cargandoFx } = useFalsificadorAulaQuery(aulaId)
 
-  if (isLoading || cargandoCapsula) return <p className="com-dd-msg">Cargando la comprensión…</p>
+  if (isLoading || cargandoCapsula || cargandoFx) return <p className="com-dd-msg">Cargando la comprensión…</p>
   if (isError || !c) return <p className="com-dd-msg">No pudimos cargar la comprensión. Revisa tu conexión.</p>
   if (!c.libro_id) return null
   const conFiccion = !!(c.mesa || c.corazonadas || c.concurso || c.mapa || c.desafio)
   const conCapsula = !!capsula?.preguntas && capsula.encendida !== false
-  if (!conFiccion && !conCapsula) {
+  const conFalsificador = !!falsificador?.items?.length && falsificador.encendido === true
+  if (!conFiccion && !conCapsula && !conFalsificador) {
     return (
       <section className="col-tarjeta">
         <h3>Este libro todavía no tiene juegos</h3>
@@ -50,6 +53,7 @@ export default function ComprensionAula({ aulaId }) {
     <>
       {conFiccion && <ConJuegos key={aulaId} c={c} aulaId={aulaId} />}
       {conCapsula && <BloqueCapsula key={'cp' + aulaId} capsula={capsula} alumnos={c.alumnos} />}
+      {conFalsificador && <BloqueFalsificador fx={falsificador} alumnos={c.alumnos} />}
     </>
   )
 }
@@ -584,6 +588,43 @@ function BloqueCapsula({ capsula, alumnos }) {
             ))}
           </div>
         ) : <div className="cmp-df-vacio col-sub">Toca a un alumno que haya sellado su cápsula para leer sus respuestas.</div>}
+      </div>
+    </section>
+  )
+}
+
+
+// ── 7. El falsificador (no ficción) ─────────────────────────
+
+function BloqueFalsificador({ fx, alumnos }) {
+  const r = useMemo(() => resumenFalsificador(fx, alumnos), [fx, alumnos])
+  const nombre = Object.fromEntries(alumnos.map(a => [a.user_id, a.nombre]))
+  const autor = fx.autor || 'el autor'
+  const m = r.masEngano
+  return (
+    <section className="col-tarjeta">
+      <div className="col-card-head">
+        <div>
+          <h3>El falsificador</h3>
+          <p className="col-sub">El gato coló {plural(r.totalFalsos, 'párrafo inventado', 'párrafos inventados')} entre {plural(r.totalReales, 'párrafo', 'párrafos')} de {autor}. Pillar una trampa es descubrir un inventado; confiar en el autor es reconocer uno de verdad.</p>
+        </div>
+      </div>
+      {m && (
+        <div className="cmp-fila">
+          <small className="col-label">El que más engañó a la clase</small>
+          <q className="cmp-cita">{m.inicio}</q>
+          <div className="cmp-q"><small>{m.falso ? 'Inventado por el gato' : `De ${autor}`} · engañó a {m.fallos} de {m.respondidos}</small></div>
+        </div>
+      )}
+      <div className="cmp-filas">
+        {r.filas.map(f => (
+          <div key={f.user_id} className="cmp-fila">
+            <b>{nombre[f.user_id]}</b>
+            {f.respondidos === 0
+              ? <span className="col-vacio">Todavía no llega a ninguno</span>
+              : <small className="cmp-pie">Pilló {f.pillo} de {r.totalFalsos} trampas · confió en {autor} {f.confio} de {plural(r.totalReales, 'vez', 'veces')}</small>}
+          </div>
+        ))}
       </div>
     </section>
   )

@@ -5,7 +5,7 @@ const LINE = 1.72  // alto de línea (coincide con .lm-para en el CSS)
 
 export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaByParrafo, subrayados = [], isFirst, pageNum, fontSize, font,
                     atStart, nextIsChapter, onPrev, onNext, hideArrows, onPlaySfx, overlay = null,
-                    renderChip = null, renderCorazon = null, brillo = false }) {
+                    renderChip = null, renderCorazon = null, renderFalso = null, brillo = false }) {
   const lineH = Math.round(fontSize * LINE)
 
   return (
@@ -24,6 +24,14 @@ export default function MobileBookPage({ chapter, chapterIndex, parrafos, mediaB
           if (p.tipo === 'separador') return <div key={p.id ?? `s${i}`} className="lm-sep">❧</div>
           // Corazonadas (components/lector/Corazonada.jsx). El chip ocupa siempre su alto: el paginador ya lo contó.
           if (p.tipo === 'corazonada') return renderChip ? renderChip(p) : <div key={p.id} style={{ height: CHIP_ALTO }} />
+          // El falso del falsificador (components/lector/Falsificador.jsx): un párrafo
+          // más, que no es del libro (sin subrayados ni comunidad). El paginador ya lo contó.
+          if (p.tipo === 'falso')
+            return (
+              <p key={p.id} data-falso-id={p.falsoId} className="lm-para" style={{ fontFamily: font, position: 'relative', userSelect: 'none' }}>
+                {renderFalso ? renderFalso(p) : p.contenido}
+              </p>
+            )
           const corazon = renderCorazon?.(p.numero) ?? null
           const sfx = (mediaByParrafo[p.id] || []).filter(m => m.origen === 'explicito' && m.tipo === 'audio')
           const text = p.contenido || ''

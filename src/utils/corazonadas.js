@@ -5,8 +5,9 @@
 // suspenso, y los dos paginadores lo miden como a un separador.
 //
 // El resto del lector (guardar la posición, retomarla, comunidad, % leído,
-// ambiente) trabaja con párrafos de verdad: para eso está sinCorazonadas, que
-// quita los chips sin cambiar el número de páginas.
+// ambiente) trabaja con párrafos de verdad: para eso está sinInsertos, que
+// quita los chips (y los párrafos falsos del falsificador, utils/falsificador.js)
+// sin cambiar el número de páginas.
 //
 // Reglas del juego: Documentation/colegios/corazonadas-prompt.md.
 
@@ -33,13 +34,17 @@ export function conCorazonadas(parrafos, chips) {
   return salida
 }
 
+/** Lo que los juegos meten en el capítulo y no es del libro. */
+const INSERTOS = new Set(['corazonada', 'falso'])
+
 /**
- * Las mismas páginas sin los chips (mismo número de páginas).
+ * Las mismas páginas sin lo que no es del libro: chips de corazonada y
+ * párrafos falsos (mismo número de páginas).
  * @template {{ tipo?: string }} P
  * @param {P[][]} paginas
  */
-export function sinCorazonadas(paginas) {
-  return paginas.some(pg => pg.some(p => p.tipo === 'corazonada'))
-    ? paginas.map(pg => pg.filter(p => p.tipo !== 'corazonada'))
+export function sinInsertos(paginas) {
+  return paginas.some(pg => pg.some(p => INSERTOS.has(p.tipo ?? '')))
+    ? paginas.map(pg => pg.filter(p => !INSERTOS.has(p.tipo ?? '')))
     : paginas
 }

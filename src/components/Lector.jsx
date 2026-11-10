@@ -23,12 +23,14 @@ import SuperuserSoundsPanel from './lector/SuperuserSoundsPanel.jsx'
 import { useCapaEscritorio } from './comunidades/capa/CapaEscritorio.jsx'
 import { useCorazonadasLector } from './lector/Corazonada.jsx'
 import { useConcursoLector } from './lector/Concurso.jsx'
+import { useFalsificadorLector } from './lector/Falsificador.jsx'
 import { useMapaTesoroLector } from './lector/MapaTesoro.jsx'
 import { useDesafioLector } from './lector/Desafio.jsx'
 import { useCapsulaLector } from './lector/Capsula.jsx'
 import { useJuegosLibro } from '../hooks/useJuegos.js'
 import { motivoNoMapa } from '../utils/mapaTesoro.js'
-import { conCorazonadas, sinCorazonadas } from '../utils/corazonadas.js'
+import { conCorazonadas, sinInsertos } from '../utils/corazonadas.js'
+import { conFalsos } from '../utils/falsificador.js'
 import { INK } from '../lib/colores.js'
 
 // Geometría de página.
@@ -155,7 +157,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   // y sin ellos, que es lo que usa todo lo demás (posición, comunidad, % leído…).
   // Las dos tienen el mismo número de páginas: ver utils/corazonadas.js.
   const [paginasConChips, setPaginasConChips] = useState([[]])
-  const currentPaginas = useMemo(() => sinCorazonadas(paginasConChips), [paginasConChips])
+  const currentPaginas = useMemo(() => sinInsertos(paginasConChips), [paginasConChips])
 
   // Corazonadas: el chip ocupa sitio, así que se pagina cuando ya se sabe dónde va.
   const visiblesCz = useMemo(() => [
@@ -178,6 +180,22 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     deshabilitado: guestMode || onboarding.active || !jg.concurso,
   })
   const interceptarConcurso = concurso.interceptar
+  // El falsificador (no ficción): el falso entra en el capítulo antes de paginar
+  // y el foco salta al intentar pasar su página (Falsificador.jsx).
+  const pantallaFx = (desde) => doubleView
+    ? [...(paginasConChips[desde] || []), ...(paginasConChips[desde + 1] || [])]
+    : (paginasConChips[desde] || [])
+  const pasoFx = doubleView ? 2 : 1
+  const previasFx = useMemo(() => pageIndex > 0 ? pantallaFx(pageIndex - pasoFx) : [], [paginasConChips, pageIndex, doubleView]) // eslint-disable-line react-hooks/exhaustive-deps
+  const siguientesFx = useMemo(() => pantallaFx(pageIndex + pasoFx), [paginasConChips, pageIndex, doubleView]) // eslint-disable-line react-hooks/exhaustive-deps
+  const atrasRef = useRef(null)
+  const falsificador = useFalsificadorLector({
+    libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
+    visibles: visiblesCz, previas: previasFx, siguientes: siguientesFx, clavePagina: `${chapterIndex}:${pageIndex}`,
+    atras: () => atrasRef.current?.(), gatoColor,
+    deshabilitado: guestMode || onboarding.active || !jg.falsificador,
+  })
+  const interceptarFalso = falsificador.interceptar
   // El desafío del gato: salta al pasar del final del capítulo de la mitad y del libro (Desafio.jsx).
   const desafio = useDesafioLector({
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
@@ -211,8 +229,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   // binaria). Reemplaza el sistema previo de measuredHeights + estimación, que
   // dejaba espacios en blanco al sobreestimar alturas de párrafos fragmentados.
   useEffect(() => {
-    if (!corazonadas.listo || !juegosLibro.listo) return
-    const parrafos = conCorazonadas(currentChapData?.parrafos, corazonadas.chips)
+    if (!corazonadas.listo || !falsificador.listo || !juegosLibro.listo) return
+    const parrafos = conFalsos(conCorazonadas(currentChapData?.parrafos, corazonadas.chips), falsificador.falsos)
     if (!parrafos?.length || !currentChapter) { setPaginasConChips([[]]); return }
     let cancelled = false
     ;(async () => {
@@ -236,7 +254,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       if (!cancelled) setPaginasConChips(pages)
     })()
     return () => { cancelled = true }
-  }, [currentChapData?.parrafos, currentChapter, chapterIndex, fontSize, readingFont, geom.pageW, geom.pageH, corazonadas.listo, juegosLibro.listo, corazonadas.chips])
+  }, [currentChapData?.parrafos, currentChapter, chapterIndex, fontSize, readingFont, geom.pageW, geom.pageH, corazonadas.listo, falsificador.listo, juegosLibro.listo, corazonadas.chips, falsificador.falsos])
 
   // Restaurar posición de lectura guardada una vez que currentPaginas está lista.
   // El ancla es { parrafoId, offset }: el primer párrafo visible de la página
@@ -345,6 +363,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       setGoToLastPage(true)
     }
   }, [doubleView, pageIndex, chapterIndex, setChapterIndex, setGoToLastPage, setPageIndex])
+  atrasRef.current = handlePrevPage
 
   const polaroidRef = useRef(null)
 
@@ -358,6 +377,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const handleNextPage = useCallback(() => {
     if (polaroidRef.current?.interceptForward()) { marcarPista('ilustracion'); return }
     if (interceptarConcurso?.(() => paginaRef.current?.())) return
+    if (interceptarFalso?.(() => paginaRef.current?.())) return
     const step = doubleView ? 2 : 1
     const next = pageIndex + step
     if (next < currentPaginas.length) {
@@ -366,12 +386,13 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       anotarMuestra(book?.libro_id, chapterIndex + 1)   // terminó la muestra
       setShowPaywall(true)
     }
-  }, [doubleView, pageIndex, currentPaginas.length, guestMode, chapterIndex, capitulos.length, book?.libro_id, marcarPista, setPageIndex, setShowPaywall, interceptarConcurso])
+  }, [doubleView, pageIndex, currentPaginas.length, guestMode, chapterIndex, capitulos.length, book?.libro_id, marcarPista, setPageIndex, setShowPaywall, interceptarConcurso, interceptarFalso])
   // Fin de capítulo: se avanza sin abrir el Cuaderno. La predicción se ofrece
   // ANTES, con la tira que aparece en la última página (ver `tira` más abajo).
   const handleNextChapter = useCallback(() => {
     if (polaroidRef.current?.interceptForward()) { marcarPista('ilustracion'); return }
     if (interceptarConcurso?.(() => capituloRef.current?.())) return
+    if (interceptarFalso?.(() => capituloRef.current?.())) return
     if (interceptarDesafio?.(() => capituloRef.current?.())) return
     if (interceptarCapsula?.(() => capituloRef.current?.())) return
     const next = chapterIndex + 1
@@ -383,7 +404,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     persistRef.current(next)
     setGoToLastPage(false)
     setChapterIndex(next); setPageIndex(0)
-  }, [chapterIndex, capitulos, guestMode, book?.libro_id, marcarPista, setChapterIndex, setGoToLastPage, setPageIndex, setShowPaywall, interceptarConcurso, interceptarDesafio, interceptarCapsula])
+  }, [chapterIndex, capitulos, guestMode, book?.libro_id, marcarPista, setChapterIndex, setGoToLastPage, setPageIndex, setShowPaywall, interceptarConcurso, interceptarFalso, interceptarDesafio, interceptarCapsula])
   paginaRef.current = handleNextPage
   capituloRef.current = handleNextChapter
 
@@ -626,6 +647,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                   renderCapa={capa.activa ? capa.renderHoja : null}
                   renderChip={corazonadas.renderChip}
                   renderCorazon={corazonadas.renderCorazon}
+                  renderFalso={falsificador.renderFalso}
                   brillo={mapa.brilla}
                 />
           )}
@@ -709,7 +731,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* Tira de predicción (fin de capítulo) y pista de primera vez */}
       {tira && <TiraPrediccion capNum={tira.capNum} onAnotar={anotarTira} onCerrar={() => setTiraCerrada(chapterIndex)} />}
-      {pistaLector && <Pista id={pistaLector} accion={accionPista[pistaLector]} />}
+      {/* Con el foco del concurso o del falsificador encendido, las pistas esperan: tapaban el párrafo. */}
+      {pistaLector && !concurso.panel && !falsificador.panel && <Pista id={pistaLector} accion={accionPista[pistaLector]} />}
 
       {/* Paywall de invitado */}
       {showPaywall && (
@@ -778,6 +801,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* El concurso: luces apagadas y foco sobre la frase */}
       {concurso.panel}
+
+      {/* El falsificador: luces apagadas y foco sobre el párrafo sospechoso */}
+      {falsificador.panel}
 
       {/* Mapa del tesoro: la lista del capítulo y la respuesta del gato */}
       {mapa.panel}

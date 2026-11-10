@@ -83,7 +83,8 @@ function rangosEnPantalla(raiz, parrafoId, cita) {
 }
 
 // Un rectángulo por línea (los subrayados parten la línea en varios trozos).
-function rectsDe(rangos) {
+// También lo usa el falsificador (Falsificador.jsx).
+export function rectsDe(rangos) {
   const lineas = []
   for (const r of rangos || []) {
     for (const b of r.getClientRects()) {
@@ -97,7 +98,7 @@ function rectsDe(rangos) {
 }
 
 // Escritorio: al lado de afuera del libro, a la altura de la frase.
-function posicionar(rects) {
+export function posicionar(rects) {
   const libro = document.querySelector('.book-shadow')?.getBoundingClientRect()
   const ref = rects[0]
   if (!libro || !ref) return { left: Math.max(12, (window.innerWidth - ANCHO) / 2), top: 80 }
