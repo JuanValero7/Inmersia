@@ -25,6 +25,7 @@ import { useCorazonadasLector } from './lector/Corazonada.jsx'
 import { useConcursoLector } from './lector/Concurso.jsx'
 import { useMapaTesoroLector } from './lector/MapaTesoro.jsx'
 import { useDesafioLector } from './lector/Desafio.jsx'
+import { useCapsulaLector } from './lector/Capsula.jsx'
 import { useJuegosLibro } from '../hooks/useJuegos.js'
 import { motivoNoMapa } from '../utils/mapaTesoro.js'
 import { conCorazonadas, sinCorazonadas } from '../utils/corazonadas.js'
@@ -183,6 +184,14 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     gatoColor, deshabilitado: guestMode || onboarding.active || !jg.desafio,
   })
   const interceptarDesafio = desafio.interceptar
+  // La cápsula del tiempo (no ficción): salta al abrir el libro y al pasar del último capítulo (Capsula.jsx).
+  const capsula = useCapsulaLector({
+    libroId: book?.libro_id, userId, titulo: book?.title || '',
+    chapterIndex, enUltimoCapitulo: capitulos.length > 0 && chapterIndex === capitulos.length - 1,
+    listo: !loading && capitulos.length > 0, terminado: isLeido,
+    gatoColor, deshabilitado: guestMode || onboarding.active || !jg.capsula,
+  })
+  const interceptarCapsula = capsula.interceptar
   // El mapa del tesoro: lista del capítulo, borde que brilla y subrayar al mapa (MapaTesoro.jsx).
   const mapa = useMapaTesoroLector({
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
@@ -364,6 +373,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     if (polaroidRef.current?.interceptForward()) { marcarPista('ilustracion'); return }
     if (interceptarConcurso?.(() => capituloRef.current?.())) return
     if (interceptarDesafio?.(() => capituloRef.current?.())) return
+    if (interceptarCapsula?.(() => capituloRef.current?.())) return
     const next = chapterIndex + 1
     if (next >= capitulos.length) {
       if (guestMode) { anotarMuestra(book?.libro_id, next); setShowPaywall(true) }
@@ -373,7 +383,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     persistRef.current(next)
     setGoToLastPage(false)
     setChapterIndex(next); setPageIndex(0)
-  }, [chapterIndex, capitulos, guestMode, book?.libro_id, marcarPista, setChapterIndex, setGoToLastPage, setPageIndex, setShowPaywall, interceptarConcurso, interceptarDesafio])
+  }, [chapterIndex, capitulos, guestMode, book?.libro_id, marcarPista, setChapterIndex, setGoToLastPage, setPageIndex, setShowPaywall, interceptarConcurso, interceptarDesafio, interceptarCapsula])
   paginaRef.current = handleNextPage
   capituloRef.current = handleNextChapter
 
@@ -650,6 +660,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
         gatoColor={gatoColor}
         tesoros={mapa.cuaderno}
         desafio={desafio.cuaderno}
+        capsula={capsula.cuaderno}
         tipoInicial={tipoCuaderno}
       />
 
@@ -773,6 +784,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* El desafío del gato: la charla a mitad del libro y al final */}
       {desafio.panel}
+
+      {/* La cápsula del tiempo: al abrir el libro y al terminarlo */}
+      {capsula.panel}
 
       {/* Onboarding (paso 'manual'): recuerda que las instrucciones están en el libro */}
       {tutorialManual && !manualHintVisto && (

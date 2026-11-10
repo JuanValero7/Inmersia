@@ -7,6 +7,7 @@ import { useSubrayadosLibroQuery, queryKeys, SUBRAYADOS_MAX } from '../../lib/qu
 import { theme, ClayButton } from './clay.jsx'
 import { FichasTesoro, AYUDA_MAPA } from './MapaTesoro.jsx'
 import { ChatDesafio } from './Desafio.jsx'
+import { PanelCapsula } from './Capsula.jsx'
 
 // Tipos (arriba, horizontal)
 const TYPES = [
@@ -20,6 +21,9 @@ const TIPO_TESOROS = { id: 'tes', label: 'Tesoros', col: '#D99A1E', txt: '#7a520
 // Solo si ya empezó alguna charla del desafío del gato (lector/Desafio.jsx).
 // eslint-disable-next-line no-restricted-syntax -- hex a propósito, como TIPO_TESOROS
 const TIPO_DESAFIOS = { id: 'des', label: 'Desafíos', col: '#3E7A52', txt: '#24533a' }
+// Solo si ya selló la cápsula del tiempo (no ficción, lector/Capsula.jsx).
+// eslint-disable-next-line no-restricted-syntax -- hex a propósito, como TIPO_TESOROS
+const TIPO_CAPSULA = { id: 'cap', label: 'Cápsula', col: '#2F5D8A', txt: '#24476b' }
 
 // Cuaderno de lectura — clay. Tipos arriba en horizontal; los capítulos con
 // notas (o el que estás leyendo) son las pestañas laterales.
@@ -29,14 +33,17 @@ const SIN_SUBRAYADOS = []
 // `tesoros`: fichas del mapa de los capítulos ya leídos (sin las de más adelante).
 // `desafio`: las charlas del desafío ya empezadas, para releerlas o seguirlas
 // (useDesafioLector().cuaderno). No dependen del capítulo.
+// `capsula`: la cápsula del tiempo sellada o abierta (useCapsulaLector().cuaderno).
+// Si el libro ya cuenta como leído y sigue sellada, se abre aquí.
 // `tipoInicial`: con qué pestaña abrir ('tes' si el libro brillaba al abrirlo).
-const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capituloNum, capitulos = [], gatoColor = 'negro', tesoros = null, desafio = null, tipoInicial = null }) {
+const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capituloNum, capitulos = [], gatoColor = 'negro', tesoros = null, desafio = null, capsula = null, tipoInicial = null }) {
   const [type, setType] = useState('pred')
   const tipos = useMemo(() => [
     ...TYPES,
     ...(tesoros?.length ? [TIPO_TESOROS] : []),
     ...(desafio ? [TIPO_DESAFIOS] : []),
-  ], [tesoros, desafio])
+    ...(capsula ? [TIPO_CAPSULA] : []),
+  ], [tesoros, desafio, capsula])
   const deslizar = tipos.length > 4
   const [selCap, setSelCap] = useState(capituloNum)
   const [capsConNotas, setCapsConNotas] = useState([])
@@ -208,7 +215,12 @@ const Notebook = memo(function Notebook({ isOpen, onClose, userId, libroId, capi
         {/* body: contenido + solapas de capítulo */}
         <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-            {tipo === 'des' ? (
+            {tipo === 'cap' ? (
+              <div className="caps-cuaderno">
+                <PanelCapsula key={capsula.c.estado} c={capsula.c} modo="cuaderno" puedeAbrir={capsula.puedeAbrir}
+                  titulo={capsula.titulo} gatoColor={capsula.gatoColor} ocupado={capsula.ocupado} onAbrir={capsula.abrir} />
+              </div>
+            ) : tipo === 'des' ? (
               <div className="df-cuaderno">
                 {desafio.momentos.map(m => (
                   <ChatDesafio key={m.momento} m={m} conProfe={desafio.conProfe} gatoColor={desafio.gatoColor} enCuaderno

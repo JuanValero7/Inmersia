@@ -100,19 +100,22 @@ function JuegosLectura({ userId }) {
   return (
     <div className="pf-field-row">
       <label className="pf-field-label">Juegos de lectura</label>
-      <div className="pf-juegos">
-        {JUEGOS.map(j => {
-          const encendido = !!juegos?.[j.id]
-          return (
-            <div key={j.id} className="pf-juego">
-              <div className="pf-juego-txt"><b>{j.nombre}</b><span>{j.texto}</span></div>
-              <button type="button" role="switch" aria-checked={encendido} aria-label={j.nombre}
-                className={clsx('pf-switch', encendido && 'is-on')} disabled={!juegos}
-                onClick={() => cambiar(j.id, !encendido)}><span /></button>
-            </div>
-          )
-        })}
-      </div>
+      {[[false, 'En libros de ficción'], [true, 'En libros de no ficción']].map(([noficcion, titulo]) => (
+        <div key={titulo} className="pf-juegos">
+          <span className="pf-juegos-grupo">{titulo}</span>
+          {JUEGOS.filter(j => j.noficcion === noficcion).map(j => {
+            const encendido = !!juegos?.[j.id]
+            return (
+              <div key={j.id} className="pf-juego">
+                <div className="pf-juego-txt"><b>{j.nombre}</b><span>{j.texto}</span></div>
+                <button type="button" role="switch" aria-checked={encendido} aria-label={j.nombre}
+                  className={clsx('pf-switch', encendido && 'is-on')} disabled={!juegos}
+                  onClick={() => cambiar(j.id, !encendido)}><span /></button>
+              </div>
+            )
+          })}
+        </div>
+      ))}
       {fallo && <div className="pf-err" style={{ marginTop: 8 }}>No se pudo guardar. Prueba otra vez.</div>}
       {enAula && <div className="pf-lock-note">En los libros de tu aula, los juegos los elige tu profe.</div>}
     </div>

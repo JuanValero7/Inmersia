@@ -1,0 +1,81 @@
+/* La cápsula del tiempo (escritorio, móvil y Cuaderno). Ver src/components/lector/Capsula.jsx
+   y la maqueta Documents/Inmersia_maquetas/colegios/maqueta-capsula-noficcion.html.
+   La escena (pantalla entera / hoja alta) y la cabecera son las del desafío (desafio.css);
+   los colores, los de corazonada.css (--cz-*). Sin barras de scroll visibles. */
+:root { --cp-azul: #2f5d8a; --cp-azul-bg: #e6eef7; }
+
+/* ── El panel ── */
+.caps-panel { display: flex; flex-direction: column; min-height: 0; background: var(--cz-paper); border: 2px solid var(--cz-ink); border-radius: 18px;
+  overflow: hidden; font-family: 'Baloo 2', sans-serif; color: var(--cz-ink); box-shadow: var(--cz-sombra); }
+.df-mesa > .caps-panel { height: 100%; }
+.df-hoja > .caps-panel { flex: 1; min-height: 0; margin: 0 8px 8px; }
+.caps-panel.is-cuaderno { height: 100%; box-shadow: none; }
+.caps-body { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px;
+  scrollbar-width: none; }
+.caps-body::-webkit-scrollbar { display: none; }
+.caps-pie { border-top: 2px solid var(--cz-ink); background: var(--cz-cream); padding: 8px 10px; display: grid; gap: 6px; flex-shrink: 0; }
+.caps-pie-fila { display: flex; gap: 8px; align-items: center; }
+.caps-pie-fila small { flex: 1; font-size: 12px; font-weight: 700; color: var(--cz-ink-soft); line-height: 1.25; }
+
+/* ── Preguntas ── */
+.caps-preg { border: 2px solid var(--cz-ink); border-radius: 14px; background: #fffaf0; padding: 9px 11px; display: grid; gap: 8px; flex-shrink: 0;
+  box-shadow: 1.5px 2px 0 rgba(74,54,34,0.25); }
+.caps-preg p { margin: 0; font-family: 'Crimson Text', Georgia, serif; font-size: 18px; line-height: 1.25; color: #3a2a18; }
+.caps-n { display: block; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 11px; letter-spacing: 0.06em; color: var(--cz-accent); }
+.caps-preg textarea { width: 100%; box-sizing: border-box; min-height: 58px; resize: none; border: 2px solid var(--cz-ink); border-radius: 10px;
+  padding: 6px 9px; font-family: inherit; font-size: 16px; line-height: 1.3; color: var(--cz-ink); background: #fff;
+  scrollbar-width: none; }
+.caps-preg textarea::-webkit-scrollbar { display: none; }
+.caps-preg textarea:focus-visible { outline: 3px solid var(--cz-accent); outline-offset: 1px; }
+
+/* ── La lata ── */
+.caps-lata { position: relative; width: 120px; height: 150px; flex-shrink: 0; }
+.caps-tapa { position: absolute; left: 6px; right: 6px; top: 0; height: 30px; border: 3px solid var(--cz-ink); border-radius: 12px 12px 6px 6px;
+  background: #c9b48a; transition: transform 0.8s cubic-bezier(0.3, 1.4, 0.5, 1); transform-origin: 0 100%; z-index: 2; }
+.caps-cuerpo { position: absolute; left: 0; right: 0; top: 24px; bottom: 0; border: 3px solid var(--cz-ink); border-radius: 10px 10px 24px 24px;
+  background: linear-gradient(90deg, #d8c399, #efe1bf 40%, #d1ba8c); display: flex; align-items: center; justify-content: center; }
+.caps-etiqueta { width: 84px; background: var(--cz-paper); border: 2px solid var(--cz-ink); border-radius: 4px; padding: 3px 4px; text-align: center;
+  font-family: 'Special Elite', 'Courier New', monospace; font-size: 9.5px; line-height: 1.25; transform: rotate(-3deg); overflow-wrap: anywhere; }
+.caps-etiqueta b { display: block; font-size: 11px; }
+/* Abierta, la tapa y los papeles suben: se le deja sitio arriba. */
+.caps-lata.is-abierta { margin-top: 30px; }
+.caps-lata.is-abierta .caps-tapa { transform: translate(-30px, -18px) rotate(-38deg); }
+.caps-papeles { position: absolute; left: 22px; right: 22px; top: 6px; height: 46px; display: flex; justify-content: center; gap: 4px; opacity: 0;
+  transition: opacity 0.4s 0.4s, transform 0.6s 0.4s; z-index: 1; }
+.caps-papeles i { width: 18px; height: 40px; background: var(--cz-paper); border: 2px solid var(--cz-ink); border-radius: 2px; }
+.caps-papeles i:nth-child(1) { transform: rotate(-12deg); }
+.caps-papeles i:nth-child(3) { transform: rotate(10deg); }
+.caps-lata.is-abierta .caps-papeles { opacity: 1; transform: translateY(-26px); }
+
+.caps-sellada { align-self: stretch; display: grid; justify-items: center; gap: 8px; text-align: center; padding: 6px 0; flex-shrink: 0; }
+.caps-sellada > b { font-size: 19px; }
+.caps-sellada > span { font-size: 14px; font-weight: 600; color: var(--cz-ink-soft); line-height: 1.35; max-width: 34ch; }
+.caps-sellada > .caps-sello { font-family: 'Special Elite', 'Courier New', monospace; font-size: 12px; letter-spacing: 0.1em; color: var(--cz-accent);
+  border: 2px solid var(--cz-accent); border-radius: 4px; padding: 1px 8px; transform: rotate(-2deg); }
+.caps-info { display: grid; gap: 12px; justify-items: center; }
+.caps-info h3 { justify-self: start; margin: 0; }
+.caps-info ul { justify-self: stretch; }
+.caps-info .caps-lata.is-abierta { margin-top: 52px; }
+
+/* ── Antes y ahora ── */
+.caps-resumen { align-self: stretch; border: 2.5px solid var(--cz-ink); border-radius: 14px; padding: 9px 12px; background: var(--cz-ok-bg);
+  display: grid; gap: 3px; flex-shrink: 0; }
+.caps-resumen b { font-size: 20px; font-weight: 800; line-height: 1.15; }
+.caps-resumen span { font-size: 13.5px; font-weight: 700; line-height: 1.3; }
+.caps-comp { border: 2px solid var(--cz-ink); border-radius: 14px; background: #fffaf0; padding: 9px 11px; display: grid; gap: 6px; flex-shrink: 0; }
+.caps-comp > p { margin: 0; font-family: 'Crimson Text', Georgia, serif; font-size: 16.5px; line-height: 1.25; color: #3a2a18; }
+.caps-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.caps-dos.is-movil { grid-template-columns: 1fr; }
+.caps-dos > div { border-radius: 10px; padding: 6px 9px; font-family: 'Crimson Text', Georgia, serif; font-size: 15px; line-height: 1.3;
+  white-space: pre-wrap; overflow-wrap: anywhere; }
+.caps-dos small { display: block; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+.caps-a { background: var(--cp-azul-bg); border: 2px solid var(--cp-azul); }
+.caps-a small { color: var(--cp-azul); }
+.caps-b { background: #fff1e4; border: 2px solid var(--cz-accent); }
+.caps-b small { color: var(--cz-accent); }
+@media (max-width: 600px) { .caps-dos { grid-template-columns: 1fr; } }
+
+/* ── Cuaderno ── */
+.caps-cuaderno { flex: 1; min-height: 0; padding: 14px 18px; display: flex; flex-direction: column; }
+
+@media (prefers-reduced-motion: reduce) { .caps-tapa, .caps-papeles { transition: none; } }

@@ -90,6 +90,21 @@ export function useComprensionQuery(aulaId, enabled = true) {
   })
 }
 
+// Cápsula del tiempo (no ficción, migración 098): lo que respondió cada alumno
+// al empezar y al terminar el libro. Solo para leer. Sin la 098, null.
+export function useCapsulaAulaQuery(aulaId, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.capsulaAula(aulaId),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('capsula_aula', { p_aula: aulaId })
+      if (error) return null
+      return data
+    },
+    enabled: !!aulaId && enabled,
+    staleTime: STALE_TIME,
+  })
+}
+
 // La charla entera de un alumno en el desafío: solo al tocar «Ver la charla».
 export function useCharlaAulaQuery(aulaId, userId, momento, enabled) {
   return useQuery({

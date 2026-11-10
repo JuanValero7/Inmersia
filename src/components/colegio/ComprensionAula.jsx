@@ -8,9 +8,11 @@
 //   3. Por capítulo: corazonadas, frases difíciles y tesoros.
 //   4. Desafío (mitad / final): resumen del gato, la charla y la nota del profe.
 //   5. La clase, alumno por alumno.
+//   6. Cápsula del tiempo (no ficción, 098): las dos respuestas de cada
+//      alumno, antes y ahora, lado a lado. Solo para leer: sin conteos.
 // Las cuentas viven en utils/comprension.js.
 import { useState, useMemo } from 'react'
-import { useComprensionQuery, useCharlaAulaQuery, useCalificarDesafio } from '../../hooks/useColegio.js'
+import { useComprensionQuery, useCharlaAulaQuery, useCalificarDesafio, useCapsulaAulaQuery } from '../../hooks/useColegio.js'
 import {
   capituloPorDefecto, resumenMesa, resumenFrases, frasesPorTipo, resumenTesoros, resumenCorazonadas,
   corazonadasAlumno, estadoFrase, evidenciaAlumno, habilidades, NOTA_APROBADO, pct, num,
@@ -29,11 +31,14 @@ const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`
 
 export default function ComprensionAula({ aulaId }) {
   const { data: c, isLoading, isError } = useComprensionQuery(aulaId)
+  const { data: capsula, isLoading: cargandoCapsula } = useCapsulaAulaQuery(aulaId)
 
-  if (isLoading) return <p className="com-dd-msg">Cargando la comprensión…</p>
+  if (isLoading || cargandoCapsula) return <p className="com-dd-msg">Cargando la comprensión…</p>
   if (isError || !c) return <p className="com-dd-msg">No pudimos cargar la comprensión. Revisa tu conexión.</p>
   if (!c.libro_id) return null
-  if (!c.mesa && !c.corazonadas && !c.concurso && !c.mapa && !c.desafio) {
+  const conFiccion = !!(c.mesa || c.corazonadas || c.concurso || c.mapa || c.desafio)
+  const conCapsula = !!capsula?.preguntas && capsula.encendida !== false
+  if (!conFiccion && !conCapsula) {
     return (
       <section className="col-tarjeta">
         <h3>Este libro todavía no tiene juegos</h3>
@@ -41,7 +46,12 @@ export default function ComprensionAula({ aulaId }) {
       </section>
     )
   }
-  return <ConJuegos key={aulaId} c={c} aulaId={aulaId} />
+  return (
+    <>
+      {conFiccion && <ConJuegos key={aulaId} c={c} aulaId={aulaId} />}
+      {conCapsula && <BloqueCapsula key={'cp' + aulaId} capsula={capsula} alumnos={c.alumnos} />}
+    </>
+  )
 }
 
 function ConJuegos({ c, aulaId }) {
@@ -527,5 +537,54 @@ function DetalleAlumno({ c, a }) {
         </div>
       )}
     </div>
+  )
+}
+
+
+// ── 6. Cápsula del tiempo (no ficción) ──────────────────────
+
+const fechaCorta = (iso) => iso ? new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'short' }) : ''
+
+function BloqueCapsula({ capsula, alumnos }) {
+  const [quien, setQuien] = useState(null)
+  const filas = alumnos.map(a => ({ a, r: capsula.respuestas?.[a.user_id] }))
+  const elegido = filas.find(x => x.a.user_id === quien && x.r)
+
+  return (
+    <section className="col-tarjeta">
+      <div className="col-card-head">
+        <div>
+          <h3>Cápsula del tiempo</h3>
+          <p className="col-sub">Lo que cada alumno pensaba al empezar el libro y lo que piensa al terminarlo, con sus palabras. No hay respuestas buenas ni malas: es para leer. El alumno sabe que tú lo lees.</p>
+        </div>
+      </div>
+      <div className="cmp-df">
+        <div className="cmp-entregas">
+          {filas.map(({ a, r }) => (
+            <button key={a.user_id} type="button" className={'cmp-ent' + (quien === a.user_id ? ' on' : '')}
+              disabled={!r} onClick={() => setQuien(a.user_id)}>
+              <span className="cmp-ent-n"><b>{a.nombre}</b>
+                <small>{!r ? 'Sin sellar' : r.abierta_at ? `Antes ${fechaCorta(r.sellada_at)} · ahora ${fechaCorta(r.abierta_at)}` : `Sellada el ${fechaCorta(r.sellada_at)}`}</small>
+              </span>
+              {r && (r.abierta_at ? <EstadoPill tono="ok" texto="Antes y ahora" /> : <span className="col-vacio">Leyendo</span>)}
+            </button>
+          ))}
+        </div>
+        {elegido ? (
+          <div className="cmp-charla cmp-cap">
+            <span className="col-label">{elegido.a.nombre}</span>
+            {elegido.r.preguntas.map((q, i) => (
+              <div key={q.id} className="cmp-cap-q">
+                <b className="cmp-q">{q.texto}</b>
+                <div className="cmp-cap-dos">
+                  <div className="cmp-cap-a"><small>Antes · {fechaCorta(elegido.r.sellada_at)}</small>{elegido.r.antes[i]}</div>
+                  <div className="cmp-cap-b"><small>Ahora</small>{elegido.r.ahora ? elegido.r.ahora[i] : <i>Todavía no termina el libro.</i>}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : <div className="cmp-df-vacio col-sub">Toca a un alumno que haya sellado su cápsula para leer sus respuestas.</div>}
+      </div>
+    </section>
   )
 }

@@ -433,6 +433,19 @@
 .cmp-turnos p.gato { color: var(--muted); }
 .cmp-ok { font-size: 13px; font-weight: 700; color: #4d6b3c; }
 
+/* Cápsula del tiempo (no ficción): antes y ahora, lado a lado */
+.cmp-cap { align-items: stretch; }
+.cmp-cap-q { display: flex; flex-direction: column; gap: 6px; }
+.cmp-cap-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cmp-cap-dos > div { border-radius: 10px; padding: 7px 10px; font-size: 14px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cmp-cap-dos small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.cmp-cap-a { background: #e6eef7; border: 1.5px solid #2f5d8a; }
+.cmp-cap-a small { color: #2f5d8a; }
+.cmp-cap-b { background: #fff1e4; border: 1.5px solid var(--accent); }
+.cmp-cap-b small { color: var(--accent-deep); }
+.cmp-cap-b i { color: var(--muted); }
+@media (max-width: 760px) { .cmp-cap-dos { grid-template-columns: 1fr; } }
+
 .cmp-tabla { min-width: 820px; }
 .cmp-sub-td { display: block; font-size: 12px; color: var(--muted); font-weight: 600; }
 .col-tabla tr.cmp-det-tr td, .col-tabla tr.cmp-det-tr:hover td { background: var(--paper); }

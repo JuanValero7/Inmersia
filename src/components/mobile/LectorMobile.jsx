@@ -39,6 +39,7 @@ import { useCapaMovil } from '../comunidades/capa/CapaMovil.jsx'
 import { useCorazonadasLector } from '../lector/Corazonada.jsx'
 import { useConcursoLector } from '../lector/Concurso.jsx'
 import { useDesafioLector } from '../lector/Desafio.jsx'
+import { useCapsulaLector } from '../lector/Capsula.jsx'
 import { useJuegosLibro } from '../../hooks/useJuegos.js'
 import { useMapaTesoroLector } from '../lector/MapaTesoro.jsx'
 import { motivoNoMapa } from '../../utils/mapaTesoro.js'
@@ -195,6 +196,13 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   const desafio = useDesafioLector({
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     gatoColor, movil: true, deshabilitado: guestMode || onboarding.active || !jg.desafio,
+  })
+  // La cápsula del tiempo (no ficción): salta al abrir el libro y al pasar de la última página del libro (Capsula.jsx).
+  const capsula = useCapsulaLector({
+    libroId: book?.libro_id, userId, titulo: book?.title || '',
+    chapterIndex, enUltimoCapitulo: capitulos.length > 0 && chapterIndex === capitulos.length - 1,
+    listo: !loading && capitulos.length > 0, terminado: isLeido,
+    gatoColor, movil: true, deshabilitado: guestMode || onboarding.active || !jg.capsula,
   })
   // El mapa del tesoro: lista del capítulo, página que brilla y subrayar al mapa (MapaTesoro.jsx).
   const mapa = useMapaTesoroLector({
@@ -427,6 +435,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     if (concurso.interceptar?.(handleNext)) return
     if (pageIndex < total - 1) { setPageIndex(p => p + 1); return }
     if (desafio.interceptar?.(handleNext)) return
+    if (capsula.interceptar?.(handleNext)) return
     // fin del capítulo → se avanza sin abrir el Cuaderno: la predicción se
     // ofreció ANTES, con la tira de la última página (ver `tira` más abajo)
     if (chapterIndex < capitulos.length - 1) {
@@ -614,7 +623,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
                 fontSize={fontSize} font={readingFont}
                 atStart={atStart} nextIsChapter={atChapterEnd && !atEndOfBook}
                 onPrev={handlePrev}
-                onNext={atEndOfBook && !guestMode && !desafio.hayPendiente ? undefined : handleNext}
+                onNext={atEndOfBook && !guestMode && !desafio.hayPendiente && !capsula.hayPendiente ? undefined : handleNext}
                 hideArrows={modoSubrayado}
                 onPlaySfx={tocarSfx}
                 overlay={capa.overlay}
@@ -709,6 +718,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
         gatoColor={gatoColor}
         tesoros={mapa.cuaderno}
         desafio={desafio.cuaderno}
+        capsula={capsula.cuaderno}
         tipoInicial={tipoCuaderno}
       />
 
@@ -717,6 +727,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
 
       {/* El desafío del gato: la charla a mitad del libro y al final */}
       {desafio.panel}
+
+      {/* La cápsula del tiempo: al abrir el libro y al terminarlo */}
+      {capsula.panel}
 
       {/* El concurso: luces apagadas y foco sobre la frase */}
       {concurso.panel}

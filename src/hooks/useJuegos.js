@@ -1,28 +1,39 @@
 // @ts-check
-// Qué juegos de lectura están encendidos (migración 093).
+// Qué juegos de lectura están encendidos (migraciones 093 y 098).
 //
 // Fuera del aula manda el usuario (su Perfil); en un aula que lee ese libro,
 // el profe. La regla vive en la base de datos (juegos_libro): aquí solo se
-// pregunta. Por defecto: mesa, corazonadas y mapa encendidos; concurso y
-// desafío apagados. Apagar un juego solo lo esconde: lo jugado no se borra.
+// pregunta. Por defecto, en ficción: mesa, corazonadas y mapa encendidos;
+// concurso y desafío apagados. En no ficción (libros.es_ficcion = false):
+// cápsula e hilo encendidos; falsificador y explícaselo apagados.
+// Apagar un juego solo lo esconde: lo jugado no se borra. Un juego solo sale
+// si el libro tiene su contenido cargado.
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase.js'
 import { queryKeys } from '../lib/queries.js'
 
-/** @typedef {'mesa'|'corazonadas'|'mapa'|'concurso'|'desafio'} Juego */
+/** @typedef {'mesa'|'corazonadas'|'mapa'|'concurso'|'desafio'|'capsula'|'hilo'|'falsificador'|'explicaselo'} Juego */
 /** @typedef {Record<Juego, boolean>} Juegos */
 
-/** Los 5 juegos, en el orden del Perfil. */
+/**
+ * Los juegos que ya existen, en el orden del Perfil. `noficcion` = de los
+ * libros de no ficción. Hilo, falsificador y explícaselo ya tienen su
+ * interruptor en la base de datos; se suman aquí cuando estén hechos.
+ */
 export const JUEGOS = /** @type {const} */ ([
-  { id: 'mesa', nombre: 'Mesa de investigación', texto: 'Arma el perfil de los personajes con las pistas del libro.' },
-  { id: 'corazonadas', nombre: 'Corazonadas', texto: 'Apuesta ovillos a lo que crees que va a pasar.' },
-  { id: 'mapa', nombre: 'Mapa del tesoro', texto: 'Encuentra las frases escondidas de cada capítulo.' },
-  { id: 'concurso', nombre: 'El concurso', texto: 'Explica con tus palabras una frase difícil.' },
-  { id: 'desafio', nombre: 'Desafío del gato', texto: 'Una charla con tu gato a mitad del libro y al final.' },
+  { id: 'mesa', nombre: 'Mesa de investigación', texto: 'Arma el perfil de los personajes con las pistas del libro.', noficcion: false },
+  { id: 'corazonadas', nombre: 'Corazonadas', texto: 'Apuesta ovillos a lo que crees que va a pasar.', noficcion: false },
+  { id: 'mapa', nombre: 'Mapa del tesoro', texto: 'Encuentra las frases escondidas de cada capítulo.', noficcion: false },
+  { id: 'concurso', nombre: 'El concurso', texto: 'Explica con tus palabras una frase difícil.', noficcion: false },
+  { id: 'desafio', nombre: 'Desafío del gato', texto: 'Una charla con tu gato a mitad del libro y al final.', noficcion: false },
+  { id: 'capsula', nombre: 'Cápsula del tiempo', texto: 'Guarda lo que piensas antes de leer y compáralo al terminar.', noficcion: true },
 ])
 
-/** Lo mismo que _juegos_por_defecto() de la 093: se usa mientras llega la respuesta. */
-export const JUEGOS_POR_DEFECTO = /** @type {Juegos} */ ({ mesa: true, corazonadas: true, mapa: true, concurso: false, desafio: false })
+/** Lo mismo que _juegos_por_defecto() de la 098: se usa mientras llega la respuesta. */
+export const JUEGOS_POR_DEFECTO = /** @type {Juegos} */ ({
+  mesa: true, corazonadas: true, mapa: true, concurso: false, desafio: false,
+  capsula: true, hilo: true, falsificador: false, explicaselo: false,
+})
 
 /**
  * Los juegos de un libro. Mientras carga, los valores por defecto; `listo`
