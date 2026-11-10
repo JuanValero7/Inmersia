@@ -1048,6 +1048,38 @@ $$;
 
 
 --
+-- Name: _falsificador_estado(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._falsificador_estado(p_user uuid, p_libro uuid) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_datos jsonb;
+BEGIN
+  SELECT datos INTO v_datos FROM falsificador_contenido WHERE libro_id = p_libro;
+  IF v_datos IS NULL THEN RETURN NULL; END IF;
+
+  RETURN jsonb_build_object(
+    'saldo', _ovillos_saldo(p_user, p_libro),
+    'autor', v_datos->'autor',
+    'items', coalesce((
+      SELECT jsonb_agg(
+               jsonb_build_object('id', x->>'id', 'cap', (x->>'cap')::int, 'parrafo', (x->>'parrafo')::int)
+               || CASE WHEN (x->>'falso')::boolean THEN jsonb_build_object('texto', x->>'texto') ELSE '{}'::jsonb END
+               || CASE WHEN j.id IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('respuesta',
+                    jsonb_strip_nulls(jsonb_build_object('dijo', j.dijo, 'acierto', j.acierto,
+                      'falso', (x->>'falso')::boolean, 'raro', x->>'raro', 'verdad', x->>'verdad'))) END
+               ORDER BY o)
+      FROM jsonb_array_elements(v_datos->'items') WITH ORDINALITY AS t(x, o)
+      LEFT JOIN falsificador_jugadas j
+        ON j.user_id = p_user AND j.libro_id = p_libro AND j.item = x->>'id'), '[]'::jsonb));
+END;
+$$;
+
+
+--
 -- Name: _juegos_aula_por_defecto(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1322,13 +1354,13 @@ CREATE FUNCTION public._referencia_ovillos(p_libro uuid, p_juegos jsonb) RETURNS
     SET search_path TO 'public'
     AS $$
 DECLARE
-  -- En un aula, el juego que el profe no tocó está encendido (093).
-  v_on    jsonb := _juegos_mezclar('{"mesa": true, "corazonadas": true, "mapa": true, "concurso": true, "desafio": true}'::jsonb,
-                                   coalesce(p_juegos, '{}'::jsonb));
+  -- En un aula, el juego que el profe no tocó va como en _juegos_aula_por_defecto (093/098).
+  v_on    jsonb := _juegos_mezclar(_juegos_aula_por_defecto(), coalesce(p_juegos, '{}'::jsonb));
   v_leer  int;
   v_mesa  int;
   v_cz    int;
   v_mapa  int;
+  v_fx    int;
   v_cc    int := 0;
   v_ccmin int := 0;
   v_ccmax int := 0;
@@ -1339,6 +1371,7 @@ BEGIN
   v_mesa := coalesce((SELECT jsonb_array_length(datos->'rasgos') * 2 FROM anderson_contenido WHERE libro_id = p_libro), 0);
   v_cz   := coalesce((SELECT jsonb_array_length(datos->'corazonadas') * 3 FROM corazonadas_contenido WHERE libro_id = p_libro), 0);
   v_mapa := coalesce((SELECT jsonb_array_length(datos->'tesoros') FROM mapa_contenido WHERE libro_id = p_libro), 0);
+  v_fx   := coalesce((SELECT jsonb_array_length(datos->'items') FROM falsificador_contenido WHERE libro_id = p_libro), 0);
   SELECT coalesce(round(sum(CASE WHEN n >= 2 THEN 1.5 ELSE 1 END) * 3), 0)::int,
          coalesce(count(*) * 3, 0)::int,
          coalesce(sum(least(n, 2)) * 3, 0)::int
@@ -1347,18 +1380,19 @@ BEGIN
         FROM concurso_contenido c, jsonb_array_elements(c.datos->'frases') f
         WHERE c.libro_id = p_libro GROUP BY 1) s;
 
-  IF NOT (v_on->>'mesa')::boolean        AND v_mesa > 0 THEN v_apag := v_apag || 'mesa'::text;        v_mesa := 0; END IF;
-  IF NOT (v_on->>'corazonadas')::boolean AND v_cz   > 0 THEN v_apag := v_apag || 'corazonadas'::text; v_cz   := 0; END IF;
-  IF NOT (v_on->>'mapa')::boolean        AND v_mapa > 0 THEN v_apag := v_apag || 'mapa'::text;        v_mapa := 0; END IF;
-  IF NOT (v_on->>'concurso')::boolean    AND v_cc   > 0 THEN
+  IF NOT (v_on->>'mesa')::boolean         AND v_mesa > 0 THEN v_apag := v_apag || 'mesa'::text;         v_mesa := 0; END IF;
+  IF NOT (v_on->>'corazonadas')::boolean  AND v_cz   > 0 THEN v_apag := v_apag || 'corazonadas'::text;  v_cz   := 0; END IF;
+  IF NOT (v_on->>'mapa')::boolean         AND v_mapa > 0 THEN v_apag := v_apag || 'mapa'::text;         v_mapa := 0; END IF;
+  IF NOT (v_on->>'falsificador')::boolean AND v_fx   > 0 THEN v_apag := v_apag || 'falsificador'::text; v_fx   := 0; END IF;
+  IF NOT (v_on->>'concurso')::boolean     AND v_cc   > 0 THEN
     v_apag := v_apag || 'concurso'::text; v_cc := 0; v_ccmin := 0; v_ccmax := 0;
   END IF;
 
   RETURN jsonb_build_object(
     'solo_leyendo', v_leer,
-    'maximo', v_leer + v_mesa + v_cz + v_mapa + v_cc,
+    'maximo', v_leer + v_mesa + v_cz + v_mapa + v_cc + v_fx,
     'desglose', jsonb_build_object('lectura', v_leer, 'mesa', v_mesa, 'corazonadas', v_cz,
-                                   'mapa', v_mapa, 'concurso', v_cc),
+                                   'mapa', v_mapa, 'concurso', v_cc, 'falsificador', v_fx),
     'concurso_rango', jsonb_build_array(v_ccmin, v_ccmax),
     'apagados', to_jsonb(v_apag));
 END;
@@ -3316,6 +3350,112 @@ $$;
 
 
 --
+-- Name: falsificador_aula(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.falsificador_aula(p_aula uuid) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_libro uuid;
+  v_datos jsonb;
+BEGIN
+  PERFORM _profe_de_aula(p_aula);
+  SELECT libro_id INTO v_libro FROM _meta_aula(p_aula, 'UTC');
+  IF v_libro IS NULL THEN
+    RETURN jsonb_build_object('libro_id', NULL);
+  END IF;
+  SELECT datos INTO v_datos FROM falsificador_contenido WHERE libro_id = v_libro;
+
+  RETURN jsonb_build_object(
+    'libro_id', v_libro,
+    'encendido', (_juegos_mezclar(_juegos_aula_por_defecto(),
+                                  (SELECT juegos FROM comunidades WHERE id = p_aula))->>'falsificador')::boolean,
+    'autor', v_datos->'autor',
+    'items', (SELECT jsonb_agg(jsonb_build_object('id', x->>'id', 'cap', (x->>'cap')::int,
+                                                  'falso', (x->>'falso')::boolean, 'inicio', x->>'inicio') ORDER BY o)
+              FROM jsonb_array_elements(v_datos->'items') WITH ORDINALITY AS t(x, o)),
+    'jugadas', coalesce((
+      SELECT jsonb_object_agg(s.user_id, s.porItem)
+      FROM (SELECT j.user_id, jsonb_object_agg(j.item, j.acierto) AS porItem
+            FROM falsificador_jugadas j
+            JOIN comunidad_miembros cm ON cm.user_id = j.user_id AND cm.comunidad_id = p_aula AND cm.rol = 'miembro'
+            WHERE j.libro_id = v_libro
+            GROUP BY j.user_id) s), '{}'::jsonb));
+END;
+$$;
+
+
+--
+-- Name: falsificador_libro(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.falsificador_libro(p_libro uuid) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Hace falta iniciar sesión.' USING ERRCODE = '42501';
+  END IF;
+  RETURN _falsificador_estado(auth.uid(), p_libro);
+END;
+$$;
+
+
+--
+-- Name: falsificador_responder(uuid, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.falsificador_responder(p_libro uuid, p_item text, p_dice text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_user   uuid := auth.uid();
+  v_x      jsonb;
+  v_ok     boolean;
+  v_premio int;
+  v_id     uuid;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'Hace falta iniciar sesión.' USING ERRCODE = '42501';
+  END IF;
+  IF p_dice NOT IN ('autor', 'gato') THEN
+    RAISE EXCEPTION 'Respuesta no válida.';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtext('falsificador:' || v_user || ':' || p_libro));
+
+  SELECT x INTO v_x
+  FROM falsificador_contenido c, jsonb_array_elements(c.datos->'items') x
+  WHERE c.libro_id = p_libro AND x->>'id' = p_item;
+  IF v_x IS NULL THEN
+    RAISE EXCEPTION 'Ese párrafo no está en el juego.';
+  END IF;
+  IF EXISTS (SELECT 1 FROM falsificador_jugadas WHERE user_id = v_user AND libro_id = p_libro AND item = p_item) THEN
+    RAISE EXCEPTION 'ya_respondido';
+  END IF;
+
+  v_ok := (p_dice = 'gato') = (v_x->>'falso')::boolean;
+  INSERT INTO falsificador_jugadas (user_id, libro_id, item, dijo, acierto)
+  VALUES (v_user, p_libro, p_item, p_dice, v_ok)
+  RETURNING id INTO v_id;
+
+  -- Acierto +1. Fallo −1, solo si le queda alguno (el saldo no baja de 0).
+  v_premio := CASE WHEN v_ok THEN 1 WHEN _ovillos_saldo(v_user, p_libro) >= 1 THEN -1 ELSE 0 END;
+  IF v_premio <> 0 THEN
+    INSERT INTO ovillos_movimientos (user_id, libro_id, cantidad, motivo, referencia, detalle)
+    VALUES (v_user, p_libro, v_premio, 'falsificador', v_id, jsonb_build_object('item', p_item));
+  END IF;
+
+  RETURN jsonb_build_object('acierto', v_ok, 'premio', v_premio,
+                            'estado', _falsificador_estado(v_user, p_libro));
+END;
+$$;
+
+
+--
 -- Name: foro_recortar_tags(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3658,6 +3798,9 @@ BEGIN
     -- 098: las preguntas y lo que respondió al empezar y al terminar.
     'capsula_del_tiempo',   (SELECT coalesce(jsonb_agg(to_jsonb(t) - 'user_id' ORDER BY t.sellada_at), '[]'::jsonb)
                              FROM capsula_respuestas t WHERE t.user_id = v_user),
+    -- 099: qué dijo en cada párrafo sospechoso y si acertó.
+    'falsificador',         (SELECT coalesce(jsonb_agg(to_jsonb(t) - 'user_id' ORDER BY t.created_at), '[]'::jsonb)
+                             FROM falsificador_jugadas t WHERE t.user_id = v_user),
     'expedientes_comprados', (SELECT coalesce(jsonb_agg(to_jsonb(t) - 'user_id' ORDER BY t.created_at), '[]'::jsonb)
                              FROM expedientes_compras t WHERE t.user_id = v_user),
     -- Sin quién del colegio lo entregó.
@@ -5524,6 +5667,50 @@ COMMENT ON TABLE public.expedientes_contenido IS 'Expedientes de autor y época 
 
 
 --
+-- Name: falsificador_contenido; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.falsificador_contenido (
+    libro_id uuid NOT NULL,
+    version integer DEFAULT 1 NOT NULL,
+    datos jsonb NOT NULL,
+    actualizado_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT falsificador_contenido_datos_check CHECK (((jsonb_typeof((datos -> 'items'::text)) = 'array'::text) AND ((jsonb_array_length((datos -> 'items'::text)) >= 1) AND (jsonb_array_length((datos -> 'items'::text)) <= 16)))),
+    CONSTRAINT falsificador_contenido_version_check CHECK ((version >= 1))
+);
+
+
+--
+-- Name: TABLE falsificador_contenido; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.falsificador_contenido IS 'Párrafos sospechosos del falsificador de cada libro (los sube cargar_falsificador.py). Solo los leen las funciones falsificador_*. Ver migración 099.';
+
+
+--
+-- Name: falsificador_jugadas; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.falsificador_jugadas (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    libro_id uuid NOT NULL,
+    item text NOT NULL,
+    dijo text NOT NULL,
+    acierto boolean NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT falsificador_jugadas_dijo_check CHECK ((dijo = ANY (ARRAY['autor'::text, 'gato'::text])))
+);
+
+
+--
+-- Name: TABLE falsificador_jugadas; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.falsificador_jugadas IS 'Falsificador: qué respondió cada alumno en cada párrafo sospechoso (una vez, no se cambia). Solo escribe falsificador_responder. Ver migración 099.';
+
+
+--
 -- Name: foros; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -5743,7 +5930,7 @@ CREATE TABLE public.ovillos_movimientos (
     detalle jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT ovillos_movimientos_cantidad_check CHECK ((cantidad <> 0)),
-    CONSTRAINT ovillos_movimientos_motivo_check CHECK ((motivo = ANY (ARRAY['mesa_jugar'::text, 'mesa_premio'::text, 'corazonada'::text, 'concurso'::text, 'tesoro'::text, 'comodin'::text, 'pista_gato'::text, 'expediente'::text, 'recompensa'::text])))
+    CONSTRAINT ovillos_movimientos_motivo_check CHECK ((motivo = ANY (ARRAY['mesa_jugar'::text, 'mesa_premio'::text, 'corazonada'::text, 'concurso'::text, 'tesoro'::text, 'comodin'::text, 'pista_gato'::text, 'expediente'::text, 'recompensa'::text, 'falsificador'::text])))
 );
 
 
@@ -6485,6 +6672,30 @@ ALTER TABLE ONLY public.expedientes_compras
 
 ALTER TABLE ONLY public.expedientes_contenido
     ADD CONSTRAINT expedientes_contenido_pkey PRIMARY KEY (libro_id);
+
+
+--
+-- Name: falsificador_contenido falsificador_contenido_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.falsificador_contenido
+    ADD CONSTRAINT falsificador_contenido_pkey PRIMARY KEY (libro_id);
+
+
+--
+-- Name: falsificador_jugadas falsificador_jugadas_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.falsificador_jugadas
+    ADD CONSTRAINT falsificador_jugadas_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: falsificador_jugadas falsificador_jugadas_user_id_libro_id_item_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.falsificador_jugadas
+    ADD CONSTRAINT falsificador_jugadas_user_id_libro_id_item_key UNIQUE (user_id, libro_id, item);
 
 
 --
@@ -7887,6 +8098,30 @@ ALTER TABLE ONLY public.expedientes_contenido
 
 
 --
+-- Name: falsificador_contenido falsificador_contenido_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.falsificador_contenido
+    ADD CONSTRAINT falsificador_contenido_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
+-- Name: falsificador_jugadas falsificador_jugadas_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.falsificador_jugadas
+    ADD CONSTRAINT falsificador_jugadas_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
+-- Name: falsificador_jugadas falsificador_jugadas_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.falsificador_jugadas
+    ADD CONSTRAINT falsificador_jugadas_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: parrafos fk_parrafo_capitulo_libro; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8852,6 +9087,18 @@ CREATE POLICY expedientes_compras_select_own ON public.expedientes_compras FOR S
 ALTER TABLE public.expedientes_contenido ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: falsificador_contenido; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.falsificador_contenido ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: falsificador_jugadas; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.falsificador_jugadas ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: foros; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -9625,6 +9872,14 @@ GRANT ALL ON FUNCTION public._edad(p_fecha date) TO service_role;
 
 
 --
+-- Name: FUNCTION _falsificador_estado(p_user uuid, p_libro uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._falsificador_estado(p_user uuid, p_libro uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._falsificador_estado(p_user uuid, p_libro uuid) TO service_role;
+
+
+--
 -- Name: FUNCTION _juegos_aula_por_defecto(); Type: ACL; Schema: public; Owner: -
 --
 
@@ -10193,6 +10448,33 @@ GRANT ALL ON FUNCTION public.expediente_comprar(p_libro uuid, p_expediente text)
 REVOKE ALL ON FUNCTION public.expediente_leer(p_libro uuid, p_expediente text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.expediente_leer(p_libro uuid, p_expediente text) TO authenticated;
 GRANT ALL ON FUNCTION public.expediente_leer(p_libro uuid, p_expediente text) TO service_role;
+
+
+--
+-- Name: FUNCTION falsificador_aula(p_aula uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.falsificador_aula(p_aula uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.falsificador_aula(p_aula uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.falsificador_aula(p_aula uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION falsificador_libro(p_libro uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.falsificador_libro(p_libro uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.falsificador_libro(p_libro uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.falsificador_libro(p_libro uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION falsificador_responder(p_libro uuid, p_item text, p_dice text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.falsificador_responder(p_libro uuid, p_item text, p_dice text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.falsificador_responder(p_libro uuid, p_item text, p_dice text) TO authenticated;
+GRANT ALL ON FUNCTION public.falsificador_responder(p_libro uuid, p_item text, p_dice text) TO service_role;
 
 
 --
@@ -10954,6 +11236,24 @@ GRANT ALL ON TABLE public.expedientes_compras TO service_role;
 GRANT ALL ON TABLE public.expedientes_contenido TO anon;
 GRANT ALL ON TABLE public.expedientes_contenido TO authenticated;
 GRANT ALL ON TABLE public.expedientes_contenido TO service_role;
+
+
+--
+-- Name: TABLE falsificador_contenido; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.falsificador_contenido TO anon;
+GRANT ALL ON TABLE public.falsificador_contenido TO authenticated;
+GRANT ALL ON TABLE public.falsificador_contenido TO service_role;
+
+
+--
+-- Name: TABLE falsificador_jugadas; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.falsificador_jugadas TO anon;
+GRANT ALL ON TABLE public.falsificador_jugadas TO authenticated;
+GRANT ALL ON TABLE public.falsificador_jugadas TO service_role;
 
 
 --
