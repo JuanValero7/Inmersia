@@ -17,9 +17,12 @@ import { useBookBySlug } from '../../hooks/useBookBySlug.js'
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
 import { useCartelera } from '../../hooks/useCartelera.js'
 import { useMesaInvestigacion, resumenMesa } from '../../hooks/useMesaInvestigacion.js'
+import { useHiloIdeas } from '../../hooks/useHiloIdeas.js'
+import { resumenHilo } from '../../utils/hilo.js'
 import { useJuegosLibro } from '../../hooks/useJuegos.js'
-import { SECCIONES, getSecciones, carpetaMesa } from '../cartelera/carteleraHelpers.js'
+import { SECCIONES, getSecciones, carpetaMesa, carpetaHilo } from '../cartelera/carteleraHelpers.js'
 import MesaInvestigacion from '../mesa/MesaInvestigacion.jsx'
+import HiloIdeas from '../hilo/HiloIdeas.jsx'
 import CarteleraLandingMobile from './CarteleraLandingMobile.jsx'
 import CarteleraMobileFicha, { CarteleraMobileLista } from './CarteleraMobileFicha.jsx'
 import { useOnboarding } from '../../context/onboarding.jsx'
@@ -268,8 +271,10 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
   // La carpeta del centro es la mesa de investigación (misma query que la mesa).
   // Apagada en el Perfil (o por el profe, en su aula): carpeta de relleno y sin pedir nada.
   const juegosLibro = useJuegosLibro(book?.libro_id || null, user?.id || null)
-  const conMesa = juegosLibro.juegos.mesa
-  const mesa = useMesaInvestigacion(conMesa ? (book?.libro_id || null) : null, user?.id || null)
+  // En no ficción la carpeta es el hilo de ideas (migración 100), con su propio interruptor.
+  const conMesa = esNoficcion ? juegosLibro.juegos.hilo : juegosLibro.juegos.mesa
+  const mesa = useMesaInvestigacion(conMesa && !esNoficcion ? (book?.libro_id || null) : null, user?.id || null)
+  const hilo = useHiloIdeas(conMesa && esNoficcion ? (book?.libro_id || null) : null, user?.id || null)
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
   // Lazy init: jumpToItemId tiene prioridad; si no, lee ?seccion= de la URL.
@@ -356,8 +361,12 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
     : { onClose: () => setExplore(false), onGoLectura, onGoForo, onGoBiblioteca }
   const backProp = tutorialInvestigacion ? null : onGoBack
   const dataWithBook = { ...data, book }
-  const centro = carpetaMesa(resumenMesa(mesa.estado), mesa.cargando || !juegosLibro.listo,
-    mesa.tieneMesa ? () => setView({ kind: 'mesa', key: 'mesa' }) : null, conMesa ? null : juegosLibro.fuente)
+  const abrirMesa = () => setView({ kind: 'mesa', key: 'mesa' })
+  const centro = esNoficcion
+    ? carpetaHilo(resumenHilo(hilo.estado), hilo.cargando || !juegosLibro.listo,
+      hilo.tieneHilo ? abrirMesa : null, conMesa ? null : juegosLibro.fuente)
+    : carpetaMesa(resumenMesa(mesa.estado), mesa.cargando || !juegosLibro.listo,
+      mesa.tieneMesa ? abrirMesa : null, conMesa ? null : juegosLibro.fuente)
 
   return (
     <div className="cart-root cm-root">
@@ -371,8 +380,10 @@ export default function CarteleraMobile({ onGoBack, onGoLectura, book: bookProp,
         <div className="cm-screen">
           <Header book={book} onBack={() => setView({ kind: 'landing', key: null })} backLabel="Volver al tablero"
                   onExplore={() => setExplore(true)} />
-          <MesaInvestigacion movil libroId={book?.libro_id || null} userId={user?.id || null}
-            personajesCartelera={data.itemsBySeccion.personajes || []} />
+          {esNoficcion
+            ? <HiloIdeas movil libroId={book?.libro_id || null} userId={user?.id || null} gatoColor={gatoColor} />
+            : <MesaInvestigacion movil libroId={book?.libro_id || null} userId={user?.id || null}
+              personajesCartelera={data.itemsBySeccion.personajes || []} />}
         </div>
       ) : (
         <SectionView

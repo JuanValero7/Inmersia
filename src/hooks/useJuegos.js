@@ -17,8 +17,8 @@ import { queryKeys } from '../lib/queries.js'
 
 /**
  * Los juegos que ya existen, en el orden del Perfil. `noficcion` = de los
- * libros de no ficción. Hilo y explícaselo ya tienen su interruptor en la
- * base de datos; se suman aquí cuando estén hechos.
+ * libros de no ficción. Explícaselo ya tiene su interruptor en la base de
+ * datos; se suma aquí cuando esté hecho.
  */
 export const JUEGOS = /** @type {const} */ ([
   { id: 'mesa', nombre: 'Mesa de investigación', texto: 'Arma el perfil de los personajes con las pistas del libro.', noficcion: false },
@@ -27,6 +27,7 @@ export const JUEGOS = /** @type {const} */ ([
   { id: 'concurso', nombre: 'El concurso', texto: 'Explica con tus palabras una frase difícil.', noficcion: false },
   { id: 'desafio', nombre: 'Desafío del gato', texto: 'Una charla con tu gato a mitad del libro y al final.', noficcion: false },
   { id: 'capsula', nombre: 'Cápsula del tiempo', texto: 'Guarda lo que piensas antes de leer y compáralo al terminar.', noficcion: true },
+  { id: 'hilo', nombre: 'Hilo de ideas', texto: 'Une las pistas de cada capítulo hasta llegar a la idea del libro.', noficcion: true },
   { id: 'falsificador', nombre: 'El falsificador', texto: 'El gato coló párrafos inventados en el libro: descubre cuáles.', noficcion: true },
 ])
 

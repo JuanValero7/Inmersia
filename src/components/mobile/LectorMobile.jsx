@@ -42,6 +42,7 @@ import { useFalsificadorLector } from '../lector/Falsificador.jsx'
 import { useDesafioLector } from '../lector/Desafio.jsx'
 import { useCapsulaLector } from '../lector/Capsula.jsx'
 import { useJuegosLibro } from '../../hooks/useJuegos.js'
+import AvisoPistas, { useAvisoPistas } from '../lector/AvisoPistas.jsx'
 import { useMapaTesoroLector } from '../lector/MapaTesoro.jsx'
 import { motivoNoMapa } from '../../utils/mapaTesoro.js'
 import { conCorazonadas, sinInsertos } from '../../utils/corazonadas.js'
@@ -183,6 +184,9 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
   // libro de su aula (hooks/useJuegos.js, migración 093).
   const juegosLibro = useJuegosLibro(book?.libro_id, userId)
   const jg = juegosLibro.juegos
+  // Al empezar un capítulo: «llegaron N pistas nuevas» (mesa en ficción, hilo en no ficción).
+  const avisoPistas = useAvisoPistas({ libroId: book?.libro_id, userId, esNoficcion,
+    encendido: !guestMode && (esNoficcion ? jg.hilo : jg.mesa) })
   const corazonadas = useCorazonadasLector({
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     visibles: paginasConChips[pageIndex] || [], clavePagina: `${chapterIndex}:${pageIndex}`,
@@ -455,7 +459,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     if (chapterIndex < capitulos.length - 1) {
       if (guestMode) { setChapterIndex(chapterIndex + 1); setPageIndex(0); return }
       const next = chapterIndex + 1
-      persistChapterAdvance(next)
+      Promise.resolve(persistChapterAdvance(next)).then(() => avisoPistas.avisar(next))
       setGoToLastPage(false)
       setChapterIndex(next); setPageIndex(0)
       return
@@ -829,6 +833,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
           onClose={() => setManualHintVisto(true)}
         />
       )}
+      <AvisoPistas movil aviso={avisoPistas.aviso} onCerrar={avisoPistas.cerrar} onVer={() => irCartelera()} />
     </div>
   )
 }

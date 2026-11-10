@@ -10,9 +10,12 @@ import { useBookBySlug } from '../hooks/useBookBySlug.js'
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
 import { useCartelera } from '../hooks/useCartelera.js'
 import { useMesaInvestigacion, resumenMesa } from '../hooks/useMesaInvestigacion.js'
+import { useHiloIdeas } from '../hooks/useHiloIdeas.js'
+import { resumenHilo } from '../utils/hilo.js'
 import { useJuegosLibro } from '../hooks/useJuegos.js'
-import { getSecciones, carpetaMesa } from './cartelera/carteleraHelpers.js'
+import { getSecciones, carpetaMesa, carpetaHilo } from './cartelera/carteleraHelpers.js'
 import MesaInvestigacion from './mesa/MesaInvestigacion.jsx'
+import HiloIdeas from './hilo/HiloIdeas.jsx'
 import ExplorarPopup from './cartelera/ExplorarPopup.jsx'
 import CarteleraLanding from './cartelera/CarteleraLanding.jsx'
 import Ficha from './cartelera/Ficha.jsx'
@@ -57,8 +60,10 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
   // mesa: React Query la comparte, así que abrirla no vuelve a pedir nada.
   // Apagada en el Perfil (o por el profe, en su aula): carpeta de relleno y sin pedir nada.
   const juegosLibro = useJuegosLibro(book?.libro_id || null, user?.id || null)
-  const conMesa = juegosLibro.juegos.mesa
-  const mesa = useMesaInvestigacion(conMesa ? (book?.libro_id || null) : null, user?.id || null)
+  // En no ficción la carpeta es el hilo de ideas (migración 100), con su propio interruptor.
+  const conMesa = esNoficcion ? juegosLibro.juegos.hilo : juegosLibro.juegos.mesa
+  const mesa = useMesaInvestigacion(conMesa && !esNoficcion ? (book?.libro_id || null) : null, user?.id || null)
+  const hilo = useHiloIdeas(conMesa && esNoficcion ? (book?.libro_id || null) : null, user?.id || null)
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
   const [view, setView] = useState(() => {
@@ -146,8 +151,12 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
     </div>
   )
 
-  const centro = carpetaMesa(resumenMesa(mesa.estado), mesa.cargando || !juegosLibro.listo,
-    mesa.tieneMesa ? () => setView({ kind: 'mesa', key: 'mesa' }) : null, conMesa ? null : juegosLibro.fuente)
+  const abrirMesa = () => setView({ kind: 'mesa', key: 'mesa' })
+  const centro = esNoficcion
+    ? carpetaHilo(resumenHilo(hilo.estado), hilo.cargando || !juegosLibro.listo,
+      hilo.tieneHilo ? abrirMesa : null, conMesa ? null : juegosLibro.fuente)
+    : carpetaMesa(resumenMesa(mesa.estado), mesa.cargando || !juegosLibro.listo,
+      mesa.tieneMesa ? abrirMesa : null, conMesa ? null : juegosLibro.fuente)
 
   let content
   if (view.kind === 'landing') {
@@ -163,15 +172,17 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
           <button type="button" className="cart-portada-tag is-volver" onClick={() => setView({ kind: 'landing', key: null })}
             aria-label="Volver al tablero" title="Volver al tablero">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
-            <span className="cpt-label">Mesa de investigación</span>
+            <span className="cpt-label">{esNoficcion ? 'Hilo de ideas' : 'Mesa de investigación'}</span>
             {book?.title && <><span className="cpt-sep">·</span><span className="cpt-book">{book.title}</span></>}
           </button>
           <div className="actions">
             <ExplorarPopup onGoForo={onGoForo} onGoLectura={onGoLectura} onGoBiblioteca={onGoBiblioteca} btnClass="back-btn" />
           </div>
         </div>
-        <MesaInvestigacion libroId={book?.libro_id || null} userId={user?.id || null}
-          personajesCartelera={data.itemsBySeccion.personajes || []} />
+        {esNoficcion
+          ? <HiloIdeas libroId={book?.libro_id || null} userId={user?.id || null} gatoColor={gatoColor} />
+          : <MesaInvestigacion libroId={book?.libro_id || null} userId={user?.id || null}
+            personajesCartelera={data.itemsBySeccion.personajes || []} />}
       </div>
     )
   } else {

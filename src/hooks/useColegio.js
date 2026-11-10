@@ -120,6 +120,21 @@ export function useFalsificadorAulaQuery(aulaId, enabled = true) {
   })
 }
 
+// El hilo de ideas (no ficción, migración 100): qué ideas armó cada alumno,
+// intentos fallidos, ayudas y jugadas con señuelos. Sin la 100, null.
+export function useHiloAulaQuery(aulaId, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.hiloAula(aulaId),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('hilo_aula', { p_aula: aulaId })
+      if (error) return null
+      return data
+    },
+    enabled: !!aulaId && enabled,
+    staleTime: STALE_TIME,
+  })
+}
+
 // La charla entera de un alumno en el desafío: solo al tocar «Ver la charla».
 export function useCharlaAulaQuery(aulaId, userId, momento, enabled) {
   return useQuery({

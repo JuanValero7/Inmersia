@@ -28,6 +28,7 @@ import { useMapaTesoroLector } from './lector/MapaTesoro.jsx'
 import { useDesafioLector } from './lector/Desafio.jsx'
 import { useCapsulaLector } from './lector/Capsula.jsx'
 import { useJuegosLibro } from '../hooks/useJuegos.js'
+import AvisoPistas, { useAvisoPistas } from './lector/AvisoPistas.jsx'
 import { motivoNoMapa } from '../utils/mapaTesoro.js'
 import { conCorazonadas, sinInsertos } from '../utils/corazonadas.js'
 import { conFalsos } from '../utils/falsificador.js'
@@ -168,6 +169,12 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   // libro de su aula (hooks/useJuegos.js, migración 093).
   const juegosLibro = useJuegosLibro(book?.libro_id, userId)
   const jg = juegosLibro.juegos
+  // Al empezar un capítulo: «llegaron N pistas nuevas» (mesa en ficción, hilo en no ficción).
+  const sinFiccion = book?.es_ficcion === false
+  const avisoPistas = useAvisoPistas({ libroId: book?.libro_id, userId, esNoficcion: sinFiccion,
+    encendido: !guestMode && (sinFiccion ? jg.hilo : jg.mesa) })
+  const avisarRef = useRef(avisoPistas.avisar)
+  avisarRef.current = avisoPistas.avisar
   const corazonadas = useCorazonadasLector({
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     visibles: visiblesCz, clavePagina: `${chapterIndex}:${pageIndex}`,
@@ -401,7 +408,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       return
     }
     if (guestMode) { setChapterIndex(next); setPageIndex(0); return }
-    persistRef.current(next)
+    Promise.resolve(persistRef.current(next)).then(() => avisarRef.current(next))
     setGoToLastPage(false)
     setChapterIndex(next); setPageIndex(0)
   }, [chapterIndex, capitulos, guestMode, book?.libro_id, marcarPista, setChapterIndex, setGoToLastPage, setPageIndex, setShowPaywall, interceptarConcurso, interceptarFalso, interceptarDesafio, interceptarCapsula])
@@ -824,6 +831,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
           onClose={() => setManualHintVisto(true)}
         />
       )}
+      <AvisoPistas aviso={avisoPistas.aviso} onCerrar={avisoPistas.cerrar} onVer={() => irCartelera()} />
     </div>
   )
 }

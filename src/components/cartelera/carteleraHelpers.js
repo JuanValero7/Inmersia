@@ -86,3 +86,20 @@ export function carpetaMesa(resumen, cargando, onAbrir, apagada = null) {
     onAbrir,
   }
 }
+
+// Lo mismo para el hilo de ideas de los libros de no ficción. `resumen` sale
+// de resumenHilo() (utils/hilo.js).
+export function carpetaHilo(resumen, cargando, onAbrir, apagada = null) {
+  const rotulo = 'Hilo de ideas'
+  if (cargando) return { rotulo, cuenta: '', abrir: '', sello: null, onAbrir: null }
+  if (apagada) return { rotulo, cuenta: apagada === 'aula' ? 'Tu profe lo apagó' : 'Apagado en tu perfil', abrir: '', sello: null, onAbrir: null }
+  if (!resumen) return { rotulo, cuenta: 'Pronto en este libro', abrir: '', sello: null, onAbrir: null }
+  const { armadas, total, porArmar, sello, hayPistas } = resumen
+  return {
+    rotulo,
+    sello,
+    cuenta: hayPistas ? `${armadas} de ${total} ideas` : 'Las pistas llegan al terminar el capítulo 1',
+    abrir: porArmar ? `🧵 ${porArmar} por armar →` : 'Toca para abrir →',
+    onAbrir,
+  }
+}

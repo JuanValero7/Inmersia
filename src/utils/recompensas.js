@@ -56,6 +56,7 @@ export const PARTES_OVILLOS = /** @type {const} */ ([
   ['mapa', 'Mapa del tesoro'],
   ['concurso', 'Frases difíciles'],
   ['falsificador', 'El falsificador'],
+  ['hilo', 'Hilo de ideas'],
 ])
 
 /** @param {string} juego */

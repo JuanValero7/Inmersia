@@ -10,10 +10,15 @@
 //   5. La clase, alumno por alumno.
 //   6. Cápsula del tiempo (no ficción, 098): las dos respuestas de cada
 //      alumno, antes y ahora, lado a lado. Solo para leer: sin conteos.
+//   7. El falsificador (no ficción, 099).
+//   8. Hilo de ideas (no ficción, 100): por alumno, ideas armadas, si llegó a
+//      la conclusión, intentos fallidos, ayudas y jugadas con señuelos; por
+//      idea, cuántos la armaron y dónde se atasca la clase.
 // Las cuentas viven en utils/comprension.js.
 import { useState, useMemo } from 'react'
-import { useComprensionQuery, useCharlaAulaQuery, useCalificarDesafio, useCapsulaAulaQuery, useFalsificadorAulaQuery } from '../../hooks/useColegio.js'
+import { useComprensionQuery, useCharlaAulaQuery, useCalificarDesafio, useCapsulaAulaQuery, useFalsificadorAulaQuery, useHiloAulaQuery } from '../../hooks/useColegio.js'
 import { resumenFalsificador } from '../../utils/falsificador.js'
+import { resumenHiloAula } from '../../utils/hilo.js'
 import {
   capituloPorDefecto, resumenMesa, resumenFrases, frasesPorTipo, resumenTesoros, resumenCorazonadas,
   corazonadasAlumno, estadoFrase, evidenciaAlumno, habilidades, NOTA_APROBADO, pct, num,
@@ -34,14 +39,16 @@ export default function ComprensionAula({ aulaId }) {
   const { data: c, isLoading, isError } = useComprensionQuery(aulaId)
   const { data: capsula, isLoading: cargandoCapsula } = useCapsulaAulaQuery(aulaId)
   const { data: falsificador, isLoading: cargandoFx } = useFalsificadorAulaQuery(aulaId)
+  const { data: hilo, isLoading: cargandoHilo } = useHiloAulaQuery(aulaId)
 
-  if (isLoading || cargandoCapsula || cargandoFx) return <p className="com-dd-msg">Cargando la comprensión…</p>
+  if (isLoading || cargandoCapsula || cargandoFx || cargandoHilo) return <p className="com-dd-msg">Cargando la comprensión…</p>
   if (isError || !c) return <p className="com-dd-msg">No pudimos cargar la comprensión. Revisa tu conexión.</p>
   if (!c.libro_id) return null
   const conFiccion = !!(c.mesa || c.corazonadas || c.concurso || c.mapa || c.desafio)
   const conCapsula = !!capsula?.preguntas && capsula.encendida !== false
   const conFalsificador = !!falsificador?.items?.length && falsificador.encendido === true
-  if (!conFiccion && !conCapsula && !conFalsificador) {
+  const conHilo = !!hilo?.ideas?.length && hilo.encendido !== false
+  if (!conFiccion && !conCapsula && !conFalsificador && !conHilo) {
     return (
       <section className="col-tarjeta">
         <h3>Este libro todavía no tiene juegos</h3>
@@ -53,6 +60,7 @@ export default function ComprensionAula({ aulaId }) {
     <>
       {conFiccion && <ConJuegos key={aulaId} c={c} aulaId={aulaId} />}
       {conCapsula && <BloqueCapsula key={'cp' + aulaId} capsula={capsula} alumnos={c.alumnos} />}
+      {conHilo && <BloqueHilo hilo={hilo} alumnos={c.alumnos} />}
       {conFalsificador && <BloqueFalsificador fx={falsificador} alumnos={c.alumnos} />}
     </>
   )
@@ -623,6 +631,55 @@ function BloqueFalsificador({ fx, alumnos }) {
             {f.respondidos === 0
               ? <span className="col-vacio">Todavía no llega a ninguno</span>
               : <small className="cmp-pie">Pilló {f.pillo} de {r.totalFalsos} trampas · confió en {autor} {f.confio} de {plural(r.totalReales, 'vez', 'veces')}</small>}
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+
+// ── 8. Hilo de ideas (no ficción) ──────────────────────────
+
+function BloqueHilo({ hilo, alumnos }) {
+  const r = useMemo(() => resumenHiloAula(hilo, alumnos), [hilo, alumnos])
+  const nombre = Object.fromEntries(alumnos.map(a => [a.user_id, a.nombre]))
+  const final = r.porIdea.find(i => i.final === 'principal')
+  return (
+    <section className="col-tarjeta">
+      <div className="col-card-head">
+        <div>
+          <h3>Hilo de ideas</h3>
+          <p className="col-sub">Las pistas llegan solas al terminar cada capítulo; el alumno las une de tres en tres hasta llegar a la idea del libro. Entre ellas hay señuelos: datos ciertos que no van en ninguna idea.</p>
+        </div>
+      </div>
+      {r.atasco && (
+        <div className="cmp-fila">
+          <small className="col-label">Donde más se atasca la clase</small>
+          <b>{r.atasco.titulo}</b>
+          <div className="cmp-q"><small>{plural(r.atasco.fallos, 'intento fallido', 'intentos fallidos')} entre todos · la armaron {r.atasco.armaron} de {r.jugaron}</small></div>
+        </div>
+      )}
+      <div className="cmp-filas">
+        {r.porIdea.map(i => (
+          <div key={i.id} className="cmp-fila">
+            <b>{i.titulo}{i.final === 'principal' ? ' · la conclusión del libro' : ''}</b>
+            <small className="cmp-pie">La {i.armaron === 1 ? 'armó' : 'armaron'} {i.armaron} de {alumnos.length}{i.fallos ? ` · ${plural(i.fallos, 'intento fallido', 'intentos fallidos')}` : ''}</small>
+          </div>
+        ))}
+      </div>
+      <div className="cmp-filas">
+        {r.filas.map(f => (
+          <div key={f.user_id} className="cmp-fila">
+            <b>{nombre[f.user_id]}</b>
+            {!f.jugo
+              ? <span className="col-vacio">Todavía no juega</span>
+              : <small className="cmp-pie">
+                  {f.armadas} de {r.total} ideas{final ? (f.conclusion ? ' · llegó a la conclusión' : ' · aún sin la conclusión') : ''}
+                  {` · ${plural(f.fallos, 'intento fallido', 'intentos fallidos')}`}
+                  {f.ayudas ? ` · ${plural(f.ayudas, 'ayuda', 'ayudas')}` : ''}
+                  {f.senuelos ? ` · usó señuelos ${plural(f.senuelos, 'vez', 'veces')}` : ''}
+                </small>}
           </div>
         ))}
       </div>
