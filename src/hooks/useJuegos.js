@@ -5,7 +5,8 @@
 // el profe. La regla vive en la base de datos (juegos_libro): aquí solo se
 // pregunta. Por defecto, en ficción: mesa, corazonadas y mapa encendidos;
 // concurso y desafío apagados. En no ficción (libros.es_ficcion = false):
-// cápsula e hilo encendidos; falsificador y explícaselo apagados.
+// cápsula e hilo encendidos; falsificador y explícaselo apagados. En el aula,
+// todo encendido hasta que el profe lo cambie en el Salón (102).
 // Apagar un juego solo lo esconde: lo jugado no se borra. Un juego solo sale
 // si el libro tiene su contenido cargado.
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'

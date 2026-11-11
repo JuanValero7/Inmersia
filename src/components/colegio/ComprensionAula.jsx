@@ -16,9 +16,10 @@
 //      idea, cuántos la armaron y dónde se atasca la clase.
 //   9. Explícaselo a… (no ficción, 101): por momento, a quién se lo explicó,
 //      el veredicto, los puntos que tocó, si rompió la regla y la charla entera.
+// Arriba de todo, los interruptores del profe (JuegosAula, 102).
 // Las cuentas viven en utils/comprension.js.
 import { useState, useMemo } from 'react'
-import { useComprensionQuery, useCharlaAulaQuery, useCalificarDesafio, useCapsulaAulaQuery, useFalsificadorAulaQuery, useHiloAulaQuery, useExplicaseloAulaQuery } from '../../hooks/useColegio.js'
+import { useJuegosAulaQuery, useComprensionQuery, useCharlaAulaQuery, useCalificarDesafio, useCapsulaAulaQuery, useFalsificadorAulaQuery, useHiloAulaQuery, useExplicaseloAulaQuery } from '../../hooks/useColegio.js'
 import { resumenFalsificador } from '../../utils/falsificador.js'
 import { resumenHiloAula } from '../../utils/hilo.js'
 import { personaje } from '../../utils/explicaselo.js'
@@ -27,6 +28,7 @@ import {
   corazonadasAlumno, estadoFrase, evidenciaAlumno, habilidades, NOTA_APROBADO, pct, num,
 } from '../../utils/comprension.js'
 import { Kpi, EstadoPill, iniciales } from './graficos.jsx'
+import JuegosAula from './JuegosAula.jsx'
 
 const TIPO_FRASE = { vocabulario: 'Vocabulario', sintaxis: 'Sintaxis', figurado: 'Lenguaje figurado', ironia: 'Ironía', intencion: 'Intención' }
 const RESULTADO = { correcto: 'Comprendida', casi: 'Parcialmente', no: 'No comprendida', omitida: 'Omitida' }
@@ -44,6 +46,7 @@ export default function ComprensionAula({ aulaId }) {
   const { data: falsificador, isLoading: cargandoFx } = useFalsificadorAulaQuery(aulaId)
   const { data: hilo, isLoading: cargandoHilo } = useHiloAulaQuery(aulaId)
   const { data: explicaselo, isLoading: cargandoEx } = useExplicaseloAulaQuery(aulaId)
+  const { data: juegosAula } = useJuegosAulaQuery(aulaId)
 
   if (isLoading || cargandoCapsula || cargandoFx || cargandoHilo || cargandoEx) return <p className="com-dd-msg">Cargando la comprensión…</p>
   if (isError || !c) return <p className="com-dd-msg">No pudimos cargar la comprensión. Revisa tu conexión.</p>
@@ -53,16 +56,23 @@ export default function ComprensionAula({ aulaId }) {
   const conFalsificador = !!falsificador?.items?.length && falsificador.encendido === true
   const conHilo = !!hilo?.ideas?.length && hilo.encendido !== false
   const conExplicaselo = !!explicaselo?.momentos?.length && explicaselo.encendido === true
+  const interruptores = <JuegosAula key={'ja' + aulaId} aulaId={aulaId} datos={juegosAula} />
   if (!conFiccion && !conCapsula && !conFalsificador && !conHilo && !conExplicaselo) {
+    const apagados = !!juegosAula?.disponibles?.length
     return (
-      <section className="col-tarjeta">
-        <h3>Este libro todavía no tiene juegos</h3>
-        <p className="col-sub">Cuando estén listos, aquí verás qué entiende la clase de lo que lee.</p>
-      </section>
+      <>
+        {interruptores}
+        <section className="col-tarjeta">
+          <h3>{apagados ? 'Los juegos de este libro están apagados' : 'Este libro todavía no tiene juegos'}</h3>
+          <p className="col-sub">{apagados ? 'Enciende alguno arriba y aquí verás qué entiende la clase de lo que lee.'
+            : 'Cuando estén listos, aquí verás qué entiende la clase de lo que lee.'}</p>
+        </section>
+      </>
     )
   }
   return (
     <>
+      {interruptores}
       {conFiccion && <ConJuegos key={aulaId} c={c} aulaId={aulaId} />}
       {conCapsula && <BloqueCapsula key={'cp' + aulaId} capsula={capsula} alumnos={c.alumnos} />}
       {conHilo && <BloqueHilo hilo={hilo} alumnos={c.alumnos} />}

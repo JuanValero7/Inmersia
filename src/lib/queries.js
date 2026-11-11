@@ -43,6 +43,7 @@ export const queryKeys = {
   falsificadorAula: (aulaId) => ['falsificadorAula', aulaId],
   hiloAula: (aulaId) => ['hiloAula', aulaId],
   explicaseloAula: (aulaId) => ['explicaseloAula', aulaId],
+  juegosAula: (aulaId) => ['juegosAula', aulaId],
   recompensasAula: (aulaId) => ['recompensasAula', aulaId],
   // Tienda de recompensas del alumno (ver src/hooks/useRecompensas.js)
   tiendaRecompensas: (userId, libroId) => ['tiendaRecompensas', userId, libroId],

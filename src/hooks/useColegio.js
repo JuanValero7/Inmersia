@@ -164,6 +164,53 @@ export function useCharlaAulaQuery(aulaId, userId, momento, enabled) {
   })
 }
 
+// Los juegos del aula (102): los que tienen contenido para el libro del aula
+// y cuáles encendió el profe. En el aula todo viene encendido por defecto.
+export function useJuegosAulaQuery(aulaId) {
+  return useQuery({
+    queryKey: queryKeys.juegosAula(aulaId),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('juegos_aula', { p_aula: aulaId })
+      if (error) throw error
+      return /** @type {{ libro_id: string|null, es_ficcion: boolean, disponibles: string[], juegos: Record<string, boolean> }} */ (data)
+    },
+    enabled: !!aulaId,
+    // Sin la 102 la función no existe: sin interruptores, sin reintentar.
+    retry: false,
+    staleTime: STALE_TIME,
+  })
+}
+
+// El interruptor del Salón: igual que el del Perfil (useMisJuegos). Se mueve
+// al momento; si falla, vuelve atrás. Al guardar, los bloques de Comprensión
+// se vuelven a pedir para que aparezca o desaparezca el del juego.
+export function useCambiarJuegoAula(aulaId) {
+  const queryClient = useQueryClient()
+  const key = queryKeys.juegosAula(aulaId)
+  return useMutation({
+    mutationFn: async (/** @type {{ juego: string, encendido: boolean }} */ { juego, encendido }) => {
+      const { data, error } = await supabase.rpc('juegos_aula_guardar', { p_aula: aulaId, p_juego: juego, p_encendido: encendido })
+      if (error) throw error
+      return data
+    },
+    onMutate: async ({ juego, encendido }) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      const antes = queryClient.getQueryData(key)
+      queryClient.setQueryData(key, (/** @type {any} */ d) => d && { ...d, juegos: { ...d.juegos, [juego]: encendido } })
+      return { antes }
+    },
+    onError: (_e, _v, ctx) => queryClient.setQueryData(key, ctx?.antes),
+    onSuccess: (data) => queryClient.setQueryData(key, data),
+    onSettled: () => {
+      for (const k of [queryKeys.comprensionAula, queryKeys.capsulaAula, queryKeys.falsificadorAula, queryKeys.hiloAula, queryKeys.explicaseloAula]) {
+        queryClient.invalidateQueries({ queryKey: k(aulaId) })
+      }
+      // Si el profe también lee el libro desde esta cuenta, que lo vea.
+      queryClient.invalidateQueries({ queryKey: ['juegos', 'libro'] })
+    },
+  })
+}
+
 // Nota (0–20) y comentario del profe en un desafío. El alumno los ve en su Cuaderno.
 export function useCalificarDesafio(aulaId) {
   const queryClient = useQueryClient()
