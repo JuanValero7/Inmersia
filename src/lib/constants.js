@@ -3,6 +3,15 @@
 // Cualquier cambio aquí debe hacerse también en ese archivo SQL.
 export const MANUAL_LIBRO_ID = '00000000-0000-4000-8000-000000000001'
 
+// Interruptores de cosas ocultas, no borradas (decisión de Juan, 11 nov 2026).
+// Para volver a mostrarlas basta con ponerlas en true: el código sigue ahí.
+//   · TUTORIAL_VISIBLE: el tutorial guiado (bienvenida + recorrido por pasos,
+//     context/onboarding.jsx). Los avisos de primera vez (pistas) siguen.
+//   · FORO_VISIBLE: el Foro de cada libro, con sus comentarios y su chat.
+//     Los mensajitos de las comunidades no dependen de esto.
+export const TUTORIAL_VISIBLE = false
+export const FORO_VISIBLE = false
+
 // Minutos de lectura de la muestra (invitados, y libros que no están en tu
 // biblioteca). La muestra son los primeros párrafos hasta 2300 palabras =
 // MINUTOS_MUESTRA × PALABRAS_POR_MINUTO (utils/formato.js). Quien decide qué

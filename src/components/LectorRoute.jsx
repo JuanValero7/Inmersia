@@ -11,7 +11,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import { MANUAL_LIBRO_ID } from '../lib/constants.js'
+import { MANUAL_LIBRO_ID, FORO_VISIBLE } from '../lib/constants.js'
 import { useBibliotecaUsuarioQuery } from '../lib/queries.js'
 import { evento } from '../lib/analytics.js'
 import { mapLibro } from '../hooks/useBookBySlug.js'
@@ -153,7 +153,7 @@ export function LectorRoute({ LectorCmp, user, isSuperuser, gatoColor, openAuth,
       onGoBack={() => navigate(user ? '/biblioteca' : '/tienda')}
       onGoTienda={() => navigate('/tienda')}
       onGoCartelera={(itemId) => { setCartelaJumpId(itemId || null); irA(`/investigacion/${book.slug || book.id}`) }}
-      onGoForo={() => irA(`/foro/${book.slug || book.id}`)}
+      onGoForo={FORO_VISIBLE ? () => irA(`/foro/${book.slug || book.id}`) : undefined}
       startWithNotebook={lectorStartNotebook}
       onNotebookStarted={() => setLectorStartNotebook(false)}
       isSuperuser={isSuperuser}

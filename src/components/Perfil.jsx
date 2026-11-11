@@ -21,6 +21,7 @@ import { supabase } from '../lib/supabase.js'
 import { usePerfilData } from '../hooks/usePerfilData.js'
 import { descargarMisDatos } from '../lib/misDatos.js'
 import { useOnboarding } from '../context/onboarding.jsx'
+import { TUTORIAL_VISIBLE } from '../lib/constants.js'
 import LegalModal from './legal/LegalModal.jsx'
 import SecDenuncias from './comunidades/SecDenuncias.jsx'
 import { useDenunciasQuery } from '../hooks/useDenuncias.js'
@@ -481,7 +482,7 @@ export default function Perfil({ user, isSuperuser = false, gatoColor, onChangeG
             ))}
           </div>
           <div className="pf-nav-spacer"></div>
-          <button className="pf-nav-item" onClick={onboarding.restart}>{I.datos} Repetir tutorial</button>
+          {TUTORIAL_VISIBLE && <button className="pf-nav-item" onClick={onboarding.restart}>{I.datos} Repetir tutorial</button>}
           <button className="pf-logout" onClick={onSignOut}>{I.logout} Cerrar sesión</button>
         </nav>
 

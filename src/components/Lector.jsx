@@ -514,7 +514,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     visibleSfx.length > 0 && 'sonido',
     cabenPolaroids && visibleImages.length > 0 && 'ilustracion',
     !guestMode && !esManual && chapterIndex >= 1 && 'investigacion',
-    !guestMode && !esManual && chapterIndex >= 2 && 'foro',
+    !guestMode && !esManual && chapterIndex >= 2 && onGoForo && 'foro',
     !guestMode && !esManual && isLeido && chapterIndex === capitulos.length - 1 && 'fin_libro',
   ])
   const accionPista = {
@@ -583,7 +583,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                     <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 11, color: '#000' }}>Investigación</span>
                   </button>
-                  {!tutorialManual && (
+                  {!tutorialManual && onGoForo && (
                     <button type="button" onClick={() => { setExplorarOpen(false); onGoForo() }}
                       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer' }}>
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>

@@ -363,9 +363,9 @@ export default function AlbumMobile({ user, gatoColor = 'negro', onOpenBook, onG
             <a className="accL" data-c="investigacion" onClick={() => onGoInvestigacion(libro)}>
               <span className="aic"><IInvest /></span><span className="alab">Investig.</span>
             </a>
-            <a className="accL" data-c="foro" onClick={() => onGoForo(libro)}>
+            {onGoForo && (<a className="accL" data-c="foro" onClick={() => onGoForo(libro)}>
               <span className="aic"><IForo /></span><span className="alab">Foro</span>
-            </a>
+            </a>)}
             <a className="accL" data-c="leer" onClick={() => onOpenBook(libro)}>
               <span className="aic"><ILeer /></span><span className="alab">Leer</span>
             </a>

@@ -1,6 +1,7 @@
 // Copy del tutorial guiado, en un solo lugar: cada pantalla tiene versión
 // desktop y móvil, y los textos deben coincidir palabra por palabra.
 // Los pop-ups son cortos a propósito: uno largo se ve incómodo y nadie lo lee.
+import { FORO_VISIBLE } from '../../lib/constants.js'
 
 // Paso 'manual': aparece apenas el usuario entra al Manual del Explorador
 // (capítulo 1), antes de que sepa que las instrucciones están en el propio
@@ -109,7 +110,7 @@ export const PISTAS = {
   fin_libro: {
     emoji: '🎉',
     title: '¡Terminaste el libro!',
-    body: 'Mira en tu Cuaderno qué predicciones acertaste, deja tu reseña con la estrella o cuéntalo en el Foro.',
+    body: 'Mira en tu Cuaderno qué predicciones acertaste' + (FORO_VISIBLE ? ', deja tu reseña con la estrella o cuéntalo en el Foro.' : ' o deja tu reseña con la estrella.'),
   },
   investigacion_tablero: {
     emoji: '🔎',

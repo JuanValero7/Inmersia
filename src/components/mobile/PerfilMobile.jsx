@@ -23,6 +23,7 @@ import {
 } from '../Perfil.jsx'                 // ← sub-vistas + helpers REUTILIZADOS (¡mayúscula!)
 import { usePerfilData } from '../../hooks/usePerfilData.js'  // ← lógica de datos compartida
 import { useOnboarding } from '../../context/onboarding.jsx'
+import { TUTORIAL_VISIBLE } from '../../lib/constants.js'
 import SecDenuncias from '../comunidades/SecDenuncias.jsx'
 import { useDenunciasQuery } from '../../hooks/useDenuncias.js'
 import '../../styles/perfil.css'        // base .pf-* (lo usan las sub-vistas)
@@ -106,7 +107,7 @@ export default function PerfilMobile({ user, isSuperuser = false, gatoColor, onC
           {sec === 'legal'     && <SecLegal user={user} onSignOut={onSignOut} />}
           {sec === 'denuncias' && isSuperuser && <SecDenuncias />}
 
-          <button type="button" className="pm-logout" style={{ marginTop: 24 }} onClick={onboarding.restart}>{I.datos} Repetir tutorial</button>
+          {TUTORIAL_VISIBLE && <button type="button" className="pm-logout" style={{ marginTop: 24 }} onClick={onboarding.restart}>{I.datos} Repetir tutorial</button>}
           <button type="button" className="pm-logout" style={{ marginTop: 12 }} onClick={onSignOut}>{I.logout} Cerrar sesión</button>
         </div>
       </div>

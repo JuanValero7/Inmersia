@@ -96,7 +96,7 @@ function SheetBody({ book, user, categories, repaso, onOpenBook, onGoForo, onGoN
           <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.4"><path d="M12 6.04A8.97 8.97 0 006 3.75c-1.05 0-2.06.18-3 .51v14.25A9 9 0 016 18c2.3 0 4.4.87 6 2.29m0-14.25A8.97 8.97 0 0118 3.75c1.05 0 2.06.18 3 .51v14.25A9 9 0 0018 18a8.97 8.97 0 00-6 2.29m0-14.25v14.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
           {hasProgress ? 'Continuar' : 'Abrir libro'}
         </button>
-        {!esManual && (
+        {!esManual && onGoForo && (
           <button className="bibm-btn ghost foro" onClick={() => onGoForo(book)}>
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-1.41-.59m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.59-.59z" strokeLinecap="round" strokeLinejoin="round"/></svg>
             Foro

@@ -103,12 +103,12 @@ function BibBookModal({ book, user, onClose, onOpenBook, onGoForo, onGoNotebook,
             </button>
             {!esManual && (
               <div style={{ display: 'flex', gap: 10 }}>
-                <button style={{ ...ghost, flex: 1, justifyContent: 'center', color: '#000', fontSize: 13.5, padding: '9px 14px' }} onClick={() => onGoForo(book)}>
+                {onGoForo && (<button style={{ ...ghost, flex: 1, justifyContent: 'center', color: '#000', fontSize: 13.5, padding: '9px 14px' }} onClick={() => onGoForo(book)}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.4"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     Ir al Foro
                   </span>
-                </button>
+                </button>)}
                 <button style={{ ...ghost, flex: 1, justifyContent: 'center', color: '#000', fontSize: 13.5, padding: '9px 14px' }} onClick={() => onGoNotebook(book)}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.3"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" strokeLinecap="round" strokeLinejoin="round"/></svg>

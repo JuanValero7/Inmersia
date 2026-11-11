@@ -570,7 +570,7 @@ export default function LectorMobile({ book, onGoBack, onGoCartelera, onGoForo, 
     visibleImages.length > 0 && 'ilustracion',
     !guestMode && CAT_ITEMS.length > 0 && 'herramientas',
     !guestMode && !esManual && chapterIndex >= 1 && 'investigacion',
-    !guestMode && !esManual && chapterIndex >= 2 && 'foro',
+    !guestMode && !esManual && chapterIndex >= 2 && onGoForo && 'foro',
     !guestMode && !esManual && isLeido && chapterIndex === capitulos.length - 1 && 'fin_libro',
   ])
   const accionPista = {

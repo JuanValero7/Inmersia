@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useNavigate, Outlet, useLocation, useParams } from 'react-router-dom'
 import { supabase } from './lib/supabase.js'
-import { MANUAL_LIBRO_ID } from './lib/constants.js'
+import { MANUAL_LIBRO_ID, FORO_VISIBLE } from './lib/constants.js'
 import { LIMITE_PENDIENTES } from './hooks/useCompraLibro.js'
 import useIsMobile from './hooks/useIsMobile.js'
 import { useSesion } from './context/sesion.jsx'
@@ -329,7 +329,7 @@ export default function App() {
                 onGoCatalogo={() => navigate('/tienda', { state: { entrar: true } })}
                 onGoPerfil={() => navigate('/perfil')}
                 onGoAlbum={() => navigate('/album')}
-                onGoForo={(book) => irA(`/foro/${book.slug || book.id}`, book)}
+                onGoForo={FORO_VISIBLE ? (book) => irA(`/foro/${book.slug || book.id}`, book) : undefined}
                 onGoInvestigacion={(book) => irA(`/investigacion/${book.slug || book.id}`, book)}
                 onGoNotebook={handleGoNotebook}
                 onGoComunidades={(vista) => navigate('/comunidades', { state: { from: location.pathname, vista } })}
@@ -375,7 +375,7 @@ export default function App() {
                 gatoColor={gatoColor}
                 onOpenBook={handleOpenBook}
                 onGoBack={() => navigate('/biblioteca')}
-                onGoForo={(book) => irA(`/foro/${book.slug || book.id}`, book)}
+                onGoForo={FORO_VISIBLE ? (book) => irA(`/foro/${book.slug || book.id}`, book) : undefined}
                 onGoInvestigacion={(book) => irA(`/investigacion/${book.slug || book.id}`, book)}
               />
             } />
@@ -400,7 +400,7 @@ export default function App() {
                 book={location.state?.book}
                 user={user}
                 gatoColor={gatoColor}
-                onGoForo={() => irA(`/foro/${slugDeLaUrl()}`, location.state?.book)}
+                onGoForo={FORO_VISIBLE ? () => irA(`/foro/${slugDeLaUrl()}`, location.state?.book) : undefined}
                 onGoBiblioteca={() => navigate('/biblioteca')}
                 jumpToItemId={cartelaJumpId}
                 onJumpConsumed={() => setCartelaJumpId(null)}
@@ -408,7 +408,8 @@ export default function App() {
               />
             } />
 
-            <Route path="/foro/:slug" element={
+            {/* Foro oculto (FORO_VISIBLE): los enlaces viejos van a la Biblioteca. */}
+            <Route path="/foro/:slug" element={!FORO_VISIBLE ? <Navigate to="/biblioteca" replace /> :
               <Foro
                 book={location.state?.book}
                 user={user}

@@ -22,6 +22,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase.js'
 import { ensureProfile } from '../lib/ensureProfile.js'
 import { queryKeys } from '../lib/queries.js'
+import { TUTORIAL_VISIBLE } from '../lib/constants.js'
 
 // 'tienda_final' = el hint "Ve a la Tienda" que vive en la Biblioteca.
 // 'tienda'       = el aviso del límite de lecturas pendientes, en la FACHADA de
@@ -71,8 +72,13 @@ export function useOnboardingController(user, navigate) {
           // queda en el libro, sin bienvenida ni tour. Las funciones las va
           // descubriendo al encontrárselas. El flag se marca igual, así que la
           // bienvenida no aparece en la próxima sesión.
+          // Con el tutorial oculto (TUTORIAL_VISIBLE) el nuevo va a la Biblioteca
+          // sin bienvenida; el flag se marca igual.
           if (window.location.pathname.startsWith('/libro/')) {
             setStep('done')
+          } else if (!TUTORIAL_VISIBLE) {
+            setStep('done')
+            navigate('/biblioteca')
           } else {
             setStep('bienvenida')
             navigate('/biblioteca')
