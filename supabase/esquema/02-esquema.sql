@@ -1320,7 +1320,7 @@ CREATE FUNCTION public._juegos_aula_por_defecto() RETURNS jsonb
     SET search_path TO 'public'
     AS $$
   SELECT '{"mesa": true, "corazonadas": true, "mapa": true, "concurso": true, "desafio": true,
-           "capsula": true, "hilo": true, "falsificador": false, "explicaselo": false}'::jsonb;
+           "capsula": true, "hilo": true, "falsificador": true, "explicaselo": true}'::jsonb;
 $$;
 
 
@@ -4271,6 +4271,63 @@ BEGIN
   VALUES (v_codigo, p_colegio, 'admin', now() + interval '7 days');
 
   RETURN v_codigo;
+END;
+$$;
+
+
+--
+-- Name: juegos_aula(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.juegos_aula(p_aula uuid) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_libro uuid;
+BEGIN
+  PERFORM _profe_de_aula(p_aula);
+  SELECT libro_id INTO v_libro FROM _meta_aula(p_aula, 'UTC');
+
+  RETURN jsonb_build_object(
+    'libro_id', v_libro,
+    'es_ficcion', coalesce((SELECT es_ficcion FROM libros WHERE id = v_libro), true),
+    'disponibles', to_jsonb(array_remove(ARRAY[
+      CASE WHEN EXISTS (SELECT 1 FROM anderson_contenido     WHERE libro_id = v_libro) THEN 'mesa' END,
+      CASE WHEN EXISTS (SELECT 1 FROM corazonadas_contenido  WHERE libro_id = v_libro) THEN 'corazonadas' END,
+      CASE WHEN EXISTS (SELECT 1 FROM mapa_contenido         WHERE libro_id = v_libro) THEN 'mapa' END,
+      CASE WHEN EXISTS (SELECT 1 FROM concurso_contenido     WHERE libro_id = v_libro) THEN 'concurso' END,
+      CASE WHEN EXISTS (SELECT 1 FROM desafio_contenido      WHERE libro_id = v_libro) THEN 'desafio' END,
+      CASE WHEN EXISTS (SELECT 1 FROM capsula_contenido      WHERE libro_id = v_libro) THEN 'capsula' END,
+      CASE WHEN EXISTS (SELECT 1 FROM hilo_contenido         WHERE libro_id = v_libro) THEN 'hilo' END,
+      CASE WHEN EXISTS (SELECT 1 FROM falsificador_contenido WHERE libro_id = v_libro) THEN 'falsificador' END,
+      CASE WHEN EXISTS (SELECT 1 FROM explicaselo_contenido  WHERE libro_id = v_libro) THEN 'explicaselo' END
+    ], NULL)),
+    'juegos', _juegos_mezclar(_juegos_aula_por_defecto(),
+                              (SELECT juegos FROM comunidades WHERE id = p_aula)));
+END;
+$$;
+
+
+--
+-- Name: juegos_aula_guardar(uuid, text, boolean); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.juegos_aula_guardar(p_aula uuid, p_juego text, p_encendido boolean) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  PERFORM _profe_de_aula(p_aula);
+  IF NOT (_juegos_aula_por_defecto() ? p_juego) OR p_encendido IS NULL THEN
+    RAISE EXCEPTION 'Ese juego no existe.';
+  END IF;
+
+  UPDATE comunidades
+  SET juegos = juegos || jsonb_build_object(p_juego, p_encendido)
+  WHERE id = p_aula;
+
+  RETURN juegos_aula(p_aula);
 END;
 $$;
 
@@ -11729,6 +11786,24 @@ GRANT ALL ON FUNCTION public.hilo_tablero(p_libro uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.invitar_admin(p_colegio uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.invitar_admin(p_colegio uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.invitar_admin(p_colegio uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION juegos_aula(p_aula uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.juegos_aula(p_aula uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.juegos_aula(p_aula uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.juegos_aula(p_aula uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION juegos_aula_guardar(p_aula uuid, p_juego text, p_encendido boolean); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.juegos_aula_guardar(p_aula uuid, p_juego text, p_encendido boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.juegos_aula_guardar(p_aula uuid, p_juego text, p_encendido boolean) TO authenticated;
+GRANT ALL ON FUNCTION public.juegos_aula_guardar(p_aula uuid, p_juego text, p_encendido boolean) TO service_role;
 
 
 --
