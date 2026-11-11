@@ -1,0 +1,68 @@
+/* Explícaselo a… (no ficción). Ver src/components/lector/Explicaselo.jsx y la maqueta
+   Documents/Inmersia_maquetas/colegios/maqueta-explicaselo-noficcion.html.
+   La charla usa las piezas del Desafío (desafio.css, df-*) y los colores de corazonada.css (--cz-*).
+   Prefijo xp-. */
+:root { --xp-azul: #2f5d8a; --xp-azul-bg: #eef4ff; --xp-azul-ink: #23476b; }
+
+.xp-saldo { margin-left: 0; align-self: center; }
+.xp-mono { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid var(--cz-ink);
+  font-weight: 800; color: var(--cz-ink); flex-shrink: 0; line-height: 1; }
+
+/* ── La ruleta ── */
+.xp-ruleta { align-self: stretch; display: grid; justify-items: center; gap: 12px; padding: 6px 0 4px; flex-shrink: 0; }
+.xp-rueda-w { position: relative; width: 210px; height: 210px; flex-shrink: 0; }
+/* Escritorio: rueda grande a la izquierda, botón o «Te tocó» a la derecha, centrados en el hueco que queda. */
+.xp-ruleta.is-grande { flex: 1; display: flex; align-items: center; justify-content: center; gap: 40px; padding: 18px 8px; }
+.xp-ruleta.is-grande .xp-toco { flex: 0 1 380px; align-self: center; padding: 14px 16px; gap: 10px; }
+.xp-ruleta.is-grande .xp-toco-t { font-size: 21px; }
+.xp-ruleta.is-grande .xp-regla { font-size: 14.5px; }
+.xp-ruleta.is-grande .xp-girar { font-size: 17px; padding: 10px 26px; }
+/* Móvil: la misma idea, pero en columna (rueda arriba, botón o «Te tocó» debajo). */
+.xp-ruleta.is-grande.is-movil { flex-direction: column; gap: 16px; padding: 10px 0 6px; }
+.xp-ruleta.is-grande.is-movil .xp-toco { flex: 0 0 auto; align-self: stretch; padding: 10px 12px; gap: 8px; }
+.xp-ruleta.is-grande.is-movil .xp-toco-t { font-size: 19px; }
+.xp-ruleta.is-grande.is-movil .xp-regla { font-size: 13.5px; }
+.xp-rueda { width: 100%; height: 100%; border-radius: 50%; border: 4px solid var(--cz-ink); box-shadow: var(--cz-sombra); position: relative;
+  transition: transform 2.4s cubic-bezier(0.17, 0.67, 0.2, 1); }
+/* las rayas entre sectores */
+.xp-rueda::after { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; opacity: 0.55;
+  background: repeating-conic-gradient(from 0deg, var(--cz-ink) 0 0.6deg, transparent 0.6deg 60deg); }
+.xp-cara { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+.xp-cara i { position: absolute; left: 0; top: 0; font-style: normal; font-size: 13px; font-weight: 800; letter-spacing: 0.02em; color: var(--cz-ink); white-space: nowrap; }
+.xp-puntero { position: absolute; left: 50%; top: -12px; transform: translateX(-50%); width: 0; height: 0; z-index: 2;
+  border-left: 13px solid transparent; border-right: 13px solid transparent; border-top: 24px solid var(--cz-ink); }
+.xp-eje { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px; border-radius: 50%; background: var(--cz-paper);
+  border: 3px solid var(--cz-ink); z-index: 2; }
+
+.xp-toco { align-self: stretch; background: #fff; border: 2.5px solid var(--cz-ink); border-radius: 14px; padding: 9px 12px; display: grid; gap: 7px;
+  box-shadow: var(--cz-sombra); }
+.xp-toco-t { display: flex; gap: 10px; align-items: center; font-size: 18px; font-weight: 800; line-height: 1.1; }
+.xp-toco-t small { display: block; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cz-ink-soft); font-weight: 800; }
+.xp-fila { display: flex; gap: 8px; flex-wrap: wrap; }
+.xp-otra { display: inline-flex; align-items: center; gap: 4px; }
+
+.xp-regla { display: flex; gap: 8px; align-items: center; background: var(--xp-azul-bg); border: 2px solid var(--xp-azul); border-radius: 10px;
+  padding: 5px 9px; font-size: 13px; font-weight: 700; line-height: 1.25; color: var(--xp-azul-ink); flex-shrink: 0; }
+.xp-quien { display: block; font-size: 11.5px; font-weight: 800; color: var(--cz-ink-soft); }
+.xp-aviso { color: var(--xp-azul-ink); }
+
+/* ── El veredicto ── */
+.xp-veredicto { align-self: stretch; border: 2.5px solid var(--cz-ink); border-radius: 14px; padding: 10px 12px; display: grid; gap: 6px;
+  background: var(--cz-paper); flex-shrink: 0; }
+.xp-veredicto.is-entendio { background: var(--cz-ok-bg); border-color: var(--cz-ok); }
+.xp-veredicto.is-casi { background: #fff3c9; }
+.xp-veredicto.is-igual { background: var(--cz-bad-bg); }
+.xp-v-t { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.xp-v-t b { font-size: 18px; }
+.xp-premio { display: inline-flex; align-items: center; gap: 3px; font-weight: 800; font-size: 15px; }
+.xp-v-nota { margin: 0; font-size: 13px; font-weight: 600; color: var(--cz-ink-soft); line-height: 1.3; }
+.xp-puntos { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; font-weight: 600; line-height: 1.3; }
+.xp-puntos li { display: flex; gap: 7px; align-items: baseline; }
+.xp-puntos li span { flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: #fff; }
+.xp-puntos li.is-ok span { background: var(--cz-ok); }
+.xp-puntos li.is-falta span { background: var(--cz-bad); }
+.xp-puntos li.is-falta { color: var(--cz-ink-soft); }
+.xp-ref { margin: 0; font-family: 'Crimson Text', Georgia, serif; font-size: 16px; line-height: 1.3; color: #3a2a18; }
+
+@media (prefers-reduced-motion: reduce) { .xp-rueda { transition: none; } }

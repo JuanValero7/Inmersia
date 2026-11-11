@@ -42,6 +42,7 @@ export const queryKeys = {
   capsulaAula: (aulaId) => ['capsulaAula', aulaId],
   falsificadorAula: (aulaId) => ['falsificadorAula', aulaId],
   hiloAula: (aulaId) => ['hiloAula', aulaId],
+  explicaseloAula: (aulaId) => ['explicaseloAula', aulaId],
   recompensasAula: (aulaId) => ['recompensasAula', aulaId],
   // Tienda de recompensas del alumno (ver src/hooks/useRecompensas.js)
   tiendaRecompensas: (userId, libroId) => ['tiendaRecompensas', userId, libroId],
@@ -73,6 +74,8 @@ export const queryKeys = {
   falsificador: (libroId, userId) => ['falsificador', libroId, userId],
   // El hilo de ideas, no ficción (ver src/hooks/useHiloIdeas.js)
   hiloIdeas: (libroId, userId) => ['hiloIdeas', libroId, userId],
+  // Explícaselo a…, no ficción (ver src/hooks/useExplicaselo.js)
+  explicaselo: (libroId, userId) => ['explicaselo', libroId, userId],
   // Juegos encendidos o apagados (ver src/hooks/useJuegos.js). Mismo prefijo
   // para que cambiar un interruptor refresque todos los libros.
   juegosLibro: (libroId, userId) => ['juegos', 'libro', libroId, userId],

@@ -14,11 +14,14 @@
 //   8. Hilo de ideas (no ficción, 100): por alumno, ideas armadas, si llegó a
 //      la conclusión, intentos fallidos, ayudas y jugadas con señuelos; por
 //      idea, cuántos la armaron y dónde se atasca la clase.
+//   9. Explícaselo a… (no ficción, 101): por momento, a quién se lo explicó,
+//      el veredicto, los puntos que tocó, si rompió la regla y la charla entera.
 // Las cuentas viven en utils/comprension.js.
 import { useState, useMemo } from 'react'
-import { useComprensionQuery, useCharlaAulaQuery, useCalificarDesafio, useCapsulaAulaQuery, useFalsificadorAulaQuery, useHiloAulaQuery } from '../../hooks/useColegio.js'
+import { useComprensionQuery, useCharlaAulaQuery, useCalificarDesafio, useCapsulaAulaQuery, useFalsificadorAulaQuery, useHiloAulaQuery, useExplicaseloAulaQuery } from '../../hooks/useColegio.js'
 import { resumenFalsificador } from '../../utils/falsificador.js'
 import { resumenHiloAula } from '../../utils/hilo.js'
+import { personaje } from '../../utils/explicaselo.js'
 import {
   capituloPorDefecto, resumenMesa, resumenFrases, frasesPorTipo, resumenTesoros, resumenCorazonadas,
   corazonadasAlumno, estadoFrase, evidenciaAlumno, habilidades, NOTA_APROBADO, pct, num,
@@ -40,15 +43,17 @@ export default function ComprensionAula({ aulaId }) {
   const { data: capsula, isLoading: cargandoCapsula } = useCapsulaAulaQuery(aulaId)
   const { data: falsificador, isLoading: cargandoFx } = useFalsificadorAulaQuery(aulaId)
   const { data: hilo, isLoading: cargandoHilo } = useHiloAulaQuery(aulaId)
+  const { data: explicaselo, isLoading: cargandoEx } = useExplicaseloAulaQuery(aulaId)
 
-  if (isLoading || cargandoCapsula || cargandoFx || cargandoHilo) return <p className="com-dd-msg">Cargando la comprensión…</p>
+  if (isLoading || cargandoCapsula || cargandoFx || cargandoHilo || cargandoEx) return <p className="com-dd-msg">Cargando la comprensión…</p>
   if (isError || !c) return <p className="com-dd-msg">No pudimos cargar la comprensión. Revisa tu conexión.</p>
   if (!c.libro_id) return null
   const conFiccion = !!(c.mesa || c.corazonadas || c.concurso || c.mapa || c.desafio)
   const conCapsula = !!capsula?.preguntas && capsula.encendida !== false
   const conFalsificador = !!falsificador?.items?.length && falsificador.encendido === true
   const conHilo = !!hilo?.ideas?.length && hilo.encendido !== false
-  if (!conFiccion && !conCapsula && !conFalsificador && !conHilo) {
+  const conExplicaselo = !!explicaselo?.momentos?.length && explicaselo.encendido === true
+  if (!conFiccion && !conCapsula && !conFalsificador && !conHilo && !conExplicaselo) {
     return (
       <section className="col-tarjeta">
         <h3>Este libro todavía no tiene juegos</h3>
@@ -62,6 +67,7 @@ export default function ComprensionAula({ aulaId }) {
       {conCapsula && <BloqueCapsula key={'cp' + aulaId} capsula={capsula} alumnos={c.alumnos} />}
       {conHilo && <BloqueHilo hilo={hilo} alumnos={c.alumnos} />}
       {conFalsificador && <BloqueFalsificador fx={falsificador} alumnos={c.alumnos} />}
+      {conExplicaselo && <BloqueExplicaselo ex={explicaselo} alumnos={c.alumnos} />}
     </>
   )
 }
@@ -684,5 +690,79 @@ function BloqueHilo({ hilo, alumnos }) {
         ))}
       </div>
     </section>
+  )
+}
+
+// ── 9. Explícaselo a… (no ficción) ─────────────────────────
+
+const VEREDICTO_EX = { entendio: ['Lo entendió', 'ok'], casi: ['Casi', 'warn'], igual: ['Se quedó igual', 'bad'] }
+const ESTADO_EX = { ruleta: 'Giró la ruleta', abierta: 'A medias', evaluando: 'A medias' }
+
+function BloqueExplicaselo({ ex, alumnos }) {
+  const [mo, setMo] = useState(ex.momentos[0]?.momento)
+  const [quien, setQuien] = useState(null)
+  const m = ex.momentos.find(x => x.momento === mo)
+  const filas = alumnos.map(a => ({ a, ch: ex.alumnos?.[a.user_id]?.[mo] })).filter(x => x.ch)
+  const elegido = filas.find(x => x.a.user_id === quien)
+  const terminadas = filas.filter(x => x.ch.estado === 'terminada')
+  const entendieron = terminadas.filter(x => x.ch.resultado === 'entendio').length
+
+  return (
+    <section className="col-tarjeta">
+      <div className="col-card-head">
+        <div>
+          <h3>Explícaselo a…</h3>
+          <p className="col-sub">Le explican una idea del libro a un personaje que les toca en una ruleta, cada uno con su regla (al pirata en 3 frases, al marciano sin ciertas palabras…). La IA hace del personaje y marca qué puntos tocaron. Las charlas las lees enteras: el alumno sabe que son para ti.</p>
+        </div>
+        <div className="col-filtros">
+          {ex.momentos.map(x => (
+            <button key={x.momento} type="button" className="col-chip" aria-pressed={mo === x.momento} onClick={() => { setMo(x.momento); setQuien(null) }}>{MOMENTO[x.momento]}</button>
+          ))}
+        </div>
+      </div>
+      {m && <p className="col-sub cmp-df-tras">Sale al terminar el capítulo {m.tras_capitulo}: «{m.consigna}»{terminadas.length > 0 && ` · Lo entendieron ${entendieron} de ${terminadas.length}.`}</p>}
+      <div className="cmp-df">
+        <div className="cmp-entregas">
+          {filas.length === 0 && <span className="col-vacio">Nadie ha llegado todavía.</span>}
+          {filas.map(({ a, ch }) => {
+            const v = VEREDICTO_EX[ch.resultado]
+            return (
+              <button key={a.user_id} type="button" className={'cmp-ent' + (quien === a.user_id ? ' on' : '')}
+                disabled={ch.estado === 'ruleta'} onClick={() => setQuien(a.user_id)}>
+                <span className="cmp-ent-n"><b>{a.nombre}</b><small>{personaje(ch.personaje)?.nombre ?? '—'}{ch.giros > 1 ? ` · giró ${ch.giros} veces` : ''}</small></span>
+                {v ? <EstadoPill tono={v[1]} texto={v[0]} /> : <span className="col-vacio">{ESTADO_EX[ch.estado] || '—'}</span>}
+              </button>
+            )
+          })}
+        </div>
+        {elegido && m
+          ? <DetalleExplicaselo key={`${quien}:${mo}`} a={elegido.a} ch={elegido.ch} m={m} />
+          : <div className="cmp-df-vacio col-sub">Toca a un alumno para ver qué puntos tocó y leer la charla.</div>}
+      </div>
+    </section>
+  )
+}
+
+function DetalleExplicaselo({ a, ch, m }) {
+  const pj = personaje(ch.personaje)
+  return (
+    <div className="cmp-charla">
+      <span className="col-label">{a.nombre} · se lo explicó a {pj?.nombre ?? '—'}</span>
+      <b className="cmp-q">{m.consigna}</b>
+      {ch.estado === 'terminada' && (
+        <div className="cmp-resumen">
+          <h4>Puntos que tocó</h4>
+          {m.puntos.map((t, i) => (
+            <p key={i} className={'cmp-r ' + (ch.puntos?.[i] ? 'cmp-r-si' : 'cmp-r-no')}>{t}</p>
+          ))}
+          {ch.rompio_regla && <p className="cmp-r cmp-r-no">No cumplió la regla del personaje (por eso, como mucho «casi»).</p>}
+          {ch.para_el_profe && <p>{ch.para_el_profe}</p>}
+          {ch.plan_b && <p className="col-sub">La IA no pudo dar el veredicto de esta charla: se le dio «casi». Léela entera.</p>}
+        </div>
+      )}
+      <div className="cmp-turnos">
+        {(ch.turnos || []).map((t, i) => <p key={i} className={t.de === 'alumno' ? 'yo' : 'gato'}><b>{t.de === 'alumno' ? a.nombre.split(' ')[0] : (pj?.corto ?? 'Personaje')}:</b> {t.texto}</p>)}
+      </div>
+    </div>
   )
 }

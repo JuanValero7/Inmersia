@@ -135,6 +135,21 @@ export function useHiloAulaQuery(aulaId, enabled = true) {
   })
 }
 
+// Explícaselo a… (no ficción, migración 101): por alumno y momento, el
+// personaje, el veredicto, los puntos y la charla. Sin la 101, null.
+export function useExplicaseloAulaQuery(aulaId, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.explicaseloAula(aulaId),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('explicaselo_aula', { p_aula: aulaId })
+      if (error) return null
+      return data
+    },
+    enabled: !!aulaId && enabled,
+    staleTime: STALE_TIME,
+  })
+}
+
 // La charla entera de un alumno en el desafío: solo al tocar «Ver la charla».
 export function useCharlaAulaQuery(aulaId, userId, momento, enabled) {
   return useQuery({

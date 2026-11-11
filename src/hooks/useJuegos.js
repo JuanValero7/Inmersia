@@ -17,8 +17,7 @@ import { queryKeys } from '../lib/queries.js'
 
 /**
  * Los juegos que ya existen, en el orden del Perfil. `noficcion` = de los
- * libros de no ficción. Explícaselo ya tiene su interruptor en la base de
- * datos; se suma aquí cuando esté hecho.
+ * libros de no ficción.
  */
 export const JUEGOS = /** @type {const} */ ([
   { id: 'mesa', nombre: 'Mesa de investigación', texto: 'Arma el perfil de los personajes con las pistas del libro.', noficcion: false },
@@ -29,6 +28,7 @@ export const JUEGOS = /** @type {const} */ ([
   { id: 'capsula', nombre: 'Cápsula del tiempo', texto: 'Guarda lo que piensas antes de leer y compáralo al terminar.', noficcion: true },
   { id: 'hilo', nombre: 'Hilo de ideas', texto: 'Une las pistas de cada capítulo hasta llegar a la idea del libro.', noficcion: true },
   { id: 'falsificador', nombre: 'El falsificador', texto: 'El gato coló párrafos inventados en el libro: descubre cuáles.', noficcion: true },
+  { id: 'explicaselo', nombre: 'Explícaselo a…', texto: 'Gira la ruleta y explícale una idea del libro a quien te toque.', noficcion: true },
 ])
 
 /** Lo mismo que _juegos_por_defecto() de la 098: se usa mientras llega la respuesta. */
