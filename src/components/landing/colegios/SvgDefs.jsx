@@ -24,6 +24,8 @@ export default function SvgDefs() {
       <symbol id="lc-f-ar" viewBox="0 0 26 18"><rect width="26" height="18" fill="#fff" /><rect width="26" height="6" fill="#74acdf" /><rect y="12" width="26" height="6" fill="#74acdf" /><circle cx="13" cy="9" r="2" fill="#f6b40e" /></symbol>
       <symbol id="lc-f-cl" viewBox="0 0 26 18"><rect width="26" height="18" fill="#d52b1e" /><rect width="26" height="9" fill="#fff" /><rect width="9" height="9" fill="#0039a6" /><path d="M4.5 2.2l.8 2.4h2.5l-2 1.5.8 2.4-2.1-1.5-2.1 1.5.8-2.4-2-1.5h2.5z" fill="#fff" /></symbol>
       <symbol id="lc-f-mx" viewBox="0 0 26 18"><rect width="26" height="18" fill="#fff" /><rect width="8.7" height="18" fill="#006847" /><rect x="17.3" width="8.7" height="18" fill="#ce1126" /><circle cx="13" cy="9" r="2.2" fill="#8c6a2f" /></symbol>
+      <symbol id="lc-f-es" viewBox="0 0 26 18"><rect width="26" height="18" fill="#c60b1e" /><rect y="4.5" width="26" height="9" fill="#ffc400" /></symbol>
+      <symbol id="lc-f-ve" viewBox="0 0 26 18"><rect width="26" height="18" fill="#cf142b" /><rect width="26" height="12" fill="#00247d" /><rect width="26" height="6" fill="#ffcc00" /><g fill="#fff">{[[7.6, 11.4], [9, 10], [10.8, 9.2], [13, 9], [15.2, 9.2], [17, 10], [18.4, 11.4]].map(([x, y]) => <circle key={x} cx={x} cy={y} r=".55" />)}</g></symbol>
       <symbol id="lc-f-co" viewBox="0 0 26 18"><rect width="26" height="18" fill="#ce1126" /><rect width="26" height="13.5" fill="#003893" /><rect width="26" height="9" fill="#fcd116" /></symbol>
     </svg>
   )

@@ -17,7 +17,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { gatoSrc } from './landing/landingData.js'
-import { asset, LOGO, PAISES, FAQ, TIPOS_DE_LIBRO, RESUMEN } from './landing/colegios/colegiosData.js'
+import { asset, LOGO, PAISES, paisInicial, FAQ, TIPOS_DE_LIBRO, RESUMEN } from './landing/colegios/colegiosData.js'
 import { useEscena, useEnFranja } from './landing/colegios/useEscenas.js'
 import SvgDefs, { Icono } from './landing/colegios/SvgDefs.jsx'
 import Duo from './landing/colegios/Duo.jsx'
@@ -60,7 +60,7 @@ export default function LandingColegios({ mobile = false }) {
 
 
   // ── País ──
-  const [pais, setPais] = useState(PAISES[0])
+  const [pais, setPais] = useState(paisInicial)
   const [menuPais, setMenuPais] = useState(false)
   useEffect(() => {
     if (!menuPais) return
@@ -180,7 +180,7 @@ export default function LandingColegios({ mobile = false }) {
                       <div className="lc-pais-menu">
                         {PAISES.map((p) => (
                           <button key={p.id} type="button" onClick={() => elegirPais(p)}>
-                            <Icono id={`f-${p.id}`} className="lc-bandera" />{p.nombre}{!p.dato && <> <small>pronto</small></>}
+                            <Icono id={`f-${p.id}`} className="lc-bandera" />{p.nombre}
                           </button>
                         ))}
                       </div>
@@ -191,9 +191,9 @@ export default function LandingColegios({ mobile = false }) {
             </div>
             <div className="lc-datos-grid">
               <div className="lc-dato lc-grande">
-                <div className="lc-dato-big lc-tnum">{pais.dato ? pais.dato.big : 'PISA'}</div>
-                <p>{pais.dato ? pais.dato.txt : `El dato de lectura de ${pais.nombre} en PISA 2025 está en preparación.`}</p>
-                <span className="lc-fuente">{pais.dato ? pais.dato.src : 'Lo tomamos de la fuente oficial'}</span>
+                <div className="lc-dato-big lc-tnum">{pais.dato.big}</div>
+                <p>{pais.dato.txt}</p>
+                <span className="lc-fuente">{pais.dato.src}</span>
               </div>
               <div className="lc-dato">
                 <div className="lc-dato-big lc-neutro">1 de 3</div>
@@ -271,17 +271,6 @@ export default function LandingColegios({ mobile = false }) {
                   marcas={[{ n: 3, escritorio: [100, 19], movil: [97, 61] }]} />
               </div>
             </div>
-            <div className="lc-capsula">
-              <div className="lc-capsula-txt">
-                <div className="lc-ceja">Antes de abrir el libro <Tipo tipo="nf" /></div>
-                <h3>La cápsula del tiempo</h3>
-                <p>En los libros de no ficción, antes de empezar cada alumno responde con sus palabras unas preguntas sobre el tema: «¿Quién crees que inventó el dinero?». La respuesta queda sellada.</p>
-                <p>Al terminar el libro vuelve a responder, sin ver lo que puso antes. Pedro lee las dos lado a lado. No hay nota: es para ver cuánto cambió su forma de pensar.</p>
-              </div>
-              <Captura mobile={mobile} nombre="capsula" movil ancho={1500} alto={1361}
-                alt="Cápsula del tiempo: lo que una alumna pensaba al empezar Del origen del dinero y lo que piensa al terminarlo"
-                titulo="Lo que pensaba antes y lo que piensa ahora" nota="Del origen del dinero · datos de ejemplo" />
-            </div>
           </div>
         </section>
 
@@ -311,6 +300,17 @@ export default function LandingColegios({ mobile = false }) {
                 <p className="lc-lado-pie">Sigue hasta el capítulo 3. Quiere saber si acertó.</p>
               </>}
             />
+            <div className="lc-capsula">
+              <div className="lc-capsula-txt">
+                <div className="lc-ceja">Antes de abrir el libro <Tipo tipo="nf" /></div>
+                <h3>La cápsula del tiempo</h3>
+                <p>En los libros de no ficción, antes de empezar cada alumno responde con sus palabras unas preguntas sobre el tema: «¿Quién crees que inventó el dinero?». La respuesta queda sellada.</p>
+                <p>Al terminar el libro vuelve a responder, sin ver lo que puso antes. Pedro lee las dos lado a lado. No hay nota: es para ver cuánto cambió su forma de pensar.</p>
+              </div>
+              <Captura mobile={mobile} nombre="capsula" movil ancho={1500} alto={1361}
+                alt="Cápsula del tiempo: lo que una alumna pensaba al empezar Del origen del dinero y lo que piensa al terminarlo"
+                titulo="Lo que pensaba antes y lo que piensa ahora" nota="Del origen del dinero · datos de ejemplo" />
+            </div>
             <Tarjetas mobile={mobile} className="lc-detras">
               <div><h4>Cada escena suena</h4><p>De fondo, el mar y el barco. Y las frases que brillan suenan al tocarlas: el grito de Manuel, el pescado que cae, la escotilla que se cierra.</p></div>
               <div><h4>Cada capítulo tiene su imagen</h4><p>Ilustraciones de las escenas, los personajes y los lugares, pensadas para el libro. Un clásico de 1897 deja de parecer de 1897.</p></div>

@@ -808,3 +808,9 @@
 }
 .lc-arriba-fin { display: flex; justify-content: center; margin-top: 36px; }
 .lc-arriba-fin .lc-arriba { font-size: .9rem; padding: 6px 18px 4px; opacity: .85; }
+/* la cápsula, de noche (Noche 1, después del libro) */
+.lc-noche .lc-capsula { border-top-color: var(--night-line); margin-top: 40px; }
+.lc-noche .lc-capsula-txt h3 { color: var(--moon); }
+.lc-noche .lc-capsula-txt p { color: var(--moon-soft); }
+.lc-noche .lc-capsula .lc-real figcaption { color: var(--moon); }
+.lc-noche .lc-capsula .lc-real figcaption small { color: var(--moon-soft); }

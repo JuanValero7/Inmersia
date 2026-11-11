@@ -13,15 +13,41 @@ export const ASSETS = '/assets/landing/colegios/'
 export const LOGO = '/assets/inmersia-logo.png?v=4'
 export const asset = (archivo) => ASSETS + archivo
 
-// Dato de PISA de cada país (portada «Elige tu país» y bloque de datos).
-// Solo Perú tiene el dato confirmado; el resto sale «en preparación».
+// Dato de lectura de cada país (bloque «Lo que ya sabemos»). PISA 2025 (OCDE,
+// publicado el 8 sep 2026), lectura, cambio contra 2022. Venezuela no participa
+// en PISA: su dato es la evaluación SECEL 2025 de la UCAB.
+// `zonas`: husos horarios del navegador con los que se elige el país por defecto.
 export const PAISES = [
-  { id: 'pe', nombre: 'Perú', dato: { big: '−15', txt: 'puntos bajó Perú en lectura en PISA 2025. Volvió al nivel de hace una década.', src: 'OCDE · Minedu, setiembre 2026' } },
-  { id: 'ar', nombre: 'Argentina' },
-  { id: 'cl', nombre: 'Chile' },
-  { id: 'mx', nombre: 'México' },
-  { id: 'co', nombre: 'Colombia' },
+  { id: 'ar', nombre: 'Argentina', zonas: ['America/Argentina/', 'America/Buenos_Aires', 'America/Cordoba', 'America/Mendoza'],
+    dato: { big: '−12', txt: 'puntos bajó Argentina en lectura en PISA 2025, de 401 a 389. El 59 % de los alumnos no llega al nivel mínimo.', src: 'OCDE, PISA 2025 · septiembre 2026' } },
+  { id: 'cl', nombre: 'Chile', zonas: ['America/Santiago', 'America/Punta_Arenas', 'Pacific/Easter'],
+    dato: { big: '−12', txt: 'puntos bajó Chile en lectura en PISA 2025, de 448 a 436. Sigue primero en América Latina, pero cayó.', src: 'OCDE, PISA 2025 · septiembre 2026' } },
+  { id: 'co', nombre: 'Colombia', zonas: ['America/Bogota'],
+    dato: { big: '−10', txt: 'puntos bajó Colombia en lectura en PISA 2025, de 409 a 399.', src: 'OCDE, PISA 2025 · septiembre 2026' } },
+  { id: 'es', nombre: 'España', zonas: ['Europe/Madrid', 'Atlantic/Canary', 'Africa/Ceuta'],
+    dato: { big: '−23', txt: 'puntos bajó España en lectura en PISA 2025, hasta 451: su peor resultado desde que existe PISA.', src: 'OCDE, PISA 2025 · septiembre 2026' } },
+  { id: 'mx', nombre: 'México', zonas: ['America/Mexico_City', 'America/Cancun', 'America/Merida', 'America/Monterrey', 'America/Matamoros',
+    'America/Chihuahua', 'America/Ciudad_Juarez', 'America/Ojinaga', 'America/Mazatlan', 'America/Bahia_Banderas', 'America/Hermosillo', 'America/Tijuana'],
+    dato: { big: '−7', txt: 'puntos bajó México en lectura en PISA 2025, de 415 a 408.', src: 'OCDE, PISA 2025 · septiembre 2026' } },
+  { id: 'pe', nombre: 'Perú', zonas: ['America/Lima'],
+    dato: { big: '−18', txt: 'puntos bajó Perú en lectura en PISA 2025, de 408 a 390. Volvió al nivel de hace una década.', src: 'OCDE, PISA 2025 · septiembre 2026' } },
+  { id: 've', nombre: 'Venezuela', zonas: ['America/Caracas'],
+    dato: { big: '7 de 10', txt: 'estudiantes evaluados reprobaron comprensión lectora en 2025. Venezuela no participa en PISA.', src: 'UCAB, SECEL 2025' } },
 ]
+
+// País por defecto: el del huso horario del navegador (sin pedir ubicación ni
+// llamar a nada de afuera); si no coincide, la región del idioma; si no, Perú.
+export function paisInicial() {
+  try {
+    const zona = Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+    const porZona = PAISES.find((p) => p.zonas.some((z) => (z.endsWith('/') ? zona.startsWith(z) : zona === z)))
+    if (porZona) return porZona
+    const region = (navigator.language || '').split('-')[1]?.toLowerCase()
+    const porIdioma = PAISES.find((p) => p.id === region)
+    if (porIdioma) return porIdioma
+  } catch { /* sin Intl: país por defecto */ }
+  return PAISES.find((p) => p.id === 'pe')
+}
 
 // Noche 3: las notificaciones que interrumpen al visitante. [app, texto, color, letra]
 export const NOTIFICACIONES = [
