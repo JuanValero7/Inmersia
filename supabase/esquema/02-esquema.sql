@@ -1,6 +1,6 @@
 -- =============================================================
 -- INMERSIA — Esquema public (tablas, funciones, RLS, políticas, permisos)
--- Volcado de producción del 2026-11-10 con `npm run esquema`.
+-- Volcado de producción del 2026-11-11 con `npm run esquema`.
 -- NO SE EDITA A MANO: se regenera. Cómo restaurarlo:
 -- Documentation/base-de-datos/respaldo-estructura.md
 -- =============================================================
@@ -1048,6 +1048,126 @@ $$;
 
 
 --
+-- Name: _explicaselo_estado(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._explicaselo_estado(p_user uuid, p_libro uuid) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_ver int;
+BEGIN
+  SELECT version INTO v_ver FROM explicaselo_contenido WHERE libro_id = p_libro;
+  IF v_ver IS NULL THEN RETURN NULL; END IF;
+
+  RETURN jsonb_build_object(
+    'version', v_ver,
+    'max_turnos', 2,
+    'con_profe', EXISTS (SELECT 1 FROM comunidad_miembros cm JOIN comunidades co ON co.id = cm.comunidad_id
+                         WHERE cm.user_id = p_user AND co.colegio_id IS NOT NULL AND co.libro_id = p_libro),
+    'saldo', _ovillos_saldo(p_user, p_libro),
+    'momentos', coalesce((
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'momento', m->>'momento',
+          'tras_capitulo', (m->>'tras_capitulo')::int,
+          'consigna', m->>'consigna',
+          'prohibidas', coalesce(m->'prohibidas', '{"palabras": [], "raices": []}'::jsonb),
+          'estado', coalesce(ch.estado, 'nueva'),
+          'personaje', ch.personaje,
+          'giros', coalesce(ch.giros, 0),
+          'turnos', coalesce((SELECT jsonb_agg(jsonb_build_object('de', t->>'de', 'texto', t->>'texto') ORDER BY o)
+                              FROM jsonb_array_elements(ch.turnos) WITH ORDINALITY x(t, o)), '[]'::jsonb))
+        || CASE WHEN ch.estado = 'terminada' THEN jsonb_build_object(
+             'resultado', ch.resultado,
+             'rompio_regla', coalesce(ch.rompio_regla, false),
+             'referencia', m->>'referencia',
+             'puntos', (SELECT jsonb_agg(jsonb_build_object('t', p->>'t',
+                                                            'cubierto', coalesce((ch.puntos->>((o - 1)::int))::boolean, false))
+                                         ORDER BY o)
+                        FROM jsonb_array_elements(m->'puntos') WITH ORDINALITY y(p, o)))
+           ELSE '{}'::jsonb END
+        ORDER BY CASE m->>'momento' WHEN 'mitad' THEN 1 ELSE 2 END)
+      FROM explicaselo_contenido c
+      CROSS JOIN LATERAL jsonb_array_elements(c.datos->'momentos') m
+      LEFT JOIN explicaselo_charlas ch
+        ON ch.user_id = p_user AND ch.libro_id = p_libro AND ch.momento = m->>'momento'
+      WHERE c.libro_id = p_libro), '[]'::jsonb)
+  );
+END;
+$$;
+
+
+--
+-- Name: _explicaselo_frases(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._explicaselo_frases(p_texto text) RETURNS integer
+    LANGUAGE sql IMMUTABLE
+    SET search_path TO 'public'
+    AS $$
+  SELECT count(*)::int
+  FROM regexp_split_to_table(coalesce(p_texto, ''), '[.!?]+') t
+  WHERE t ~ '[[:alnum:]]';
+$$;
+
+
+--
+-- Name: _explicaselo_idea(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._explicaselo_idea(p_libro uuid, p_momento text) RETURNS jsonb
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  SELECT m FROM explicaselo_contenido c, jsonb_array_elements(c.datos->'momentos') m
+  WHERE c.libro_id = p_libro AND m->>'momento' = p_momento
+  LIMIT 1;
+$$;
+
+
+--
+-- Name: _explicaselo_personajes(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._explicaselo_personajes() RETURNS text[]
+    LANGUAGE sql IMMUTABLE
+    SET search_path TO 'public'
+    AS $$
+  SELECT ARRAY['abuela', 'primo', 'pirata', 'marciano', 'ceo', 'granjero'];
+$$;
+
+
+--
+-- Name: _explicaselo_prohibida(text, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._explicaselo_prohibida(p_texto text, p_raices jsonb) RETURNS text
+    LANGUAGE sql IMMUTABLE
+    SET search_path TO 'public'
+    AS $_$
+  SELECT r
+  FROM jsonb_array_elements_text(coalesce(p_raices, '[]'::jsonb)) r
+  WHERE r ~ '^[a-zñ]+$'
+    AND translate(lower(coalesce(p_texto, '')), 'áéíóúüàèìòù', 'aeiouuaeiou') ~ ('(^|[^a-zñ0-9])' || r)
+  LIMIT 1;
+$_$;
+
+
+--
+-- Name: _explicaselo_turnos_alumno(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._explicaselo_turnos_alumno(p_turnos jsonb) RETURNS integer
+    LANGUAGE sql IMMUTABLE
+    SET search_path TO 'public'
+    AS $$
+  SELECT count(*)::int FROM jsonb_array_elements(p_turnos) t WHERE t->>'de' = 'alumno';
+$$;
+
+
+--
 -- Name: _falsificador_estado(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1474,6 +1594,7 @@ DECLARE
   v_mapa  int;
   v_fx    int;
   v_hilo  int;
+  v_ex    int;
   v_cc    int := 0;
   v_ccmin int := 0;
   v_ccmax int := 0;
@@ -1485,6 +1606,7 @@ BEGIN
   v_cz   := coalesce((SELECT jsonb_array_length(datos->'corazonadas') * 3 FROM corazonadas_contenido WHERE libro_id = p_libro), 0);
   v_mapa := coalesce((SELECT jsonb_array_length(datos->'tesoros') FROM mapa_contenido WHERE libro_id = p_libro), 0);
   v_fx   := coalesce((SELECT jsonb_array_length(datos->'items') FROM falsificador_contenido WHERE libro_id = p_libro), 0);
+  v_ex   := coalesce((SELECT jsonb_array_length(datos->'momentos') * 3 FROM explicaselo_contenido WHERE libro_id = p_libro), 0);
   v_hilo := coalesce((
     SELECT sum(_hilo_premio(x)
                - CASE WHEN EXISTS (SELECT 1 FROM jsonb_array_elements_text(x->'piezas') p
@@ -1505,15 +1627,17 @@ BEGIN
   IF NOT (v_on->>'mapa')::boolean         AND v_mapa > 0 THEN v_apag := v_apag || 'mapa'::text;         v_mapa := 0; END IF;
   IF NOT (v_on->>'falsificador')::boolean AND v_fx   > 0 THEN v_apag := v_apag || 'falsificador'::text; v_fx   := 0; END IF;
   IF NOT (v_on->>'hilo')::boolean         AND v_hilo > 0 THEN v_apag := v_apag || 'hilo'::text;         v_hilo := 0; END IF;
+  IF NOT (v_on->>'explicaselo')::boolean  AND v_ex   > 0 THEN v_apag := v_apag || 'explicaselo'::text;  v_ex   := 0; END IF;
   IF NOT (v_on->>'concurso')::boolean     AND v_cc   > 0 THEN
     v_apag := v_apag || 'concurso'::text; v_cc := 0; v_ccmin := 0; v_ccmax := 0;
   END IF;
 
   RETURN jsonb_build_object(
     'solo_leyendo', v_leer,
-    'maximo', v_leer + v_mesa + v_cz + v_mapa + v_cc + v_fx + v_hilo,
+    'maximo', v_leer + v_mesa + v_cz + v_mapa + v_cc + v_fx + v_hilo + v_ex,
     'desglose', jsonb_build_object('lectura', v_leer, 'mesa', v_mesa, 'corazonadas', v_cz,
-                                   'mapa', v_mapa, 'concurso', v_cc, 'falsificador', v_fx, 'hilo', v_hilo),
+                                   'mapa', v_mapa, 'concurso', v_cc, 'falsificador', v_fx, 'hilo', v_hilo,
+                                   'explicaselo', v_ex),
     'concurso_rango', jsonb_build_array(v_ccmin, v_ccmax),
     'apagados', to_jsonb(v_apag));
 END;
@@ -3471,6 +3595,283 @@ $$;
 
 
 --
+-- Name: explicaselo_aula(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.explicaselo_aula(p_aula uuid) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_libro uuid;
+  d       jsonb;
+BEGIN
+  PERFORM _profe_de_aula(p_aula);
+  SELECT libro_id INTO v_libro FROM _meta_aula(p_aula, 'UTC');
+  IF v_libro IS NULL THEN
+    RETURN jsonb_build_object('libro_id', NULL);
+  END IF;
+  SELECT datos INTO d FROM explicaselo_contenido WHERE libro_id = v_libro;
+
+  RETURN jsonb_build_object(
+    'libro_id', v_libro,
+    'encendido', (_juegos_mezclar(_juegos_aula_por_defecto(),
+                                  (SELECT juegos FROM comunidades WHERE id = p_aula))->>'explicaselo')::boolean,
+    'momentos', (SELECT jsonb_agg(jsonb_build_object(
+                          'momento', m->>'momento', 'tras_capitulo', (m->>'tras_capitulo')::int,
+                          'consigna', m->>'consigna', 'referencia', m->>'referencia',
+                          'puntos', (SELECT jsonb_agg(p->>'t' ORDER BY o) FROM jsonb_array_elements(m->'puntos') WITH ORDINALITY y(p, o)))
+                        ORDER BY CASE m->>'momento' WHEN 'mitad' THEN 1 ELSE 2 END)
+                 FROM jsonb_array_elements(d->'momentos') m),
+    'alumnos', coalesce((
+      SELECT jsonb_object_agg(s.user_id, s.por_momento)
+      FROM (SELECT ch.user_id, jsonb_object_agg(ch.momento, jsonb_build_object(
+                     'personaje', ch.personaje, 'giros', ch.giros, 'estado', ch.estado,
+                     'resultado', ch.resultado, 'puntos', ch.puntos, 'rompio_regla', ch.rompio_regla,
+                     'para_el_profe', ch.para_el_profe, 'plan_b', ch.plan_b,
+                     'turnos', coalesce((SELECT jsonb_agg(jsonb_build_object('de', t->>'de', 'texto', t->>'texto') ORDER BY o)
+                                         FROM jsonb_array_elements(ch.turnos) WITH ORDINALITY x(t, o)), '[]'::jsonb))) AS por_momento
+            FROM explicaselo_charlas ch
+            JOIN comunidad_miembros cm ON cm.user_id = ch.user_id AND cm.comunidad_id = p_aula AND cm.rol = 'miembro'
+            WHERE ch.libro_id = v_libro
+            GROUP BY ch.user_id) s), '{}'::jsonb));
+END;
+$$;
+
+
+--
+-- Name: explicaselo_girar(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.explicaselo_girar(p_libro uuid, p_momento text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_user  uuid := auth.uid();
+  v_idea  jsonb;
+  v_ch    explicaselo_charlas%ROWTYPE;
+  v_todos text[] := _explicaselo_personajes();
+  v_pj    text;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'Hace falta iniciar sesión.' USING ERRCODE = '42501';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtext('explicaselo:' || v_user || ':' || p_libro));
+
+  v_idea := _explicaselo_idea(p_libro, p_momento);
+  IF v_idea IS NULL THEN
+    RAISE EXCEPTION 'Este libro no tiene explícaselo.';
+  END IF;
+
+  SELECT * INTO v_ch FROM explicaselo_charlas
+  WHERE user_id = v_user AND libro_id = p_libro AND momento = p_momento FOR UPDATE;
+
+  IF v_ch.id IS NULL THEN
+    v_pj := v_todos[1 + floor(random() * array_length(v_todos, 1))::int];
+    INSERT INTO explicaselo_charlas (user_id, libro_id, version, momento, idea, personaje)
+    SELECT v_user, p_libro, c.version, p_momento, v_idea->>'id', v_pj
+    FROM explicaselo_contenido c WHERE c.libro_id = p_libro;
+  ELSIF v_ch.estado <> 'ruleta' THEN
+    RAISE EXCEPTION 'Ya empezaste a explicárselo: el personaje no cambia.';
+  ELSE
+    IF _ovillos_saldo(v_user, p_libro) < 1 THEN
+      RAISE EXCEPTION 'sin_ovillos';
+    END IF;
+    v_todos := array_remove(v_todos, v_ch.personaje);
+    v_pj := v_todos[1 + floor(random() * array_length(v_todos, 1))::int];
+    UPDATE explicaselo_charlas SET personaje = v_pj, giros = giros + 1 WHERE id = v_ch.id;
+    INSERT INTO ovillos_movimientos (user_id, libro_id, cantidad, motivo, referencia, detalle)
+    VALUES (v_user, p_libro, -1, 'explicaselo_girar', v_ch.id,
+            jsonb_build_object('momento', p_momento, 'giro', v_ch.giros + 1));
+  END IF;
+
+  RETURN jsonb_build_object('personaje', v_pj, 'estado', _explicaselo_estado(v_user, p_libro));
+END;
+$$;
+
+
+--
+-- Name: explicaselo_libro(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.explicaselo_libro(p_libro uuid) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Hace falta iniciar sesión.' USING ERRCODE = '42501';
+  END IF;
+  RETURN _explicaselo_estado(auth.uid(), p_libro);
+END;
+$$;
+
+
+--
+-- Name: explicaselo_reservar(uuid, uuid, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.explicaselo_reservar(p_user uuid, p_libro uuid, p_momento text, p_texto text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_idea     jsonb;
+  v_ch       explicaselo_charlas%ROWTYPE;
+  v_turnos   jsonb;
+  v_n        int;
+  v_palabras int;
+  v_raiz     text;
+  v_hoy      timestamptz := date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC';
+BEGIN
+  PERFORM pg_advisory_xact_lock(hashtext('explicaselo:' || p_user || ':' || p_libro));
+
+  v_idea := _explicaselo_idea(p_libro, p_momento);
+  IF v_idea IS NULL THEN
+    RAISE EXCEPTION 'Este libro no tiene explícaselo.';
+  END IF;
+
+  SELECT * INTO v_ch FROM explicaselo_charlas
+  WHERE user_id = p_user AND libro_id = p_libro AND momento = p_momento FOR UPDATE;
+  IF v_ch.id IS NULL THEN
+    RAISE EXCEPTION 'Primero gira la ruleta.';
+  END IF;
+  IF v_ch.estado = 'terminada' THEN
+    RAISE EXCEPTION 'Esta charla ya terminó.';
+  END IF;
+  IF v_ch.estado = 'evaluando' AND v_ch.evaluando_at > now() - interval '2 minutes' THEN
+    RAISE EXCEPTION 'Ya se está evaluando.';
+  END IF;
+
+  v_palabras := coalesce(array_length(regexp_split_to_array(btrim(coalesce(p_texto, '')), '\s+'), 1), 0);
+  IF btrim(coalesce(p_texto, '')) = '' OR v_palabras < 2 THEN
+    RAISE EXCEPTION 'muy_corta';
+  END IF;
+  IF v_palabras > 150 THEN
+    RAISE EXCEPTION 'muy_larga';
+  END IF;
+  IF v_ch.personaje = 'pirata' AND _explicaselo_frases(p_texto) > 3 THEN
+    RAISE EXCEPTION 'regla_frases';
+  END IF;
+  IF v_ch.personaje = 'marciano' THEN
+    v_raiz := _explicaselo_prohibida(p_texto, v_idea->'prohibidas'->'raices');
+    IF v_raiz IS NOT NULL THEN
+      RAISE EXCEPTION 'regla_palabra:%', v_raiz;
+    END IF;
+  END IF;
+
+  -- Un mensaje del alumno que quedó colgado sin respuesta se sustituye por el nuevo.
+  v_turnos := v_ch.turnos;
+  IF v_turnos->-1->>'de' = 'alumno' THEN
+    v_turnos := v_turnos - (jsonb_array_length(v_turnos) - 1);
+  END IF;
+  v_n := _explicaselo_turnos_alumno(v_turnos);
+  IF v_n >= 2 THEN
+    RAISE EXCEPTION 'Esta charla ya terminó.';
+  END IF;
+
+  -- Los topes son los del Desafío, contando las dos (092).
+  IF (SELECT count(*) FROM desafio_llamadas WHERE user_id = p_user AND created_at >= v_hoy) >= 12 THEN
+    RAISE EXCEPTION 'limite_alumno';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtext('desafio:tope_global'));
+  IF (SELECT count(*) FROM desafio_llamadas WHERE created_at >= v_hoy) >= 1000 THEN
+    RAISE EXCEPTION 'limite_global';
+  END IF;
+  INSERT INTO desafio_llamadas (user_id, juego) VALUES (p_user, 'explicaselo');
+
+  v_turnos := v_turnos || jsonb_build_array(jsonb_build_object('de', 'alumno', 'texto', btrim(p_texto), 'at', now()));
+  UPDATE explicaselo_charlas SET estado = 'evaluando', turnos = v_turnos, evaluando_at = now() WHERE id = v_ch.id;
+
+  RETURN jsonb_build_object(
+    'libro', (SELECT titulo FROM libros WHERE id = p_libro),
+    'cap', (v_idea->>'tras_capitulo')::int,
+    'personaje', v_ch.personaje,
+    'consigna', v_idea->>'consigna',
+    'puntos', v_idea->'puntos',
+    'referencia', v_idea->>'referencia',
+    'prohibidas', v_idea->'prohibidas'->'palabras',
+    'turnos', (SELECT jsonb_agg(jsonb_build_object('de', t->>'de', 'texto', t->>'texto') ORDER BY o)
+               FROM jsonb_array_elements(v_turnos) WITH ORDINALITY x(t, o)),
+    'turno', v_n + 1,
+    'max', 2);
+END;
+$$;
+
+
+--
+-- Name: explicaselo_responder(uuid, uuid, text, text, boolean, jsonb, boolean, text, boolean); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.explicaselo_responder(p_user uuid, p_libro uuid, p_momento text, p_mensaje text, p_terminar boolean, p_puntos jsonb, p_rompio boolean, p_para_el_profe text, p_plan_b boolean) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_ch     explicaselo_charlas%ROWTYPE;
+  v_n      int;
+  v_ok     int;
+  v_fin    boolean;
+  v_res    text;
+  v_premio int := 0;
+BEGIN
+  IF btrim(coalesce(p_mensaje, '')) = '' OR length(p_mensaje) > 600 THEN
+    RAISE EXCEPTION 'Mensaje del personaje vacío o demasiado largo.';
+  END IF;
+  IF p_puntos IS NOT NULL AND (jsonb_typeof(p_puntos) <> 'array' OR jsonb_array_length(p_puntos) <> 4) THEN
+    RAISE EXCEPTION 'Los puntos tienen que ser 4.';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtext('explicaselo:' || p_user || ':' || p_libro));
+
+  SELECT * INTO v_ch FROM explicaselo_charlas
+  WHERE user_id = p_user AND libro_id = p_libro AND momento = p_momento FOR UPDATE;
+  IF v_ch.id IS NULL OR v_ch.estado <> 'evaluando' THEN
+    RAISE EXCEPTION 'Esta charla no está esperando al personaje.';
+  END IF;
+
+  v_n := _explicaselo_turnos_alumno(v_ch.turnos);
+  v_ok := CASE WHEN p_puntos IS NULL THEN 0
+               ELSE (SELECT count(*) FROM jsonb_array_elements(p_puntos) b WHERE b = 'true'::jsonb)::int END;
+  -- Tras el primero solo se cierra con los 4 puntos (y sin plan B).
+  v_fin := v_n >= 2 OR (coalesce(p_terminar, false) AND NOT coalesce(p_plan_b, false) AND v_ok = 4);
+
+  IF v_fin THEN
+    v_res := CASE WHEN coalesce(p_plan_b, false) OR p_puntos IS NULL THEN 'casi'
+                  WHEN v_ok = 4 THEN 'entendio'
+                  WHEN v_ok >= 2 THEN 'casi'
+                  ELSE 'igual' END;
+    IF coalesce(p_rompio, false) AND v_res = 'entendio' THEN
+      v_res := 'casi';
+    END IF;
+    v_premio := CASE v_res WHEN 'entendio' THEN 3 WHEN 'casi' THEN 1 ELSE 0 END;
+  END IF;
+
+  UPDATE explicaselo_charlas
+  SET turnos = turnos || jsonb_build_array(jsonb_build_object('de', 'personaje', 'texto', btrim(p_mensaje), 'at', now())),
+      estado = CASE WHEN v_fin THEN 'terminada' ELSE 'abierta' END,
+      resultado = v_res,
+      puntos = CASE WHEN v_fin THEN p_puntos END,
+      rompio_regla = CASE WHEN v_fin THEN coalesce(p_rompio, false) END,
+      para_el_profe = CASE WHEN v_fin THEN left(btrim(p_para_el_profe), 400) END,
+      plan_b = CASE WHEN v_fin THEN coalesce(p_plan_b, false) OR p_puntos IS NULL ELSE false END,
+      evaluando_at = NULL,
+      terminada_at = CASE WHEN v_fin THEN now() END
+  WHERE id = v_ch.id;
+
+  IF v_premio > 0 THEN
+    INSERT INTO ovillos_movimientos (user_id, libro_id, cantidad, motivo, referencia, detalle)
+    VALUES (p_user, p_libro, v_premio, 'explicaselo_premio', v_ch.id,
+            jsonb_build_object('momento', p_momento, 'resultado', v_res));
+  END IF;
+
+  RETURN jsonb_build_object('terminada', v_fin, 'resultado', v_res, 'premio', v_premio,
+                            'estado', _explicaselo_estado(p_user, p_libro));
+END;
+$$;
+
+
+--
 -- Name: falsificador_aula(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -4180,6 +4581,9 @@ BEGIN
                              FROM hilo_jugadas t WHERE t.user_id = v_user),
     'hilo_de_ideas_ayudas', (SELECT coalesce(jsonb_agg(to_jsonb(t) - 'user_id' ORDER BY t.created_at), '[]'::jsonb)
                              FROM hilo_ayudas t WHERE t.user_id = v_user),
+    -- 101: cada charla de explícaselo, con el personaje y el veredicto.
+    'explicaselo',          (SELECT coalesce(jsonb_agg(to_jsonb(t) - 'user_id' ORDER BY t.created_at), '[]'::jsonb)
+                             FROM explicaselo_charlas t WHERE t.user_id = v_user),
     'expedientes_comprados', (SELECT coalesce(jsonb_agg(to_jsonb(t) - 'user_id' ORDER BY t.created_at), '[]'::jsonb)
                              FROM expedientes_compras t WHERE t.user_id = v_user),
     -- Sin quién del colegio lo entregó.
@@ -4194,7 +4598,8 @@ BEGIN
     -- Solo la hora: cuántas veces se le pidió a la IA (para los topes diarios).
     'llamadas_ia_concurso', (SELECT coalesce(jsonb_agg(t.created_at ORDER BY t.created_at), '[]'::jsonb)
                              FROM concurso_llamadas t WHERE t.user_id = v_user),
-    'llamadas_ia_desafio',  (SELECT coalesce(jsonb_agg(t.created_at ORDER BY t.created_at), '[]'::jsonb)
+    -- 101: el desafío y explícaselo comparten tope; se dice de cuál fue cada una.
+    'llamadas_ia_desafio',  (SELECT coalesce(jsonb_agg(jsonb_build_object('juego', t.juego, 'fecha', t.created_at) ORDER BY t.created_at), '[]'::jsonb)
                              FROM desafio_llamadas t WHERE t.user_id = v_user)
   );
 END;
@@ -5919,7 +6324,9 @@ COMMENT ON TABLE public.desafio_contenido IS 'Hojas del gato del desafío de cad
 CREATE TABLE public.desafio_llamadas (
     id bigint NOT NULL,
     user_id uuid NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    juego text DEFAULT 'desafio'::text NOT NULL,
+    CONSTRAINT desafio_llamadas_juego_check CHECK ((juego = ANY (ARRAY['desafio'::text, 'explicaselo'::text])))
 );
 
 
@@ -5927,7 +6334,7 @@ CREATE TABLE public.desafio_llamadas (
 -- Name: TABLE desafio_llamadas; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.desafio_llamadas IS 'Una fila por cada llamada a la IA del desafío (cuenta aunque falle). Sirve para los topes por alumno y por día. Ver migración 092.';
+COMMENT ON TABLE public.desafio_llamadas IS 'Una fila por cada llamada a la IA del desafío o de explícaselo (cuenta aunque falle). Los topes por alumno y por día son de las dos juntas. Ver migraciones 092 y 101.';
 
 
 --
@@ -6043,6 +6450,68 @@ CREATE TABLE public.expedientes_contenido (
 --
 
 COMMENT ON TABLE public.expedientes_contenido IS 'Expedientes de autor y época de cada libro (JSON de cargar_expedientes.py). Solo lo leen las funciones de la tienda: el texto se entrega a quien lo compró. Los ids no se cambian una vez publicado. Ver migración 095.';
+
+
+--
+-- Name: explicaselo_charlas; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.explicaselo_charlas (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    libro_id uuid NOT NULL,
+    version integer NOT NULL,
+    momento text NOT NULL,
+    idea text NOT NULL,
+    personaje text NOT NULL,
+    giros integer DEFAULT 1 NOT NULL,
+    estado text DEFAULT 'ruleta'::text NOT NULL,
+    turnos jsonb DEFAULT '[]'::jsonb NOT NULL,
+    resultado text,
+    puntos jsonb,
+    rompio_regla boolean,
+    para_el_profe text,
+    plan_b boolean DEFAULT false NOT NULL,
+    evaluando_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    terminada_at timestamp with time zone,
+    CONSTRAINT explicaselo_charlas_check CHECK (((estado = 'terminada'::text) = (terminada_at IS NOT NULL))),
+    CONSTRAINT explicaselo_charlas_check1 CHECK (((estado = 'terminada'::text) = (resultado IS NOT NULL))),
+    CONSTRAINT explicaselo_charlas_estado_check CHECK ((estado = ANY (ARRAY['ruleta'::text, 'abierta'::text, 'evaluando'::text, 'terminada'::text]))),
+    CONSTRAINT explicaselo_charlas_giros_check CHECK ((giros >= 1)),
+    CONSTRAINT explicaselo_charlas_momento_check CHECK ((momento = ANY (ARRAY['mitad'::text, 'final'::text]))),
+    CONSTRAINT explicaselo_charlas_personaje_check CHECK ((personaje = ANY (ARRAY['abuela'::text, 'primo'::text, 'pirata'::text, 'marciano'::text, 'ceo'::text, 'granjero'::text]))),
+    CONSTRAINT explicaselo_charlas_resultado_check CHECK ((resultado = ANY (ARRAY['entendio'::text, 'casi'::text, 'igual'::text]))),
+    CONSTRAINT explicaselo_charlas_turnos_check CHECK ((jsonb_typeof(turnos) = 'array'::text))
+);
+
+
+--
+-- Name: TABLE explicaselo_charlas; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.explicaselo_charlas IS 'Explícaselo: una fila por alumno, libro y momento, con el personaje que le tocó, la charla y el veredicto. Guarda el texto del alumno (lo lee su profe). Solo escriben las funciones explicaselo_*. Ver migración 101.';
+
+
+--
+-- Name: explicaselo_contenido; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.explicaselo_contenido (
+    libro_id uuid NOT NULL,
+    version integer DEFAULT 1 NOT NULL,
+    datos jsonb NOT NULL,
+    actualizado_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT explicaselo_contenido_datos_check CHECK (((jsonb_typeof((datos -> 'momentos'::text)) = 'array'::text) AND ((jsonb_array_length((datos -> 'momentos'::text)) >= 1) AND (jsonb_array_length((datos -> 'momentos'::text)) <= 2)))),
+    CONSTRAINT explicaselo_contenido_version_check CHECK ((version >= 1))
+);
+
+
+--
+-- Name: TABLE explicaselo_contenido; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.explicaselo_contenido IS 'Explícaselo: la idea de cada momento (mitad y final) de cada libro, con sus 4 puntos y la referencia (lo sube cargar_explicaselo.py). Solo lo leen las funciones explicaselo_*. Ver migración 101.';
 
 
 --
@@ -6382,7 +6851,7 @@ CREATE TABLE public.ovillos_movimientos (
     detalle jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT ovillos_movimientos_cantidad_check CHECK ((cantidad <> 0)),
-    CONSTRAINT ovillos_movimientos_motivo_check CHECK ((motivo = ANY (ARRAY['mesa_jugar'::text, 'mesa_premio'::text, 'corazonada'::text, 'concurso'::text, 'tesoro'::text, 'comodin'::text, 'pista_gato'::text, 'expediente'::text, 'recompensa'::text, 'falsificador'::text, 'hilo_jugar'::text, 'hilo_premio'::text, 'hilo_ayuda'::text])))
+    CONSTRAINT ovillos_movimientos_motivo_check CHECK ((motivo = ANY (ARRAY['mesa_jugar'::text, 'mesa_premio'::text, 'corazonada'::text, 'concurso'::text, 'tesoro'::text, 'comodin'::text, 'pista_gato'::text, 'expediente'::text, 'recompensa'::text, 'falsificador'::text, 'hilo_jugar'::text, 'hilo_premio'::text, 'hilo_ayuda'::text, 'explicaselo_girar'::text, 'explicaselo_premio'::text])))
 );
 
 
@@ -7124,6 +7593,30 @@ ALTER TABLE ONLY public.expedientes_compras
 
 ALTER TABLE ONLY public.expedientes_contenido
     ADD CONSTRAINT expedientes_contenido_pkey PRIMARY KEY (libro_id);
+
+
+--
+-- Name: explicaselo_charlas explicaselo_charlas_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.explicaselo_charlas
+    ADD CONSTRAINT explicaselo_charlas_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: explicaselo_charlas explicaselo_charlas_user_id_libro_id_momento_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.explicaselo_charlas
+    ADD CONSTRAINT explicaselo_charlas_user_id_libro_id_momento_key UNIQUE (user_id, libro_id, momento);
+
+
+--
+-- Name: explicaselo_contenido explicaselo_contenido_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.explicaselo_contenido
+    ADD CONSTRAINT explicaselo_contenido_pkey PRIMARY KEY (libro_id);
 
 
 --
@@ -8596,6 +9089,30 @@ ALTER TABLE ONLY public.expedientes_contenido
 
 
 --
+-- Name: explicaselo_charlas explicaselo_charlas_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.explicaselo_charlas
+    ADD CONSTRAINT explicaselo_charlas_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
+-- Name: explicaselo_charlas explicaselo_charlas_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.explicaselo_charlas
+    ADD CONSTRAINT explicaselo_charlas_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: explicaselo_contenido explicaselo_contenido_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.explicaselo_contenido
+    ADD CONSTRAINT explicaselo_contenido_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
 -- Name: falsificador_contenido falsificador_contenido_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9625,6 +10142,18 @@ CREATE POLICY expedientes_compras_select_own ON public.expedientes_compras FOR S
 ALTER TABLE public.expedientes_contenido ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: explicaselo_charlas; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.explicaselo_charlas ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: explicaselo_contenido; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.explicaselo_contenido ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: falsificador_contenido; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -10428,6 +10957,54 @@ GRANT ALL ON FUNCTION public._edad(p_fecha date) TO service_role;
 
 
 --
+-- Name: FUNCTION _explicaselo_estado(p_user uuid, p_libro uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._explicaselo_estado(p_user uuid, p_libro uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._explicaselo_estado(p_user uuid, p_libro uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION _explicaselo_frases(p_texto text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._explicaselo_frases(p_texto text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._explicaselo_frases(p_texto text) TO service_role;
+
+
+--
+-- Name: FUNCTION _explicaselo_idea(p_libro uuid, p_momento text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._explicaselo_idea(p_libro uuid, p_momento text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._explicaselo_idea(p_libro uuid, p_momento text) TO service_role;
+
+
+--
+-- Name: FUNCTION _explicaselo_personajes(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._explicaselo_personajes() FROM PUBLIC;
+GRANT ALL ON FUNCTION public._explicaselo_personajes() TO service_role;
+
+
+--
+-- Name: FUNCTION _explicaselo_prohibida(p_texto text, p_raices jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._explicaselo_prohibida(p_texto text, p_raices jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._explicaselo_prohibida(p_texto text, p_raices jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION _explicaselo_turnos_alumno(p_turnos jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._explicaselo_turnos_alumno(p_turnos jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._explicaselo_turnos_alumno(p_turnos jsonb) TO service_role;
+
+
+--
 -- Name: FUNCTION _falsificador_estado(p_user uuid, p_libro uuid); Type: ACL; Schema: public; Owner: -
 --
 
@@ -11028,6 +11605,49 @@ GRANT ALL ON FUNCTION public.expediente_comprar(p_libro uuid, p_expediente text)
 REVOKE ALL ON FUNCTION public.expediente_leer(p_libro uuid, p_expediente text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.expediente_leer(p_libro uuid, p_expediente text) TO authenticated;
 GRANT ALL ON FUNCTION public.expediente_leer(p_libro uuid, p_expediente text) TO service_role;
+
+
+--
+-- Name: FUNCTION explicaselo_aula(p_aula uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.explicaselo_aula(p_aula uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.explicaselo_aula(p_aula uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.explicaselo_aula(p_aula uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION explicaselo_girar(p_libro uuid, p_momento text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.explicaselo_girar(p_libro uuid, p_momento text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.explicaselo_girar(p_libro uuid, p_momento text) TO authenticated;
+GRANT ALL ON FUNCTION public.explicaselo_girar(p_libro uuid, p_momento text) TO service_role;
+
+
+--
+-- Name: FUNCTION explicaselo_libro(p_libro uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.explicaselo_libro(p_libro uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.explicaselo_libro(p_libro uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.explicaselo_libro(p_libro uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION explicaselo_reservar(p_user uuid, p_libro uuid, p_momento text, p_texto text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.explicaselo_reservar(p_user uuid, p_libro uuid, p_momento text, p_texto text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.explicaselo_reservar(p_user uuid, p_libro uuid, p_momento text, p_texto text) TO service_role;
+
+
+--
+-- Name: FUNCTION explicaselo_responder(p_user uuid, p_libro uuid, p_momento text, p_mensaje text, p_terminar boolean, p_puntos jsonb, p_rompio boolean, p_para_el_profe text, p_plan_b boolean); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.explicaselo_responder(p_user uuid, p_libro uuid, p_momento text, p_mensaje text, p_terminar boolean, p_puntos jsonb, p_rompio boolean, p_para_el_profe text, p_plan_b boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.explicaselo_responder(p_user uuid, p_libro uuid, p_momento text, p_mensaje text, p_terminar boolean, p_puntos jsonb, p_rompio boolean, p_para_el_profe text, p_plan_b boolean) TO service_role;
 
 
 --
@@ -11852,6 +12472,24 @@ GRANT ALL ON TABLE public.expedientes_compras TO service_role;
 GRANT ALL ON TABLE public.expedientes_contenido TO anon;
 GRANT ALL ON TABLE public.expedientes_contenido TO authenticated;
 GRANT ALL ON TABLE public.expedientes_contenido TO service_role;
+
+
+--
+-- Name: TABLE explicaselo_charlas; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.explicaselo_charlas TO anon;
+GRANT ALL ON TABLE public.explicaselo_charlas TO authenticated;
+GRANT ALL ON TABLE public.explicaselo_charlas TO service_role;
+
+
+--
+-- Name: TABLE explicaselo_contenido; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.explicaselo_contenido TO anon;
+GRANT ALL ON TABLE public.explicaselo_contenido TO authenticated;
+GRANT ALL ON TABLE public.explicaselo_contenido TO service_role;
 
 
 --
