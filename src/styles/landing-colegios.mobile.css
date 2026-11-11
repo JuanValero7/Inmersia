@@ -1,0 +1,114 @@
+/* src/styles/landing-colegios.mobile.css
+   ─────────────────────────────────────────────────────────────
+   Ajustes de la landing para colegios en móvil. Scopeado bajo .lc-mobile
+   (lo añade LandingColegiosMobile.jsx vía la prop `mobile`).
+   En móvil:
+   · las noches no van en dos columnas: un interruptor «Como hoy | En Inmersia»
+     (fijo bajo la barra mientras dura la escena) cambia de Mateo; también con el dedo.
+   · las capturas del panel son las vistas reales del celular (archivos *-m.webp).
+   · los bloques de texto de cada escena van en tarjetas que se deslizan de lado.
+   · la teoría de Shute queda plegada; las notificaciones bajan desde arriba.
+   ───────────────────────────────────────────────────────────── */
+
+/* ── Interruptor de las noches ── */
+.lc-m-duo { display: grid; gap: 14px; scroll-margin-top: calc(var(--nav-h) + 12px); }
+.lc-m-seg { position: sticky; top: calc(var(--nav-h) + env(safe-area-inset-top, 0px) + 8px); z-index: 20;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 999px;
+  background: rgba(23,28,43,.94); backdrop-filter: blur(6px); border: 2px solid rgba(255,207,138,.35);
+  box-shadow: 0 10px 24px rgba(0,0,0,.4); scroll-margin-top: calc(var(--nav-h) + 16px); }
+.lc-m-seg button { font: 700 .92rem/1.1 var(--f-ui); border: 0; border-radius: 999px; padding: 10px 6px 8px; background: transparent;
+  color: var(--moon-soft); cursor: pointer; transition: background .25s, color .25s; }
+.lc-m-seg button[aria-selected="true"][data-v="malo"] { background: var(--cold-deep); color: var(--moon); }
+.lc-m-seg button[aria-selected="true"][data-v="bueno"] { background: var(--lamp); color: var(--ink); }
+.lc-m-seg.lc-m-pulso button[data-v="bueno"][aria-selected="false"] { animation: lc-m-pulso 1.6s ease-in-out 1.2s infinite; color: var(--lamp); }
+@keyframes lc-m-pulso { 0%, 100% { box-shadow: inset 0 0 0 2px rgba(255,207,138,.15); } 50% { box-shadow: inset 0 0 0 2px rgba(255,207,138,.85); } }
+
+.lc-mobile .lc-duo { display: block; }
+.lc-mobile .lc-duo:not(.lc-duo3):not(.lc-m-ver-bueno) .lc-lado-bueno, .lc-mobile .lc-duo:not(.lc-duo3).lc-m-ver-bueno .lc-lado-malo { display: none; }
+.lc-mobile .lc-lado { padding: 14px; animation: lc-m-entra .3s ease both; }
+@keyframes lc-m-entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+/* el nombre ya está en el interruptor: la etiqueta solo queda si lleva algo más (ovillos, «Ver de nuevo») */
+.lc-mobile .lc-lado-tag .lc-quien { display: none; }
+.lc-mobile .lc-lado-tag:not(:has(.lc-sp)) { display: none; }
+.lc-m-sig { align-self: stretch; font: 700 .98rem/1.1 var(--f-ui); background: var(--lamp); color: var(--ink); border: 2px solid var(--ink);
+  border-radius: 14px; padding: 12px 12px 10px; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,.3); }
+.lc-m-ant { align-self: center; font: 700 .88rem var(--f-ui); background: transparent; color: var(--moon-soft); border: 0; padding: 6px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Noche 3: el interruptor reemplaza a «Mientras tanto… / Ver Inmersia» */
+.lc-mobile .lc-duo3.lc-gana-malo .lc-lado-bueno, .lc-mobile .lc-duo3.lc-gana-bueno .lc-lado-malo { display: none; }
+.lc-mobile .lc-duo3 .lc-malo-mini, .lc-mobile .lc-duo3 .lc-espera-bueno, .lc-mobile .lc-duo3 .lc-ver-bueno { display: none !important; }
+.lc-mobile .lc-duo3 .lc-mapa-movil { padding: 0; }
+.lc-mobile .lc-duo3 .lc-tel-marco { max-height: none; max-width: 300px; }
+.lc-mobile .lc-duo3 .lc-tel-marco img { height: auto; }
+
+/* Notificaciones: bajan desde arriba, rectas, como en un celular */
+.lc-mobile .lc-notis { place-items: start center; padding-top: calc(var(--nav-h) + env(safe-area-inset-top, 0px) + 10px); }
+.lc-mobile .lc-noti { --r: 0deg !important; }
+
+/* Noche 12: la tarjeta del concurso va debajo del texto, no encima */
+.lc-mobile .lc-cc-lector { min-height: 0; }
+.lc-mobile .lc-cc-pag { padding: 20px 18px 14px; font-size: 16px; text-align: left; }
+.lc-mobile .lc-cc-tarjeta { position: relative; right: auto; top: auto; width: auto; max-width: none; margin: 0 10px 12px; }
+.lc-mobile .lc-cc-lector:not(.lc-apagado) .lc-cc-tarjeta { display: none; }
+
+/* ── Tarjetas que se deslizan de lado ── */
+.lc-mobile .lc-m-carrusel { display: flex !important; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px;
+  margin-inline: calc(-1 * var(--gutter-l)) calc(-1 * var(--gutter-r)); padding: 2px var(--gutter-r) 4px var(--gutter-l);
+  scroll-padding-inline: var(--gutter-l); scrollbar-width: none; overscroll-behavior-x: contain; }
+.lc-mobile .lc-m-carrusel::-webkit-scrollbar { display: none; }
+.lc-mobile .lc-m-carrusel > * { flex: 0 0 84%; scroll-snap-align: start; border-radius: 16px; padding: 14px 16px 16px; }
+.lc-mobile .lc-detras.lc-m-carrusel > div { border: 1.5px solid var(--night-line); background: rgba(255,255,255,.04); }
+.lc-mobile .lc-detras.lc-m-carrusel > .lc-ia-card { background: var(--paper); }
+.lc-mobile .lc-notas3.lc-m-carrusel > div, .lc-mobile .lc-dash-pie.lc-m-carrusel > div { border: 1.5px solid var(--faint); background: var(--paper); }
+.lc-mobile .lc-m-carrusel-in { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; scrollbar-width: none; margin-inline: -20px; padding-inline: 20px; scroll-padding-inline: 20px; }
+.lc-mobile .lc-m-carrusel-in::-webkit-scrollbar { display: none; }
+.lc-mobile .lc-m-carrusel-in > div { flex: 0 0 84%; scroll-snap-align: start; border: 1.5px solid var(--faint); border-radius: 16px; padding: 14px 16px; background: #fff; }
+.lc-m-puntos { display: flex; justify-content: center; gap: 7px; margin-top: 12px; }
+.lc-m-puntos i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .25; transition: opacity .2s, transform .2s; }
+.lc-m-puntos i.lc-on { opacity: .9; transform: scale(1.25); }
+.lc-noche .lc-m-puntos { color: var(--lamp); }
+.lc-dia .lc-m-puntos, .lc-anderson-mas .lc-m-puntos { color: var(--accent); }
+
+/* ── Día 2: la teoría, plegada ── */
+.lc-mobile .lc-teoria { padding: 20px; gap: 16px; }
+.lc-mobile .lc-teoria:not(.lc-m-abierta) .lc-teoria-cols { display: none; }
+.lc-m-mas { justify-self: start; font: 700 .92rem var(--f-ui); background: transparent; border: 2px solid var(--ink); border-radius: 999px;
+  padding: 7px 16px 5px; color: var(--ink); cursor: pointer; }
+.lc-mobile .lc-anderson-mas { padding: 20px; }
+
+/* ── Capturas del celular ── */
+.lc-mobile .lc-real.lc-panel img, .lc-mobile .lc-real img.lc-m-cel { max-width: 340px; margin-inline: auto; display: block; }
+.lc-mobile .lc-real img.lc-m-cel { border-radius: 22px; }
+.lc-mobile .lc-real figcaption { justify-content: center; text-align: center; }
+.lc-mobile .lc-capturas { gap: 30px; }
+.lc-m-de-lado { overflow-x: auto; margin-inline: calc(-1 * var(--gutter-l)) calc(-1 * var(--gutter-r)); padding: 4px var(--gutter-r) 10px var(--gutter-l); scrollbar-width: thin; }
+.lc-mobile .lc-real.lc-panel .lc-m-de-lado img { width: 860px; max-width: none; margin: 0; }
+.lc-m-pista-lado { font: 700 .82rem var(--f-ui); color: var(--accent-deep); text-align: center; }
+.lc-mobile .lc-real img.lc-m-cel { border: 2px solid var(--ink); }
+.lc-mobile .lc-marco { max-width: 340px; margin-inline: auto; }
+.lc-mobile .lc-marca { width: 32px; height: 32px; font-size: 1rem; }
+
+/* ── ajustes tras revisar a 390 px ── */
+.lc-mobile .lc-d1-grid { grid-template-columns: 1fr; }
+.lc-mobile .lc-m-duo > .lc-duo { margin-bottom: 60px; }          /* el interruptor fijo termina aquí sin tapar el último botón */
+.lc-mobile .lc-m-carrusel, .lc-mobile .lc-m-carrusel-in { align-items: flex-start; }
+.lc-mobile .lc-m-puntos { display: flex; }
+
+/* Datos: el país debajo del título; la historia; el espacio seguro */
+.lc-mobile .lc-datos-cab { margin-bottom: 28px; }
+.lc-mobile .lc-hist-txt .lc-hist-1 { font-size: 1.18rem; }
+.lc-mobile .lc-seguro { padding: 20px; }
+/* Explícaselo a…: los tres pasos, uno por tarjeta (dentro del lado: relleno de 14 px) */
+.lc-mobile .lc-nf .lc-m-carrusel-in { margin-inline: -14px; padding-inline: 14px; scroll-padding-inline: 14px; }
+.lc-mobile .lc-nf .lc-m-carrusel-in > figure { flex: 0 0 84%; scroll-snap-align: start; }
+.lc-mobile .lc-nf-paso .lc-tel-marco { max-height: none; }
+/* Barra: del mismo alto que la de lectores, con «Quiero participar» */
+.lc-mobile { --nav-h: 76px; }
+.lc-mobile .lc-nav-logo { height: auto; width: min(200px, 50vw); }
+.lc-mobile .lc-btn-nav { font-size: .85rem; padding: .45em .8em; }
+.lc-mobile .lc-cta-pop { width: min(290px, calc(100vw - 32px)); }
+.lc-mobile .lc-publico { margin-top: 36px; }
+/* El logo del mismo tamaño que en la landing de lectores: en el celular no entra el reloj
+   (el día y la hora ya están en la ceja de cada escena; la barra igual se pone de noche) */
+.lc-mobile .lc-nav-in { grid-template-columns: auto 1fr auto; }
+.lc-mobile .lc-reloj { display: none; }

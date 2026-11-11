@@ -131,19 +131,12 @@
   display: flex; align-items: center; gap: 8px; }
 .inm-micro::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--inm-teal); flex-shrink: 0; }
 
-.inm-picker { margin-top: 30px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.inm-picker-l { font-family: var(--inm-font-ui); font-weight: 600; font-size: .9rem; color: var(--inm-ink-2); }
-.inm-picker-opts { display: flex; gap: 14px; }
-.inm-pick { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: 0; padding: 0; cursor: pointer; }
-.inm-pick-face { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--inm-ink); background: var(--inm-cream);
-  overflow: hidden; box-shadow: var(--inm-clay-sh); transition: transform .15s ease; }
-/* Recorte de la cara en el pose 7 (enroscado): avatar del selector, del chat y de la barra móvil */
-.inm-pick-face img, .inm-av img { width: 100%; height: 100%; object-fit: cover; object-position: 24% 22%;
+/* «¿Cómo vas a usar Inmersia?»: components/landing/SelectorPublico.jsx + styles/selector-publico.css */
+.inm-hero-txt .pub { margin-top: 30px; }
+/* Recorte de la cara en el pose 7 (enroscado): avatar del chat y de la barra móvil */
+.inm-av img { width: 100%; height: 100%; object-fit: cover; object-position: 24% 22%;
   transform: scale(1.7); transform-origin: 24% 22%; }
-.inm-pick-name { font-family: var(--inm-font-ui); font-weight: 700; font-size: .82rem; color: var(--inm-ink-2); }
-.inm-pick:hover .inm-pick-face { transform: translateY(-2px); }
-.inm-pick[aria-pressed="true"] .inm-pick-face { outline: 3px solid var(--inm-orange); outline-offset: 2px; }
-.inm-pick[aria-pressed="true"] .inm-pick-name { color: var(--inm-ink); }
+
 
 /* portal-libro (reducido) */
 .inm-hero-art { position: relative; display: grid; place-items: center; }

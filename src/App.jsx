@@ -44,6 +44,8 @@ const CarteleraMobile       = lazy(() => import('./components/mobile/CarteleraMo
 const VistaLecturaMobile    = lazy(importarLectorMobile)
 const Landing               = lazy(() => import('./components/Landing.jsx'))
 const LandingMobile         = lazy(() => import('./components/mobile/LandingMobile.jsx'))
+const LandingColegios       = lazy(() => import('./components/LandingColegios.jsx'))
+const LandingColegiosMobile = lazy(() => import('./components/mobile/LandingColegiosMobile.jsx'))
 const VistaAlbum            = lazy(() => import('./components/Album.jsx'))
 const AlbumMobile           = lazy(() => import('./components/mobile/AlbumMobile.jsx'))
 const ComunidadesMobile     = lazy(() => import('./components/mobile/ComunidadesMobile.jsx'))
@@ -128,6 +130,7 @@ export default function App() {
   const Cartelera   = isMobile ? CarteleraMobile       : CartelaView
   const Lectura     = lectorEsMobile ? VistaLecturaMobile : VistaLectura
   const LandingView = isMobile ? LandingMobile         : Landing
+  const ColegiosView = isMobile ? LandingColegiosMobile : LandingColegios
   const Tienda      = isMobile ? VistaTiendaMobile     : VistaTienda
   const Album       = isMobile ? AlbumMobile           : VistaAlbum
 
@@ -266,6 +269,9 @@ export default function App() {
 
           {/* Quién está detrás y cómo se hace cada libro (src/content/sobre.js). */}
           <Route path="/sobre" element={<PaginaSobre />} />
+
+          {/* Landing para colegios: pública, con o sin sesión (la ve un profe que ya tiene cuenta). */}
+          <Route path="/colegios" element={<ColegiosView />} />
 
           <Route path="/unirse/:codigo" element={<UnirseConEnlace user={user} openAuth={openAuth} />} />
 

@@ -1,0 +1,33 @@
+/* src/styles/selector-publico.css
+   ─────────────────────────────────────────────────────────────
+   «¿Cómo vas a usar Inmersia?» (components/landing/SelectorPublico.jsx),
+   el mismo en la landing de lectores y en la de colegios. Lleva sus propios
+   colores porque cada landing tiene sus variables (--inm-* / las de .lc-landing).
+   En móvil (.pub-movil): en triángulo, colegios y escritores arriba, el lector abajo.
+   ───────────────────────────────────────────────────────────── */
+.pub { --pub-ink: #4a3622; --pub-ink-2: #6b4f34; --pub-naranja: #f2792a; --pub-teal: #5f8a72;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-family: 'Baloo 2', system-ui, sans-serif; }
+.pub-l { font-weight: 700; font-size: 1rem; color: var(--pub-ink-2); }
+.pub-opts { display: flex; gap: 22px; }
+.pub-pick { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; color: inherit; }
+/* El gato entero, sin marco: el selector es «quién eres», no un avatar */
+.pub-cara { width: 78px; height: 78px; display: grid; place-items: end center; transition: transform .15s ease; }
+.pub-cara img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(74, 54, 34, 0.18)); }
+.pub-pick:hover .pub-cara { transform: translateY(-2px); }
+.pub-nombre { font-weight: 700; font-size: .95rem; color: var(--pub-ink-2); border-bottom: 3px solid transparent; padding-bottom: 1px; }
+.pub-pick[aria-pressed="true"] .pub-nombre { color: var(--pub-ink); border-bottom-color: var(--pub-naranja); }
+/* «Pronto»: el público que todavía no tiene página (Mancha, escritores) */
+.pub-pronto { position: absolute; top: -8px; right: -14px; font-weight: 800; font-size: .62rem; text-transform: uppercase; letter-spacing: .04em;
+  color: #fff; background: var(--pub-teal); border: 1.5px solid var(--pub-ink); border-radius: 999px; padding: 1px 6px 0; line-height: 1.4; }
+.pub-aviso { flex-basis: 100%; font-weight: 600; font-size: .9rem; color: var(--pub-ink-2); }
+
+.pub-movil { flex-direction: column; gap: 10px; }
+.pub-movil .pub-opts { display: grid; grid-template-columns: repeat(2, auto); grid-template-areas: "colegio escritor" "lector lector";
+  justify-content: center; column-gap: 46px; row-gap: 12px; }
+.pub-movil .pub-colegio { grid-area: colegio; }
+.pub-movil .pub-escritor { grid-area: escritor; }
+.pub-movil .pub-lector { grid-area: lector; justify-self: center; }
+.pub-movil .pub-cara { width: 96px; height: 96px; }
+.pub-movil .pub-nombre { font-size: 1.02rem; }
+.pub-movil .pub-l { font-size: 1.08rem; }
+.pub-movil .pub-aviso { text-align: center; }

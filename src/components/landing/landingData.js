@@ -23,7 +23,6 @@ export const GATOS = {
   blanco: 'Mancha',
   negro: 'Katana',
 }
-export const COLORES_GATO = ['naranja', 'blanco', 'negro']
 
 // Copias reducidas (560 px) de los 7 poses: los originales llegan a 1400 px y
 // aquí algunos se pintan a 44 px. Poses: 1 salta · 2 asomado a un libro ·
@@ -31,16 +30,14 @@ export const COLORES_GATO = ['naranja', 'blanco', 'negro']
 // 7 enroscado mirando.
 export const gatoSrc = (color, pose) => `/assets/landing/gatos/${color}-${pose}.webp`
 
-// En móvil no hay selector: cada gato de la página sale de un color distinto.
-export const COLOR_MOVIL = {
-  hero: 'naranja',
-  estante: 'blanco',
-  lector: 'negro',
-  investigacion: 'naranja',
-  album: 'blanco',
-  faq: 'negro',
-  cierre: 'naranja',
-}
+// «¿Cómo vas a usar Inmersia?»: cada gato es un público. Yuri (naranja) es el
+// lector, y es el gato de toda esta landing; Katana (negro) es la guía de la
+// landing para colegios; Mancha (blanco), el rincón de escritores, que aún no existe.
+export const PUBLICOS = [
+  { color: 'naranja', id: 'lector', para: 'Para leer' },
+  { color: 'negro', id: 'colegio', para: 'Para colegios', ruta: '/colegios' },
+  { color: 'blanco', id: 'escritor', para: 'Para escribir', pronto: true },
+]
 
 // Lo que dice cada gato al tocarlo (el primero es el que se ve al cargar).
 export const FRASES = {

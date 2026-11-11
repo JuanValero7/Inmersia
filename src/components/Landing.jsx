@@ -7,21 +7,24 @@
 // Variante móvil: components/mobile/LandingMobile.jsx (este mismo componente
 // con `mobile`). Clases prefijadas con `inm-` y CSS scopeado bajo `.inm-landing`.
 //
-// Los guías son los tres gatos de Inmersia: Yuri (naranja), Mancha (blanco) y
-// Katana (negro). En escritorio el visitante elige uno y lo ve en toda la
-// página; esa elección se guarda y pasa a su cuenta al registrarse (ver
-// hooks/useGatoColor.js). En móvil no hay selector: cada gato sale de un color.
+// El guía de esta landing es Yuri (naranja), el gato del lector. En el hero,
+// «¿Cómo vas a usar Inmersia?» separa los públicos por gato: Yuri para leer (esta
+// página), Katana para colegios (/colegios) y Mancha para escribir (pronto).
+// Elegir a Yuri guarda el naranja como gato de la cuenta al registrarse (ver
+// hooks/useGatoColor.js).
 //
 // Maqueta aprobada: Documents/Inmersia_maquetas/landing/maqueta-gatos/index.html (fuera del repo)
 // ─────────────────────────────────────────────────────────────
 import { useRef, useEffect, useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
-  WORLDS_IMG, GATOS, COLORES_GATO, COLOR_MOVIL, gatoSrc, FRASES, COMENTARIOS_LIBRO,
+  WORLDS_IMG, GATOS, gatoSrc, FRASES, COMENTARIOS_LIBRO,
   LECTOR, INVESTIGACION, ALBUM,
 } from './landing/landingData.js'
 import { usePortal } from './landing/useLandingScene.js'
 import { useGato, Gato } from './landing/Gato.jsx'
 import Estanteria from './landing/Estanteria.jsx'
+import SelectorPublico from './landing/SelectorPublico.jsx'
 import Acertijo from './landing/Acertijo.jsx'
 import ChatGato from './landing/ChatGato.jsx'
 import LegalModal from './legal/LegalModal.jsx'
@@ -44,13 +47,6 @@ const alAzar = (arr) => arr[Math.floor(Math.random() * arr.length)]
 // para que react/no-unknown-property no lo marque.
 const PRIORIDAD = { alta: { fetchpriority: 'high' }, baja: { fetchpriority: 'low' } }
 
-function leerGatoElegido() {
-  try {
-    const c = localStorage.getItem(GATO_ELEGIDO_KEY)
-    return COLORES_GATO.includes(c) ? c : null
-  } catch { return null }
-}
-
 export default function Landing({ onAuth, onGoTienda, mobile = false }) {
   const [legalDoc, setLegalDoc] = useState(null) // null | 'terminos' | 'privacidad' | 'impressum'
   const rootRef = useRef(null)
@@ -58,11 +54,10 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
   const audioRef = useRef(null)
   usePortal(rootRef)
 
-  // ── Color de cada gato ──
-  const [elegido, setElegido] = useState(() => leerGatoElegido() ?? 'naranja')
-  const colorDe = (zona) => (mobile ? COLOR_MOVIL[zona] : elegido)
-  const nombreDe = (zona) => GATOS[colorDe(zona)]
-  const src = (zona, pose) => gatoSrc(colorDe(zona), pose)
+  // ── El gato de esta landing: Yuri ──
+  const nombre = GATOS.naranja
+  const yuri = (pose) => gatoSrc('naranja', pose)
+  const navigate = useNavigate()
 
   // ── Estado de cada gato ──
   const hero = useGato(FRASES.hero('')[0])
@@ -74,18 +69,19 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
   const cierre = useGato(FRASES.cierre()[0])
   const turno = useRef({})
   const hablar = (zona, gato) => () => {
-    const lista = FRASES[zona](nombreDe(zona))
+    const lista = FRASES[zona](nombre)
     turno.current[zona] = ((turno.current[zona] ?? 0) + 1) % lista.length
     gato.decir(lista[turno.current[zona]])
     gato.mover('hop')
   }
 
-  const elegirGato = (c) => {
-    setElegido(c)
-    try { localStorage.setItem(GATO_ELEGIDO_KEY, c) } catch { /* sin almacenamiento: solo dura esta visita */ }
-    for (const g of [hero, estante, lector, investigacion, album, faq, cierre]) g.mover('hop')
-    hero.decir(`¡Hola! Soy ${GATOS[c]}.`)
-    evento('landing_gato', { color: c })
+  // «¿Cómo vas a usar Inmersia?»
+  const elegirPublico = (p) => {
+    evento('landing_publico', { publico: p.id })
+    if (p.ruta) { navigate(p.ruta); return }
+    if (p.pronto) { hero.decir(`${GATOS[p.color]} está preparando el rincón de los escritores. ¡Pronto!`); hero.mover('hop'); return }
+    try { localStorage.setItem(GATO_ELEGIDO_KEY, p.color) } catch { /* sin almacenamiento: solo dura esta visita */ }
+    hero.decir('¡Esta es tu página! Te acompaño mientras lees.'); hero.mover('hop')
   }
 
   // ── Botones ──
@@ -177,19 +173,7 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
             </div>
             <p className="inm-micro">Lee los primeros {MINUTOS_MUESTRA} minutos de cualquier libro sin cuenta</p>
 
-            {!mobile && (
-              <div className="inm-picker" role="group" aria-label="Elige a tu compañero de lectura">
-                <span className="inm-picker-l">Elige a tu compañero de lectura:</span>
-                <div className="inm-picker-opts">
-                  {COLORES_GATO.map((c) => (
-                    <button key={c} type="button" className="inm-pick" aria-pressed={elegido === c} onClick={() => elegirGato(c)}>
-                      <span className="inm-pick-face"><img src={gatoSrc(c, 7)} alt="" /></span>
-                      <span className="inm-pick-name">{GATOS[c]}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            <SelectorPublico actual="lector" onElegir={elegirPublico} mobile={mobile} />
           </div>
 
           <div className="inm-hero-art">
@@ -213,8 +197,8 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
               </div>
               <img className="inm-book" src={BOOK} alt="Libro abierto" {...PRIORIDAD.alta} />
               <Gato
-                gato={hero} nombre={nombreDe('hero')} className="inm-cat-hero" cola="abajo-der"
-                src={src('hero', 1)} alt="Gato saltando hacia el libro"
+                gato={hero} nombre={nombre} className="inm-cat-hero" cola="abajo-der"
+                src={yuri(1)} alt="Gato saltando hacia el libro"
                 onToca={hablar('hero', hero)}
               />
             </div>
@@ -230,8 +214,8 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
           <div className="inm-shelf-row">
             <div className="inm-shelf-cat">
               <Gato
-                gato={estante} nombre={nombreDe('estante')} className="inm-cat-estante" cola="abajo"
-                src={src('estante', 6)} alt="Gato tumbado mirando pasar los libros"
+                gato={estante} nombre={nombre} className="inm-cat-estante" cola="abajo"
+                src={yuri(6)} alt="Gato tumbado mirando pasar los libros"
                 onToca={hablar('estante', estante)}
               />
             </div>
@@ -275,8 +259,8 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
             <div className="inm-fvis inm-fvis-lector">
               <Shot desk={LECTOR.shot} phone={mobile ? LECTOR.shotM : null} alt="El Lector de Inmersia con Capitanes intrépidos" />
               <Gato
-                gato={lector} nombre={nombreDe('lector')} className="inm-cat-lector" cola={mobile ? 'der' : 'izq'}
-                src={src('lector', poseLector)} alt="Gato asomado a un libro"
+                gato={lector} nombre={nombre} className="inm-cat-lector" cola={mobile ? 'der' : 'izq'}
+                src={yuri(poseLector)} alt="Gato asomado a un libro"
                 onToca={hablar('lector', lector)}
               />
             </div>
@@ -297,8 +281,8 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
             <div className="inm-fvis">
               <Shot desk={INVESTIGACION.shot} phone={mobile ? INVESTIGACION.shotM : null} alt="El tablero de la Investigación" />
               <Gato
-                gato={investigacion} nombre={nombreDe('investigacion')} className="inm-cat-inv" cola="abajo-der"
-                src={src('investigacion', 7)} alt="Gato enroscado, mirando con sospecha"
+                gato={investigacion} nombre={nombre} className="inm-cat-inv" cola="abajo-der"
+                src={yuri(7)} alt="Gato enroscado, mirando con sospecha"
                 onToca={hablar('investigacion', investigacion)}
               />
             </div>
@@ -327,8 +311,8 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
             <div className="inm-fvis">
               <Shot desk={ALBUM.shot} alt="El Álbum de Inmersia" />
               <Gato
-                gato={album} nombre={nombreDe('album')} className="inm-cat-album" cola="abajo"
-                src={src('album', 4)} alt="Gato estirándose hacia el álbum"
+                gato={album} nombre={nombre} className="inm-cat-album" cola="abajo"
+                src={yuri(4)} alt="Gato estirándose hacia el álbum"
                 onToca={hablar('album', album)}
               />
             </div>
@@ -340,15 +324,15 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
       <section className="inm-faq" aria-labelledby="inm-faq-h">
         <div className="inm-wrap inm-faq-grid">
           <div className="inm-faq-side">
-            <h2 className="inm-sec-h" id="inm-faq-h">Pregúntale a {nombreDe('faq')}</h2>
+            <h2 className="inm-sec-h" id="inm-faq-h">Pregúntale a {nombre}</h2>
             <p className="inm-sec-p">Las dudas de siempre, respondidas por quien más sabe de aquí.</p>
             <Gato
-              gato={faq} nombre={nombreDe('faq')} className="inm-cat-faq"
-              src={src('faq', 3)} alt="Gato panza arriba, listo para responder"
+              gato={faq} nombre={nombre} className="inm-cat-faq"
+              src={yuri(3)} alt="Gato panza arriba, listo para responder"
               onToca={() => faq.mover('hop')}
             />
           </div>
-          <ChatGato nombre={nombreDe('faq')} avatar={src('faq', 7)} onPregunta={() => faq.mover('hop')} />
+          <ChatGato nombre={nombre} avatar={yuri(7)} onPregunta={() => faq.mover('hop')} />
         </div>
       </section>
 
@@ -357,8 +341,8 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
         <div className="inm-wrap inm-closing-in">
           <div className="inm-closing-cat">
             <Gato
-              gato={cierre} nombre={nombreDe('cierre')} className="inm-cat-cierre" cola="abajo-der"
-              src={src('cierre', poseCierre)} alt="Gato durmiendo junto a una pila de libros"
+              gato={cierre} nombre={nombre} className="inm-cat-cierre" cola="abajo-der"
+              src={yuri(poseCierre)} alt="Gato durmiendo junto a una pila de libros"
               onToca={hablar('cierre', cierre)}
             />
           </div>
@@ -390,6 +374,7 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
             <a href="/privacidad" onClick={abrirLegal('privacidad')}>Política de Privacidad</a>
             <a href="/impressum" onClick={abrirLegal('impressum')}>Impressum</a>
             <a href="/sobre">Sobre Inmersia</a>
+            <a href="/colegios">Para colegios</a>
             <a href="https://www.instagram.com/inmersia.io/" target="_blank" rel="noopener noreferrer">Instagram</a>
           </nav>
         </div>
@@ -397,7 +382,7 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
 
       {mobile && (
         <div className={`inm-sticky ${barra ? 'is-on' : ''}`} aria-hidden={!barra}>
-          <span className="inm-av"><img src={src('hero', 7)} alt="" /></span>
+          <span className="inm-av"><img src={yuri(7)} alt="" /></span>
           <a className="inm-clay-btn" href="#registro" onClick={entrar('barra')} tabIndex={barra ? undefined : -1}>Entra ahora {flecha}</a>
         </div>
       )}

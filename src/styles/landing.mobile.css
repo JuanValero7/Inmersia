@@ -27,6 +27,8 @@
 .inm-mobile .inm-hero-lede { margin-inline: auto; font-size: 1.05rem; }
 .inm-mobile .inm-hero-cta { justify-content: center; }
 .inm-mobile .inm-micro { justify-content: center; text-align: left; }
+/* «¿Cómo vas a usar Inmersia?»: centrado y en triángulo (selector-publico.css) */
+.inm-mobile .inm-hero-txt .pub { margin-top: 26px; }
 
 /* Targets táctiles cómodos (≥ 44px) */
 .inm-mobile .inm-clay-btn { min-height: 48px; }
