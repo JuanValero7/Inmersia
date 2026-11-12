@@ -18,7 +18,7 @@ const leerEscena = (el) => ({
 })
 
 export function useEscena(rootRef) {
-  const [escena, setEscena] = useState({ titulo: 'Antes de empezar', hora: 'el bimestre', sol: true })
+  const [escena, setEscena] = useState({ titulo: 'Antes de empezar', hora: '28 días de lectura', sol: true })
   useEffect(() => {
     const root = rootRef.current
     if (!root) return

@@ -19,7 +19,7 @@ import { useRef, useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   WORLDS_IMG, GATOS, gatoSrc, FRASES, COMENTARIOS_LIBRO,
-  LECTOR, INVESTIGACION, ALBUM,
+  HERO_CHECKS, LECTOR, INVESTIGACION, JUEGOS, ALBUM,
 } from './landing/landingData.js'
 import { usePortal } from './landing/useLandingScene.js'
 import { useGato, Gato } from './landing/Gato.jsx'
@@ -64,6 +64,7 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
   const estante = useGato(FRASES.estante()[0])
   const lector = useGato(FRASES.lector()[0])
   const investigacion = useGato(FRASES.investigacion()[0])
+  const juegos = useGato(FRASES.juegos()[0])
   const album = useGato(FRASES.album()[0])
   const faq = useGato(null)
   const cierre = useGato(FRASES.cierre()[0])
@@ -165,9 +166,9 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
         <div className="inm-wrap inm-hero-grid">
           <div className="inm-hero-txt">
             <h1 className="inm-hero-h">Lee los grandes libros <em>como nunca</em></h1>
-            <p className="inm-hero-lede">
-              Ilustraciones que aparecen en el momento justo, sonido que acompaña cada escena y pistas para investigar la trama.
-            </p>
+            <ul className="inm-hero-checks">
+              {HERO_CHECKS.map((c) => <li key={c}>{c}</li>)}
+            </ul>
             <div className="inm-hero-cta" ref={heroCtaRef}>
               <a className="inm-clay-btn inm-clay-lg" href="#registro" onClick={entrar('hero')}>Entra ahora {flecha}</a>
             </div>
@@ -249,7 +250,6 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
             <div className="inm-ftxt">
               <p className="inm-eyebrow">{LECTOR.eyebrow}</p>
               <h3>{LECTOR.title}</h3>
-              <ul>{LECTOR.bullets.map((b) => <li key={b}>{b}</li>)}</ul>
               <button type="button" className={`inm-clay-btn inm-clay-ghost inm-sound ${sonando ? 'is-on' : ''}`} aria-pressed={sonando} onClick={alternarSonido}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M19 5a10 10 0 0 1 0 14" /></svg>
                 <span>{sonando ? 'Pausar el sonido' : 'Escucha cómo suena'}</span>
@@ -271,7 +271,6 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
             <div className="inm-ftxt">
               <p className="inm-eyebrow">{INVESTIGACION.eyebrow}</p>
               <h3>{INVESTIGACION.title}</h3>
-              <ul>{INVESTIGACION.bullets.map((b) => <li key={b}>{b}</li>)}</ul>
               <Acertijo
                 onVeredicto={(t, tono) => investigacion.decir(t, tono)}
                 onAcierto={() => investigacion.mover('hop')}
@@ -288,12 +287,28 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
             </div>
           </div>
 
-          {/* Álbum */}
+          {/* Juegos: captura real de la mesa de investigación */}
           <div className="inm-feature">
+            <div className="inm-ftxt">
+              <p className="inm-eyebrow">{JUEGOS.eyebrow}</p>
+              <h3>{JUEGOS.title}</h3>
+              <p className="inm-ftxt-p">{JUEGOS.texto}</p>
+            </div>
+            <div className="inm-fvis inm-fvis-juegos">
+              <Shot desk={JUEGOS.shot} phone={mobile ? JUEGOS.shotM : null} alt="La mesa de investigación de Capitanes intrépidos: tres pistas sobre Harvey y la pregunta ¿Qué te dicen estas tres?" />
+              <Gato
+                gato={juegos} nombre={nombre} className="inm-cat-juegos" cola="abajo"
+                src={yuri(1)} alt="Gato saltando hacia la mesa de pistas"
+                onToca={hablar('juegos', juegos)}
+              />
+            </div>
+          </div>
+
+          {/* Álbum */}
+          <div className="inm-feature flip">
             <div className="inm-ftxt">
               <p className="inm-eyebrow">{ALBUM.eyebrow}</p>
               <h3>{ALBUM.title}</h3>
-              <ul>{ALBUM.bullets.map((b) => <li key={b}>{b}</li>)}</ul>
               <div className="inm-card-row">
                 <button type="button" className={`inm-baraja ${volteada ? 'is-flipped' : ''}`} onClick={voltear} aria-label="Voltear la barajita">
                   <span className="inm-baraja-in">
@@ -374,7 +389,6 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
             <a href="/privacidad" onClick={abrirLegal('privacidad')}>Política de Privacidad</a>
             <a href="/impressum" onClick={abrirLegal('impressum')}>Impressum</a>
             <a href="/sobre">Sobre Inmersia</a>
-            <a href="/colegios">Para colegios</a>
             <a href="https://www.instagram.com/inmersia.io/" target="_blank" rel="noopener noreferrer">Instagram</a>
           </nav>
         </div>

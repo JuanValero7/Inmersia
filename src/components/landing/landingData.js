@@ -45,6 +45,7 @@ export const FRASES = {
   estante: () => ['¿Cuál abrimos hoy?', 'Yo voto por uno de piratas.', 'No paran de llegar libros.'],
   lector: () => ['Toca el botón y escucha el mar.', 'Las ilustraciones salen solas, en el momento justo.', 'Shh… estoy leyendo.'],
   investigacion: () => ['¿Lo resuelves?', 'Cada capítulo, una pista nueva.', 'Sin spoilers, prometido.'],
+  juegos: () => ['Tres pistas, una deducción.', 'Yo ya sé cómo es Harvey.', '¿Lo sacas antes que yo?'],
   album: () => ['Esa barajita es mía.', 'Me faltan dos para llenar la página.', '¿Me la cambias?'],
   cierre: () => ['Zzz…', 'Cinco minutitos más…', 'Zzz… capítulo 1… zzz…'],
 }
@@ -57,17 +58,22 @@ export const COMENTARIOS_LIBRO = ['buena elección.', 'ese me lo leí dos veces.
 // duplicados para el bucle, ya se siente como una fila que no se acaba.
 export const LIBROS_ESTANTE = 15
 
+// ── Hero ──
+// Lo que trae cada libro, con un check dibujado delante y rayas entre líneas
+// (landing.css: .inm-hero-checks).
+export const HERO_CHECKS = [
+  'Ilustraciones en cada capítulo',
+  'Efectos de sonido y ambiente',
+  'Personajes, lugares y pistas que se desbloquean mientras lees',
+  'Juegos para adivinar lo que viene y cazar tesoros escondidos en el texto',
+]
+
 // ── Funciones ──
 const V = '?v=3' // cache-busting de las capturas: súbelo al reemplazarlas
 
 export const LECTOR = {
   eyebrow: 'El Lector',
   title: 'Una historia que se ve y se oye.',
-  bullets: [
-    'Ilustraciones que aparecen en los momentos clave',
-    'Sonido que acompaña cada escena',
-    'Letra, tamaño y fondo a tu gusto',
-  ],
   shot: `/assets/landing/shot-01-lector.webp${V}`,
   shotM: `/assets/landing/shot-01-lector-m.webp${V}`,
   sonido: '/sounds/olas.mp3', // la captura es de Capitanes intrépidos
@@ -76,23 +82,22 @@ export const LECTOR = {
 export const INVESTIGACION = {
   eyebrow: 'La Investigación',
   title: 'Cada capítulo desbloquea una pista.',
-  bullets: [
-    'Personajes, lugares y hechos en un tablero',
-    'Se desbloquea a medida que lees, sin spoilers',
-    '¿No es ficción? Glosario, datos y referencias',
-  ],
   shot: `/assets/landing/shot-03-investigacion.webp${V}`,
   shotM: `/assets/landing/shot-03-investigacion-m.webp${V}`,
+}
+
+export const JUEGOS = {
+  eyebrow: 'Los juegos',
+  title: 'Junta las pistas y descubre a los personajes.',
+  texto: 'En la mesa de investigación juntas tres pistas del libro y deduces cómo es cada personaje. Y mientras lees hay más: corazonadas para adivinar lo que viene y un mapa del tesoro en cada capítulo.',
+  // Captura real de la app (la misma de la landing de colegios)
+  shot: '/assets/landing/colegios/al-mesa.webp',
+  shotM: '/assets/landing/colegios/al-mesa-m.webp',
 }
 
 export const ALBUM = {
   eyebrow: 'El Álbum',
   title: 'Un premio que se colecciona.',
-  bullets: [
-    'Cada libro llena una página de tu álbum',
-    'Barajitas de personajes, lugares y capítulos',
-    'Se ganan leyendo, capítulo a capítulo',
-  ],
   // Sin captura móvil: en el teléfono el álbum pide girar la pantalla.
   shot: `/assets/landing/shot-06-album.webp${V}`,
   barajita: { nombre: 'Harvey Cheyne', libro: 'Capitanes intrépidos', slug: 'capitanes-intrepidos' },

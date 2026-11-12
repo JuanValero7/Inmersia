@@ -24,19 +24,22 @@
 .inm-mobile .inm-cat-hero { right: -16%; bottom: 22%; width: 42%; }
 .inm-mobile .inm-cat-hero .inm-bubble { font-size: .8rem; padding: 5px 10px; right: 20%; }
 .inm-mobile .inm-hero-h { font-size: clamp(2.2rem, 10.5vw, 2.9rem); line-height: 1.06; }
-.inm-mobile .inm-hero-lede { margin-inline: auto; font-size: 1.05rem; }
+.inm-mobile .inm-hero-checks { width: fit-content; margin-inline: auto; text-align: left; font-size: 1.02rem; }
 .inm-mobile .inm-hero-cta { justify-content: center; }
-.inm-mobile .inm-micro { justify-content: center; text-align: left; }
+/* El puntito va dentro de la línea de texto: si la frase ocupa dos líneas,
+   sigue pegado a la primera palabra y todo queda centrado. */
+.inm-mobile .inm-micro { display: block; text-align: center; }
+.inm-mobile .inm-micro::before { display: inline-block; vertical-align: middle; margin: -2px 8px 0 0; }
 /* «¿Cómo vas a usar Inmersia?»: centrado y en triángulo (selector-publico.css) */
 .inm-mobile .inm-hero-txt .pub { margin-top: 26px; }
 
 /* Targets táctiles cómodos (≥ 44px) */
 .inm-mobile .inm-clay-btn { min-height: 48px; }
 
-/* Estantería: título en una línea, gato arriba con el bocadillo a su derecha */
+/* Estantería: título en una línea; el gato va DEBAJO de la cinta de libros, con el bocadillo a su derecha */
 .inm-mobile .inm-shelf .inm-sec-h { font-size: min(1.75rem, 7.4vw); }
 .inm-mobile .inm-shelf-row { grid-template-columns: 1fr; margin-top: 18px; }
-.inm-mobile .inm-shelf-cat { height: 120px; }
+.inm-mobile .inm-shelf-cat { height: 110px; order: 2; margin-top: -34px; }
 .inm-mobile .inm-cat-estante { width: 150px; left: 0; bottom: -6px; }
 .inm-mobile .inm-cat-estante .inm-bubble { left: calc(100% + 12px); bottom: 26%; max-width: min(200px, calc(100vw - 220px)); }
 .inm-mobile .inm-cat-estante .inm-bubble::after { left: -8px; bottom: auto; top: 50%; transform: translateY(-50%) rotate(135deg); }
@@ -56,6 +59,9 @@
 .inm-mobile .inm-cat-lector .inm-bubble { left: auto; right: 92%; bottom: 40%; max-width: 160px; }
 .inm-mobile .inm-cat-inv { right: 0; bottom: -26px; width: 108px; }
 .inm-mobile .inm-cat-inv .inm-bubble { right: 58%; bottom: 84%; max-width: 160px; }
+.inm-mobile .inm-fvis-juegos { margin-top: 70px; }
+.inm-mobile .inm-cat-juegos { right: -4px; top: -60px; width: 104px; }
+.inm-mobile .inm-cat-juegos .inm-bubble { right: 86%; bottom: 52%; max-width: 160px; }
 .inm-mobile .inm-cat-album { left: -6px; bottom: -34px; width: 130px; }
 .inm-mobile .inm-cat-album .inm-bubble { left: 40%; bottom: 84%; max-width: 170px; }
 .inm-mobile .inm-riddle-row { flex-direction: column; }
@@ -66,7 +72,6 @@
 .inm-mobile .inm-feature-inv .inm-ftxt { display: contents; }
 .inm-mobile .inm-feature-inv .inm-eyebrow { order: 1; }
 .inm-mobile .inm-feature-inv h3 { order: 2; }
-.inm-mobile .inm-feature-inv ul { order: 3; }
 .inm-mobile .inm-feature-inv .inm-fvis { order: 4; margin-top: 26px; }
 .inm-mobile .inm-feature-inv .inm-riddle { order: 5; margin-top: 52px; }
 

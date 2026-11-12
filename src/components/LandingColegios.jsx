@@ -14,7 +14,7 @@
 //
 // Maqueta aprobada: Documents/Inmersia_maquetas/landing/colegios/index.html (fuera del repo)
 // ─────────────────────────────────────────────────────────────
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { gatoSrc } from './landing/landingData.js'
 import { asset, LOGO, PAISES, paisInicial, FAQ, TIPOS_DE_LIBRO, RESUMEN } from './landing/colegios/colegiosData.js'
@@ -33,8 +33,6 @@ import Chips, { Tipo } from './landing/colegios/Chips.jsx'
 import LegalModal from './legal/LegalModal.jsx'
 import SelectorPublico from './landing/SelectorPublico.jsx'
 import { evento } from '../lib/analytics.js'
-import { useCatalogoLibrosQuery } from '../lib/queries.js'
-import { imgUrl } from '../lib/img.js'
 import '../styles/landing-colegios.css'
 
 // Ovillos que lleva Mateo en cada noche (contador del lado de Inmersia).
@@ -73,13 +71,18 @@ export default function LandingColegios({ mobile = false }) {
   const [teoria, setTeoria] = useState(false)       // Día 2, móvil: la teoría plegada
   const [intentoConcurso, setIntentoConcurso] = useState(0)
   const [cta, setCta] = useState(false)
-  const subir = (e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }
-  // «Volver a la pizarra»: centrado, al terminar de leer la escena
-  const arribaFin = <div className="lc-arriba-fin"><a className="lc-arriba" href="#arriba" onClick={subir}>↑ Volver a la pizarra</a></div>
+  const subir = (e) => { e.preventDefault(); setDesdePizarra(null); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  // «Volver a la pizarra»: centrado, al terminar de leer la escena. Solo sale en
+  // la escena a la que se llegó tocando un punto de la pizarra; leyendo de corrido, no.
+  const [desdePizarra, setDesdePizarra] = useState(null)
+  const arribaFin = (esc) => desdePizarra === esc && (
+    <div className="lc-arriba-fin"><a className="lc-arriba" href="#arriba" onClick={subir}>↑ Volver a la pizarra</a></div>
+  )
   // Resumen de arriba: cada punto lleva a su escena de la historia
   const irA = (esc) => (e) => {
     e.preventDefault()
     evento('colegios_resumen', { a: esc })
+    setDesdePizarra(esc)
     const destino = rootRef.current?.querySelector(`[data-esc="${esc}"]`)
     const n3 = rootRef.current?.querySelector('[data-esc="noche3"]')
     // Si el salto pasa por la noche 3, las notificaciones no saltan en el camino (bloquearían el scroll)
@@ -106,9 +109,6 @@ export default function LandingColegios({ mobile = false }) {
 
   const abrirLegal = (doc) => (e) => { e.preventDefault(); setLegalDoc(doc) }
 
-  // Portadas de los dos libros de ejemplo (Día 2: ficción y no ficción). Sin catálogo, sin portada.
-  const { data: catalogo = [] } = useCatalogoLibrosQuery()
-  const portada = useMemo(() => Object.fromEntries(catalogo.map((l) => [l.slug, l.portada_url])), [catalogo])
 
   const navigate = useNavigate()
 
@@ -138,10 +138,10 @@ export default function LandingColegios({ mobile = false }) {
       <main>
 
         {/* ═════════ LA PIZARRA DE PEDRO: lo importante, con tiza ═════════ */}
-        <section className="lc-portada" data-esc="arriba" data-dia="0" data-titulo="Inmersia para colegios" data-hora="el bimestre" data-sol="1">
+        <section className="lc-portada" data-esc="arriba" data-dia="0" data-titulo="Inmersia para colegios" data-hora="28 días de lectura" data-sol="1">
           <div className="lc-wrap">
             <div className="lc-gran-pizarra">
-              <span className="lc-gp-fecha">3.º B · este bimestre</span>
+              <span className="lc-gp-fecha">3.º B · un libro en 28 días</span>
               <h1>Lo que trae Inmersia a su colegio</h1>
               <ol className="lc-gp-lista">
                 {RESUMEN.map((r) => (
@@ -219,16 +219,16 @@ export default function LandingColegios({ mobile = false }) {
         <section className="lc-giro" data-dia="0" data-titulo="Antes de empezar" data-hora="cómo cambiarla" data-sol="1">
           <div className="lc-wrap">
             <span className="lc-giro-raya" aria-hidden="true" />
-            <h2>¿Cómo podemos <em>cambiar</em> esta historia?</h2>
+            <h2>¿Cómo podemos <em>cambiar</em> esta situación?</h2>
           </div>
         </section>
 
         {/* ═════════ LA HISTORIA: Pedro y Mateo ═════════ */}
-        <section className="lc-hero lc-historia" data-dia="0" data-titulo="Antes de empezar" data-hora="el bimestre" data-sol="1">
+        <section className="lc-hero lc-historia" data-dia="0" data-titulo="Antes de empezar" data-hora="28 días de lectura" data-sol="1">
           <div className="lc-wrap lc-hero-grid">
             <div className="lc-hist-txt">
               <div className="lc-ceja">Una historia de 28 días</div>
-              <p className="lc-hist-1">Empieza el bimestre. <b>Pedro</b>, el profesor de 3.º B, asigna <b>Capitanes intrépidos</b> como lectura del curso.</p>
+              <p className="lc-hist-1"><b>Pedro</b>, el profesor de 3.º B, asigna <b>Capitanes intrépidos</b> como lectura del curso.</p>
               <p className="lc-hist-1"><b>Mateo</b>, a quien no le gusta leer, ya se imagina la nueva tortura que le toca atravesar.</p>
               <p>Acompáñenos a ver cómo sería, para los dos, la experiencia con Inmersia.</p>
               <div className="lc-hist-leyenda">
@@ -251,7 +251,7 @@ export default function LandingColegios({ mobile = false }) {
           <div className="lc-wrap">
             <div className="lc-esc-head">
               <div className="lc-ceja"><b>Día 1</b> 8:00 · en el colegio</div>
-              <h2>Lunes, 8:00. Pedro asigna el libro del bimestre.</h2>
+              <h2>Lunes, 8:00. Pedro asigna el libro.</h2>
               <p>Todo lo que tiene que hacer el colegio en tres pasos.</p>
             </div>
             <div className="lc-d1-grid">
@@ -304,7 +304,7 @@ export default function LandingColegios({ mobile = false }) {
               <div className="lc-capsula-txt">
                 <div className="lc-ceja">Antes de abrir el libro <Tipo tipo="nf" /></div>
                 <h3>La cápsula del tiempo</h3>
-                <p>En los libros de no ficción, antes de empezar cada alumno responde con sus palabras unas preguntas sobre el tema: «¿Quién crees que inventó el dinero?». La respuesta queda sellada.</p>
+                <p>En los libros de no ficción, antes de empezar cada alumno responde con sus palabras unas preguntas sobre el tema. La respuesta queda sellada.</p>
                 <p>Al terminar el libro vuelve a responder, sin ver lo que puso antes. Pedro lee las dos lado a lado. No hay nota: es para ver cuánto cambió su forma de pensar.</p>
               </div>
               <Captura mobile={mobile} nombre="capsula" movil ancho={1500} alto={1361}
@@ -317,7 +317,7 @@ export default function LandingColegios({ mobile = false }) {
               <div><h4>La cartelera se llena sola</h4><p>Mientras lee, se desbloquean los personajes, los lugares y los hechos del libro en su tablero de investigación. Sin adelantar nada: solo lo que ya leyó.</p></div>
               <div><h4>La corazonada <Tipo tipo="f" /></h4><p>Un chip entre párrafos, justo donde está el suspenso. Elige qué cree que va a pasar y se queda con las ganas de comprobarlo.</p><Mide>Comprender · inferir</Mide></div>
             </Tarjetas>
-            {arribaFin}
+            {arribaFin('noche1')}
           </div>
         </section>
 
@@ -327,7 +327,7 @@ export default function LandingColegios({ mobile = false }) {
             <div className="lc-esc-head">
               <div className="lc-ceja"><b>Día 2</b> 16:00 · sala de profesores</div>
               <h2>Inmersia acompaña la evaluación y el crecimiento de cada alumno.</h2>
-              <p>Mientras Mateo lee y juega, Inmersia va juntando evidencia de lo que entiende. Pedro la usa para evaluar y para ayudar a cada uno a mejorar y reconoce el esfuerzo con recompensas que él mismo elige.</p>
+              <p>Mientras Mateo lee y juega, Inmersia va juntando evidencia de lo que entiende. Pedro la usa para evaluar y para ayudar a cada uno a mejorar.</p>
             </div>
 
             <div className={`lc-teoria ${teoria ? 'lc-m-abierta' : ''}`.trim()}>
@@ -351,9 +351,9 @@ export default function LandingColegios({ mobile = false }) {
                 </div>
               </div>
               <div className="lc-pisa">
-                <div><b>Localizar</b><span>Encontrar información en el texto.</span><span className="lc-juegos"><em>Mapa del tesoro</em></span></div>
-                <div><b>Comprender</b><span>Entender lo literal e inferir lo que no se dice.</span><span className="lc-juegos"><em>Corazonadas</em><em>Concurso</em><em>Mesa de investigación</em></span></div>
-                <div><b>Evaluar y reflexionar</b><span>Opinar sobre el texto con hechos del libro.</span><span className="lc-juegos"><em>Desafío del gato</em></span></div>
+                <div><b>Localizar</b><span>Encontrar información en el texto.</span><span className="lc-juegos"><em>Mapa del tesoro</em><em>El falsificador</em></span></div>
+                <div><b>Comprender</b><span>Entender lo literal e inferir lo que no se dice.</span><span className="lc-juegos"><em>Corazonadas</em><em>Concurso</em><em>Mesa de investigación</em><em>Hilo de ideas</em><em>Explícaselo a…</em></span></div>
+                <div><b>Evaluar y reflexionar</b><span>Opinar sobre el texto con hechos del libro.</span><span className="lc-juegos"><em>Desafío del gato</em><em>Cápsula del tiempo</em></span></div>
               </div>
               <p className="lc-sin-nota">Son los tres procesos de lectura de PISA. Inmersia no pone nota: le da la evidencia y usted decide cómo evaluar.</p>
 <div className="lc-tipos">
@@ -361,10 +361,7 @@ export default function LandingColegios({ mobile = false }) {
                 <div className="lc-tipos-grid">
                   {TIPOS_DE_LIBRO.map((t) => (
                     <div key={t.id} className={`lc-tipo lc-tipo-${t.id}`}>
-                      <div className="lc-tipo-libro">
-                        {portada[t.slug] && <img src={imgUrl(portada[t.slug], { width: 160 })} alt="" loading="lazy" />}
-                        <div><Tipo tipo={t.id === 'ficcion' ? 'f' : 'nf'} /><b>{t.libro}</b><span>{t.autor}</span></div>
-                      </div>
+                      <b className="lc-tipo-nombre">{t.nombre}</b>
                       <ul>{t.juegos.map((j) => <li key={j}>{j}</li>)}</ul>
                     </div>
                   ))}
@@ -376,8 +373,9 @@ export default function LandingColegios({ mobile = false }) {
             <div className="lc-d2-grid">
               <div className="lc-d2-txt">
                 <h3>Los ovillos: la moneda de cada libro</h3>
-                <p>Cada libro trae su propia bolsa de ovillos de lana. <b>Leer un capítulo da ovillos</b>, y los juegos dan más si se juegan bien. Se usan en las corazonadas, en los comodines del concurso y en la mesa de investigación.</p>
-                <h3>Las recompensas las pone el profe</h3>
+                <p>Cada libro trae su propia bolsa de ovillos de lana. <b>Leer un capítulo da ovillos</b>, y los juegos dan más si se juegan bien.</p>
+                <h3>¿Y para qué sirven?</h3>
+                <p>Para cambiarlos por recompensas que elige el profe.</p>
                 <ul>
                   <li><b>Vales:</b> «2 puntos extra en el examen», «elegir el próximo libro de la clase», «leer en el patio una clase». Pedro decide qué, cuánto cuesta y cuántas veces.</li>
                   <li><b>Bote de la clase:</b> un premio para todos, como ver la película del libro. Cada alumno pone los ovillos que quiere hasta llenarlo.</li>
@@ -389,7 +387,7 @@ export default function LandingColegios({ mobile = false }) {
                 alt="Panel de recompensas de 3.º B: vales, bote de la clase y formulario para crear una recompensa con precios sugeridos"
                 titulo="Pedro arma la tienda de 3.º B" nota="Datos de ejemplo" />
             </div>
-            {arribaFin}
+            {arribaFin('dia2')}
           </div>
         </section>
 
@@ -427,10 +425,10 @@ export default function LandingColegios({ mobile = false }) {
                     <div className="lc-stats">
                       <div className="lc-stat"><b>Querer ≠ disfrutar</b><p>El celular despierta las ganas de seguir mirando, no el placer. No lo pasan bien, pero no lo sueltan.</p><span className="lc-fuente">Kent Berridge, Universidad de Michigan</span></div>
                       <div className="lc-stat"><b>La sorpresa</b><p>Nunca saben si el próximo video será bueno, y por eso siguen mirando. Es la recompensa variable que estudió Skinner.</p></div>
-                      <div className="lc-stat lc-ancho"><b>8 h 39 min</b><p>al día pasa un adolescente frente a pantallas para entretenerse, sin contar el colegio. Del otro lado, una fotocopia en blanco y negro.</p><span className="lc-fuente">Common Sense Media, EE. UU., 2021</span></div>
+                      <div className="lc-stat lc-ancho"><b>8 h 39 min</b><p>al día pasa un adolescente frente a pantallas para entretenerse, sin contar el colegio. Del otro lado, un libro en blanco y negro.</p><span className="lc-fuente">Common Sense Media, EE. UU., 2021</span></div>
                     </div>
                   </div>
-                  <p className="lc-lado-pie">23:40. La fotocopia sigue en la página 40.</p>
+                  <p className="lc-lado-pie">23:40. El libro sigue en la página 40.</p>
                 </>}
                 bueno={ver3 === 'malo' ? <>
                   <div className="lc-espera-bueno">Mientras tanto…</div>
@@ -457,7 +455,6 @@ export default function LandingColegios({ mobile = false }) {
               />
             </div>
             <Tarjetas mobile={mobile} className="lc-detras">
-              <div><h4>Dos razones para leer con atención <Tipo tipo="f" /></h4><p>La historia y el juego. Al empezar cada capítulo aparece su mapa del tesoro: preguntas sobre datos concretos de lo que va a leer. Para encontrarlos hay que estar atento, y cada tesoro da ovillos.</p><Mide>Localizar</Mide></div>
               <div><h4>Lo que subraya y anota no se pierde</h4><p>Los subrayados y las notas del cuaderno de toda la clase se juntan. Una IA los lee y le cuenta al profe qué temas le están importando al salón, sin citar ni nombrar a nadie.</p></div>
               <div className="lc-ia-card">
                 <span className="lc-maq">Estamos preparando</span>
@@ -479,16 +476,16 @@ export default function LandingColegios({ mobile = false }) {
             <div className="lc-esc-head">
               <div className="lc-ceja"><b>Día 8</b> 10:15 · en el colegio</div>
               <h2>Una semana después, Pedro ya sabe quién se quedó atrás.</h2>
-              <p>No hace falta esperar a la prueba. El Salón le dice, hoy, quién va al día, quién necesita un empujón, quién pasó páginas sin leer y qué frases subrayó la clase.</p>
+              <p>No hace falta esperar a la prueba. Cada día el Salón le muestra quién va al día y quién necesita un empujón. También le avisa si alguien pasó páginas sin leer y le enseña las frases que más subrayó la clase.</p>
             </div>
             <Captura mobile={mobile} nombre="d8-salon" movil ancho={1500} alto={1577}
               alt="El Salón de 3.º B el día 8: lectura asignada, alumnos al día, quién necesita un empujón, dónde va cada alumno y lo que más subrayó la clase"
               titulo="El Salón de 3.º B, día 8" nota="Datos de ejemplo" />
             <div className="lc-papel-tira">
-              <b>Lo mismo,<br />en papel</b>
-              <div><span>¿Quién va al día?</span><b>?</b></div>
-              <div><span>¿Por qué capítulo va cada uno?</span><b>?</b></div>
-              <div><span>¿Lo leyó o pasó las páginas?</span><b>?</b></div>
+              <b>¿Y en papel o un PDF,<br />sabemos?</b>
+              <div><span>¿Quién va al día?</span><b>NO</b></div>
+              <div><span>¿Por qué capítulo va cada uno?</span><b>NO</b></div>
+              <div><span>¿Lo leyó o pasó las páginas?</span><b>NO</b></div>
             </div>
             <Tarjetas mobile={mobile} className="lc-notas3">
               <div><h4>Al día, por capítulos</h4><p>Al día: llegó al capítulo de la meta de hoy. Un poco atrás: de 1 a 3 capítulos. Atrasado: 4 o más. Se actualiza cada día.</p></div>
@@ -514,7 +511,6 @@ export default function LandingColegios({ mobile = false }) {
                   <div className="lc-ia">Harvey Cheyne, hijo mimado de un millonario, cae al mar desde un transatlántico. Lo rescata Manuel, un pescador del velero <i>We&apos;re Here</i>. El capitán, Disko Troop, no le cree lo de su fortuna y lo pone a trabajar. Con Dan, el hijo del capitán, Harvey aprende el oficio…<small>Respuesta en 10 segundos</small></div>
                 </div>
                 <div className="lc-stat"><b>1 de 4</b><p>adolescentes ya usó ChatGPT para hacer tareas del colegio: el doble que un año antes.</p><span className="lc-fuente">Pew Research Center, EE. UU., 2025</span></div>
-                <p className="lc-lado-pie">Sabe qué pasó. No lo vivió, y en clase se nota.</p>
               </>}
               bueno={
                 <Pestanas pestanas={[['repaso', 'Anteriormente en…'], ['cartelera', 'Cartelera de investigación']]}>
@@ -644,7 +640,7 @@ export default function LandingColegios({ mobile = false }) {
                 <div><h4>El profe modera</h4><p>Pedro entra al aula como moderador: puede borrar cualquier comentario de la clase.</p></div>
               </Tarjetas>
             </div>
-            {arribaFin}
+            {arribaFin('noche15')}
           </div>
         </section>
 
@@ -813,7 +809,7 @@ export default function LandingColegios({ mobile = false }) {
                 <div><h4>Lo que el panel nunca muestra</h4><p>Lo que el alumno escribe para sí mismo: sus notas, sus corazonadas, sus respuestas del concurso. Solo cuántas hizo y si las acertó.</p></div>
               </Tarjetas>
             </div>
-            {arribaFin}
+            {arribaFin('dia28')}
           </div>
         </section>
 
@@ -823,7 +819,7 @@ export default function LandingColegios({ mobile = false }) {
             <div>
               <div className="lc-esc-head lc-esc-head-apu">
                 <div className="lc-ceja"><b>Su turno</b> una corazonada para usted</div>
-                <h2>De sus 30 alumnos, ¿cuántos cree que terminan el libro este bimestre?</h2>
+                <h2>De sus 30 alumnos, ¿cuántos cree que terminan el libro a tiempo?</h2>
                 <p>Mueva la barra y guarde su corazonada.</p>
               </div>
               <div className="lc-piloto">

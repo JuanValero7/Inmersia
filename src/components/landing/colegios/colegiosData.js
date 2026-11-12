@@ -73,9 +73,9 @@ export const RESUMEN = [
 // Día 2: cada tipo de libro trae sus juegos (en no ficción no hay mapa del tesoro,
 // concurso, corazonadas ni desafío del gato).
 export const TIPOS_DE_LIBRO = [
-  { id: 'ficcion', nombre: 'Ficción', slug: 'capitanes-intrepidos', libro: 'Capitanes intrépidos', autor: 'Rudyard Kipling',
+  { id: 'ficcion', nombre: 'Ficción',
     juegos: ['Mapa del tesoro', 'Corazonadas', 'El concurso', 'Mesa de investigación', 'Desafío del gato'] },
-  { id: 'noficcion', nombre: 'No ficción', slug: 'del-origen-del-dinero', libro: 'Del origen del dinero', autor: 'Carl Menger',
+  { id: 'noficcion', nombre: 'No ficción',
     juegos: ['El falsificador', 'Hilo de ideas', 'Explícaselo a…', 'Cápsula del tiempo'] },
 ]
 

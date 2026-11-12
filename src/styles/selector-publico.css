@@ -3,7 +3,8 @@
    «¿Cómo vas a usar Inmersia?» (components/landing/SelectorPublico.jsx),
    el mismo en la landing de lectores y en la de colegios. Lleva sus propios
    colores porque cada landing tiene sus variables (--inm-* / las de .lc-landing).
-   En móvil (.pub-movil): en triángulo, colegios y escritores arriba, el lector abajo.
+   En móvil (.pub-movil): en triángulo, arriba el público marcado (el de la
+   página en la que estás) y abajo los otros dos.
    ───────────────────────────────────────────────────────────── */
 .pub { --pub-ink: #4a3622; --pub-ink-2: #6b4f34; --pub-naranja: #f2792a; --pub-teal: #5f8a72;
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-family: 'Baloo 2', system-ui, sans-serif; }
@@ -22,11 +23,8 @@
 .pub-aviso { flex-basis: 100%; font-weight: 600; font-size: .9rem; color: var(--pub-ink-2); }
 
 .pub-movil { flex-direction: column; gap: 10px; }
-.pub-movil .pub-opts { display: grid; grid-template-columns: repeat(2, auto); grid-template-areas: "colegio escritor" "lector lector";
-  justify-content: center; column-gap: 46px; row-gap: 12px; }
-.pub-movil .pub-colegio { grid-area: colegio; }
-.pub-movil .pub-escritor { grid-area: escritor; }
-.pub-movil .pub-lector { grid-area: lector; justify-self: center; }
+.pub-movil .pub-opts { display: grid; grid-template-columns: repeat(2, auto); justify-content: center; column-gap: 46px; row-gap: 12px; }
+.pub-movil .pub-pick[aria-pressed="true"] { order: -1; grid-column: 1 / -1; justify-self: center; }
 .pub-movil .pub-cara { width: 96px; height: 96px; }
 .pub-movil .pub-nombre { font-size: 1.02rem; }
 .pub-movil .pub-l { font-size: 1.08rem; }

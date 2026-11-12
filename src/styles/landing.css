@@ -125,7 +125,18 @@
 .inm-hero-h { font-family: var(--inm-font-ui); font-weight: 800; font-size: clamp(2.5rem, 5vw, 4rem);
   line-height: 1.02; letter-spacing: -0.015em; margin: 0 0 0.45em; text-wrap: balance; }
 .inm-hero-h em { font-style: italic; color: var(--inm-orange); }
-.inm-hero-lede { font-size: clamp(1.08rem, 1.45vw, 1.28rem); line-height: 1.55; color: var(--inm-ink-2); max-width: 40ch; margin: 0 0 1.5em; }
+/* Lo que trae cada libro (HERO_CHECKS en landingData.js): rayas discontinuas
+   entre líneas y un check naranja dibujado a mano en una pastilla de crema,
+   con el mismo borde y sombra "clay" de los botones. */
+.inm-hero-checks { list-style: none; padding: 0; margin: 0 0 1.6em; max-width: 46ch;
+  font-size: clamp(1.02rem, 1.3vw, 1.15rem); line-height: 1.4; color: var(--inm-ink-2); }
+.inm-hero-checks li { position: relative; padding: .62em 0 .62em 2.3em; }
+.inm-hero-checks li + li { border-top: 2px dashed var(--inm-ink-faint); }
+.inm-hero-checks li::before { content: ""; position: absolute; left: 0; top: 50%; translate: 0 -50%; width: 1.45em; height: 1.45em;
+  border: 2px solid var(--inm-ink); border-radius: 9px; background: var(--inm-cream) center / 78% no-repeat; box-shadow: var(--inm-clay-sh);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4.5 12.8c1.6 1.2 3 2.7 4.2 4.6 2.6-4.9 6-8.6 10.6-11.2' fill='none' stroke='%23F2792A' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.inm-hero-checks li:nth-child(even)::before { rotate: -4deg; }
+.inm-hero-checks li:nth-child(odd)::before { rotate: 3deg; }
 .inm-hero-cta { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
 .inm-micro { margin: 14px 0 0; font-family: var(--inm-font-ui); font-weight: 600; font-size: .9rem; color: var(--inm-ink-soft);
   display: flex; align-items: center; gap: 8px; }
@@ -215,11 +226,7 @@
 .inm-eyebrow::before { content: ""; width: 22px; height: 2px; background: var(--inm-accent); }
 .inm-ftxt h3 { font-family: var(--inm-font-ui); font-weight: 800; font-size: clamp(1.7rem, 2.8vw, 2.35rem); line-height: 1.08;
   margin: 0 0 0.5em; text-wrap: balance; }
-.inm-ftxt ul { list-style: none; padding: 0; margin: 0; }
-.inm-ftxt li { position: relative; padding: 9px 0 9px 26px; border-top: 1px solid var(--inm-ink-faint);
-  font-family: var(--inm-font-ui); font-weight: 600; font-size: 1rem; line-height: 1.4; }
-.inm-ftxt li:first-child { border-top: none; }
-.inm-ftxt li::before { content: ""; position: absolute; left: 2px; top: 17px; width: 9px; height: 9px; border-radius: 50%; background: var(--inm-accent); }
+.inm-ftxt-p { margin: 0; font-size: 1.05rem; line-height: 1.6; color: var(--inm-ink-2); max-width: 44ch; }
 .inm-fvis { position: relative; display: grid; place-items: center; }
 
 /* recuadro con captura */
@@ -270,6 +277,8 @@
 .inm-frente img { flex: 1; min-height: 0; width: 100%; object-fit: cover; object-position: center 30%; }
 .inm-frente b { font-family: var(--inm-font-ui); font-weight: 800; font-size: .8rem; line-height: 1.1; padding: 5px 6px 1px; text-align: left; }
 .inm-frente small { font-size: .62rem; color: var(--inm-ink-soft); padding: 0 6px 6px; text-align: left; }
+.inm-cat-juegos { right: -36px; top: -78px; width: 150px; }
+.inm-cat-juegos .inm-bubble { right: 78%; bottom: 70%; }
 .inm-cat-album { left: -46px; bottom: -40px; width: 190px; }
 .inm-cat-album .inm-bubble { left: 48%; bottom: 82%; }
 

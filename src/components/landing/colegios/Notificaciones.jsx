@@ -55,7 +55,7 @@ export default function Notificaciones({ activa }) {
         <div className="lc-corte">
           <div className="lc-corte-in">
             <h3>Molesta, ¿verdad?</h3>
-            <p>Así compite el libro todas las noches. Usted lo sufrió unos segundos; sus alumnos, cada vez que abren la fotocopia.</p>
+            <p>Así compite el libro todas las noches. Usted lo sufrió unos segundos; sus alumnos, cada vez que abren el libro.</p>
             <button type="button" className="lc-btn" ref={btnRef} onClick={seguir}>Seguir</button>
           </div>
         </div>
