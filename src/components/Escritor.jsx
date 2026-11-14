@@ -83,7 +83,7 @@ export default function Escritor({ user, onLeer, onGoPerfil, onPonerSonido, isSu
         <div className="esc-aviso">
           <img src={GATO} alt="" />
           <h1>El Rincón del escritor</h1>
-          <p>Aquí los escritores suben su libro y le ponen sonido, imágenes y juegos. Tu cuenta todavía no tiene el modo escritor.</p>
+          <p>Aquí los escritores suben su libro y le ponen sonido, imágenes y juegos. Tu cuenta todavía no tiene el modo escritor. Si te dieron un código de escritor, canjéalo en Comunidades → Tengo una invitación.</p>
         </div>
       </div>
     )

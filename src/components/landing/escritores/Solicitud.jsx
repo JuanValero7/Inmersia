@@ -2,8 +2,8 @@
 // ─────────────────────────────────────────────────────────────
 // Pop-up «Quiero ser escritor» de la landing de escritores: nombre y correo.
 // Guarda la solicitud con solicitar_escritor() (migración 120). Por ahora no
-// se manda ningún correo: Juan las ve con `npm run escritor` y desde ahí crea
-// la cuenta y activa el modo escritor.
+// se manda ningún correo: Juan la ve en el SQL Editor, crea un código con
+// crear_codigo_escritor() (121) y se lo manda; se canjea en «Tengo una invitación».
 // ─────────────────────────────────────────────────────────────
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase.js'
@@ -45,12 +45,12 @@ export default function Solicitud({ user, onCerrar }) {
         <img className="le-sol-gato" src={gatoSrc('blanco', 2)} alt="Mancha" />
         {hecho ? (<>
           <h2 id="le-sol-t">¡Listo!</h2>
-          <p>Te escribimos a tu correo cuando tu cuenta de escritor esté lista.</p>
+          <p>Te escribimos a tu correo con tu código de escritor. Lo canjeas con tu cuenta de Inmersia en Comunidades → Tengo una invitación.</p>
           <button type="button" className="le-pill" onClick={onCerrar}>Seguir viendo</button>
         </>) : (
           <form onSubmit={enviar} noValidate>
             <h2 id="le-sol-t">Quiero ser escritor</h2>
-            <p>Déjanos tu nombre y tu correo. Te creamos la cuenta de escritor y te escribimos para que empieces.</p>
+            <p>Déjanos tu nombre y tu correo y te mandamos tu código de escritor para que empieces.</p>
             <label>Tu nombre<input ref={nombreRef} value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="name" maxLength={120} placeholder="Como firmas tus libros" /></label>
             <label>Tu correo<input type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} autoComplete="email" maxLength={254} placeholder="tu@correo.com" /></label>
             <p className="le-sol-error" role="alert">{error}</p>

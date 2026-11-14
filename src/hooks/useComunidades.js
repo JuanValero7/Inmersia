@@ -20,6 +20,7 @@
 // ─────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { queryKeys, usePerfilQuery } from '../lib/queries.js'
 import { evento } from '../lib/analytics.js'
@@ -230,8 +231,8 @@ export function useUnirseComunidad(userId) {
     return { id: comunidadId }
   }, [userId, refrescar])
 
-  // Cualquier código (canjear_codigo, 081/082). Devuelve
-  //   { tipo, id, colegioId }  tipo: 'comunidad' | 'alumno' | 'profesor' | 'admin'
+  // Cualquier código (canjear_codigo, 081/082/121). Devuelve
+  //   { tipo, id, colegioId }  tipo: 'comunidad' | 'alumno' | 'profesor' | 'admin' | 'escritor'
   //   { faltaNombre: true }    es un aula: hay que pedir nombre y apellido
   //   { error }
   const canjear = useCallback(async (codigo, nombreEnAula = null) => {
@@ -255,8 +256,11 @@ export function useUnirseComunidad(userId) {
 // nombre y apellido (rellenos con los del perfil, que con Google ya vienen).
 //   onComunidad(id) → club o aula: queda activa y se abre su panel.
 //   onColegio()     → código de profesor o de administrador: al panel.
+//   Código de escritor (ESCR-…, 121): modo escritor activado → a su estudio.
 export function useFormCanje({ userId, codigoInicial = '', onComunidad, onColegio }) {
   const { canjear, pendiente } = useUnirseComunidad(userId)
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const { data: perfil } = usePerfilQuery(userId)
   const [codigo, setCodigoCrudo] = useState(normalizarCanje(codigoInicial))
   const [paso, setPaso] = useState('codigo') // 'codigo' | 'nombre'
@@ -285,6 +289,10 @@ export function useFormCanje({ userId, codigoInicial = '', onComunidad, onColegi
       setPaso('nombre')
     } else if (r.error) setError(r.error)
     else if (r.tipo === 'profesor' || r.tipo === 'admin') onColegio()
+    else if (r.tipo === 'escritor') {
+      queryClient.invalidateQueries({ queryKey: queryKeys.escritor(userId) })
+      navigate('/escritor')
+    }
     else onComunidad(r.id)
   }
 
