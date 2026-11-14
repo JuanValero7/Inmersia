@@ -105,6 +105,10 @@
 .esc-tarjeta-txt b { font-family: 'Baloo 2', cursive; font-size: 23px; font-weight: 800; line-height: 1.1; }
 .esc-tarjeta-lectores { background: var(--accent); color: #fff; }
 @media (max-width: 1100px) { .esc-tarjetas { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Cartel «tus juegos están listos» (14 nov: el pedido de juegos no se ve). */
+.esc-cartel-juegos { display: flex; align-items: center; gap: 14px; margin: 14px 0 0; max-width: 640px; background: #eef5ec; border: 2px solid var(--esc-verde); border-radius: 16px; padding: 10px 16px; font-size: 14px; color: var(--ink); }
+.esc-cartel-juegos span { flex: 1; }
+.esc-cartel-juegos b { color: var(--esc-verde); }
 
 .esc-info-ruidos { margin-top: 14px; max-width: 640px; background: var(--paper); border: 2px solid var(--esc-linea); border-radius: 16px; padding: 12px 16px; }
 .esc-info-ruidos h3 { margin: 0 0 4px; font-size: 18px; }
@@ -198,7 +202,11 @@
 .esc-riel i { display: block; height: 100%; background: var(--accent); }
 
 /* ── Sala de sonido (maqueta, pantalla 4) ── */
-.esc-estudio { position: relative; min-height: calc(100vh - 74px); background: url(/assets/escritor/estudio.webp) center/cover no-repeat; color: #fff8ec; }
+.esc-estudio { position: relative; min-height: calc(100vh - 74px); background: url(/assets/escritor/estudio.webp) center/cover no-repeat fixed; color: #fff8ec; }
+/* El fondo se mide contra la ventana (fixed), no contra el alto del contenido:
+   al cambiar de pestaña la imagen no se agranda ni se achica (Juan, 14 nov).
+   El hueco de la barra de scroll, siempre reservado, para que el ancho no salte. */
+html:has(.esc-estudio) { scrollbar-gutter: stable; }
 .esc-estudio::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(28, 18, 10, .88) 0%, rgba(28, 18, 10, .7) 38%, rgba(28, 18, 10, .15) 70%, rgba(28, 18, 10, .05)); }
 .esc-estudio-in { position: relative; max-width: 1240px; margin: 0 auto; padding: 26px 24px 60px; display: grid; grid-template-columns: minmax(0, 560px) 1fr; gap: 30px; }
 .esc-volver { display: inline-flex; align-items: center; gap: 6px; color: #f5dfc0; font-size: 14px; border: 0; background: none; padding: 0; margin-bottom: 12px; font-family: 'Poppins', sans-serif; }
@@ -239,6 +247,12 @@ label.esc-etapa { cursor: pointer; }
 .esc-der-estudio { align-self: end; justify-self: end; max-width: 300px; }
 .esc-bocadillo { background: var(--paper); color: var(--ink); border: 2.5px solid var(--ink); border-radius: 18px 18px 4px 18px; padding: 12px 14px; font-size: 14px; box-shadow: 3px 4px 0 rgba(0, 0, 0, .3); }
 .esc-der-estudio img { width: 170px; display: block; margin: 8px 0 0 auto; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .4)); }
+/* Sala de sonido: gato a la altura de la primera caja y, debajo, «Edita a tu antojo». */
+.esc-der-sonido { justify-self: end; width: 100%; max-width: 340px; padding-top: 104px; }
+.esc-gato-sonido { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 14px; }
+.esc-gato-sonido .esc-bocadillo { flex: 1; margin-bottom: 40px; }
+.esc-gato-sonido img { width: 150px; flex-shrink: 0; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .4)); }
+.esc-der-sonido .esc-vidrio > p { font-size: 13.5px; color: var(--brown-soft); }
 
 /* ── Sala de imágenes (maqueta, pantalla 6) ── */
 .esc-taller { background-image: url(/assets/escritor/taller.webp); }

@@ -15,7 +15,7 @@
 .le-mobile .le-era::after{display:none}
 .le-mobile .le-texto{position:relative;top:auto;bottom:auto;left:auto!important;right:auto!important;width:auto;transform:none!important;opacity:1;padding:16px 16px calc(var(--linea-t) + 20px)}
 .le-mobile .le-texto h2{font-size:28px}
-.le-mobile .le-hoy .le-gato{width:76px;top:-40px}
+.le-mobile .le-hoy .le-gato{width:76px;bottom:calc(100% - 12px)}
 .le-mobile .le-ancha .le-texto{width:auto}
 .le-mobile .le-cuerpo .le-duo{grid-template-columns:1fr}
 .le-mobile .le-pasos{grid-template-columns:1fr 1fr}

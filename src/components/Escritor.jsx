@@ -2,7 +2,8 @@
 // Maqueta aprobada: Documents/Inmersia_maquetas/escritor/rincon-escritor.html
 // (pantallas 1 y 3: el estudio con su repisa). Desde aquí se abren las
 // salas de Sonido, Imágenes, Análisis y Juegos (fase 5: pedidos que
-// prepara Juan; él los ve en /escritor/pedidos).
+// prepara Juan; él los ve en /escritor/pedidos, sin botón en la cabecera
+// desde el 14 nov: se entra escribiendo la dirección).
 // En el teléfono no hay versión (decisión de Juan): se dice que se use la
 // computadora.
 // Quién ve qué lo decide la base (migración 103): aquí solo se pinta.
@@ -10,14 +11,14 @@ import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import useIsMobile from '../hooks/useIsMobile.js'
 import { usePerfilQuery } from '../lib/queries.js'
-import { useEscritorQuery, useLibrosEscritorQuery, useBorrarLibroEscritor, mensajeErrorEscritor } from '../hooks/useEscritor.js'
+import { useEscritorQuery, useLibrosEscritorQuery, useBorrarLibroEscritor, usePedidosJuegos, mensajeErrorEscritor } from '../hooks/useEscritor.js'
 import Repisa from './escritor/Repisa.jsx'
 import TarjetasLibro from './escritor/TarjetasLibro.jsx'
 import ModalSubirLibro from './escritor/ModalSubirLibro.jsx'
 import SalaSonido from './escritor/SalaSonido.jsx'
 import SalaImagenes from './escritor/SalaImagenes.jsx'
 import SalaAnalisis from './escritor/SalaAnalisis.jsx'
-import SalaJuegos from './escritor/SalaJuegos.jsx'
+import SalaJuegos, { JUEGOS_FIC, JUEGOS_NOF } from './escritor/SalaJuegos.jsx'
 import '../styles/escritor.css'
 
 const GATO = '/assets/landing/gatos/blanco-2.webp'
@@ -30,7 +31,7 @@ const GATO = '/assets/landing/gatos/blanco-2.webp'
  * @param {(slug: string) => void} props.onPonerSonido  abre el libro en el lector con el panel de sonidos
  * (ficción: Sonido abre la Sala de sonido, con «hazlo tú» y «automático»; fase 2b)
  */
-export default function Escritor({ user, onLeer, onGoPerfil, onPonerSonido, isSuperuser = false, onPedidos, onLectores }) {
+export default function Escritor({ user, onLeer, onGoPerfil, onPonerSonido, onLectores }) {
   const isMobile = useIsMobile()
   const { data: escritor, isLoading: cargandoEscritor, isError: errorEscritor } = useEscritorQuery(user?.id)
   const { data: libros = [], isLoading: cargandoLibros } = useLibrosEscritorQuery(user?.id, !!escritor)
@@ -46,13 +47,16 @@ export default function Escritor({ user, onLeer, onGoPerfil, onPonerSonido, isSu
   const nombre = perfil?.nombre ? `${perfil.nombre} ${perfil.apellido || ''}`.trim() : ''
   const inicial = (nombre || user?.email || '?').charAt(0).toUpperCase()
   const elegido = libros.find(l => l.id === elegidoId) || libros[0] || null
+  // Juegos listos del libro elegido → cartel en el estudio (Juan, 14 nov).
+  const { data: pedidosJuegos = [] } = usePedidosJuegos(elegido?.id)
+  const juegosListos = pedidosJuegos.filter(p => p.estado === 'listo')
+    .map(p => [...JUEGOS_FIC, ...JUEGOS_NOF].find(j => j.id === p.juego)?.nombre).filter(Boolean)
 
   const cabecera = (
     <header className="esc-cab"><div className="esc-cab-in">
       <img src="/assets/inmersia-logo.png" alt="Inmersia" />
       <span className="esc-lugar">Rincón del escritor</span>
       <span className="esc-hueco" />
-      {isSuperuser && <button type="button" className="esc-pill esc-plana" onClick={onPedidos}>Pedidos de juegos</button>}
       <button type="button" className="esc-pill esc-plana" onClick={onLeer}>Leer en Inmersia</button>
       <button type="button" className="esc-avatar" onClick={onGoPerfil} title="Mi perfil" aria-label="Mi perfil">{inicial}</button>
     </div></header>
@@ -173,6 +177,15 @@ export default function Escritor({ user, onLeer, onGoPerfil, onPonerSonido, isSu
             <TarjetasLibro infoRuidos={infoRuidos}
               onSala={(s) => (s === 'sonido' && !elegido.es_ficcion ? setInfoRuidos(v => !v) : setSala(s))}
               onLectores={() => onLectores(elegido.id)} />
+            {juegosListos.length > 0 && (
+              <div className="esc-cartel-juegos">
+                <span>
+                  <b>{juegosListos.length === 1 ? '¡Tu juego está listo!' : '¡Tus juegos están listos!'}</b>
+                  {' '}{juegosListos.join(', ')}: ya {juegosListos.length === 1 ? 'lo tienen' : 'los tienen'} tus lectores.
+                </span>
+                <button type="button" className="esc-pill esc-naranja esc-chica" onClick={() => setSala('juegos')}>Verlos</button>
+              </div>
+            )}
             {infoRuidos && !elegido.es_ficcion && (
               <div className="esc-info-ruidos">
                 <h3>Tu libro ya tiene sonido</h3>

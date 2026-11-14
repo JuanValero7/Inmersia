@@ -4,7 +4,10 @@
 //     la cola. Se reserva el máximo del cupón y, al terminar, se cobra solo
 //     el análisis + los sonidos NUEVOS; lo demás vuelve al saldo.
 //   · Edita a tu antojo: abre el libro con el panel de sonidos (fase 2a), gratis.
-// Precios: precios_escritor() en la base (la misma cifra que cobra).
+//     Va en la columna derecha, bajo el gato (Juan, 14 nov).
+// Precios: precios_escritor() en la base (la misma cifra que cobra). Desde la
+// 122 se cobra cada efecto colocado (0,05 $), y no se habla de «nuestra
+// biblioteca» ni de que lo que ya existe sea gratis (Juan, 14 nov).
 import { useState, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/queries.js'
@@ -40,8 +43,8 @@ export default function SalaSonido({ user, libro, saldo, onVolver, onAbrirLibro 
   const analisis = Number(precios?.sonido_analisis ?? 0)
   const porSonido = Number(precios?.sonido_nuevo ?? 0)
   const tope = Number(precios?.sonido_max_efectos ?? 12)
-  const maxNuevos = libro.capitulos * maxEfectos
-  const total = analisis + maxNuevos * porSonido
+  const maxEfectosLibro = libro.capitulos * maxEfectos
+  const total = analisis + maxEfectosLibro * porSonido
   const alcanza = saldo >= total
 
   const pedirSonido = async () => {
@@ -84,7 +87,7 @@ export default function SalaSonido({ user, libro, saldo, onVolver, onAbrirLibro 
                   <div><h3>Análisis</h3><p>Leemos cada capítulo y marcamos dónde suena qué: una puerta, la lluvia, un disparo.</p></div>
                   <span className="esc-chip">Siempre</span></div>
                 <div className="esc-etapa"><div className="esc-num">2</div>
-                  <div><h3>Efectos</h3><p>Usamos los que ya tenemos en la biblioteca de Inmersia y creamos los que falten.</p></div>
+                  <div><h3>Efectos</h3><p>Ponemos cada efecto justo en la frase donde suena.</p></div>
                   <span className="esc-chip">Siempre</span></div>
                 <label className="esc-etapa"><div className="esc-num">3</div>
                   <div><h3>Ambientes</h3><p>Un fondo continuo por tramos: mar, bosque, taberna… de nuestro catálogo.</p></div>
@@ -103,13 +106,13 @@ export default function SalaSonido({ user, libro, saldo, onVolver, onAbrirLibro 
 
               <table className="esc-cuenta"><tbody>
                 <tr><td>Análisis <span className="esc-gris">· {libro.capitulos} capítulos</span></td><td>{dinero(analisis)}</td></tr>
-                <tr><td>Efectos nuevos <span className="esc-gris">· hasta {maxNuevos} × {dinero(porSonido)}</span></td><td>hasta {dinero(maxNuevos * porSonido)}</td></tr>
+                <tr><td>Efectos <span className="esc-gris">· hasta {maxEfectosLibro} × {dinero(porSonido)}</span></td><td>hasta {dinero(maxEfectosLibro * porSonido)}</td></tr>
                 <tr><td>Ambientes <span className="esc-gris">· del catálogo</span></td><td>{ambientes ? 'incluido' : '—'}</td></tr>
                 <tr className="esc-cupon"><td>Cupón de bienvenida</td><td>−{dinero(Math.min(total, saldo))}</td></tr>
                 <tr className="esc-total"><td>Pagas hoy</td><td>{dinero(Math.max(0, total - saldo))}</td></tr>
               </tbody></table>
               <div className="esc-cupon-caja">🎟 <span>Cupón de bienvenida · te quedan <b>{dinero(saldo)}</b></span></div>
-              <p className="esc-letra">Solo cuentan los efectos que haya que crear. Los que ya existen en nuestra biblioteca no se cobran, así que lo normal es que salga bastante menos: reservamos el máximo y te devolvemos lo que no se use.</p>
+              <p className="esc-letra">Se cobran solo los efectos que de verdad se coloquen: reservamos el máximo y te devolvemos lo que no se use.</p>
               {!alcanza && <p className="esc-letra esc-falta">Tu cupón no alcanza para este tope. Bájalo o pon los sonidos a mano, que es gratis.</p>}
               {error && <div className="esc-alerta esc-error"><span>⚠️</span><span>{error}</span></div>}
               <button type="button" className="esc-pill esc-naranja esc-grande esc-ancho" disabled={!precios || !alcanza || pedir.isPending}
@@ -119,22 +122,22 @@ export default function SalaSonido({ user, libro, saldo, onVolver, onAbrirLibro 
               {estado === 'hecho' && <p className="esc-letra">Si lo repites, los sonidos nuevos se suman a los que ya tiene.</p>}
             </section>
           )}
-          <section className="esc-vidrio esc-a-mano">
-            <div>
-              <h2>Edita a tu antojo</h2>
-              <p>Abre tu libro y pon, cambia o quita cada efecto y cada ambiente, de nuestra biblioteca. Gratis y sin límite.</p>
-            </div>
-            <button type="button" className="esc-pill" onClick={onAbrirLibro}>Abrir mi libro</button>
-          </section>
         </div>
 
-        <div className="esc-der-estudio">
-          <div className="esc-bocadillo">
-            {enMarcha
-              ? 'Puedes cerrar esta ventana. Cuando termine, tu libro ya sonará.'
-              : 'Cuando termine, abre tu libro: lo verás como tus lectores y puedes cambiar cualquier sonido que no te guste.'}
+        <div className="esc-der-sonido">
+          <div className="esc-gato-sonido">
+            <div className="esc-bocadillo">
+              {enMarcha
+                ? 'Puedes cerrar esta ventana. Cuando termine, tu libro ya sonará.'
+                : 'Entrando a tu libro ves y oyes los sonidos tal como los tendrá tu lector.'}
+            </div>
+            <img src="/assets/landing/gatos/blanco-7.webp" alt="" />
           </div>
-          <img src="/assets/landing/gatos/blanco-6.webp" alt="" />
+          <section className="esc-vidrio">
+            <h2>Edita a tu antojo</h2>
+            <p>Abre tu libro y pon, cambia o quita cada efecto y cada ambiente. Gratis y sin límite.</p>
+            <button type="button" className="esc-pill esc-ancho" onClick={onAbrirLibro}>Abrir mi libro</button>
+          </section>
         </div>
       </div>
     </div>
@@ -164,7 +167,7 @@ function Listo({ trabajo, onAbrirLibro, onOtraVez }) {
     <section className="esc-vidrio">
       <h2>¡Tu libro ya suena!</h2>
       <p>
-        {r.efectos ?? 0} efectos colocados ({r.nuevos ?? 0} creados para tu libro, {r.reutilizados ?? 0} de nuestra biblioteca)
+        {r.efectos ?? 0} efectos colocados
         {r.capitulos_con_ambiente ? ` y ambiente en ${r.capitulos_con_ambiente} capítulos` : ''}.
         {' '}Se cobraron {dinero(trabajo.costo)} de tu cupón.
       </p>

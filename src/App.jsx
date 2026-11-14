@@ -376,7 +376,6 @@ export default function App() {
             <Route path="/escritor" element={
               <VistaEscritor user={user} onLeer={() => navigate('/biblioteca')} onGoPerfil={() => navigate('/perfil')}
                 onPonerSonido={(slug) => navigate(`/libro/${slug}`, { state: { sonidos: true } })}
-                isSuperuser={isSuperuser} onPedidos={() => navigate('/escritor/pedidos')}
                 onLectores={(libroId) => navigate(`/escritor/lectores?libro=${libroId}`)} />
             } />
             {/* Mis lectores (migración 118): dueño del libro o superusuario. */}
