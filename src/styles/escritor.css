@@ -105,6 +105,10 @@
 .esc-tarjeta-txt b { font-family: 'Baloo 2', cursive; font-size: 23px; font-weight: 800; line-height: 1.1; }
 .esc-tarjeta-lectores { background: var(--accent); color: #fff; }
 @media (max-width: 1100px) { .esc-tarjetas { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Cartel del cupón de bienvenida (saldo 0 $, alta directa de la 123). */
+.esc-cartel-cupon { display: flex; flex-direction: column; gap: 2px; margin: 0 0 18px; background: var(--paper); border: 2.5px dashed var(--accent); border-radius: 16px; padding: 12px 18px; font-size: 14px; color: var(--ink); }
+.esc-cartel-cupon b { font-family: 'Baloo 2', cursive; font-size: 18px; color: var(--accent); }
+.esc-cartel-cupon a { color: var(--accent); font-weight: 700; }
 /* Cartel «tus juegos están listos» (14 nov: el pedido de juegos no se ve). */
 .esc-cartel-juegos { display: flex; align-items: center; gap: 14px; margin: 14px 0 0; max-width: 640px; background: #eef5ec; border: 2px solid var(--esc-verde); border-radius: 16px; padding: 10px 16px; font-size: 14px; color: var(--ink); }
 .esc-cartel-juegos span { flex: 1; }

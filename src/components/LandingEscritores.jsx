@@ -7,7 +7,7 @@
 // Inmersia) y 8 paradas, de Egipto a hoy; en cada una, la época en chico y lo
 // que hace Inmersia en grande (landing/escritores/Cuerpos.jsx). Abajo, la
 // línea del tiempo con el libro que avanza. «Quiero ser escritor» abre un
-// pop-up que guarda la solicitud (landing/escritores/Solicitud.jsx, migración 120).
+// pop-up de alta directa (landing/escritores/Solicitud.jsx, migración 123).
 //
 // Variante móvil: components/mobile/LandingEscritoresMobile.jsx (este mismo
 // componente con `mobile`). Clases con prefijo `le-`, CSS en
@@ -23,6 +23,7 @@ import { CUERPOS } from './landing/escritores/Cuerpos.jsx'
 import Solicitud from './landing/escritores/Solicitud.jsx'
 import SelectorPublico from './landing/SelectorPublico.jsx'
 import { evento } from '../lib/analytics.js'
+import { useEscritorQuery } from '../hooks/useEscritor.js'
 import '../styles/landing-escritores.css'
 
 const ULTIMA = ERAS.length            // la portada es la 0; las paradas, 1..8
@@ -72,6 +73,16 @@ export default function LandingEscritores({ mobile = false, user = null, openAut
   const [visor, setVisor] = useState(null)
   const [pidiendo, setPidiendo] = useState(false)
   const { sonando, sonar, parar } = useMuestras()
+  // Quien ya tiene estudio va directo a él (Juan, 14 nov): desde «Quiero ser
+  // escritor» y al entrar con «Ya tengo cuenta». sessionStorage porque Google
+  // recarga la página.
+  const { data: escritor } = useEscritorQuery(user?.id)
+  useEffect(() => {
+    if (!user) return
+    let ir = false
+    try { ir = sessionStorage.getItem('inm_ir_estudio') === '1'; sessionStorage.removeItem('inm_ir_estudio') } catch { /* nada */ }
+    if (ir) navigate('/escritor')
+  }, [user, navigate])
 
   useEffect(() => {
     const antes = document.title
@@ -117,8 +128,16 @@ export default function LandingEscritores({ mobile = false, user = null, openAut
     return () => window.removeEventListener('keydown', tecla)
   }, [irA, pidiendo, visor])
 
-  const pedir = (desde) => { evento('escritores_cta', { ubicacion: desde }); setPidiendo(true) }
-  const yaTengo = () => { if (user) navigate('/escritor'); else openAuth?.('login') }
+  const pedir = (desde) => {
+    evento('escritores_cta', { ubicacion: desde })
+    if (escritor) navigate('/escritor')
+    else setPidiendo(true)
+  }
+  const yaTengo = () => {
+    if (user) { navigate('/escritor'); return }
+    try { sessionStorage.setItem('inm_ir_estudio', '1') } catch { /* modo privado: se queda en la landing */ }
+    openAuth?.('login')
+  }
   const elegirPublico = (p) => {
     evento('escritores_publico', { publico: p.id })
     if (p.id === 'lector') navigate('/')
@@ -195,7 +214,7 @@ export default function LandingEscritores({ mobile = false, user = null, openAut
       {visor && (
         <div className="le-visor le-on" onClick={() => setVisor(null)}><img src={visor} alt="" /></div>
       )}
-      {pidiendo && <Solicitud user={user} onCerrar={() => setPidiendo(false)} />}
+      {pidiendo && <Solicitud user={user} openAuth={openAuth} onCerrar={() => setPidiendo(false)} />}
     </div>
   )
 }

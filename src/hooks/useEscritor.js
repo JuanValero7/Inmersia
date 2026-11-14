@@ -2,8 +2,8 @@
 // ─────────────────────────────────────────────────────────────
 // Datos del Rincón del escritor (/escritor). El esquema vive en la
 // migración 103. Lo que importa aquí:
-//   · escritores: si la cuenta tiene el modo escritor (lo activa Juan a
-//     mano por ahora) y el saldo del cupón. Solo se lee la fila propia.
+//   · escritores: si la cuenta tiene el modo escritor (alta directa con
+//     hacerme_escritor(), 123) y el saldo del cupón. Solo se lee la fila propia.
 //   · libros con propietario_id = yo: la repisa. Un libro sin publicar
 //     solo lo ve su dueño; eso lo impone la base, no esta pantalla.
 //   · crear_libro_escritor / borrar_libro_escritor: el navegador nunca
@@ -35,6 +35,22 @@ export function mensajeErrorEscritor(error, generico) {
     case 'sin_cartelera': return error.message || generico
     default: return generico
   }
+}
+
+/**
+ * Activa el modo escritor de la cuenta con saldo 0 $ (migración 123, Juan
+ * 14 nov 2026: alta directa desde la landing, sin código). Idempotente.
+ */
+export function useHacermeEscritor(userId) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc('hacerme_escritor')
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.escritor(userId) }),
+  })
 }
 
 /**

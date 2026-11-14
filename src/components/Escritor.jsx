@@ -11,7 +11,7 @@ import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import useIsMobile from '../hooks/useIsMobile.js'
 import { usePerfilQuery } from '../lib/queries.js'
-import { useEscritorQuery, useLibrosEscritorQuery, useBorrarLibroEscritor, usePedidosJuegos, mensajeErrorEscritor } from '../hooks/useEscritor.js'
+import { useEscritorQuery, useLibrosEscritorQuery, useBorrarLibroEscritor, usePedidosJuegos, useHacermeEscritor, mensajeErrorEscritor } from '../hooks/useEscritor.js'
 import Repisa from './escritor/Repisa.jsx'
 import TarjetasLibro from './escritor/TarjetasLibro.jsx'
 import ModalSubirLibro from './escritor/ModalSubirLibro.jsx'
@@ -37,6 +37,7 @@ export default function Escritor({ user, onLeer, onGoPerfil, onPonerSonido, onLe
   const { data: libros = [], isLoading: cargandoLibros } = useLibrosEscritorQuery(user?.id, !!escritor)
   const { data: perfil } = usePerfilQuery(user?.id)
   const borrar = useBorrarLibroEscritor(user?.id)
+  const alta = useHacermeEscritor(user?.id)
   const [subiendo, setSubiendo] = useState(false)
   // Al volver de «Ver en la cartelera», se reabre la sala con su libro.
   const location = useLocation()
@@ -87,7 +88,11 @@ export default function Escritor({ user, onLeer, onGoPerfil, onPonerSonido, onLe
         <div className="esc-aviso">
           <img src={GATO} alt="" />
           <h1>El Rincón del escritor</h1>
-          <p>Aquí los escritores suben su libro y le ponen sonido, imágenes y juegos. Tu cuenta todavía no tiene el modo escritor. Si te dieron un código de escritor, canjéalo en Comunidades → Tengo una invitación.</p>
+          <p>Aquí los escritores suben su libro y le ponen sonido, imágenes y juegos. Tu cuenta todavía no tiene el modo escritor: ábrelo con un clic.</p>
+          <button type="button" className="esc-pill esc-naranja" disabled={alta.isPending} onClick={() => alta.mutate()}>
+            {alta.isPending ? 'Abriendo…' : 'Abrir mi estudio'}
+          </button>
+          {alta.isError && <p className="esc-msg">No se pudo abrir. Prueba otra vez.</p>}
         </div>
       </div>
     )
@@ -152,6 +157,16 @@ export default function Escritor({ user, onLeer, onGoPerfil, onPonerSonido, onLe
           </div>
           <button type="button" className="esc-pill esc-naranja esc-grande" onClick={() => setSubiendo(true)}>＋ Agregar libro</button>
         </div>
+
+        {Number(escritor.saldo_cupon) <= 0 && (
+          <div className="esc-cartel-cupon">
+            <b>¿Quieres tu cupón de bienvenida?</b>
+            <span>
+              Escríbenos a <a href="mailto:hola@inmersia.io?subject=Cup%C3%B3n%20de%20bienvenida">hola@inmersia.io</a> y te lo mandamos.
+              Mientras tanto, todo lo gratis ya es tuyo: subir tu libro, la portada, poner sonidos a mano y tus propias imágenes.
+            </span>
+          </div>
+        )}
 
         <Repisa libros={libros} cargando={cargandoLibros} elegidoId={elegido?.id}
           onElegir={(id) => { setElegidoId(id); setInfoRuidos(false) }} onAgregar={() => setSubiendo(true)} />

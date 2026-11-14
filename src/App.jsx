@@ -19,6 +19,8 @@ import AvisoRed from './components/AvisoRed.jsx'
 import AvisoGuardado from './components/AvisoGuardado.jsx'
 import NoEncontrada from './components/NoEncontrada.jsx'
 import { guardarCodigoPendiente } from './lib/codigoPendiente.js'
+import { hayEscritorPendiente, borrarEscritorPendiente } from './lib/escritorPendiente.js'
+import { useHacermeEscritor } from './hooks/useEscritor.js'
 // Carga diferida: lleva dentro el texto completo de los documentos legales.
 const PaginaLegal = lazy(() => import('./components/legal/PaginaLegal.jsx'))
 const PaginaSobre = lazy(() => import('./components/PaginaSobre.jsx'))
@@ -119,6 +121,21 @@ export default function App() {
   const location    = useLocation()
   const isMobile    = useIsMobile()
   const { adquirirTrasEntrar, limiteAviso, cerrarLimiteAviso } = useAdquirirTrasEntrar(user)
+
+  // «Quiero ser escritor» sin sesión (landing /escritores): al entrar o crear
+  // la cuenta, se activa el modo escritor (0 $, migración 123) y va a su estudio.
+  const hacermeEscritor = useHacermeEscritor(user?.id)
+  const altaEscritorEnCurso = useRef(false)
+  useEffect(() => {
+    if (!user || altaEscritorEnCurso.current || !hayEscritorPendiente()) return
+    altaEscritorEnCurso.current = true
+    borrarEscritorPendiente()
+    // Si falla, en /escritor tiene el botón «Abrir mi estudio» para reintentar.
+    hacermeEscritor.mutateAsync()
+      .then(() => evento('escritores_alta', {}))
+      .catch(() => {})
+      .finally(() => navigate('/escritor'))
+  }, [user, hacermeEscritor, navigate])
 
   // Bloquear el tipo de lector mientras el usuario está leyendo: si isMobile
   // cambia en mitad de la sesión (p. ej. al rotar un teléfono grande que cruza
