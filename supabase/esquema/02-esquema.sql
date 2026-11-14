@@ -1,6 +1,6 @@
 -- =============================================================
 -- INMERSIA — Esquema public (tablas, funciones, RLS, políticas, permisos)
--- Volcado de producción del 2026-11-11 con `npm run esquema`.
+-- Volcado de producción del 2026-11-14 con `npm run esquema`.
 -- NO SE EDITA A MANO: se regenera. Cómo restaurarlo:
 -- Documentation/base-de-datos/respaldo-estructura.md
 -- =============================================================
@@ -336,6 +336,30 @@ $$;
 
 
 --
+-- Name: _cancelar_pedido_juego(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._cancelar_pedido_juego(p_id uuid, p_nota text) RETURNS numeric
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  pj         pedidos_juegos%ROWTYPE;
+  v_activos  int;
+  v_devuelve numeric(8,2);
+BEGIN
+  SELECT * INTO pj FROM pedidos_juegos WHERE id = p_id FOR UPDATE;
+  PERFORM pg_advisory_xact_lock(hashtext('pedir_juegos:' || pj.libro_id));
+  SELECT count(*) INTO v_activos FROM pedidos_juegos WHERE libro_id = pj.libro_id AND estado <> 'cancelado';
+  v_devuelve := _precio_juegos(v_activos) - _precio_juegos(v_activos - 1);
+  UPDATE pedidos_juegos SET estado = 'cancelado', nota = p_nota, actualizado = now() WHERE id = p_id;
+  UPDATE escritores SET saldo_cupon = saldo_cupon + v_devuelve WHERE user_id = pj.user_id;
+  RETURN v_devuelve;
+END;
+$$;
+
+
+--
 -- Name: _capsula_estado(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -533,6 +557,59 @@ BEGIN
       USING ERRCODE = 'P0001', HINT = 'ultimo_admin';
   END IF;
   RETURN OLD;
+END;
+$$;
+
+
+--
+-- Name: _colocar_imagen_escritor(uuid, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._colocar_imagen_escritor(p_imagen uuid, p_capitulo integer) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  i        imagenes_escritor%ROWTYPE;
+  v_cap    uuid;
+  v_parr   uuid;
+  v_media  uuid;
+  v_titulo text;
+BEGIN
+  SELECT * INTO i FROM imagenes_escritor WHERE id = p_imagen;
+  IF NOT FOUND THEN RETURN; END IF;
+
+  -- Fuera la polaroid anterior (elementos_interactivos se va en cascada).
+  IF i.media_id IS NOT NULL THEN
+    UPDATE imagenes_escritor SET media_id = NULL WHERE id = i.id;
+    DELETE FROM biblioteca_media WHERE id = i.media_id;
+  END IF;
+
+  IF p_capitulo IS NULL THEN
+    UPDATE imagenes_escritor SET capitulo = NULL WHERE id = i.id;
+    RETURN;
+  END IF;
+
+  SELECT id INTO v_cap FROM capitulos WHERE libro_id = i.libro_id AND numero = p_capitulo;
+  IF v_cap IS NULL THEN
+    RAISE EXCEPTION 'Ese capítulo no existe.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  -- Párrafo N-5 (o el primero si hay menos de 5), como upload.py.
+  SELECT id INTO v_parr FROM parrafos WHERE capitulo_id = v_cap
+   ORDER BY numero DESC OFFSET 4 LIMIT 1;
+  IF v_parr IS NULL THEN
+    SELECT id INTO v_parr FROM parrafos WHERE capitulo_id = v_cap ORDER BY numero LIMIT 1;
+  END IF;
+
+  v_titulo := coalesce(nullif(btrim(i.pie), ''), (SELECT titulo FROM libros WHERE id = i.libro_id));
+  INSERT INTO biblioteca_media (slug, tipo, url, titulo, metadata)
+  VALUES ('escritor-' || i.id, 'imagen', i.url, v_titulo,
+          jsonb_build_object('escritor', true, 'libro_id', i.libro_id))
+  ON CONFLICT (slug) DO UPDATE SET url = EXCLUDED.url, titulo = EXCLUDED.titulo
+  RETURNING id INTO v_media;
+
+  INSERT INTO elementos_interactivos (parrafo_id, media_id) VALUES (v_parr, v_media);
+  UPDATE imagenes_escritor SET media_id = v_media, capitulo = p_capitulo WHERE id = i.id;
 END;
 $$;
 
@@ -1200,6 +1277,24 @@ $$;
 
 
 --
+-- Name: _guardar_juego(uuid, text, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._guardar_juego(p_libro uuid, p_juego text, p_datos jsonb) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $_$
+BEGIN
+  EXECUTE format('INSERT INTO juegos_originales (libro_id, juego, datos)
+                  SELECT libro_id, %L, datos FROM %I WHERE libro_id = $1
+                  ON CONFLICT DO NOTHING', p_juego, p_juego || '_contenido') USING p_libro;
+  EXECUTE format('UPDATE %I SET datos = $2, version = version + 1, actualizado_at = now() WHERE libro_id = $1',
+                 p_juego || '_contenido') USING p_libro, p_datos;
+END;
+$_$;
+
+
+--
 -- Name: _hilo_armadas(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1312,6 +1407,24 @@ $$;
 
 
 --
+-- Name: _imagen_escritor_borrada(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._imagen_escritor_borrada() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  INSERT INTO archivos_por_borrar (ruta) SELECT unnest(OLD.rutas) ON CONFLICT DO NOTHING;
+  IF OLD.media_id IS NOT NULL THEN
+    DELETE FROM biblioteca_media WHERE id = OLD.media_id;
+  END IF;
+  RETURN OLD;
+END;
+$$;
+
+
+--
 -- Name: _juegos_aula_por_defecto(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1362,6 +1475,60 @@ BEGIN
   PERFORM _dar_libro_aula(NEW.comunidad_id);
   RETURN NULL;
 END;
+$$;
+
+
+--
+-- Name: libros; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.libros (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    titulo text NOT NULL,
+    autor text NOT NULL,
+    descripcion text,
+    portada_url text,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    color text,
+    paginas integer,
+    anio integer,
+    categorias text[] DEFAULT '{}'::text[] NOT NULL,
+    moods text[] DEFAULT '{}'::text[] NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    es_ficcion boolean DEFAULT true NOT NULL,
+    slug text,
+    visible boolean DEFAULT true NOT NULL,
+    orden integer,
+    anio_texto text,
+    primera_linea text,
+    propietario_id uuid
+);
+
+
+--
+-- Name: COLUMN libros.orden; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.libros.orden IS 'Orden curado del catalogo (menor = mas arriba). Numerado de 10 en 10 para poder intercalar sin renumerar. NULL = sin puesto asignado, va al final.';
+
+
+--
+-- Name: _libro_del_escritor(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._libro_del_escritor(p_libro uuid) RETURNS public.libros
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  l libros%ROWTYPE;
+BEGIN
+  SELECT * INTO l FROM libros WHERE id = p_libro AND propietario_id = auth.uid();
+  IF NOT FOUND OR auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Ese libro no es tuyo o ya no existe.' USING ERRCODE = 'P0002', HINT = 'libro_invalido';
+  END IF;
+  RETURN l;
+END;
 $$;
 
 
@@ -1458,6 +1625,32 @@ $$;
 
 
 --
+-- Name: _media_de_imagen_escritor(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._media_de_imagen_escritor(p_imagen uuid) RETURNS uuid
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  i       imagenes_escritor%ROWTYPE;
+  v_media uuid;
+BEGIN
+  SELECT * INTO i FROM imagenes_escritor WHERE id = p_imagen;
+  IF i.media_id IS NOT NULL THEN RETURN i.media_id; END IF;
+  INSERT INTO biblioteca_media (slug, tipo, url, titulo, metadata)
+  VALUES ('escritor-' || i.id, 'imagen', i.url, coalesce(nullif(btrim(i.nombre), ''), nullif(btrim(i.pie), ''),
+          (SELECT titulo FROM libros WHERE id = i.libro_id)),
+          jsonb_build_object('escritor', true, 'libro_id', i.libro_id))
+  ON CONFLICT (slug) DO UPDATE SET url = EXCLUDED.url
+  RETURNING id INTO v_media;
+  UPDATE imagenes_escritor SET media_id = v_media WHERE id = i.id;
+  RETURN v_media;
+END;
+$$;
+
+
+--
 -- Name: _meta_aula(uuid, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1536,6 +1729,18 @@ $$;
 
 
 --
+-- Name: _precio_juegos(integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._precio_juegos(n integer) RETURNS numeric
+    LANGUAGE sql IMMUTABLE
+    SET search_path TO 'public'
+    AS $$
+  SELECT (precios_escritor() -> 'juegos' ->> least(greatest(n, 0), 5))::numeric;
+$$;
+
+
+--
 -- Name: _profe_de_aula(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1574,6 +1779,30 @@ CREATE FUNCTION public._recompensa_bloqueo(p_user uuid, p_rec uuid, p_libro uuid
                           WHEN _bote_juntado(r.id) >= r.precio THEN 'lleno' END
     ELSE NULL END
   FROM recompensas r WHERE r.id = p_rec;
+$$;
+
+
+--
+-- Name: _reel_archivos_por_borrar(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._reel_archivos_por_borrar() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  INSERT INTO archivos_por_borrar (ruta)
+  SELECT v.r FROM (VALUES (_ruta_escritores(OLD.imagen_url)), (_ruta_escritores(OLD.audio_url))) v(r)
+   WHERE v.r IS NOT NULL
+     AND (TG_OP = 'DELETE'
+          OR (v.r IS DISTINCT FROM _ruta_escritores(NEW.imagen_url)
+              AND v.r IS DISTINCT FROM _ruta_escritores(NEW.audio_url)))
+     AND NOT EXISTS (SELECT 1 FROM libro_reels o
+                      WHERE o.libro_id = OLD.libro_id AND o.id <> OLD.id
+                        AND (_ruta_escritores(o.audio_url) = v.r OR _ruta_escritores(o.imagen_url) = v.r))
+  ON CONFLICT DO NOTHING;
+  RETURN NULL;
+END;
 $$;
 
 
@@ -1640,6 +1869,65 @@ BEGIN
                                    'explicaselo', v_ex),
     'concurso_rango', jsonb_build_array(v_ccmin, v_ccmax),
     'apagados', to_jsonb(v_apag));
+END;
+$$;
+
+
+--
+-- Name: _ruta_escritores(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._ruta_escritores(p_url text) RETURNS text
+    LANGUAGE sql IMMUTABLE
+    SET search_path TO 'public'
+    AS $$
+  SELECT substring(p_url FROM '/storage/v1/object/public/escritores/([^?]+)');
+$$;
+
+
+--
+-- Name: _seccion_valida(boolean, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._seccion_valida(p_es_ficcion boolean, p_seccion text) RETURNS boolean
+    LANGUAGE sql IMMUTABLE
+    AS $$
+  SELECT CASE WHEN p_es_ficcion THEN p_seccion IN ('personajes', 'lugares', 'hechos', 'datos')
+              ELSE p_seccion IN ('glosario', 'datos', 'referencias', 'resumen') END;
+$$;
+
+
+--
+-- Name: _texto_juego(jsonb, integer, boolean); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._texto_juego(p jsonb, p_max integer, p_vacio boolean DEFAULT false) RETURNS text
+    LANGUAGE sql IMMUTABLE
+    AS $$
+  SELECT CASE WHEN jsonb_typeof(p) = 'string'
+               AND length(btrim(p #>> '{}')) <= p_max
+               AND (p_vacio OR length(btrim(p #>> '{}')) >= 1)
+              THEN btrim(p #>> '{}') END;
+$$;
+
+
+--
+-- Name: _trabajo_borrar_libro(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._trabajo_borrar_libro() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  r record;
+BEGIN
+  FOR r IN SELECT id FROM trabajos WHERE libro_id = OLD.id AND estado = 'pendiente' AND reservado IS NOT NULL AND costo IS NULL LOOP
+    PERFORM cerrar_cobro(r.id, 0);
+  END LOOP;
+  DELETE FROM trabajos WHERE libro_id = OLD.id AND estado = 'pendiente';
+  INSERT INTO trabajos (user_id, libro_id, tipo) VALUES (NULL, OLD.id, 'borrar');
+  RETURN OLD;
 END;
 $$;
 
@@ -1767,6 +2055,24 @@ $$;
 
 
 --
+-- Name: _ubicar_cita(uuid, integer, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._ubicar_cita(p_libro uuid, p_cap integer, p_cita text) RETURNS integer
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  SELECT p.numero
+  FROM capitulos c JOIN parrafos p ON p.capitulo_id = c.id
+  WHERE c.libro_id = p_libro AND c.numero = p_cap
+    AND length(btrim(coalesce(p_cita, ''))) >= 10
+    AND strpos(_mapa_norm(p.contenido), _mapa_norm(p_cita)) > 0
+  ORDER BY p.numero
+  LIMIT 1;
+$$;
+
+
+--
 -- Name: _zona_valida(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1775,6 +2081,90 @@ CREATE FUNCTION public._zona_valida(p_zona text) RETURNS text
     AS $$
   SELECT CASE WHEN exists (SELECT 1 FROM pg_timezone_names WHERE name=p_zona) THEN p_zona ELSE 'UTC' END;
   $$;
+
+
+--
+-- Name: activar_escritor(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.activar_escritor(p_correo text) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_correo text := lower(btrim(coalesce(p_correo, '')));
+  v_uid    uuid;
+  v_nuevo  boolean;
+BEGIN
+  SELECT id INTO v_uid FROM auth.users WHERE lower(email) = v_correo LIMIT 1;
+  IF v_uid IS NULL THEN
+    RETURN 'sin_cuenta';
+  END IF;
+
+  INSERT INTO escritores (user_id) VALUES (v_uid)
+  ON CONFLICT (user_id) DO NOTHING;
+  v_nuevo := FOUND;
+
+  UPDATE solicitudes_escritor SET atendida = now()
+  WHERE lower(correo) = v_correo AND atendida IS NULL;
+
+  RETURN CASE WHEN v_nuevo THEN 'activado' ELSE 'ya_era' END;
+END;
+$$;
+
+
+--
+-- Name: actualizar_imagen_escritor(uuid, integer, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.actualizar_imagen_escritor(p_imagen uuid, p_capitulo integer, p_pie text) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  i imagenes_escritor%ROWTYPE;
+BEGIN
+  SELECT im.* INTO i FROM imagenes_escritor im JOIN libros l ON l.id = im.libro_id
+   WHERE im.id = p_imagen AND l.propietario_id = auth.uid();
+  IF NOT FOUND OR i.tipo NOT IN ('propia', 'escena') OR i.estado <> 'guardada' THEN
+    RAISE EXCEPTION 'Esa imagen no es de tu libro.' USING ERRCODE = 'P0002', HINT = 'imagen_invalida';
+  END IF;
+  IF length(coalesce(p_pie, '')) > 200 THEN
+    RAISE EXCEPTION 'El pie de imagen es demasiado largo (máximo 200 letras).' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  UPDATE imagenes_escritor SET pie = nullif(btrim(p_pie), '') WHERE id = i.id;
+  PERFORM _colocar_imagen_escritor(i.id, p_capitulo);
+END;
+$$;
+
+
+--
+-- Name: actualizar_pedido_juego(uuid, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.actualizar_pedido_juego(p_id uuid, p_estado text, p_nota text DEFAULT NULL::text) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_actual text;
+BEGIN
+  IF NOT public.es_superusuario() THEN
+    RAISE EXCEPTION 'Solo para administración.' USING ERRCODE = '42501', HINT = 'no_superusuario';
+  END IF;
+  SELECT estado INTO v_actual FROM pedidos_juegos WHERE id = p_id;
+  IF v_actual IS NULL OR v_actual = 'cancelado' OR p_estado NOT IN ('pedido', 'en_curso', 'listo', 'cancelado') THEN
+    RAISE EXCEPTION 'Ese pedido no se puede cambiar.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  IF p_estado = 'cancelado' THEN
+    PERFORM _cancelar_pedido_juego(p_id, nullif(btrim(coalesce(p_nota, '')), ''));
+  ELSE
+    UPDATE pedidos_juegos SET estado = p_estado, actualizado = now(),
+           nota = coalesce(nullif(btrim(coalesce(p_nota, '')), ''), nota)
+     WHERE id = p_id;
+  END IF;
+END;
+$$;
 
 
 --
@@ -1809,37 +2199,43 @@ $$;
 CREATE FUNCTION public.adquirir_libro(p_libro_id uuid) RETURNS boolean
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-DECLARE
-  v_uid    uuid := auth.uid();
-  v_manual constant uuid := '00000000-0000-4000-8000-000000000001';  -- MANUAL_LIBRO_ID
-  -- LIMITE_PENDIENTES de src/hooks/useCompraLibro.js: si cambia uno, cambiar los dos.
-  v_limite constant int := 5;
-BEGIN
-  IF v_uid IS NULL THEN
-    RAISE EXCEPTION 'Hace falta una sesión.' USING ERRCODE = '42501', HINT = 'sin_sesion';
-  END IF;
-
-  -- Dos peticiones a la vez del mismo usuario no se cuelan las dos.
-  PERFORM pg_advisory_xact_lock(hashtext('adquirir_libro:' || v_uid));
-
-  IF EXISTS (SELECT 1 FROM bibliotecas_usuarios WHERE user_id = v_uid AND libro_id = p_libro_id) THEN
-    RETURN false;
-  END IF;
-
-  IF p_libro_id <> v_manual
-     AND NOT EXISTS (SELECT 1 FROM superusuarios WHERE user_id = v_uid)
-     AND (SELECT count(*) FROM bibliotecas_usuarios
-          WHERE user_id = v_uid AND libro_id <> v_manual AND NOT coalesce(leido, false) AND NOT de_aula) >= v_limite
-  THEN
-    RAISE EXCEPTION 'Ya tienes % lecturas pendientes.', v_limite
-      USING ERRCODE = '42501', HINT = 'limite_pendientes';
-  END IF;
-
-  INSERT INTO bibliotecas_usuarios (user_id, libro_id, leido)
-  VALUES (v_uid, p_libro_id, false);
-  RETURN true;
-END;
+    AS $$
+DECLARE
+  v_uid    uuid := auth.uid();
+  v_manual constant uuid := '00000000-0000-4000-8000-000000000001';  -- MANUAL_LIBRO_ID
+  -- LIMITE_PENDIENTES de src/hooks/useCompraLibro.js: si cambia uno, cambiar los dos.
+  v_limite constant int := 5;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Hace falta una sesión.' USING ERRCODE = '42501', HINT = 'sin_sesion';
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM libros
+             WHERE id = p_libro_id AND propietario_id IS NOT NULL
+               AND NOT visible AND propietario_id <> v_uid) THEN
+    RAISE EXCEPTION 'Ese libro no está en el catálogo.' USING ERRCODE = 'P0002', HINT = 'libro_invalido';
+  END IF;
+
+  -- Dos peticiones a la vez del mismo usuario no se cuelan las dos.
+  PERFORM pg_advisory_xact_lock(hashtext('adquirir_libro:' || v_uid));
+
+  IF EXISTS (SELECT 1 FROM bibliotecas_usuarios WHERE user_id = v_uid AND libro_id = p_libro_id) THEN
+    RETURN false;
+  END IF;
+
+  IF p_libro_id <> v_manual
+     AND NOT EXISTS (SELECT 1 FROM superusuarios WHERE user_id = v_uid)
+     AND (SELECT count(*) FROM bibliotecas_usuarios
+          WHERE user_id = v_uid AND libro_id <> v_manual AND NOT coalesce(leido, false) AND NOT de_aula) >= v_limite
+  THEN
+    RAISE EXCEPTION 'Ya tienes % lecturas pendientes.', v_limite
+      USING ERRCODE = '42501', HINT = 'limite_pendientes';
+  END IF;
+
+  INSERT INTO bibliotecas_usuarios (user_id, libro_id, leido)
+  VALUES (v_uid, p_libro_id, false);
+  RETURN true;
+END;
 $$;
 
 
@@ -2085,6 +2481,68 @@ $$;
 
 
 --
+-- Name: borrar_ficha_cartelera(uuid, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.borrar_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  PERFORM _libro_del_escritor(p_libro);
+  DELETE FROM cartelera_items WHERE libro_id = p_libro AND seccion = p_seccion AND nombre = p_nombre;
+END;
+$$;
+
+
+--
+-- Name: borrar_item_cartelera(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.borrar_item_cartelera(p_libro uuid, p_id uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  PERFORM _libro_del_escritor(p_libro);
+  DELETE FROM cartelera_items WHERE id = p_id AND libro_id = p_libro;
+END;
+$$;
+
+
+--
+-- Name: borrar_libro_escritor(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.borrar_libro_escritor(p_libro uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  DELETE FROM libros WHERE id = p_libro AND propietario_id = auth.uid();
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Ese libro no es tuyo o ya no existe.' USING ERRCODE = 'P0002', HINT = 'libro_invalido';
+  END IF;
+END;
+$$;
+
+
+--
+-- Name: borrar_propuesta_ilustracion(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.borrar_propuesta_ilustracion(p_id uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  DELETE FROM ilustraciones_propuestas pr USING libros l
+   WHERE pr.id = p_id AND l.id = pr.libro_id AND l.propietario_id = auth.uid();
+END;
+$$;
+
+
+--
 -- Name: bote_entregar(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2136,6 +2594,23 @@ CREATE FUNCTION public.buscar_comunidades(p_texto text DEFAULT ''::text) RETURNS
     )
   ORDER BY 7 DESC, c.created_at DESC
   LIMIT 20;
+$$;
+
+
+--
+-- Name: cancelar_juego(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cancelar_juego(p_id uuid) RETURNS numeric
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pedidos_juegos WHERE id = p_id AND user_id = auth.uid() AND estado = 'pedido') THEN
+    RAISE EXCEPTION 'Ese juego ya no se puede cancelar.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  RETURN _cancelar_pedido_juego(p_id, NULL);
+END;
 $$;
 
 
@@ -2357,6 +2832,32 @@ BEGIN
   VALUES (v_user, p_libro, v_preg, v_resp);
 
   RETURN _capsula_estado(v_user, p_libro);
+END;
+$$;
+
+
+--
+-- Name: cerrar_cobro(uuid, numeric); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cerrar_cobro(p_trabajo uuid, p_costo numeric) RETURNS numeric
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  t       trabajos%ROWTYPE;
+  v_costo numeric(8,2);
+BEGIN
+  SELECT * INTO t FROM trabajos WHERE id = p_trabajo FOR UPDATE;
+  IF NOT FOUND OR t.costo IS NOT NULL OR t.reservado IS NULL THEN
+    RETURN t.costo;
+  END IF;
+  v_costo := least(greatest(coalesce(p_costo, 0), 0), t.reservado);
+  UPDATE trabajos SET costo = v_costo WHERE id = p_trabajo;
+  IF t.user_id IS NOT NULL THEN
+    UPDATE escritores SET saldo_cupon = saldo_cupon + (t.reservado - v_costo) WHERE user_id = t.user_id;
+  END IF;
+  RETURN v_costo;
 END;
 $$;
 
@@ -3089,6 +3590,90 @@ $_$;
 
 
 --
+-- Name: crear_libro_escritor(text, text, boolean, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.crear_libro_escritor(p_titulo text, p_autor text, p_es_ficcion boolean, p_capitulos jsonb) RETURNS uuid
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_uid      uuid := auth.uid();
+  v_titulo   text := btrim(coalesce(p_titulo, ''));
+  v_autor    text := btrim(coalesce(p_autor, ''));
+  v_libro    uuid;
+  v_n_caps   int;
+  v_n_parr   int;
+  v_chars    bigint;
+  v_palabras int;
+  v_slug     text;
+BEGIN
+  IF v_uid IS NULL OR NOT EXISTS (SELECT 1 FROM escritores WHERE user_id = v_uid) THEN
+    RAISE EXCEPTION 'Tu cuenta no tiene el modo escritor.' USING ERRCODE = '42501', HINT = 'no_escritor';
+  END IF;
+
+  IF length(v_titulo) NOT BETWEEN 1 AND 200 OR length(v_autor) NOT BETWEEN 1 AND 120 THEN
+    RAISE EXCEPTION 'Falta el título o el nombre de autor.' USING ERRCODE = '22023', HINT = 'datos_libro';
+  END IF;
+
+  IF (SELECT count(*) FROM libros WHERE propietario_id = v_uid) >= 20 THEN
+    RAISE EXCEPTION 'Ya tienes 20 libros en tu repisa.' USING ERRCODE = '42501', HINT = 'limite_libros';
+  END IF;
+
+  -- Forma: un array de capítulos, cada uno un array de párrafos (texto).
+  IF jsonb_typeof(p_capitulos) <> 'array' THEN
+    RAISE EXCEPTION 'Formato de capítulos inválido.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  v_n_caps := jsonb_array_length(p_capitulos);
+  IF v_n_caps NOT BETWEEN 1 AND 500 THEN
+    RAISE EXCEPTION 'El libro tiene que tener entre 1 y 500 capítulos.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  IF EXISTS (SELECT 1 FROM jsonb_array_elements(p_capitulos) c
+             WHERE jsonb_typeof(c) <> 'array' OR jsonb_array_length(c) = 0
+                OR EXISTS (SELECT 1 FROM jsonb_array_elements(c) p WHERE jsonb_typeof(p) <> 'string')) THEN
+    RAISE EXCEPTION 'Formato de capítulos inválido.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+
+  SELECT count(*), coalesce(sum(length(p #>> '{}')), 0)
+    INTO v_n_parr, v_chars
+    FROM jsonb_array_elements(p_capitulos) c, jsonb_array_elements(c) p;
+  IF v_n_parr > 40000 OR v_chars > 6000000 THEN
+    RAISE EXCEPTION 'El libro es demasiado largo para subirlo de una vez.' USING ERRCODE = '22023', HINT = 'demasiado_largo';
+  END IF;
+
+  -- Slug legible + un trozo al azar: único y sin chocar con el catálogo.
+  v_slug := trim(both '-' from regexp_replace(lower(unaccent(v_titulo)), '[^a-z0-9]+', '-', 'g'));
+  v_slug := left(coalesce(nullif(v_slug, ''), 'libro'), 60) || '-' || substr(md5(gen_random_uuid()::text), 1, 6);
+
+  INSERT INTO libros (titulo, autor, es_ficcion, visible, propietario_id, slug)
+  VALUES (v_titulo, v_autor, coalesce(p_es_ficcion, true), false, v_uid, v_slug)
+  RETURNING id INTO v_libro;
+
+  WITH caps AS (
+    SELECT c.ord::int AS numero, c.parrafos
+      FROM jsonb_array_elements(p_capitulos) WITH ORDINALITY AS c(parrafos, ord)
+  ), ins_caps AS (
+    INSERT INTO capitulos (libro_id, numero, titulo)
+    SELECT v_libro, caps.numero, 'Capítulo ' || caps.numero
+      FROM caps
+    RETURNING id, numero
+  )
+  INSERT INTO parrafos (libro_id, capitulo_id, numero, contenido, tipo)
+  SELECT v_libro, ic.id, p.ord::int, btrim(p.txt #>> '{}'), 'texto'
+    FROM ins_caps ic
+    JOIN caps ON caps.numero = ic.numero
+    CROSS JOIN LATERAL jsonb_array_elements(caps.parrafos) WITH ORDINALITY AS p(txt, ord);
+
+  -- capitulos.palabras la rellena el trigger de parrafos (recalcular_palabras_capitulos).
+  SELECT coalesce(sum(palabras), 0) INTO v_palabras FROM capitulos WHERE libro_id = v_libro;
+  UPDATE libros SET paginas = greatest(1, ceil(v_palabras / 250.0)::int) WHERE id = v_libro;
+
+  RETURN v_libro;
+END;
+$$;
+
+
+--
 -- Name: delete_parrafo_superuser(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3392,6 +3977,33 @@ $$;
 
 
 --
+-- Name: descartar_imagen_escritor(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.descartar_imagen_escritor(p_imagen uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  i imagenes_escritor%ROWTYPE;
+BEGIN
+  SELECT im.* INTO i FROM imagenes_escritor im JOIN libros l ON l.id = im.libro_id
+   WHERE im.id = p_imagen AND l.propietario_id = auth.uid();
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Esa imagen no es de tu libro.' USING ERRCODE = 'P0002', HINT = 'imagen_invalida';
+  END IF;
+  IF i.estado = 'guardada' AND i.tipo = 'portada' THEN
+    UPDATE libros SET portada_url = NULL WHERE id = i.libro_id AND portada_url = i.url;
+  ELSIF i.estado = 'guardada' AND i.tipo = 'fondo' THEN
+    UPDATE libros SET metadata = metadata - 'hero_url' - 'hero_url_mobile'
+     WHERE id = i.libro_id AND metadata ->> 'hero_url' = i.url;
+  END IF;
+  DELETE FROM imagenes_escritor WHERE id = i.id;
+END;
+$$;
+
+
+--
 -- Name: edad_permite_contacto(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3404,6 +4016,715 @@ CREATE FUNCTION public.edad_permite_contacto(uid uuid) RETURNS boolean
      FROM perfiles p WHERE p.id = uid),
     true
   );
+$$;
+
+
+--
+-- Name: editar_anderson(uuid, jsonb, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.editar_anderson(p_libro uuid, p_pistas jsonb, p_rasgos jsonb) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_actual  jsonb;
+  v_pjs     jsonb;
+  v_pistas  jsonb := '{}'::jsonb;   -- id final → pista
+  v_mapa    jsonb := '{}'::jsonb;   -- id provisional → id final
+  v_rasgos  jsonb := '[]'::jsonb;
+  v_ids_r   text[];
+  v_maxcap  int;
+  it        jsonb;
+  ac        jsonb;
+  pj        jsonb;
+  v_id      text;
+  v_par     int;
+  v_ops     jsonb;
+  v_pool    jsonb;
+  v_n       int;
+  k         int;
+  r1        jsonb;
+  r2        jsonb;
+  pid       text;
+BEGIN
+  PERFORM _libro_del_escritor(p_libro);
+  SELECT datos INTO v_actual FROM anderson_contenido WHERE libro_id = p_libro;
+  IF v_actual IS NULL THEN
+    RAISE EXCEPTION 'Este libro todavía no tiene Método Anderson.' USING ERRCODE = 'P0002', HINT = 'formato';
+  END IF;
+  IF jsonb_typeof(p_pistas) IS DISTINCT FROM 'array' OR jsonb_typeof(p_rasgos) IS DISTINCT FROM 'array'
+     OR jsonb_array_length(p_pistas) > 400 OR jsonb_array_length(p_rasgos) > 80 THEN
+    RAISE EXCEPTION 'Formato no válido.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  v_pjs := v_actual -> 'personajes';
+  SELECT max(numero) INTO v_maxcap FROM capitulos WHERE libro_id = p_libro;
+
+  -- 1. Pistas: las que ya estaban (solo textos) y las nuevas (se ubican en el libro).
+  FOR it IN SELECT * FROM jsonb_array_elements(p_pistas) LOOP
+    IF coalesce((it ->> 'nueva')::boolean, false) THEN
+      SELECT x INTO pj FROM jsonb_array_elements(v_pjs) x WHERE x ->> 'id' = it ->> 'pj';
+      IF pj IS NULL THEN
+        RAISE EXCEPTION 'Ese personaje no está en el juego.' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      IF jsonb_typeof(it -> 'cap') IS DISTINCT FROM 'number' OR (it ->> 'cap')::int < (pj ->> 'aparece')::int OR (it ->> 'cap')::int > v_maxcap THEN
+        RAISE EXCEPTION 'Una pista de % tiene que ser del capítulo % en adelante (cuando aparece).', pj ->> 'corto', pj ->> 'aparece'
+          USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      IF _texto_juego(it -> 'cita', 600) IS NULL OR _texto_juego(it -> 'resumen', 200) IS NULL THEN
+        RAISE EXCEPTION 'Una pista nueva necesita la frase del libro (hasta 600 letras) y lo que ve el lector (hasta 200).'
+          USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      v_par := _ubicar_cita(p_libro, (it ->> 'cap')::int, it ->> 'cita');
+      IF v_par IS NULL THEN
+        RAISE EXCEPTION 'No encontramos tal cual en el capítulo % la frase «%».', it ->> 'cap', left(it ->> 'cita', 50)
+          USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      v_id := 'p' || substr(md5(random()::text || clock_timestamp()::text), 1, 10);
+      IF coalesce(it ->> 'id', '') <> '' THEN v_mapa := v_mapa || jsonb_build_object(it ->> 'id', v_id); END IF;
+      v_pistas := v_pistas || jsonb_build_object(v_id, jsonb_build_object(
+        'id', v_id, 'pj', pj ->> 'id', 'cap', (it ->> 'cap')::int, 'parrafo', v_par,
+        'cita', _texto_juego(it -> 'cita', 600), 'resumen', _texto_juego(it -> 'resumen', 200),
+        'senuelo', false, 'por_que', NULL, 'clave', NULL));
+    ELSE
+      SELECT x INTO ac FROM jsonb_array_elements(v_actual -> 'pistas') x WHERE x ->> 'id' = it ->> 'id';
+      IF ac IS NULL OR v_pistas ? (ac ->> 'id') THEN
+        RAISE EXCEPTION 'Una pista ya no está o está repetida. Recarga la página.' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      IF _texto_juego(it -> 'resumen', 200) IS NULL THEN
+        RAISE EXCEPTION 'Lo que ve el lector en una pista no puede quedar vacío (hasta 200 letras): «%».', left(ac ->> 'cita', 50)
+          USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      ac := ac || jsonb_build_object('resumen', _texto_juego(it -> 'resumen', 200));
+      IF (ac ->> 'senuelo')::boolean THEN
+        IF _texto_juego(it -> 'por_que', 300) IS NULL THEN
+          RAISE EXCEPTION 'Explica por qué engaña el señuelo (hasta 300 letras): «%».', left(ac ->> 'cita', 50)
+            USING ERRCODE = '22023', HINT = 'formato';
+        END IF;
+        ac := ac || jsonb_build_object('por_que', _texto_juego(it -> 'por_que', 300));
+      END IF;
+      v_pistas := v_pistas || jsonb_build_object(ac ->> 'id', ac);
+    END IF;
+  END LOOP;
+
+  -- Ids finales de deducción (para las referencias de las «de cambio»).
+  SELECT coalesce(array_agg(x ->> 'id'), '{}') INTO v_ids_r
+    FROM jsonb_array_elements(p_rasgos) x WHERE NOT coalesce((x ->> 'nueva')::boolean, false);
+
+  -- 2. Deducciones.
+  FOR it IN SELECT * FROM jsonb_array_elements(p_rasgos) LOOP
+    IF coalesce((it ->> 'nueva')::boolean, false) THEN
+      SELECT x INTO pj FROM jsonb_array_elements(v_pjs) x WHERE x ->> 'id' = it ->> 'pj';
+      IF pj IS NULL OR jsonb_typeof(it -> 'correcta') IS DISTINCT FROM 'number' OR (it ->> 'correcta')::int NOT BETWEEN 0 AND 2 THEN
+        RAISE EXCEPTION 'Una deducción nueva necesita su personaje y cuál es la conclusión verdadera.' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      ac := jsonb_build_object('id', 'e' || substr(md5(random()::text || clock_timestamp()::text), 1, 8), 'pj', pj ->> 'id',
+        'correcta', (it ->> 'correcta')::int,
+        'tipos', (SELECT jsonb_agg(CASE WHEN g = (it ->> 'correcta')::int THEN NULL ELSE 'otra' END ORDER BY g) FROM generate_series(0, 2) g));
+    ELSE
+      SELECT x INTO ac FROM jsonb_array_elements(v_actual -> 'rasgos') x WHERE x ->> 'id' = it ->> 'id';
+      IF ac IS NULL OR v_rasgos @> jsonb_build_array(jsonb_build_object('id', ac ->> 'id')) THEN
+        RAISE EXCEPTION 'Una deducción ya no está o está repetida. Recarga la página.' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      SELECT x INTO pj FROM jsonb_array_elements(v_pjs) x WHERE x ->> 'id' = ac ->> 'pj';
+    END IF;
+
+    -- Las tres conclusiones.
+    IF jsonb_typeof(it -> 'opciones') IS DISTINCT FROM 'array' OR jsonb_array_length(it -> 'opciones') <> 3 THEN
+      RAISE EXCEPTION 'Cada deducción lleva tres conclusiones.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_ops := '[]'::jsonb;
+    FOR k IN 0 .. 2 LOOP
+      IF _texto_juego(it -> 'opciones' -> k, 160) IS NULL THEN
+        RAISE EXCEPTION 'Las conclusiones de % no pueden quedar vacías (hasta 160 letras).', pj ->> 'corto' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      v_ops := v_ops || to_jsonb(_texto_juego(it -> 'opciones' -> k, 160));
+    END LOOP;
+
+    -- Las pistas que la arman (+ la deducción de la que parte, si ya la tenía).
+    IF jsonb_typeof(it -> 'pool') IS DISTINCT FROM 'array' OR jsonb_array_length(it -> 'pool') > 15 THEN
+      RAISE EXCEPTION 'Formato no válido.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_pool := '[]'::jsonb;
+    v_n := 0;
+    FOR pid IN SELECT jsonb_array_elements_text(it -> 'pool') LOOP
+      pid := coalesce(v_mapa ->> pid, pid);
+      IF v_pool ? pid THEN CONTINUE; END IF;
+      IF v_pistas ? pid THEN
+        IF (v_pistas -> pid ->> 'pj') <> (pj ->> 'id') OR (v_pistas -> pid ->> 'senuelo')::boolean THEN
+          RAISE EXCEPTION 'Una deducción de % solo puede llevar pistas de % (y no señuelos).', pj ->> 'corto', pj ->> 'corto'
+            USING ERRCODE = '22023', HINT = 'formato';
+        END IF;
+        v_n := v_n + 1;
+      ELSIF NOT coalesce((it ->> 'nueva')::boolean, false) AND (ac -> 'pool') ? pid THEN
+        -- Deducción de la que parte: se queda si sigue; si el escritor la quitó, se suelta.
+        IF NOT pid = ANY (v_ids_r) THEN CONTINUE; END IF;
+      ELSE
+        RAISE EXCEPTION 'Una pista de la deducción ya no está. Recarga la página.' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      v_pool := v_pool || to_jsonb(pid);
+    END LOOP;
+    IF v_n < 3 THEN
+      RAISE EXCEPTION 'La deducción «%» necesita al menos 3 pistas (tiene %).', v_ops ->> coalesce((ac ->> 'correcta')::int, 0), v_n
+        USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+
+    v_rasgos := v_rasgos || jsonb_build_array(ac || jsonb_build_object('opciones', v_ops, 'pool', v_pool));
+  END LOOP;
+
+  -- 3. Reglas de conjunto.
+  FOR pj IN SELECT * FROM jsonb_array_elements(v_pjs) LOOP
+    IF NOT v_rasgos @> jsonb_build_array(jsonb_build_object('pj', pj ->> 'id')) THEN
+      RAISE EXCEPTION '% tiene que quedarse con al menos una deducción.', pj ->> 'corto' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+  END LOOP;
+  FOR r1 IN SELECT * FROM jsonb_array_elements(v_rasgos) LOOP
+    FOR r2 IN SELECT * FROM jsonb_array_elements(v_rasgos) LOOP
+      IF r1 ->> 'id' < r2 ->> 'id' AND r1 ->> 'pj' = r2 ->> 'pj'
+         AND (SELECT count(*) FROM jsonb_array_elements_text(r1 -> 'pool') a
+              WHERE v_pistas ? a AND (r2 -> 'pool') ? a) >= 3 THEN
+        RAISE EXCEPTION 'Dos deducciones comparten 3 pistas o más («%» y «%»): el juego no sabría cuál se arma. Cambia alguna.',
+          r1 -> 'opciones' ->> (r1 ->> 'correcta')::int, r2 -> 'opciones' ->> (r2 ->> 'correcta')::int
+          USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+    END LOOP;
+  END LOOP;
+
+  -- 4. Fuera las pistas que ya no sirven a ninguna deducción (los señuelos se quedan).
+  PERFORM _guardar_juego(p_libro, 'anderson', v_actual || jsonb_build_object(
+    'rasgos', v_rasgos,
+    'pistas', coalesce((
+      SELECT jsonb_agg(x ORDER BY (x ->> 'cap')::int, (x ->> 'parrafo')::int)
+      FROM jsonb_each(v_pistas) e(cl, x)
+      WHERE (x ->> 'senuelo')::boolean
+         OR EXISTS (SELECT 1 FROM jsonb_array_elements(v_rasgos) r WHERE (r -> 'pool') ? (x ->> 'id'))), '[]'::jsonb)));
+END;
+$$;
+
+
+--
+-- Name: editar_capsula(uuid, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.editar_capsula(p_libro uuid, p_preguntas jsonb) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_actual jsonb;
+  v_nuevo  jsonb := '[]'::jsonb;
+  it       jsonb;
+  pq       jsonb;
+BEGIN
+  PERFORM _libro_del_escritor(p_libro);
+  SELECT datos INTO v_actual FROM capsula_contenido WHERE libro_id = p_libro;
+  IF v_actual IS NULL THEN
+    RAISE EXCEPTION 'Este libro todavía no tiene Cápsula del tiempo.' USING ERRCODE = 'P0002', HINT = 'formato';
+  END IF;
+  IF jsonb_typeof(p_preguntas) <> 'array' OR jsonb_array_length(p_preguntas) NOT BETWEEN 1 AND 8 THEN
+    RAISE EXCEPTION 'La cápsula lleva entre 1 y 8 preguntas.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  FOR it IN SELECT * FROM jsonb_array_elements(p_preguntas) LOOP
+    IF _texto_juego(it -> 'texto', 200) IS NULL THEN
+      RAISE EXCEPTION 'Las preguntas no pueden quedar vacías (hasta 200 letras).' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    IF it ->> 'id' IS NULL THEN
+      pq := jsonb_build_object('id', 'a' || substr(md5(random()::text || clock_timestamp()::text), 1, 8));
+    ELSE
+      SELECT p INTO pq FROM jsonb_array_elements(v_actual -> 'preguntas') p WHERE p ->> 'id' = it ->> 'id';
+      IF pq IS NULL THEN
+        RAISE EXCEPTION 'Una pregunta ya no está. Recarga la página.' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+    END IF;
+    v_nuevo := v_nuevo || jsonb_build_array(pq || jsonb_build_object('texto', _texto_juego(it -> 'texto', 200)));
+  END LOOP;
+  PERFORM _guardar_juego(p_libro, 'capsula', jsonb_set(v_actual, '{preguntas}', v_nuevo));
+END;
+$$;
+
+
+--
+-- Name: editar_corazonadas(uuid, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.editar_corazonadas(p_libro uuid, p_items jsonb) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_actual jsonb;
+  v_nuevo  jsonb := '[]'::jsonb;
+  it       jsonb;
+  cz       jsonb;
+  v_ops    jsonb;
+  v_pistas jsonb;
+  k        int;
+BEGIN
+  PERFORM _libro_del_escritor(p_libro);
+  SELECT datos INTO v_actual FROM corazonadas_contenido WHERE libro_id = p_libro;
+  IF v_actual IS NULL THEN
+    RAISE EXCEPTION 'Este libro todavía no tiene Corazonadas.' USING ERRCODE = 'P0002', HINT = 'formato';
+  END IF;
+  IF jsonb_typeof(p_items) <> 'array' OR jsonb_array_length(p_items) NOT BETWEEN 1 AND 40 THEN
+    RAISE EXCEPTION 'Deja al menos una corazonada.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+
+  FOR it IN SELECT * FROM jsonb_array_elements(p_items) LOOP
+    SELECT c INTO cz FROM jsonb_array_elements(v_actual -> 'corazonadas') c WHERE c ->> 'id' = it ->> 'id';
+    IF cz IS NULL THEN
+      RAISE EXCEPTION 'Una corazonada ya no está. Recarga la página.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    IF _texto_juego(it -> 'pregunta', 200) IS NULL OR _texto_juego(it -> 'contexto', 600) IS NULL
+       OR _texto_juego(it -> 'resultado', 600) IS NULL
+       OR coalesce(it ->> 'clase', '') NOT IN ('deducible', 'sorpresa')
+       OR jsonb_typeof(it -> 'opciones') IS DISTINCT FROM 'array'
+       OR jsonb_array_length(it -> 'opciones') <> jsonb_array_length(cz -> 'opciones')
+       OR jsonb_typeof(it -> 'pistas') IS DISTINCT FROM 'array'
+       OR jsonb_array_length(it -> 'pistas') > 8 THEN
+      RAISE EXCEPTION 'Revisa la corazonada «%»: pregunta, contexto, resultado y las opciones no pueden quedar vacíos.',
+        left(coalesce(it ->> 'pregunta', ''), 60) USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_ops := '[]'::jsonb;
+    FOR k IN 0 .. jsonb_array_length(it -> 'opciones') - 1 LOOP
+      IF _texto_juego(it -> 'opciones' -> k, 160) IS NULL THEN
+        RAISE EXCEPTION 'Las opciones no pueden quedar vacías (hasta 160 letras).' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      v_ops := v_ops || to_jsonb(_texto_juego(it -> 'opciones' -> k, 160));
+    END LOOP;
+    SELECT coalesce(jsonb_agg(to_jsonb(_texto_juego(p, 300))), '[]'::jsonb) INTO v_pistas
+      FROM jsonb_array_elements(it -> 'pistas') p WHERE _texto_juego(p, 300) IS NOT NULL;
+
+    v_nuevo := v_nuevo || jsonb_build_array(cz || jsonb_build_object(
+      'pregunta', _texto_juego(it -> 'pregunta', 200), 'contexto', _texto_juego(it -> 'contexto', 600),
+      'resultado', _texto_juego(it -> 'resultado', 600), 'clase', it ->> 'clase',
+      'opciones', v_ops, 'pistas', v_pistas));
+  END LOOP;
+
+  PERFORM _guardar_juego(p_libro, 'corazonadas', jsonb_set(v_actual, '{corazonadas}', v_nuevo));
+END;
+$$;
+
+
+--
+-- Name: editar_falsificador(uuid, text, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.editar_falsificador(p_libro uuid, p_autor text, p_items jsonb) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_actual jsonb;
+  v_nuevo  jsonb := '[]'::jsonb;
+  v_autor  text  := btrim(coalesce(p_autor, ''));
+  it       jsonb;
+  sx       jsonb;
+  v_texto  text;
+  v_pal    text[];
+  n_falsos int := 0;
+  n_reales int := 0;
+BEGIN
+  PERFORM _libro_del_escritor(p_libro);
+  SELECT datos INTO v_actual FROM falsificador_contenido WHERE libro_id = p_libro;
+  IF v_actual IS NULL THEN
+    RAISE EXCEPTION 'Este libro todavía no tiene El falsificador.' USING ERRCODE = 'P0002', HINT = 'formato';
+  END IF;
+  IF length(v_autor) NOT BETWEEN 1 AND 60 THEN
+    RAISE EXCEPTION 'Escribe cómo firmas (hasta 60 letras).' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  IF jsonb_typeof(p_items) IS DISTINCT FROM 'array' OR jsonb_array_length(p_items) NOT BETWEEN 2 AND 16 THEN
+    RAISE EXCEPTION 'Deja al menos un párrafo inventado y uno del libro.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+
+  FOR it IN SELECT * FROM jsonb_array_elements(p_items) LOOP
+    SELECT x INTO sx FROM jsonb_array_elements(v_actual -> 'items') x WHERE x ->> 'id' = it ->> 'id';
+    IF sx IS NULL THEN
+      RAISE EXCEPTION 'Un párrafo ya no está. Recarga la página.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    IF v_nuevo @> jsonb_build_array(jsonb_build_object('id', sx ->> 'id')) THEN
+      RAISE EXCEPTION 'Hay un párrafo repetido. Recarga la página.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    IF _texto_juego(it -> 'verdad', 400) IS NULL THEN
+      RAISE EXCEPTION 'Falta «lo que dice el libro» (hasta 400 letras).' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+
+    IF (sx ->> 'falso')::boolean THEN
+      v_texto := _texto_juego(it -> 'texto', 1500);
+      IF v_texto IS NULL OR _texto_juego(it -> 'raro', 300) IS NULL THEN
+        RAISE EXCEPTION 'Revisa el párrafo inventado «%»: el párrafo (hasta 1.500 letras) y «lo raro» (hasta 300) no pueden quedar vacíos.',
+          left(coalesce(it ->> 'texto', ''), 60) USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      -- Como cargar_falsificador.py: las 12 primeras palabras.
+      v_pal := regexp_split_to_array(v_texto, '\s+');
+      sx := sx || jsonb_build_object(
+        'texto', v_texto, 'raro', _texto_juego(it -> 'raro', 300), 'verdad', _texto_juego(it -> 'verdad', 400),
+        'inicio', array_to_string(v_pal[1:12], ' ') || CASE WHEN cardinality(v_pal) > 12 THEN '…' ELSE '' END);
+      n_falsos := n_falsos + 1;
+    ELSE
+      sx := sx || jsonb_build_object('verdad', _texto_juego(it -> 'verdad', 400));
+      n_reales := n_reales + 1;
+    END IF;
+    v_nuevo := v_nuevo || jsonb_build_array(sx);
+  END LOOP;
+
+  IF n_falsos = 0 OR n_reales = 0 THEN
+    RAISE EXCEPTION 'Deja al menos un párrafo inventado y uno del libro.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+
+  PERFORM _guardar_juego(p_libro, 'falsificador',
+    v_actual || jsonb_build_object('autor', v_autor, 'items', v_nuevo));
+END;
+$$;
+
+
+--
+-- Name: editar_hilo(uuid, jsonb, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.editar_hilo(p_libro uuid, p_pistas jsonb, p_ideas jsonb) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_actual jsonb;
+  v_pistas jsonb := '{}'::jsonb;   -- id → pista
+  v_ideas  jsonb := '[]'::jsonb;
+  v_mapa   jsonb := '{}'::jsonb;   -- id provisional → id final
+  v_ids_i  text[] := '{}';
+  v_abre   jsonb := '{}'::jsonb;
+  v_maxcap int;
+  it       jsonb;
+  ac       jsonb;
+  v_id     text;
+  v_par    int;
+  v_piezas jsonb;
+  pid      text;
+  v_uso    jsonb := '{}'::jsonb;   -- pista → idea que la usa
+  v_vuelta int;
+  v_cambio boolean;
+  v_max    int;
+  v_listo  boolean;
+BEGIN
+  PERFORM _libro_del_escritor(p_libro);
+  SELECT datos INTO v_actual FROM hilo_contenido WHERE libro_id = p_libro;
+  IF v_actual IS NULL THEN
+    RAISE EXCEPTION 'Este libro todavía no tiene Hilo de ideas.' USING ERRCODE = 'P0002', HINT = 'formato';
+  END IF;
+  IF jsonb_typeof(p_pistas) IS DISTINCT FROM 'array' OR jsonb_typeof(p_ideas) IS DISTINCT FROM 'array'
+     OR jsonb_array_length(p_pistas) > 300 OR jsonb_array_length(p_ideas) NOT BETWEEN 1 AND 60 THEN
+    RAISE EXCEPTION 'Formato no válido.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  SELECT max(numero) INTO v_maxcap FROM capitulos WHERE libro_id = p_libro;
+
+  -- 1. Pistas.
+  FOR it IN SELECT * FROM jsonb_array_elements(p_pistas) LOOP
+    IF coalesce((it ->> 'nueva')::boolean, false) THEN
+      IF jsonb_typeof(it -> 'cap') IS DISTINCT FROM 'number' OR (it ->> 'cap')::int NOT BETWEEN 1 AND v_maxcap
+         OR _texto_juego(it -> 'cita', 600) IS NULL OR _texto_juego(it -> 't', 200) IS NULL THEN
+        RAISE EXCEPTION 'Una pista nueva necesita su capítulo, la frase del libro (hasta 600 letras) y lo que ve el lector (hasta 200).'
+          USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      v_par := _ubicar_cita(p_libro, (it ->> 'cap')::int, it ->> 'cita');
+      IF v_par IS NULL THEN
+        RAISE EXCEPTION 'No encontramos tal cual en el capítulo % la frase «%».', it ->> 'cap', left(it ->> 'cita', 50)
+          USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      v_id := 'p' || substr(md5(random()::text || clock_timestamp()::text), 1, 8);
+      IF coalesce(it ->> 'id', '') <> '' THEN v_mapa := v_mapa || jsonb_build_object(it ->> 'id', v_id); END IF;
+      v_pistas := v_pistas || jsonb_build_object(v_id, jsonb_build_object('id', v_id, 'cap', (it ->> 'cap')::int, 'parrafo', v_par,
+        'cita', _texto_juego(it -> 'cita', 600), 't', _texto_juego(it -> 't', 200), 'senuelo', false));
+    ELSE
+      SELECT x INTO ac FROM jsonb_array_elements(v_actual -> 'pistas') x WHERE x ->> 'id' = it ->> 'id';
+      IF ac IS NULL OR v_pistas ? (ac ->> 'id') THEN
+        RAISE EXCEPTION 'Una pista ya no está o está repetida. Recarga la página.' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      IF _texto_juego(it -> 't', 200) IS NULL THEN
+        RAISE EXCEPTION 'Una pista no puede quedar vacía (hasta 200 letras): «%».', left(ac ->> 'cita', 50)
+          USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      v_pistas := v_pistas || jsonb_build_object(ac ->> 'id', ac || jsonb_build_object('t', _texto_juego(it -> 't', 200)));
+    END IF;
+  END LOOP;
+
+  -- Ids finales de las ideas (las nuevas reciben uno aquí, para poder usarlas como pieza).
+  FOR it IN SELECT * FROM jsonb_array_elements(p_ideas) LOOP
+    IF coalesce((it ->> 'nueva')::boolean, false) THEN
+      v_id := 'i' || substr(md5(random()::text || clock_timestamp()::text), 1, 6);
+      v_mapa := v_mapa || jsonb_build_object(it ->> 'id', v_id);
+    ELSE
+      IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v_actual -> 'ideas') x WHERE x ->> 'id' = it ->> 'id') OR (it ->> 'id') = ANY (v_ids_i) THEN
+        RAISE EXCEPTION 'Una idea ya no está o está repetida. Recarga la página.' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      v_id := it ->> 'id';
+    END IF;
+    v_ids_i := v_ids_i || v_id;
+  END LOOP;
+
+  -- 2. Ideas.
+  FOR it IN SELECT * FROM jsonb_array_elements(p_ideas) LOOP
+    v_id := coalesce(v_mapa ->> (it ->> 'id'), it ->> 'id');
+    IF coalesce((it ->> 'nueva')::boolean, false) THEN
+      ac := jsonb_build_object('id', v_id, 'final', NULL);
+    ELSE
+      SELECT x INTO ac FROM jsonb_array_elements(v_actual -> 'ideas') x WHERE x ->> 'id' = v_id;
+    END IF;
+    IF _texto_juego(it -> 'titulo', 60) IS NULL OR _texto_juego(it -> 'pregunta', 160) IS NULL
+       OR _texto_juego(it -> 'conclusion', 500) IS NULL OR _texto_juego(it -> 'falta', 300) IS NULL THEN
+      RAISE EXCEPTION 'Revisa la idea «%»: título (hasta 60 letras), pregunta (160), conclusión (500) y ayuda (300) no pueden quedar vacíos.',
+        coalesce(nullif(it ->> 'titulo', ''), it ->> 'pregunta', 'nueva') USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    IF jsonb_typeof(it -> 'piezas') IS DISTINCT FROM 'array' OR jsonb_array_length(it -> 'piezas') <> 3 THEN
+      RAISE EXCEPTION 'La idea «%» lleva exactamente 3 piezas.', it ->> 'titulo' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_piezas := '[]'::jsonb;
+    FOR pid IN SELECT jsonb_array_elements_text(it -> 'piezas') LOOP
+      pid := coalesce(v_mapa ->> pid, pid);
+      IF v_piezas ? pid OR pid = v_id THEN
+        RAISE EXCEPTION 'La idea «%» repite una pieza.', it ->> 'titulo' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      IF v_pistas ? pid THEN
+        IF (v_pistas -> pid ->> 'senuelo')::boolean THEN
+          RAISE EXCEPTION 'Un señuelo no puede ser pieza de una idea («%»).', it ->> 'titulo' USING ERRCODE = '22023', HINT = 'formato';
+        END IF;
+        IF v_uso ? pid THEN
+          RAISE EXCEPTION 'Una pista va en una sola idea: «%» está en dos.', left(v_pistas -> pid ->> 't', 50) USING ERRCODE = '22023', HINT = 'formato';
+        END IF;
+        v_uso := v_uso || jsonb_build_object(pid, v_id);
+      ELSIF NOT pid = ANY (v_ids_i) THEN
+        RAISE EXCEPTION 'La idea «%» usa una pista o idea que ya no está.', it ->> 'titulo' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      v_piezas := v_piezas || to_jsonb(pid);
+    END LOOP;
+    v_ideas := v_ideas || jsonb_build_array(ac || jsonb_build_object(
+      'titulo', _texto_juego(it -> 'titulo', 60), 'pregunta', _texto_juego(it -> 'pregunta', 160),
+      'conclusion', _texto_juego(it -> 'conclusion', 500), 'falta', _texto_juego(it -> 'falta', 300), 'piezas', v_piezas));
+  END LOOP;
+
+  IF NOT v_ideas @> '[{"final": "principal"}]' AND v_actual -> 'ideas' @> '[{"final": "principal"}]' THEN
+    RAISE EXCEPTION 'La conclusión del libro no se puede quitar.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+
+  -- 3. «abre» = el capítulo en que ya llegaron todas sus pistas y se abrieron sus ideas previas.
+  --    Si no se puede calcular para todas, hay un ciclo.
+  FOR v_vuelta IN 1 .. jsonb_array_length(v_ideas) + 1 LOOP
+    v_cambio := false;
+    FOR ac IN SELECT * FROM jsonb_array_elements(v_ideas) LOOP
+      IF v_abre ? (ac ->> 'id') THEN CONTINUE; END IF;
+      v_max := 0; v_listo := true;
+      FOR pid IN SELECT jsonb_array_elements_text(ac -> 'piezas') LOOP
+        IF v_pistas ? pid THEN v_max := greatest(v_max, (v_pistas -> pid ->> 'cap')::int);
+        ELSIF v_abre ? pid THEN v_max := greatest(v_max, (v_abre ->> pid)::int);
+        ELSE v_listo := false; END IF;
+      END LOOP;
+      IF v_listo THEN v_abre := v_abre || jsonb_build_object(ac ->> 'id', v_max); v_cambio := true; END IF;
+    END LOOP;
+    EXIT WHEN NOT v_cambio;
+  END LOOP;
+  IF (SELECT count(*) FROM jsonb_object_keys(v_abre)) <> jsonb_array_length(v_ideas) THEN
+    RAISE EXCEPTION 'Hay ideas que dependen unas de otras en círculo: ninguna podría armarse.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+
+  PERFORM _guardar_juego(p_libro, 'hilo', v_actual || jsonb_build_object(
+    'ideas', (SELECT jsonb_agg(x || jsonb_build_object('abre', (v_abre ->> (x ->> 'id'))::int) ORDER BY o)
+              FROM jsonb_array_elements(v_ideas) WITH ORDINALITY t(x, o)),
+    'pistas', coalesce((SELECT jsonb_agg(x ORDER BY (x ->> 'cap')::int, x ->> 'id')
+                        FROM jsonb_each(v_pistas) e(cl, x)
+                        WHERE (x ->> 'senuelo')::boolean OR v_uso ? (x ->> 'id')), '[]'::jsonb)));
+END;
+$$;
+
+
+--
+-- Name: editar_mapa(uuid, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.editar_mapa(p_libro uuid, p_tesoros jsonb) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_actual  jsonb;
+  v_textos  jsonb := '{}'::jsonb;
+  v_tes     jsonb := '[]'::jsonb;
+  v_ids     text[] := '{}';
+  v_maxcap  int;
+  it        jsonb;
+  ac        jsonb;
+  r         jsonb;
+  v_resp    jsonb;
+  v_id      text;
+  v_cap     int;
+  v_cita    text;
+  v_n       int;
+  v_par     int;
+  v_txt     text;
+  v_pos     int;
+  v_clave   text;
+  v_princ   int;
+  v_brillo  jsonb;
+  v_pars    int[];
+  v_i       int;
+  b         int;
+  v_desde   int;
+  v_hasta   int;
+  t1        jsonb;
+  t2        jsonb;
+BEGIN
+  PERFORM _libro_del_escritor(p_libro);
+  SELECT datos INTO v_actual FROM mapa_contenido WHERE libro_id = p_libro;
+  IF v_actual IS NULL THEN
+    RAISE EXCEPTION 'Este libro todavía no tiene El mapa del tesoro.' USING ERRCODE = 'P0002', HINT = 'formato';
+  END IF;
+  IF jsonb_typeof(p_tesoros) IS DISTINCT FROM 'array' OR jsonb_array_length(p_tesoros) NOT BETWEEN 1 AND 200 THEN
+    RAISE EXCEPTION 'Deja al menos un tesoro.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  SELECT max(numero) INTO v_maxcap FROM capitulos WHERE libro_id = p_libro;
+
+  FOR it IN SELECT * FROM jsonb_array_elements(p_tesoros) LOOP
+    -- El tesoro: el que ya estaba o uno nuevo.
+    IF coalesce((it ->> 'nueva')::boolean, false) THEN
+      IF jsonb_typeof(it -> 'cap') IS DISTINCT FROM 'number' OR (it ->> 'cap')::int NOT BETWEEN 1 AND v_maxcap THEN
+        RAISE EXCEPTION 'Un tesoro nuevo necesita su capítulo.' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      v_id := 't' || substr(md5(random()::text || clock_timestamp()::text), 1, 10);
+      ac := jsonb_build_object('id', v_id, 'cap', (it ->> 'cap')::int, 'dificultad', 2, 'clave', NULL, 'brillo', NULL, 'respuestas', '[]'::jsonb);
+    ELSE
+      SELECT x INTO ac FROM jsonb_array_elements(v_actual -> 'tesoros') x WHERE x ->> 'id' = it ->> 'id';
+      IF ac IS NULL OR (ac ->> 'id') = ANY (v_ids) THEN
+        RAISE EXCEPTION 'Un tesoro ya no está o está repetido. Recarga la página.' USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      v_id := ac ->> 'id';
+    END IF;
+    v_ids := v_ids || v_id;
+    v_cap := (ac ->> 'cap')::int;
+
+    -- Textos.
+    IF _texto_juego(it -> 'pregunta', 200) IS NULL OR coalesce(it ->> 'tipo', '') NOT IN ('vista', 'escondido')
+       OR jsonb_typeof(it -> 'spoiler') IS DISTINCT FROM 'boolean' THEN
+      RAISE EXCEPTION 'Revisa el tesoro «%»: la pregunta (hasta 200 letras) no puede quedar vacía.', left(coalesce(it ->> 'pregunta', ''), 50)
+        USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    IF it ->> 'tipo' = 'escondido' AND _texto_juego(it -> 'porque', 300) IS NULL THEN
+      RAISE EXCEPTION 'El tesoro escondido «%» necesita su «porque» (lo que dice el gato al encontrarlo; hasta 300 letras).',
+        left(it ->> 'pregunta', 50) USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+
+    -- Frases buenas.
+    IF jsonb_typeof(it -> 'respuestas') IS DISTINCT FROM 'array' OR jsonb_array_length(it -> 'respuestas') NOT BETWEEN 1 AND 3 THEN
+      RAISE EXCEPTION 'El tesoro «%» lleva de 1 a 3 frases buenas.', left(it ->> 'pregunta', 50) USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_resp := '[]'::jsonb;
+    FOR r IN SELECT * FROM jsonb_array_elements(it -> 'respuestas') LOOP
+      IF r ? 'cita' THEN
+        v_cita := _mapa_norm(r ->> 'cita');
+        IF array_length(regexp_split_to_array(v_cita, ' '), 1) < 3 OR length(v_cita) > 1500 THEN
+          RAISE EXCEPTION 'Una frase buena tiene al menos 3 palabras (y no es un párrafo entero).' USING ERRCODE = '22023', HINT = 'formato';
+        END IF;
+        SELECT count(*), min(p.numero) INTO v_n, v_par
+          FROM capitulos c JOIN parrafos p ON p.capitulo_id = c.id
+         WHERE c.libro_id = p_libro AND c.numero = v_cap AND strpos(_mapa_norm(p.contenido), v_cita) > 0;
+        IF v_n = 0 THEN
+          RAISE EXCEPTION 'No encontramos tal cual en el capítulo % la frase «%».', v_cap, left(r ->> 'cita', 50) USING ERRCODE = '22023', HINT = 'formato';
+        END IF;
+        SELECT _mapa_norm(p.contenido) INTO v_txt FROM capitulos c JOIN parrafos p ON p.capitulo_id = c.id
+         WHERE c.libro_id = p_libro AND c.numero = v_cap AND p.numero = v_par;
+        IF v_n > 1 OR strpos(substr(v_txt, strpos(v_txt, v_cita) + 1), v_cita) > 0 THEN
+          RAISE EXCEPTION 'La frase «%» sale más de una vez en el capítulo %: alárgala un poco.', left(r ->> 'cita', 50), v_cap
+            USING ERRCODE = '22023', HINT = 'formato';
+        END IF;
+        v_pos := strpos(v_txt, v_cita);
+        v_clave := v_cap || ':' || v_par;
+        IF NOT v_textos ? v_clave THEN
+          v_textos := v_textos || jsonb_build_object(v_clave, coalesce(v_actual -> 'textos' ->> v_clave, v_txt));
+        END IF;
+        -- Si el texto guardado del párrafo no coincide (libro reprocesado), manda el nuevo.
+        IF strpos(v_textos ->> v_clave, v_cita) <> v_pos THEN
+          v_textos := v_textos || jsonb_build_object(v_clave, v_txt);
+        END IF;
+        r := jsonb_build_object('parrafo', v_par, 'inicio', v_pos, 'fin', v_pos + length(v_cita) - 1);
+      ELSE
+        IF coalesce((it ->> 'nueva')::boolean, false) OR NOT (ac -> 'respuestas') @> jsonb_build_array(jsonb_build_object(
+             'parrafo', (r ->> 'parrafo')::int, 'inicio', (r ->> 'inicio')::int, 'fin', (r ->> 'fin')::int)) THEN
+          RAISE EXCEPTION 'Una frase buena ya no está. Recarga la página.' USING ERRCODE = '22023', HINT = 'formato';
+        END IF;
+        r := jsonb_build_object('parrafo', (r ->> 'parrafo')::int, 'inicio', (r ->> 'inicio')::int, 'fin', (r ->> 'fin')::int);
+        v_clave := v_cap || ':' || (r ->> 'parrafo');
+        IF NOT v_textos ? v_clave THEN
+          v_textos := v_textos || jsonb_build_object(v_clave, v_actual -> 'textos' ->> v_clave);
+        END IF;
+      END IF;
+      IF v_resp @> jsonb_build_array(jsonb_build_object('parrafo', (r ->> 'parrafo')::int))
+         AND EXISTS (SELECT 1 FROM jsonb_array_elements(v_resp) q WHERE (q ->> 'parrafo')::int = (r ->> 'parrafo')::int
+                     AND (q ->> 'inicio')::int <= (r ->> 'fin')::int AND (r ->> 'inicio')::int <= (q ->> 'fin')::int) THEN
+        RAISE EXCEPTION 'El tesoro «%» repite una frase.', left(it ->> 'pregunta', 50) USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+      v_resp := v_resp || jsonb_build_array(r);
+    END LOOP;
+
+    -- Brillo: el que tenía si la principal sigue igual; si no, uno nuevo (después se comprueba que no pise a otro).
+    v_brillo := CASE WHEN ac -> 'respuestas' -> 0 = v_resp -> 0 THEN ac -> 'brillo' END;
+
+    v_tes := v_tes || jsonb_build_array(ac || jsonb_build_object(
+      'tipo', it ->> 'tipo', 'pisa', CASE WHEN it ->> 'tipo' = 'vista' THEN 'localizar' ELSE 'comprender' END,
+      'spoiler', (it ->> 'spoiler')::boolean, 'pregunta', _texto_juego(it -> 'pregunta', 200),
+      'porque', CASE WHEN it ->> 'tipo' = 'escondido' THEN _texto_juego(it -> 'porque', 300) ELSE coalesce(_texto_juego(it -> 'porque', 300, true), '') END,
+      'respuestas', v_resp, 'brillo', v_brillo));
+  END LOOP;
+
+  -- Ninguna frase es respuesta de dos tesoros.
+  FOR t1 IN SELECT * FROM jsonb_array_elements(v_tes) LOOP
+    FOR t2 IN SELECT * FROM jsonb_array_elements(v_tes) LOOP
+      IF t1 ->> 'id' < t2 ->> 'id' AND t1 ->> 'cap' = t2 ->> 'cap' AND EXISTS (
+           SELECT 1 FROM jsonb_array_elements(t1 -> 'respuestas') a, jsonb_array_elements(t2 -> 'respuestas') c
+           WHERE a ->> 'parrafo' = c ->> 'parrafo' AND (a ->> 'inicio')::int <= (c ->> 'fin')::int AND (c ->> 'inicio')::int <= (a ->> 'fin')::int) THEN
+        RAISE EXCEPTION 'Una misma frase es respuesta de dos tesoros («%» y «%»).', left(t1 ->> 'pregunta', 40), left(t2 ->> 'pregunta', 40)
+          USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+    END LOOP;
+  END LOOP;
+
+  -- Brillos nuevos: 11 párrafos (de 3 a 7 antes de la principal, el primero que no pise a otro).
+  FOR v_i IN 0 .. jsonb_array_length(v_tes) - 1 LOOP
+    t1 := v_tes -> v_i;
+    CONTINUE WHEN jsonb_typeof(t1 -> 'brillo') = 'array';
+    v_cap := (t1 ->> 'cap')::int;
+    v_par := (t1 -> 'respuestas' -> 0 ->> 'parrafo')::int;
+    SELECT array_agg(p.numero ORDER BY p.numero) INTO v_pars FROM capitulos c JOIN parrafos p ON p.capitulo_id = c.id
+     WHERE c.libro_id = p_libro AND c.numero = v_cap;
+    v_brillo := NULL;
+    FOR b IN SELECT g FROM generate_series(3, 7) g ORDER BY md5(p_libro || ':' || (t1 ->> 'id') || ':' || g) LOOP
+      v_n := array_position(v_pars, v_par);
+      v_desde := v_pars[greatest(1, v_n - b)];
+      v_hasta := v_pars[least(cardinality(v_pars), v_n + 10 - b)];
+      IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v_tes) o
+                     WHERE o ->> 'id' <> t1 ->> 'id' AND (o ->> 'cap')::int = v_cap AND jsonb_typeof(o -> 'brillo') = 'array'
+                       AND (o -> 'brillo' ->> 0)::int <= v_hasta AND v_desde <= (o -> 'brillo' ->> 1)::int) THEN
+        v_brillo := jsonb_build_array(v_desde, v_hasta);
+        EXIT;
+      END IF;
+    END LOOP;
+    IF v_brillo IS NULL THEN
+      RAISE EXCEPTION 'El tesoro «%» está demasiado cerca de otro del capítulo %: el libro brillaría para los dos a la vez. Elige una frase principal más lejos.',
+        left(t1 ->> 'pregunta', 50), v_cap USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_tes := jsonb_set(v_tes, ARRAY[v_i::text, 'brillo'], v_brillo);
+  END LOOP;
+
+  -- Los que conservaron su brillo tampoco pueden pisarse con los nuevos (ni entre sí).
+  FOR t1 IN SELECT * FROM jsonb_array_elements(v_tes) LOOP
+    FOR t2 IN SELECT * FROM jsonb_array_elements(v_tes) LOOP
+      IF t1 ->> 'id' < t2 ->> 'id' AND t1 ->> 'cap' = t2 ->> 'cap'
+         AND (t1 -> 'brillo' ->> 0)::int <= (t2 -> 'brillo' ->> 1)::int AND (t2 -> 'brillo' ->> 0)::int <= (t1 -> 'brillo' ->> 1)::int THEN
+        RAISE EXCEPTION 'Los tesoros «%» y «%» están demasiado cerca: el libro brillaría para los dos a la vez.',
+          left(t1 ->> 'pregunta', 40), left(t2 ->> 'pregunta', 40) USING ERRCODE = '22023', HINT = 'formato';
+      END IF;
+    END LOOP;
+  END LOOP;
+
+  PERFORM _guardar_juego(p_libro, 'mapa', v_actual || jsonb_build_object(
+    'tesoros', (SELECT jsonb_agg(x ORDER BY (x ->> 'cap')::int, o) FROM jsonb_array_elements(v_tes) WITH ORDINALITY t(x, o)),
+    'textos', v_textos));
+END;
 $$;
 
 
@@ -3433,6 +4754,49 @@ $$;
 --
 
 COMMENT ON FUNCTION public.eliminar_mi_cuenta() IS 'Borra la cuenta de quien la llama (auth.uid()) y, por CASCADE, todos sus datos. Derecho de supresión, art. 17 RGPD. La usa el botón de Perfil → Legal.';
+
+
+--
+-- Name: enlazar_imagenes_cartelera(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enlazar_imagenes_cartelera(p_libro uuid) RETURNS integer
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  r   record;
+  n   int := 0;
+  k   int;
+BEGIN
+  FOR r IN
+    SELECT DISTINCT ON (im.tipo, lower(unaccent(btrim(im.nombre)))) im.id, im.tipo, lower(unaccent(btrim(im.nombre))) AS clave
+      FROM imagenes_escritor im
+     WHERE im.libro_id = p_libro AND im.estado = 'guardada' AND im.tipo IN ('personaje', 'lugar')
+       AND coalesce(btrim(im.nombre), '') <> ''
+     ORDER BY im.tipo, lower(unaccent(btrim(im.nombre))), im.guardado DESC
+  LOOP
+    WITH fichas AS (
+      SELECT DISTINCT ci.nombre FROM cartelera_items ci
+       WHERE ci.libro_id = p_libro AND ci.seccion = CASE r.tipo WHEN 'personaje' THEN 'personajes' ELSE 'lugares' END
+         AND (lower(unaccent(btrim(ci.nombre))) = r.clave
+              OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(coalesce(ci.metadata -> 'aliases', '[]')) a
+                          WHERE lower(unaccent(btrim(a))) = r.clave))
+    ), sin_foto AS (
+      SELECT f.nombre FROM fichas f
+       WHERE NOT EXISTS (SELECT 1 FROM cartelera_items x WHERE x.libro_id = p_libro AND x.nombre = f.nombre
+                           AND x.seccion = CASE r.tipo WHEN 'personaje' THEN 'personajes' ELSE 'lugares' END
+                           AND x.imagen_media_id IS NOT NULL)
+    )
+    UPDATE cartelera_items ci SET imagen_media_id = _media_de_imagen_escritor(r.id)
+     WHERE ci.libro_id = p_libro AND ci.seccion = CASE r.tipo WHEN 'personaje' THEN 'personajes' ELSE 'lugares' END
+       AND ci.nombre IN (SELECT nombre FROM sin_foto);
+    GET DIAGNOSTICS k = ROW_COUNT;
+    n := n + k;
+  END LOOP;
+  RETURN n;
+END;
+$$;
 
 
 --
@@ -3998,6 +5362,259 @@ $$;
 
 
 --
+-- Name: guardar_ambientes_escritor(uuid, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guardar_ambientes_escritor(p_capitulo uuid, p_tramos jsonb) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $_$
+DECLARE
+  v_uid  uuid := auth.uid();
+  v_n    int;
+  v_max  int;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM capitulos c JOIN libros l ON l.id = c.libro_id
+                  WHERE c.id = p_capitulo AND l.propietario_id = v_uid) THEN
+    RAISE EXCEPTION 'Ese capítulo no es de tu libro.' USING ERRCODE = 'P0002', HINT = 'libro_invalido';
+  END IF;
+
+  IF p_tramos IS NULL OR p_tramos = '[]'::jsonb THEN
+    UPDATE capitulos SET ambientes = NULL WHERE id = p_capitulo;
+    RETURN;
+  END IF;
+
+  IF jsonb_typeof(p_tramos) <> 'array' OR jsonb_array_length(p_tramos) > 60 THEN
+    RAISE EXCEPTION 'Tramos inválidos.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+
+  SELECT count(*) INTO v_n FROM parrafos WHERE capitulo_id = p_capitulo;
+  SELECT max(numero) INTO v_max FROM parrafos WHERE capitulo_id = p_capitulo;
+
+  IF EXISTS (
+    SELECT 1 FROM jsonb_array_elements(p_tramos) t
+     WHERE jsonb_typeof(t) <> 'object'
+        OR jsonb_typeof(t -> 'desde') <> 'number' OR jsonb_typeof(t -> 'hasta') <> 'number'
+        OR coalesce(t ->> 'ambiente', '') !~ '^[a-z0-9_]{1,40}$'
+        OR (t ->> 'desde')::numeric <> floor((t ->> 'desde')::numeric)
+        OR (t ->> 'hasta')::numeric <> floor((t ->> 'hasta')::numeric)
+        OR (t ->> 'desde')::int < 1
+        OR (t ->> 'hasta')::int < (t ->> 'desde')::int
+        OR (t ->> 'hasta')::int > coalesce(v_max, v_n)
+        OR (SELECT count(*) FROM jsonb_object_keys(t)) <> 3
+  ) THEN
+    RAISE EXCEPTION 'Tramos inválidos.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+
+  -- Sin solaparse: ordenados por «desde», cada uno empieza después del anterior.
+  IF EXISTS (
+    SELECT 1 FROM (
+      SELECT (t ->> 'desde')::int AS desde,
+             lag((t ->> 'hasta')::int) OVER (ORDER BY (t ->> 'desde')::int) AS hasta_previo
+        FROM jsonb_array_elements(p_tramos) t
+    ) x WHERE x.desde <= x.hasta_previo
+  ) THEN
+    RAISE EXCEPTION 'Dos tramos se pisan.' USING ERRCODE = '22023', HINT = 'tramos_solapados';
+  END IF;
+
+  UPDATE capitulos
+     SET ambientes = (SELECT jsonb_agg(jsonb_build_object(
+                               'desde', (t ->> 'desde')::int,
+                               'hasta', (t ->> 'hasta')::int,
+                               'ambiente', t ->> 'ambiente')
+                             ORDER BY (t ->> 'desde')::int)
+                        FROM jsonb_array_elements(p_tramos) t)
+   WHERE id = p_capitulo;
+END;
+$_$;
+
+
+--
+-- Name: guardar_imagen_escritor(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guardar_imagen_escritor(p_imagen uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  i imagenes_escritor%ROWTYPE;
+BEGIN
+  SELECT im.* INTO i FROM imagenes_escritor im JOIN libros l ON l.id = im.libro_id
+   WHERE im.id = p_imagen AND l.propietario_id = auth.uid();
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Esa imagen no es de tu libro.' USING ERRCODE = 'P0002', HINT = 'imagen_invalida';
+  END IF;
+  IF i.estado = 'guardada' THEN RETURN; END IF;
+
+  IF i.tipo IN ('portada', 'fondo') THEN
+    DELETE FROM imagenes_escritor
+     WHERE libro_id = i.libro_id AND tipo = i.tipo AND estado = 'guardada' AND id <> i.id;
+  ELSIF i.tipo = 'infografia' THEN
+    DELETE FROM imagenes_escritor
+     WHERE libro_id = i.libro_id AND tipo = 'infografia' AND estado = 'guardada'
+       AND capitulo IS NOT DISTINCT FROM i.capitulo AND id <> i.id;
+  END IF;
+
+  UPDATE imagenes_escritor SET estado = 'guardada', guardado = now() WHERE id = i.id;
+
+  IF i.tipo = 'portada' THEN
+    UPDATE libros SET portada_url = i.url WHERE id = i.libro_id;
+  ELSIF i.tipo = 'fondo' THEN
+    UPDATE libros
+       SET metadata = coalesce(metadata, '{}'::jsonb)
+                      || jsonb_build_object('hero_url', i.url, 'hero_url_mobile', coalesce(i.url_movil, i.url))
+     WHERE id = i.libro_id;
+  ELSIF i.tipo IN ('escena', 'infografia') AND i.capitulo IS NOT NULL THEN
+    PERFORM _colocar_imagen_escritor(i.id, i.capitulo);
+  ELSIF i.tipo IN ('personaje', 'lugar') THEN
+    PERFORM enlazar_imagenes_cartelera(i.libro_id);
+  END IF;
+END;
+$$;
+
+
+--
+-- Name: guardar_item_cartelera(uuid, uuid, text, integer, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guardar_item_cartelera(p_libro uuid, p_id uuid, p_seccion text, p_capitulo integer, p_nombre text, p_descripcion text) RETURNS uuid
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  l       libros%ROWTYPE := _libro_del_escritor(p_libro);
+  v_nombre text := btrim(coalesce(p_nombre, ''));
+  v_desc   text := btrim(coalesce(p_descripcion, ''));
+  v_id     uuid;
+  v_ficha  cartelera_items%ROWTYPE;
+BEGIN
+  IF NOT _seccion_valida(l.es_ficcion, p_seccion) THEN
+    RAISE EXCEPTION 'Esa sección no existe en tu libro.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  IF length(v_nombre) NOT BETWEEN 1 AND 200 OR length(v_desc) > 3000 THEN
+    RAISE EXCEPTION 'Pon un nombre (hasta 200 letras) y una descripción de hasta 3.000.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM capitulos WHERE libro_id = p_libro AND numero = p_capitulo) THEN
+    RAISE EXCEPTION 'Ese capítulo no existe.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+
+  IF p_id IS NULL THEN
+    SELECT * INTO v_ficha FROM cartelera_items
+     WHERE libro_id = p_libro AND seccion = p_seccion AND nombre = v_nombre AND p_seccion IN ('personajes', 'lugares')
+     ORDER BY capitulo_numero DESC LIMIT 1;
+    IF FOUND AND EXISTS (SELECT 1 FROM cartelera_items WHERE libro_id = p_libro AND seccion = p_seccion
+                           AND nombre = v_nombre AND capitulo_numero = p_capitulo) THEN
+      RAISE EXCEPTION 'Esa ficha ya tiene una entrada en el capítulo %.', p_capitulo USING ERRCODE = '22023', HINT = 'duplicado';
+    END IF;
+    INSERT INTO cartelera_items (libro_id, capitulo_numero, seccion, nombre, descripcion, metadata, imagen_media_id)
+    VALUES (p_libro, p_capitulo, p_seccion, v_nombre, v_desc,
+            jsonb_build_object('tags', '[]'::jsonb, 'autor', true)
+              || CASE WHEN v_ficha.metadata ? 'aliases' THEN jsonb_build_object('aliases', v_ficha.metadata -> 'aliases') ELSE '{}'::jsonb END,
+            v_ficha.imagen_media_id)
+    RETURNING id INTO v_id;
+  ELSE
+    UPDATE cartelera_items
+       SET capitulo_numero = p_capitulo,
+           nombre = CASE WHEN seccion IN ('personajes', 'lugares') THEN nombre ELSE v_nombre END,
+           descripcion = v_desc,
+           metadata = coalesce(metadata, '{}'::jsonb) || '{"editado": true}'::jsonb
+     WHERE id = p_id AND libro_id = p_libro AND seccion = p_seccion
+    RETURNING id INTO v_id;
+    IF v_id IS NULL THEN
+      RAISE EXCEPTION 'Esa entrada ya no está.' USING ERRCODE = 'P0002', HINT = 'item_invalido';
+    END IF;
+  END IF;
+  RETURN v_id;
+END;
+$$;
+
+
+--
+-- Name: guardar_propuesta_ilustracion(uuid, uuid, text, text, integer, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guardar_propuesta_ilustracion(p_libro uuid, p_id uuid, p_tipo text, p_nombre text, p_capitulo integer, p_descripcion text) RETURNS uuid
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_nombre text := nullif(btrim(coalesce(p_nombre, '')), '');
+  v_desc   text := btrim(coalesce(p_descripcion, ''));
+  v_id     uuid;
+  v_actual ilustraciones_propuestas%ROWTYPE;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM libros WHERE id = p_libro AND propietario_id = auth.uid() AND es_ficcion) THEN
+    RAISE EXCEPTION 'Ese libro no es tuyo o ya no existe.' USING ERRCODE = 'P0002', HINT = 'libro_invalido';
+  END IF;
+  IF p_tipo NOT IN ('personaje', 'lugar', 'escena') THEN
+    RAISE EXCEPTION 'Tipo inválido.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  IF length(v_desc) NOT BETWEEN 3 AND 1000 THEN
+    RAISE EXCEPTION 'Escribe una descripción (entre 3 y 1000 letras).' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  IF p_tipo IN ('personaje', 'lugar') AND (v_nombre IS NULL OR length(v_nombre) > 160) THEN
+    RAISE EXCEPTION 'Ponle un nombre (máximo 160 letras).' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  IF p_tipo = 'escena' AND NOT EXISTS (SELECT 1 FROM capitulos WHERE libro_id = p_libro AND numero = p_capitulo) THEN
+    RAISE EXCEPTION 'Elige un capítulo de tu libro.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+
+  IF p_id IS NULL THEN
+    IF (SELECT count(*) FROM ilustraciones_propuestas WHERE libro_id = p_libro) >= 200 THEN
+      RAISE EXCEPTION 'Ya tienes 200 propuestas en este libro.' USING ERRCODE = '42501', HINT = 'formato';
+    END IF;
+    INSERT INTO ilustraciones_propuestas (libro_id, tipo, nombre, capitulo, descripcion, editado, origen)
+    VALUES (p_libro, p_tipo,
+            CASE WHEN p_tipo = 'escena' THEN NULL ELSE v_nombre END,
+            CASE WHEN p_tipo = 'escena' THEN p_capitulo END,
+            v_desc, true, 'autor')
+    RETURNING id INTO v_id;
+    RETURN v_id;
+  END IF;
+
+  SELECT * INTO v_actual FROM ilustraciones_propuestas WHERE id = p_id AND libro_id = p_libro;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Esa propuesta ya no está.' USING ERRCODE = 'P0002', HINT = 'formato';
+  END IF;
+  UPDATE ilustraciones_propuestas
+     SET nombre = CASE WHEN tipo = 'escena' THEN NULL ELSE v_nombre END,
+         capitulo = CASE WHEN tipo = 'escena' THEN p_capitulo END,
+         descripcion = v_desc,
+         editado = editado OR v_desc IS DISTINCT FROM v_actual.descripcion
+                           OR (tipo <> 'escena' AND v_nombre IS DISTINCT FROM v_actual.nombre)
+                           OR (tipo = 'escena' AND p_capitulo IS DISTINCT FROM v_actual.capitulo)
+   WHERE id = p_id;
+  RETURN p_id;
+END;
+$$;
+
+
+--
+-- Name: guardar_texto_avance(uuid, integer, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guardar_texto_avance(p_libro uuid, p_orden integer, p_titulo text, p_subtexto text) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM libros WHERE id = p_libro AND propietario_id = auth.uid()) THEN
+    RAISE EXCEPTION 'Ese libro no es tuyo o ya no existe.' USING ERRCODE = 'P0002', HINT = 'libro_invalido';
+  END IF;
+  IF length(btrim(coalesce(p_titulo, ''))) NOT BETWEEN 1 AND 80 OR length(coalesce(p_subtexto, '')) > 240 THEN
+    RAISE EXCEPTION 'El título va de 1 a 80 letras y el texto hasta 240.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  UPDATE libro_reels SET titulo = btrim(p_titulo), subtexto = nullif(btrim(p_subtexto), '')
+   WHERE libro_id = p_libro AND orden = p_orden;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Esa escena ya no está.' USING ERRCODE = 'P0002', HINT = 'item_invalido';
+  END IF;
+END;
+$$;
+
+
+--
 -- Name: hilo_aula(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -4251,6 +5868,108 @@ $$;
 
 
 --
+-- Name: imagen_ficha_cartelera(uuid, text, text, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.imagen_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text, p_imagen uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_media uuid;
+BEGIN
+  PERFORM _libro_del_escritor(p_libro);
+  IF p_imagen IS NOT NULL THEN
+    IF NOT EXISTS (SELECT 1 FROM imagenes_escritor WHERE id = p_imagen AND libro_id = p_libro AND estado = 'guardada'
+                     AND tipo IN ('personaje', 'lugar', 'escena', 'propia')) THEN
+      RAISE EXCEPTION 'Esa imagen no está guardada en tu libro.' USING ERRCODE = '22023', HINT = 'imagen_invalida';
+    END IF;
+    v_media := _media_de_imagen_escritor(p_imagen);
+  END IF;
+  UPDATE cartelera_items SET imagen_media_id = v_media
+   WHERE libro_id = p_libro AND seccion = p_seccion AND nombre = p_nombre;
+END;
+$$;
+
+
+--
+-- Name: imagen_principal_cartelera(uuid, text, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.imagen_principal_cartelera(p_libro uuid, p_seccion text, p_imagen uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  l       libros%ROWTYPE := _libro_del_escritor(p_libro);
+  v_media uuid;
+BEGIN
+  IF NOT l.es_ficcion OR p_seccion NOT IN ('personajes', 'lugares', 'hechos') THEN
+    RAISE EXCEPTION 'Ese panel no existe en tu tablero.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+
+  IF p_imagen IS NULL THEN
+    DELETE FROM cartelera_principal WHERE libro_id = p_libro AND seccion = p_seccion;
+    RETURN;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM imagenes_escritor WHERE id = p_imagen AND libro_id = p_libro AND estado = 'guardada'
+                   AND tipo IN ('personaje', 'lugar', 'escena', 'propia')) THEN
+    RAISE EXCEPTION 'Esa imagen no está guardada en tu libro.' USING ERRCODE = '22023', HINT = 'imagen_invalida';
+  END IF;
+  v_media := _media_de_imagen_escritor(p_imagen);
+
+  INSERT INTO cartelera_principal (libro_id, seccion, imagen_media_id, metadata)
+  VALUES (p_libro, p_seccion, v_media, '{"autor": true}'::jsonb)
+  ON CONFLICT (libro_id, seccion) DO UPDATE SET imagen_media_id = EXCLUDED.imagen_media_id, video_media_id = NULL;
+END;
+$$;
+
+
+--
+-- Name: importar_propuestas_analisis(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.importar_propuestas_analisis(p_trabajo uuid) RETURNS integer
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $_$
+DECLARE
+  t trabajos%ROWTYPE;
+  v_estilo int;
+  n int;
+BEGIN
+  SELECT * INTO t FROM trabajos WHERE id = p_trabajo AND tipo = 'ilustraciones_analisis' AND resultado IS NOT NULL;
+  IF NOT FOUND THEN RETURN 0; END IF;
+  v_estilo := (t.resultado ->> 'estilo')::int;
+
+  DELETE FROM ilustraciones_propuestas WHERE libro_id = t.libro_id AND origen = 'analisis';
+
+  INSERT INTO ilustraciones_propuestas (libro_id, tipo, nombre, descripcion, rol, prompt, estilo_prompt, origen)
+  SELECT t.libro_id, 'personaje', left(p ->> 'nombre', 160), left(coalesce(p ->> 'descripcion', ''), 1000),
+         left(p ->> 'rol', 40), p ->> 'prompt', v_estilo, 'analisis'
+    FROM jsonb_array_elements(coalesce(t.resultado -> 'personajes', '[]')) p
+   WHERE coalesce(p ->> 'nombre', '') <> '';
+
+  INSERT INTO ilustraciones_propuestas (libro_id, tipo, nombre, descripcion, prompt, estilo_prompt, origen)
+  SELECT t.libro_id, 'lugar', left(l ->> 'nombre', 160), left(coalesce(l ->> 'descripcion', ''), 1000),
+         l ->> 'prompt', v_estilo, 'analisis'
+    FROM jsonb_array_elements(coalesce(t.resultado -> 'lugares', '[]')) l
+   WHERE coalesce(l ->> 'nombre', '') <> '';
+
+  INSERT INTO ilustraciones_propuestas (libro_id, tipo, capitulo, descripcion, prompt, estilo_prompt, origen)
+  SELECT t.libro_id, 'escena', (e ->> 'capitulo')::int, left(coalesce(e ->> 'descripcion', ''), 1000),
+         e ->> 'prompt', v_estilo, 'analisis'
+    FROM jsonb_array_elements(coalesce(t.resultado -> 'escenas', '[]')) e
+   WHERE e ->> 'capitulo' ~ '^\d+$';
+
+  SELECT count(*) INTO n FROM ilustraciones_propuestas WHERE libro_id = t.libro_id AND origen = 'analisis';
+  RETURN n;
+END;
+$_$;
+
+
+--
 -- Name: invitar_admin(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -4273,6 +5992,28 @@ BEGIN
   RETURN v_codigo;
 END;
 $$;
+
+
+--
+-- Name: juego_escritor(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.juego_escritor(p_libro uuid, p_juego text) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $_$
+DECLARE
+  v_datos jsonb;
+BEGIN
+  PERFORM _libro_del_escritor(p_libro);
+  IF p_juego NOT IN ('anderson', 'corazonadas', 'desafio', 'concurso', 'mapa', 'hilo', 'falsificador', 'explicaselo', 'capsula') THEN
+    RAISE EXCEPTION 'Ese juego no existe.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  EXECUTE format('SELECT datos FROM %I WHERE libro_id = $1', p_juego || '_contenido') INTO v_datos USING p_libro;
+  RETURN jsonb_build_object('datos', v_datos,
+    'editado', EXISTS (SELECT 1 FROM juegos_originales WHERE libro_id = p_libro AND juego = p_juego));
+END;
+$_$;
 
 
 --
@@ -4687,6 +6428,236 @@ $$;
 
 
 --
+-- Name: mis_lectores(uuid, timestamp with time zone, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.mis_lectores(p_libro uuid, p_desde timestamp with time zone DEFAULT NULL::timestamp with time zone, p_zona text DEFAULT 'UTC'::text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  MINIMO constant int := 10;
+  v_uid    uuid := auth.uid();
+  v_libro  record;
+  v_desde  timestamptz := coalesce(p_desde, '-infinity'::timestamptz);
+  v_zona   text := coalesce(nullif(p_zona, ''), 'UTC');
+  v_caps   int;
+  v_empez  int;
+  r        jsonb := '{}'::jsonb;
+BEGIN
+  SELECT id, titulo, es_ficcion, propietario_id INTO v_libro FROM libros WHERE id = p_libro;
+  -- OJO: los libros del catálogo tienen propietario_id NULL; con un «=»
+  -- a secas la condición daría NULL y dejaría pasar a cualquiera.
+  IF NOT FOUND OR v_uid IS NULL
+     OR NOT (v_libro.propietario_id IS NOT DISTINCT FROM v_uid OR es_superusuario()) THEN
+    RAISE EXCEPTION 'Ese libro no es tuyo' USING HINT = 'libro_invalido';
+  END IF;
+  -- Una zona horaria que no existe haría fallar todo: mejor UTC.
+  IF NOT EXISTS (SELECT 1 FROM pg_timezone_names WHERE name = v_zona) THEN v_zona := 'UTC'; END IF;
+
+  SELECT count(*) INTO v_caps FROM capitulos WHERE libro_id = p_libro;
+
+  -- Los lectores que cuentan: agregaron el libro en el periodo y no son el
+  -- dueño ni un superusuario.
+  CREATE TEMP TABLE IF NOT EXISTS _ml_lectores (
+    user_id uuid PRIMARY KEY, empezo bool, termino bool, cap int, ultima timestamptz
+  ) ON COMMIT DROP;
+  TRUNCATE _ml_lectores;
+
+  INSERT INTO _ml_lectores
+  SELECT b.user_id,
+         s.ultima IS NOT NULL OR p.user_id IS NOT NULL,
+         b.leido OR (v_caps > 0 AND coalesce(p.capitulos_completados, 0) >= v_caps),
+         -- capítulo al que llegó = el siguiente al último terminado
+         least(coalesce(p.capitulos_completados, 0) + 1, greatest(v_caps, 1)),
+         greatest(s.ultima, p.updated_at)
+    FROM bibliotecas_usuarios b
+    LEFT JOIN progreso_lectura p ON p.user_id = b.user_id AND p.libro_id = b.libro_id
+    LEFT JOIN LATERAL (SELECT max(started_at) AS ultima FROM sesiones_lectura x
+                        WHERE x.user_id = b.user_id AND x.libro_id = b.libro_id) s ON true
+   WHERE b.libro_id = p_libro
+     AND b.created_at >= v_desde
+     AND b.user_id IS DISTINCT FROM v_libro.propietario_id
+     AND NOT EXISTS (SELECT 1 FROM superusuarios su WHERE su.user_id = b.user_id)
+  ON CONFLICT (user_id) DO NOTHING;
+
+  SELECT count(*) FILTER (WHERE empezo) INTO v_empez FROM _ml_lectores;
+
+  r := jsonb_build_object(
+    'minimo', MINIMO,
+    'libro', jsonb_build_object('titulo', v_libro.titulo, 'es_ficcion', v_libro.es_ficcion, 'capitulos', v_caps)
+  );
+
+  -- ── Cifras ──────────────────────────────────────────────────
+  r := r || jsonb_build_object('cifras', (
+    SELECT jsonb_build_object(
+      'agregaron',  count(*),
+      'empezaron',  count(*) FILTER (WHERE l.empezo),
+      'terminaron', count(*) FILTER (WHERE l.termino),
+      -- tiempo activo total de los que lo terminaron (promedio, en segundos)
+      'segundos_medio', CASE WHEN count(*) FILTER (WHERE l.termino) >= MINIMO THEN (
+          SELECT round(avg(t.seg)) FROM (
+            SELECT sum(coalesce(x.segundos_activos,
+                       least(extract(epoch FROM (x.ended_at - x.started_at)), 4 * 3600)))::bigint AS seg
+              FROM sesiones_lectura x JOIN _ml_lectores y ON y.user_id = x.user_id AND y.termino
+             WHERE x.libro_id = p_libro
+             GROUP BY x.user_id) t) END,
+      'aperturas', (SELECT count(*) FROM sesiones_lectura x
+                      JOIN _ml_lectores y ON y.user_id = x.user_id
+                     WHERE x.libro_id = p_libro AND x.started_at >= v_desde),
+      'valoracion', (SELECT round(avg(rating)::numeric, 1) FROM resenas_libros
+                      WHERE libro_id = p_libro AND created_at >= v_desde),
+      'resenas',    (SELECT count(*) FROM resenas_libros
+                      WHERE libro_id = p_libro AND created_at >= v_desde))
+    FROM _ml_lectores l));
+
+  -- ── Hasta dónde llegan (de los que lo empezaron) ────────────
+  r := r || jsonb_build_object('llegan', CASE WHEN v_empez >= MINIMO THEN (
+    SELECT jsonb_agg(jsonb_build_object('cap', c, 'n',
+             (SELECT count(*) FROM _ml_lectores l WHERE l.empezo AND (l.cap >= c OR l.termino))) ORDER BY c)
+      FROM generate_series(1, v_caps) c) END);
+
+  -- ── Por dónde van ahora (empezaron, no terminaron) ──────────
+  -- «dormidos» = más de 30 días sin abrirlo (cuentan como abandonos).
+  r := r || jsonb_build_object('ahora', (
+    SELECT CASE WHEN count(*) >= MINIMO THEN jsonb_build_object(
+             'total',    count(*),
+             'dormidos', count(*) FILTER (WHERE l.ultima < now() - interval '30 days'),
+             'caps', (SELECT jsonb_agg(jsonb_build_object('cap', c, 'n',
+                        (SELECT count(*) FROM _ml_lectores m
+                          WHERE m.empezo AND NOT m.termino AND m.cap = c)) ORDER BY c)
+                        FROM generate_series(1, v_caps) c)) END
+      FROM _ml_lectores l WHERE l.empezo AND NOT l.termino));
+
+  -- ── Lo más subrayado (texto del libro, no del lector) ───────
+  r := r || jsonb_build_object('subrayados', (
+    SELECT CASE WHEN count(DISTINCT s.user_id) >= MINIMO THEN (
+      SELECT coalesce(jsonb_agg(t ORDER BY t.n DESC, t.cap), '[]'::jsonb) FROM (
+        SELECT s2.texto_original AS texto, min(s2.capitulo_num) AS cap, count(DISTINCT s2.user_id) AS n
+          FROM subrayados_usuario s2 JOIN _ml_lectores y ON y.user_id = s2.user_id
+         WHERE s2.libro_id = p_libro AND s2.created_at >= v_desde
+         GROUP BY s2.texto_original
+         HAVING count(DISTINCT s2.user_id) >= 2
+         ORDER BY count(DISTINCT s2.user_id) DESC, min(s2.capitulo_num)
+         LIMIT 5) t) END
+      FROM subrayados_usuario s JOIN _ml_lectores y ON y.user_id = s.user_id
+     WHERE s.libro_id = p_libro AND s.created_at >= v_desde));
+
+  -- ── Cuándo leen (sesiones por franja, hora del escritor) ────
+  r := r || jsonb_build_object('horas', (
+    SELECT CASE WHEN count(DISTINCT x.user_id) >= MINIMO THEN jsonb_build_object(
+             'manana',    count(*) FILTER (WHERE h BETWEEN 6 AND 11),
+             'tarde',     count(*) FILTER (WHERE h BETWEEN 12 AND 18),
+             'noche',     count(*) FILTER (WHERE h BETWEEN 19 AND 23),
+             'madrugada', count(*) FILTER (WHERE h BETWEEN 0 AND 5)) END
+      FROM sesiones_lectura x
+      JOIN _ml_lectores y ON y.user_id = x.user_id
+      CROSS JOIN LATERAL (SELECT extract(hour FROM x.started_at AT TIME ZONE v_zona)::int AS h) hh
+     WHERE x.libro_id = p_libro AND x.started_at >= v_desde));
+
+  -- ── Juegos: como los vería un profesor ──────────────────────
+  -- Cada pregunta/personaje/tesoro con menos de 10 jugadores lleva pct null.
+  r := r || jsonb_build_object('juegos', jsonb_build_object(
+
+    -- Corazonadas: % que acertó, entre los que apostaron y ya se resolvió.
+    'corazonadas', (
+      SELECT jsonb_agg(jsonb_build_object(
+               'texto', c ->> 'pregunta', 'clase', c ->> 'clase',
+               'jugaron', coalesce(j.jugaron, 0),
+               'pct', CASE WHEN j.resueltas >= MINIMO THEN round(100.0 * j.aciertos / j.resueltas) END)
+             ORDER BY o)
+        FROM corazonadas_contenido cc,
+             jsonb_array_elements(cc.datos -> 'corazonadas') WITH ORDINALITY AS e(c, o)
+        LEFT JOIN LATERAL (
+          SELECT count(DISTINCT x.user_id) FILTER (WHERE x.opcion IS NOT NULL) AS jugaron,
+                 count(DISTINCT x.user_id) FILTER (WHERE x.acierto IS NOT NULL) AS resueltas,
+                 count(DISTINCT x.user_id) FILTER (WHERE x.acierto) AS aciertos
+            FROM corazonadas_jugadas x JOIN _ml_lectores y ON y.user_id = x.user_id
+           WHERE x.libro_id = p_libro AND x.corazonada = c ->> 'id' AND x.created_at >= v_desde) j ON true
+       WHERE cc.libro_id = p_libro),
+
+    -- Anderson: % que armó el perfil y cuántos intentos de media.
+    'anderson', (
+      SELECT jsonb_agg(jsonb_build_object(
+               'texto', coalesce(c ->> 'nombre', c ->> 'corto'),
+               'jugaron', coalesce(j.jugaron, 0),
+               'pct', CASE WHEN j.jugaron >= MINIMO THEN round(100.0 * j.completos / j.jugaron) END,
+               'intentos', CASE WHEN j.jugaron >= MINIMO THEN round(j.intentos::numeric / j.jugaron, 1) END)
+             ORDER BY o)
+        FROM anderson_contenido ac,
+             jsonb_array_elements(ac.datos -> 'personajes') WITH ORDINALITY AS e(c, o)
+        LEFT JOIN LATERAL (
+          SELECT count(DISTINCT x.user_id) AS jugaron,
+                 count(DISTINCT x.user_id) FILTER (WHERE x.resultado = 'acierto') AS completos,
+                 count(*) AS intentos
+            FROM anderson_jugadas x JOIN _ml_lectores y ON y.user_id = x.user_id
+           WHERE x.libro_id = p_libro AND x.personaje = c ->> 'id' AND x.created_at >= v_desde) j ON true
+       WHERE ac.libro_id = p_libro),
+
+    -- Mapa del tesoro: % que lo encontró, entre los que buscaron en ese capítulo.
+    'mapa', (
+      SELECT jsonb_agg(jsonb_build_object(
+               'texto', c ->> 'pregunta', 'cap', (c ->> 'cap')::int,
+               'jugaron', coalesce(j.jugaron, 0),
+               'pct', CASE WHEN j.jugaron >= MINIMO THEN round(100.0 * j.hallaron / j.jugaron) END)
+             ORDER BY (c ->> 'cap')::int, o)
+        FROM mapa_contenido mc,
+             jsonb_array_elements(mc.datos -> 'tesoros') WITH ORDINALITY AS e(c, o)
+        LEFT JOIN LATERAL (
+          SELECT count(DISTINCT x.user_id) AS jugaron,
+                 count(DISTINCT x.user_id) FILTER (WHERE x.acierto AND x.tesoro = c ->> 'id') AS hallaron
+            FROM mapa_jugadas x JOIN _ml_lectores y ON y.user_id = x.user_id
+           WHERE x.libro_id = p_libro AND x.capitulo = (c ->> 'cap')::int AND x.created_at >= v_desde) j ON true
+       WHERE mc.libro_id = p_libro),
+
+    -- Hilo: % que juntó la idea.
+    'hilo', (
+      SELECT jsonb_agg(jsonb_build_object(
+               'texto', coalesce(c ->> 'pregunta', c ->> 'titulo'),
+               'jugaron', coalesce(j.jugaron, 0),
+               'pct', CASE WHEN j.jugaron >= MINIMO THEN round(100.0 * j.aciertos / j.jugaron) END)
+             ORDER BY o)
+        FROM hilo_contenido hc,
+             jsonb_array_elements(hc.datos -> 'ideas') WITH ORDINALITY AS e(c, o)
+        LEFT JOIN LATERAL (
+          SELECT count(DISTINCT x.user_id) AS jugaron,
+                 count(DISTINCT x.user_id) FILTER (WHERE x.resultado = 'acierto') AS aciertos
+            FROM hilo_jugadas x JOIN _ml_lectores y ON y.user_id = x.user_id
+           WHERE x.libro_id = p_libro AND x.idea = c ->> 'id' AND x.created_at >= v_desde) j ON true
+       WHERE hc.libro_id = p_libro),
+
+    -- Falsificador: % que acertó quién escribió cada párrafo.
+    'falsificador', (
+      SELECT jsonb_agg(jsonb_build_object(
+               'texto', c ->> 'inicio', 'cap', (c ->> 'cap')::int,
+               'falso', coalesce((c ->> 'falso')::boolean, false),
+               'jugaron', coalesce(j.jugaron, 0),
+               'pct', CASE WHEN j.jugaron >= MINIMO THEN round(100.0 * j.aciertos / j.jugaron) END)
+             ORDER BY (c ->> 'cap')::int, o)
+        FROM falsificador_contenido fc,
+             jsonb_array_elements(fc.datos -> 'items') WITH ORDINALITY AS e(c, o)
+        LEFT JOIN LATERAL (
+          SELECT count(DISTINCT x.user_id) AS jugaron,
+                 count(DISTINCT x.user_id) FILTER (WHERE x.acierto) AS aciertos
+            FROM falsificador_jugadas x JOIN _ml_lectores y ON y.user_id = x.user_id
+           WHERE x.libro_id = p_libro AND x.item = c ->> 'id' AND x.created_at >= v_desde) j ON true
+       WHERE fc.libro_id = p_libro),
+
+    -- Cápsula: el lector escribe con sus palabras → solo cuántos.
+    'capsula', CASE WHEN EXISTS (SELECT 1 FROM capsula_contenido WHERE libro_id = p_libro) THEN (
+      SELECT jsonb_build_object(
+               'sellaron', count(*),
+               'abrieron', count(*) FILTER (WHERE x.abierta_at IS NOT NULL))
+        FROM capsula_respuestas x JOIN _ml_lectores y ON y.user_id = x.user_id
+       WHERE x.libro_id = p_libro AND x.sellada_at >= v_desde) END
+  ));
+
+  RETURN r;
+END;
+$$;
+
+
+--
 -- Name: ovillos_saldo(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -4695,6 +6666,268 @@ CREATE FUNCTION public.ovillos_saldo(p_libro uuid) RETURNS integer
     SET search_path TO 'public'
     AS $$
   SELECT CASE WHEN auth.uid() IS NULL THEN NULL ELSE _ovillos_saldo(auth.uid(), p_libro) END;
+$$;
+
+
+--
+-- Name: pedir_juegos(uuid, text[]); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.pedir_juegos(p_libro uuid, p_juegos text[]) RETURNS numeric
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  l          libros%ROWTYPE := _libro_del_escritor(p_libro);
+  -- Juan, 13 nov: el concurso, el desafío y Explícaselo son de colegio; al escritor no se le ofrecen.
+  v_validos  text[] := CASE WHEN l.es_ficcion THEN ARRAY['anderson', 'corazonadas', 'mapa']
+                            ELSE ARRAY['hilo', 'falsificador', 'capsula'] END;
+  v_activos  int;
+  v_nuevos   int;
+  v_costo    numeric(8,2);
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM escritores WHERE user_id = auth.uid()) THEN
+    RAISE EXCEPTION 'Tu cuenta no tiene el modo escritor.' USING ERRCODE = '42501', HINT = 'no_escritor';
+  END IF;
+  IF p_juegos IS NULL OR cardinality(p_juegos) = 0 OR cardinality(p_juegos) > 3
+     OR NOT (p_juegos <@ v_validos)
+     OR (SELECT count(DISTINCT j) FROM unnest(p_juegos) j) <> cardinality(p_juegos) THEN
+    RAISE EXCEPTION 'Elige juegos de este tipo de libro.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM cartelera_items WHERE libro_id = p_libro) THEN
+    RAISE EXCEPTION 'Primero genera la cartelera en la Sala de análisis: los juegos salen de ella.'
+      USING ERRCODE = '22023', HINT = 'sin_cartelera';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('pedir_juegos:' || p_libro));
+  IF EXISTS (SELECT 1 FROM pedidos_juegos WHERE libro_id = p_libro AND estado <> 'cancelado' AND juego = ANY (p_juegos)) THEN
+    RAISE EXCEPTION 'Alguno de esos juegos ya está pedido.' USING ERRCODE = '22023', HINT = 'duplicado';
+  END IF;
+  SELECT count(*) INTO v_activos FROM pedidos_juegos WHERE libro_id = p_libro AND estado <> 'cancelado';
+  v_nuevos := cardinality(p_juegos);
+  v_costo := _precio_juegos(v_activos + v_nuevos) - _precio_juegos(v_activos);
+
+  UPDATE escritores SET saldo_cupon = saldo_cupon - v_costo
+   WHERE user_id = auth.uid() AND saldo_cupon >= v_costo;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Tu saldo no alcanza para esto.' USING ERRCODE = '42501', HINT = 'saldo_insuficiente';
+  END IF;
+
+  INSERT INTO pedidos_juegos (libro_id, user_id, juego)
+  SELECT p_libro, auth.uid(), j FROM unnest(p_juegos) j;
+  RETURN v_costo;
+END;
+$$;
+
+
+--
+-- Name: pedir_trabajo(uuid, text, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.pedir_trabajo(p_libro uuid, p_tipo text, p_parametros jsonb DEFAULT '{}'::jsonb) RETURNS uuid
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $_$
+DECLARE
+  v_uid       uuid := auth.uid();
+  v_id        uuid;
+  v_params    jsonb := coalesce(p_parametros, '{}'::jsonb);
+  v_precios   jsonb := precios_escritor();
+  v_reservado numeric(8,2);
+  v_max       int;
+  v_caps      int;
+  v_n         int;
+BEGIN
+  IF v_uid IS NULL OR NOT EXISTS (SELECT 1 FROM escritores WHERE user_id = v_uid) THEN
+    RAISE EXCEPTION 'Tu cuenta no tiene el modo escritor.' USING ERRCODE = '42501', HINT = 'no_escritor';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM libros WHERE id = p_libro AND propietario_id = v_uid) THEN
+    RAISE EXCEPTION 'Ese libro no es tuyo o ya no existe.' USING ERRCODE = 'P0002', HINT = 'libro_invalido';
+  END IF;
+  IF p_tipo NOT IN ('prueba', 'sonido', 'portada', 'fondo', 'ilustraciones_analisis', 'ilustraciones', 'rehacer',
+                    'infografias', 'infografia_texto', 'cartelera', 'avance', 'avance_rehacer') THEN
+    RAISE EXCEPTION 'Ese trabajo no existe.' USING ERRCODE = '22023', HINT = 'tipo_invalido';
+  END IF;
+  IF jsonb_typeof(v_params) <> 'object' OR length(v_params::text) > 10000 THEN
+    RAISE EXCEPTION 'Parámetros inválidos.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('pedir_trabajo:' || p_libro || ':' || p_tipo));
+  IF EXISTS (SELECT 1 FROM trabajos WHERE libro_id = p_libro AND tipo = p_tipo
+             AND estado IN ('pendiente', 'en_proceso')) THEN
+    RAISE EXCEPTION 'Ya hay uno en marcha para este libro.' USING ERRCODE = '42501', HINT = 'trabajo_en_curso';
+  END IF;
+  -- El avance entero y sus «rehacer» no se pisan (119).
+  IF p_tipo IN ('avance', 'avance_rehacer') AND EXISTS (
+       SELECT 1 FROM trabajos WHERE libro_id = p_libro AND tipo IN ('avance', 'avance_rehacer')
+          AND estado IN ('pendiente', 'en_proceso')) THEN
+    RAISE EXCEPTION 'Ya estamos trabajando en tu avance.' USING ERRCODE = '42501', HINT = 'trabajo_en_curso';
+  END IF;
+
+  IF p_tipo IN ('sonido', 'ilustraciones_analisis', 'ilustraciones', 'rehacer')
+     AND NOT (SELECT es_ficcion FROM libros WHERE id = p_libro) THEN
+    RAISE EXCEPTION 'Esto es para libros de ficción.' USING ERRCODE = '22023', HINT = 'no_ficcion';
+  END IF;
+  IF p_tipo IN ('infografias', 'infografia_texto') AND (SELECT es_ficcion FROM libros WHERE id = p_libro) THEN
+    RAISE EXCEPTION 'Las infografías son para libros de no ficción.' USING ERRCODE = '22023', HINT = 'ficcion';
+  END IF;
+
+  IF p_tipo = 'sonido' THEN
+    IF EXISTS (SELECT 1 FROM jsonb_object_keys(v_params) k WHERE k NOT IN ('max_efectos', 'ambientes'))
+       OR jsonb_typeof(v_params -> 'max_efectos') IS DISTINCT FROM 'number'
+       OR jsonb_typeof(v_params -> 'ambientes') IS DISTINCT FROM 'boolean' THEN
+      RAISE EXCEPTION 'Parámetros inválidos.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_max := (v_params ->> 'max_efectos')::numeric::int;
+    IF v_max::numeric <> (v_params ->> 'max_efectos')::numeric
+       OR v_max NOT BETWEEN 1 AND (v_precios ->> 'sonido_max_efectos')::int THEN
+      RAISE EXCEPTION 'El tope de efectos va de 1 a %.', v_precios ->> 'sonido_max_efectos'
+        USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    SELECT count(*) INTO v_caps FROM capitulos WHERE libro_id = p_libro;
+    v_reservado := (v_precios ->> 'sonido_analisis')::numeric
+                 + v_caps * v_max * (v_precios ->> 'sonido_nuevo')::numeric;
+
+  ELSIF p_tipo IN ('portada', 'fondo') THEN
+    IF EXISTS (SELECT 1 FROM jsonb_object_keys(v_params) k
+                WHERE k NOT IN ('sujeto', 'color') OR (k = 'color' AND p_tipo = 'fondo'))
+       OR jsonb_typeof(v_params -> 'sujeto') IS DISTINCT FROM 'string'
+       OR length(btrim(v_params ->> 'sujeto')) NOT BETWEEN 3 AND 400
+       OR (p_tipo = 'portada' AND coalesce(v_params ->> 'color', '') !~ '^#[0-9a-fA-F]{6}$') THEN
+      RAISE EXCEPTION 'Cuéntanos qué quieres que salga (entre 3 y 400 letras).' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_reservado := (v_precios ->> p_tipo)::numeric;
+
+  ELSIF p_tipo = 'ilustraciones_analisis' THEN
+    IF EXISTS (SELECT 1 FROM jsonb_object_keys(v_params) k WHERE k <> 'estilo')
+       OR jsonb_typeof(v_params -> 'estilo') IS DISTINCT FROM 'number'
+       OR (v_params ->> 'estilo')::numeric NOT IN (0, 1, 2, 3, 4, 5, 6, 7, 8) THEN
+      RAISE EXCEPTION 'Elige un estilo.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_reservado := (v_precios ->> 'ilustraciones_analisis')::numeric;
+
+  ELSIF p_tipo = 'ilustraciones' THEN
+    IF EXISTS (SELECT 1 FROM jsonb_object_keys(v_params) k WHERE k NOT IN ('estilo', 'items'))
+       OR jsonb_typeof(v_params -> 'estilo') IS DISTINCT FROM 'number'
+       OR (v_params ->> 'estilo')::numeric NOT IN (0, 1, 2, 3, 4, 5, 6, 7, 8)
+       OR jsonb_typeof(v_params -> 'items') IS DISTINCT FROM 'array' THEN
+      RAISE EXCEPTION 'Parámetros inválidos.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_n := jsonb_array_length(v_params -> 'items');
+    IF v_n NOT BETWEEN 1 AND 80
+       OR EXISTS (SELECT 1 FROM jsonb_array_elements(v_params -> 'items') it
+                   WHERE jsonb_typeof(it) <> 'string' OR (it #>> '{}') !~ '^[0-9a-f-]{36}$')
+       OR (SELECT count(*) FROM ilustraciones_propuestas
+            WHERE libro_id = p_libro
+              AND id IN (SELECT (it #>> '{}')::uuid FROM jsonb_array_elements(v_params -> 'items') it)) <> v_n THEN
+      RAISE EXCEPTION 'Marca entre 1 y 80 imágenes.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_reservado := v_n * (v_precios ->> 'ilustracion')::numeric;
+
+  ELSIF p_tipo = 'rehacer' THEN
+    IF EXISTS (SELECT 1 FROM jsonb_object_keys(v_params) k WHERE k <> 'imagen')
+       OR coalesce(v_params ->> 'imagen', '') !~ '^[0-9a-f-]{36}$'
+       OR NOT EXISTS (SELECT 1 FROM imagenes_escritor WHERE id = (v_params ->> 'imagen')::uuid AND libro_id = p_libro
+                        AND estado = 'borrador' AND tipo IN ('personaje', 'lugar', 'escena') AND prompt IS NOT NULL) THEN
+      RAISE EXCEPTION 'Esa imagen ya no se puede rehacer.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_reservado := (v_precios ->> 'rehacer')::numeric;
+
+  ELSIF p_tipo = 'infografias' THEN
+    IF EXISTS (SELECT 1 FROM jsonb_object_keys(v_params) k WHERE k NOT IN ('estilo', 'capitulos'))
+       OR jsonb_typeof(v_params -> 'estilo') IS DISTINCT FROM 'number'
+       OR (v_params ->> 'estilo')::numeric NOT IN (0, 1)
+       OR jsonb_typeof(v_params -> 'capitulos') IS DISTINCT FROM 'array' THEN
+      RAISE EXCEPTION 'Parámetros inválidos.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_n := jsonb_array_length(v_params -> 'capitulos');
+    IF v_n NOT BETWEEN 1 AND 300
+       OR EXISTS (SELECT 1 FROM jsonb_array_elements(v_params -> 'capitulos') c
+                   WHERE jsonb_typeof(c) <> 'number' OR (c #>> '{}') !~ '^[0-9]{1,4}$')
+       OR (SELECT count(DISTINCT numero) FROM capitulos
+            WHERE libro_id = p_libro
+              AND numero IN (SELECT (c #>> '{}')::int FROM jsonb_array_elements(v_params -> 'capitulos') c)) <> v_n THEN
+      RAISE EXCEPTION 'Elige los capítulos de tu libro.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_reservado := v_n * (v_precios ->> 'infografia')::numeric;
+
+  ELSIF p_tipo = 'infografia_texto' THEN
+    -- Gratis: {imagen, titulo, concepto, bullets: [5 textos]}
+    IF EXISTS (SELECT 1 FROM jsonb_object_keys(v_params) k WHERE k NOT IN ('imagen', 'titulo', 'concepto', 'bullets'))
+       OR coalesce(v_params ->> 'imagen', '') !~ '^[0-9a-f-]{36}$'
+       OR NOT EXISTS (SELECT 1 FROM imagenes_escritor WHERE id = (v_params ->> 'imagen')::uuid AND libro_id = p_libro
+                        AND tipo = 'infografia' AND datos ? 'plantilla')
+       OR jsonb_typeof(v_params -> 'titulo') IS DISTINCT FROM 'string'
+       OR length(btrim(v_params ->> 'titulo')) NOT BETWEEN 1 AND 160
+       OR jsonb_typeof(v_params -> 'concepto') IS DISTINCT FROM 'string'
+       OR length(v_params ->> 'concepto') > 200
+       OR jsonb_typeof(v_params -> 'bullets') IS DISTINCT FROM 'array'
+       OR jsonb_array_length(v_params -> 'bullets') <> 5   -- las plantillas rellenan con su demo lo que falta
+       OR EXISTS (SELECT 1 FROM jsonb_array_elements(v_params -> 'bullets') b
+                   WHERE jsonb_typeof(b) <> 'string' OR length(btrim(b #>> '{}')) NOT BETWEEN 1 AND 220) THEN
+      RAISE EXCEPTION 'Revisa el texto: título, idea central (hasta 200 letras) y los 5 puntos (hasta 220 letras cada uno).'
+        USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+
+  ELSIF p_tipo = 'cartelera' THEN
+    IF v_params <> '{}'::jsonb THEN
+      RAISE EXCEPTION 'Parámetros inválidos.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_reservado := (v_precios ->> 'cartelera')::numeric;
+
+  ELSIF p_tipo = 'avance' THEN
+    -- {estilo 0–8}: el mismo índice que Ilustraciones (ART_STYLES). Gratis.
+    IF EXISTS (SELECT 1 FROM jsonb_object_keys(v_params) k WHERE k <> 'estilo')
+       OR jsonb_typeof(v_params -> 'estilo') IS DISTINCT FROM 'number'
+       OR (v_params ->> 'estilo')::numeric NOT IN (0, 1, 2, 3, 4, 5, 6, 7, 8) THEN
+      RAISE EXCEPTION 'Elige un estilo.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_reservado := (v_precios ->> 'avance')::numeric;
+
+  ELSIF p_tipo = 'avance_rehacer' THEN
+    -- {orden: 1–5} = otra imagen para esa escena; {musica: true} = otra música.
+    IF NOT ((v_params ? 'orden' AND NOT v_params ? 'musica'
+             AND jsonb_typeof(v_params -> 'orden') = 'number'
+             AND (v_params ->> 'orden')::numeric IN (1, 2, 3, 4, 5))
+            OR v_params = '{"musica": true}'::jsonb)
+       OR EXISTS (SELECT 1 FROM jsonb_object_keys(v_params) k WHERE k NOT IN ('orden', 'musica'))
+       OR NOT EXISTS (SELECT 1 FROM trabajos WHERE libro_id = p_libro AND tipo = 'avance' AND estado = 'hecho')
+       OR NOT EXISTS (SELECT 1 FROM libro_reels WHERE libro_id = p_libro) THEN
+      RAISE EXCEPTION 'Primero crea tu avance.' USING ERRCODE = '22023', HINT = 'formato';
+    END IF;
+    v_reservado := (v_precios ->> 'avance_rehacer')::numeric;
+  END IF;
+
+  IF v_reservado IS NOT NULL AND v_reservado > 0 THEN
+    UPDATE escritores SET saldo_cupon = saldo_cupon - v_reservado
+     WHERE user_id = v_uid AND saldo_cupon >= v_reservado;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Tu saldo no alcanza para esto.' USING ERRCODE = '42501', HINT = 'saldo_insuficiente';
+    END IF;
+  END IF;
+
+  INSERT INTO trabajos (user_id, libro_id, tipo, parametros, reservado)
+  VALUES (v_uid, p_libro, p_tipo, v_params, v_reservado)
+  RETURNING id INTO v_id;
+  RETURN v_id;
+END;
+$_$;
+
+
+--
+-- Name: precios_escritor(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.precios_escritor() RETURNS jsonb
+    LANGUAGE sql IMMUTABLE
+    SET search_path TO 'public'
+    AS $$
+  SELECT '{"sonido_analisis": 5.00, "sonido_nuevo": 0.15, "sonido_max_efectos": 12,
+           "portada": 0.00, "fondo": 1.00,
+           "ilustracion": 0.50, "rehacer": 0.25, "ilustraciones_analisis": 5.00,
+           "infografia": 0.50, "infografia_texto": 0.00, "cartelera": 5.00,
+           "avance": 0.00, "avance_rehacer": 0.25,
+           "juegos": [0, 3.00, 5.40, 7.80, 9.60, 12.00]}'::jsonb;
 $$;
 
 
@@ -4766,6 +6999,24 @@ BEGIN
   WHERE m.comunidad_id = p_comunidad
     AND m.user_id <> auth.uid()
     AND edad_permite_contacto(m.user_id);
+END;
+$$;
+
+
+--
+-- Name: purgar_borradores_escritor(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purgar_borradores_escritor() RETURNS integer
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  n int;
+BEGIN
+  DELETE FROM imagenes_escritor WHERE estado = 'borrador' AND creado < now() - interval '7 days';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
 END;
 $$;
 
@@ -4849,19 +7100,21 @@ DECLARE
 BEGIN
   WITH orden AS (
     SELECT p.id,
+           (l.propietario_id IS NULL OR l.visible) AS publico,
            sum(CASE WHEN p.tipo = 'separador' THEN 0 ELSE contar_palabras(p.contenido) END)
              OVER (PARTITION BY p.libro_id ORDER BY c.numero, p.numero, p.id
                    ROWS UNBOUNDED PRECEDING) AS acumulado,
            row_number() OVER (PARTITION BY p.libro_id ORDER BY c.numero, p.numero, p.id) AS fila
     FROM parrafos p
     JOIN capitulos c ON c.id = p.capitulo_id
+    JOIN libros l ON l.id = p.libro_id
     WHERE p.libro_id = ANY(libro_ids)
   )
   UPDATE parrafos p
-  SET en_muestra = (o.acumulado <= tope OR o.fila = 1)
+  SET en_muestra = (o.publico AND (o.acumulado <= tope OR o.fila = 1))
   FROM orden o
   WHERE p.id = o.id
-    AND p.en_muestra IS DISTINCT FROM (o.acumulado <= tope OR o.fila = 1);
+    AND p.en_muestra IS DISTINCT FROM (o.publico AND (o.acumulado <= tope OR o.fila = 1));
 
   UPDATE capitulos c
   SET en_muestra = EXISTS (SELECT 1 FROM parrafos p WHERE p.capitulo_id = c.id AND p.en_muestra)
@@ -5223,6 +7476,82 @@ $$;
 
 
 --
+-- Name: registrar_imagen_propia(uuid, text, text, integer, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.registrar_imagen_propia(p_libro uuid, p_ruta text, p_url text, p_capitulo integer DEFAULT NULL::integer, p_pie text DEFAULT NULL::text) RETURNS uuid
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $_$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_id  uuid;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM libros WHERE id = p_libro AND propietario_id = v_uid) THEN
+    RAISE EXCEPTION 'Ese libro no es tuyo o ya no existe.' USING ERRCODE = 'P0002', HINT = 'libro_invalido';
+  END IF;
+  IF p_ruta !~ ('^' || v_uid || '/' || p_libro || '/[0-9a-f-]{36}\.webp$')
+     OR p_url IS NULL OR right(p_url, length('/storage/v1/object/public/escritores/' || p_ruta))
+                         <> '/storage/v1/object/public/escritores/' || p_ruta
+     OR NOT EXISTS (SELECT 1 FROM storage.objects WHERE bucket_id = 'escritores' AND name = p_ruta) THEN
+    RAISE EXCEPTION 'No encontramos la imagen subida.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  IF length(coalesce(p_pie, '')) > 200 THEN
+    RAISE EXCEPTION 'El pie de imagen es demasiado largo (máximo 200 letras).' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('imagenes_propias:' || p_libro));
+  IF (SELECT count(*) FROM imagenes_escritor WHERE libro_id = p_libro AND tipo = 'propia') >= 20 THEN
+    -- El archivo ya subido no se queda huérfano.
+    INSERT INTO archivos_por_borrar (ruta) VALUES (p_ruta) ON CONFLICT DO NOTHING;
+    RAISE EXCEPTION 'Ya tienes 20 imágenes propias en este libro. Borra alguna para subir otra.'
+      USING ERRCODE = '42501', HINT = 'limite_imagenes';
+  END IF;
+
+  INSERT INTO imagenes_escritor (libro_id, tipo, estado, url, rutas, pie, guardado)
+  VALUES (p_libro, 'propia', 'guardada', p_url, ARRAY[p_ruta], nullif(btrim(p_pie), ''), now())
+  RETURNING id INTO v_id;
+
+  PERFORM _colocar_imagen_escritor(v_id, p_capitulo);
+  RETURN v_id;
+END;
+$_$;
+
+
+--
+-- Name: renombrar_ficha_cartelera(uuid, text, text, text, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.renombrar_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text, p_nuevo text, p_aliases jsonb) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  l       libros%ROWTYPE := _libro_del_escritor(p_libro);
+  v_nuevo text := btrim(coalesce(p_nuevo, ''));
+BEGIN
+  IF p_seccion NOT IN ('personajes', 'lugares') OR NOT l.es_ficcion THEN
+    RAISE EXCEPTION 'Solo personajes y lugares tienen ficha.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  IF length(v_nuevo) NOT BETWEEN 1 AND 200
+     OR jsonb_typeof(coalesce(p_aliases, '[]')) <> 'array' OR jsonb_array_length(coalesce(p_aliases, '[]')) > 20
+     OR EXISTS (SELECT 1 FROM jsonb_array_elements(coalesce(p_aliases, '[]')) a
+                 WHERE jsonb_typeof(a) <> 'string' OR length(a #>> '{}') NOT BETWEEN 1 AND 120) THEN
+    RAISE EXCEPTION 'Revisa el nombre y los alias.' USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  IF v_nuevo <> p_nombre AND EXISTS (SELECT 1 FROM cartelera_items WHERE libro_id = p_libro
+                                        AND seccion = p_seccion AND nombre = v_nuevo) THEN
+    RAISE EXCEPTION 'Ya hay una ficha que se llama así.' USING ERRCODE = '22023', HINT = 'duplicado';
+  END IF;
+  UPDATE cartelera_items
+     SET nombre = v_nuevo,
+         metadata = coalesce(metadata, '{}'::jsonb) || jsonb_build_object('aliases', coalesce(p_aliases, '[]'), 'editado', true)
+   WHERE libro_id = p_libro AND seccion = p_seccion AND nombre = p_nombre;
+END;
+$$;
+
+
+--
 -- Name: resolver_denuncia(uuid, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -5295,6 +7624,27 @@ BEGIN
   WHERE id = p_id;
 END;
 $$;
+
+
+--
+-- Name: restaurar_juego(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.restaurar_juego(p_libro uuid, p_juego text) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $_$
+DECLARE
+  v_orig jsonb;
+BEGIN
+  PERFORM _libro_del_escritor(p_libro);
+  SELECT datos INTO v_orig FROM juegos_originales WHERE libro_id = p_libro AND juego = p_juego;
+  IF v_orig IS NULL THEN RETURN; END IF;
+  EXECUTE format('UPDATE %I SET datos = $2, version = version + 1, actualizado_at = now() WHERE libro_id = $1',
+                 p_juego || '_contenido') USING p_libro, v_orig;
+  DELETE FROM juegos_originales WHERE libro_id = p_libro AND juego = p_juego;
+END;
+$_$;
 
 
 --
@@ -5471,6 +7821,40 @@ $$;
 
 
 --
+-- Name: solicitar_escritor(text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.solicitar_escritor(p_nombre text, p_correo text) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $_$
+DECLARE
+  v_nombre text := btrim(coalesce(p_nombre, ''));
+  v_correo text := lower(btrim(coalesce(p_correo, '')));
+BEGIN
+  IF char_length(v_nombre) NOT BETWEEN 1 AND 120 THEN
+    RAISE EXCEPTION 'nombre_invalido' USING ERRCODE = '22023';
+  END IF;
+  IF char_length(v_correo) > 254 OR v_correo !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' THEN
+    RAISE EXCEPTION 'correo_invalido' USING ERRCODE = '22023';
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM solicitudes_escritor
+             WHERE lower(correo) = v_correo AND creado > now() - interval '1 day') THEN
+    RETURN 'ok';
+  END IF;
+  IF (SELECT count(*) FROM solicitudes_escritor WHERE creado > now() - interval '1 hour') >= 30 THEN
+    RAISE EXCEPTION 'demasiadas_solicitudes' USING ERRCODE = '54000';
+  END IF;
+
+  INSERT INTO solicitudes_escritor (nombre, correo, user_id)
+  VALUES (v_nombre, v_correo, auth.uid());
+  RETURN 'ok';
+END;
+$_$;
+
+
+--
 -- Name: tienda_recompensas(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -5565,6 +7949,45 @@ $$;
 
 
 --
+-- Name: trabajos; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.trabajos (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid,
+    libro_id uuid,
+    tipo text NOT NULL,
+    estado text DEFAULT 'pendiente'::text NOT NULL,
+    parametros jsonb DEFAULT '{}'::jsonb NOT NULL,
+    progreso jsonb,
+    resultado jsonb,
+    error text,
+    creado timestamp with time zone DEFAULT now() NOT NULL,
+    empezado timestamp with time zone,
+    terminado timestamp with time zone,
+    reservado numeric(8,2),
+    costo numeric(8,2),
+    CONSTRAINT trabajos_estado_check CHECK ((estado = ANY (ARRAY['pendiente'::text, 'en_proceso'::text, 'hecho'::text, 'error'::text]))),
+    CONSTRAINT trabajos_tipo_check CHECK ((tipo = ANY (ARRAY['prueba'::text, 'borrar'::text, 'sonido'::text, 'portada'::text, 'fondo'::text, 'ilustraciones_analisis'::text, 'ilustraciones'::text, 'rehacer'::text, 'infografias'::text, 'infografia_texto'::text, 'cartelera'::text, 'avance'::text, 'avance_rehacer'::text])))
+);
+
+
+--
+-- Name: tomar_trabajo(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.tomar_trabajo() RETURNS SETOF public.trabajos
+    LANGUAGE sql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  UPDATE trabajos SET estado = 'en_proceso', empezado = now(), error = NULL
+   WHERE id = (SELECT id FROM trabajos WHERE estado = 'pendiente'
+               ORDER BY creado LIMIT 1 FOR UPDATE SKIP LOCKED)
+  RETURNING *;
+$$;
+
+
+--
 -- Name: trg_muestra_delete(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -5651,6 +8074,28 @@ BEGIN
     SELECT capitulo_id FROM nuevos UNION SELECT capitulo_id FROM viejos));
   RETURN NULL;
 END $$;
+
+
+--
+-- Name: ubicar_cita_escritor(uuid, integer, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.ubicar_cita_escritor(p_libro uuid, p_cap integer, p_cita text) RETURNS integer
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_par int;
+BEGIN
+  PERFORM _libro_del_escritor(p_libro);
+  v_par := _ubicar_cita(p_libro, p_cap, p_cita);
+  IF v_par IS NULL THEN
+    RAISE EXCEPTION 'No encontramos esa frase tal cual en el capítulo %. Cópiala de tu libro sin cambiar nada.', p_cap
+      USING ERRCODE = '22023', HINT = 'formato';
+  END IF;
+  RETURN v_par;
+END;
+$$;
 
 
 --
@@ -5864,6 +8309,16 @@ CREATE TABLE public.anotaciones_usuario (
     capitulo_num integer NOT NULL,
     contenido text DEFAULT ''::text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: archivos_por_borrar; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.archivos_por_borrar (
+    ruta text NOT NULL,
+    creado timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -6409,39 +8864,6 @@ ALTER TABLE public.desafio_llamadas ALTER COLUMN id ADD GENERATED ALWAYS AS IDEN
 
 
 --
--- Name: libros; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.libros (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    titulo text NOT NULL,
-    autor text NOT NULL,
-    descripcion text,
-    portada_url text,
-    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
-    color text,
-    paginas integer,
-    anio integer,
-    categorias text[] DEFAULT '{}'::text[] NOT NULL,
-    moods text[] DEFAULT '{}'::text[] NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    es_ficcion boolean DEFAULT true NOT NULL,
-    slug text,
-    visible boolean DEFAULT true NOT NULL,
-    orden integer,
-    anio_texto text,
-    primera_linea text
-);
-
-
---
--- Name: COLUMN libros.orden; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.libros.orden IS 'Orden curado del catalogo (menor = mas arriba). Numerado de 10 en 10 para poder intercalar sin renumerar. NULL = sin puesto asignado, va al final.';
-
-
---
 -- Name: elementos_con_contexto; Type: VIEW; Schema: public; Owner: -
 --
 
@@ -6466,6 +8888,18 @@ CREATE VIEW public.elementos_con_contexto WITH (security_invoker='on') AS
      JOIN public.parrafos p ON ((p.id = ei.parrafo_id)))
      JOIN public.capitulos c ON ((c.id = p.capitulo_id)))
      JOIN public.libros l ON ((l.id = c.libro_id)));
+
+
+--
+-- Name: escritores; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.escritores (
+    user_id uuid NOT NULL,
+    saldo_cupon numeric(8,2) DEFAULT 50 NOT NULL,
+    creado timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT escritores_saldo_cupon_check CHECK ((saldo_cupon >= (0)::numeric))
+);
 
 
 --
@@ -6720,6 +9154,69 @@ COMMENT ON TABLE public.hilo_jugadas IS 'Hilo de ideas: una fila por cada «Juga
 
 
 --
+-- Name: ilustraciones_propuestas; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ilustraciones_propuestas (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    libro_id uuid NOT NULL,
+    tipo text NOT NULL,
+    nombre text,
+    capitulo integer,
+    descripcion text NOT NULL,
+    rol text,
+    prompt text,
+    estilo_prompt integer,
+    editado boolean DEFAULT false NOT NULL,
+    origen text DEFAULT 'autor'::text NOT NULL,
+    creado timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT ilustraciones_propuestas_forma_check CHECK ((((tipo = ANY (ARRAY['personaje'::text, 'lugar'::text])) AND (nombre IS NOT NULL) AND (capitulo IS NULL)) OR ((tipo = 'escena'::text) AND (capitulo IS NOT NULL)))),
+    CONSTRAINT ilustraciones_propuestas_origen_check CHECK ((origen = ANY (ARRAY['analisis'::text, 'autor'::text]))),
+    CONSTRAINT ilustraciones_propuestas_tipo_check CHECK ((tipo = ANY (ARRAY['personaje'::text, 'lugar'::text, 'escena'::text])))
+);
+
+
+--
+-- Name: imagenes_escritor; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.imagenes_escritor (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    libro_id uuid NOT NULL,
+    tipo text NOT NULL,
+    estado text DEFAULT 'borrador'::text NOT NULL,
+    url text NOT NULL,
+    url_movil text,
+    rutas text[] DEFAULT '{}'::text[] NOT NULL,
+    descripcion text,
+    nombre text,
+    capitulo integer,
+    pie text,
+    trabajo_id uuid,
+    creado timestamp with time zone DEFAULT now() NOT NULL,
+    guardado timestamp with time zone,
+    media_id uuid,
+    prompt text,
+    propuesta_id uuid,
+    datos jsonb,
+    CONSTRAINT imagenes_escritor_estado_check CHECK ((estado = ANY (ARRAY['borrador'::text, 'guardada'::text]))),
+    CONSTRAINT imagenes_escritor_tipo_check CHECK ((tipo = ANY (ARRAY['portada'::text, 'fondo'::text, 'personaje'::text, 'lugar'::text, 'escena'::text, 'propia'::text, 'infografia'::text])))
+);
+
+
+--
+-- Name: juegos_originales; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.juegos_originales (
+    libro_id uuid NOT NULL,
+    juego text NOT NULL,
+    datos jsonb NOT NULL,
+    guardado timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: libro_reels; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6917,6 +9414,25 @@ CREATE TABLE public.ovillos_movimientos (
 --
 
 COMMENT ON TABLE public.ovillos_movimientos IS 'Libro de cuentas de ovillos, común a todos los juegos y por libro. Saldo = 10 + 2 × capítulos completados + suma de cantidad (_ovillos_saldo). Solo escriben las funciones de cada juego. Ver migración 087.';
+
+
+--
+-- Name: pedidos_juegos; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pedidos_juegos (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    libro_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    juego text NOT NULL,
+    estado text DEFAULT 'pedido'::text NOT NULL,
+    nota text,
+    avisado boolean DEFAULT false NOT NULL,
+    creado timestamp with time zone DEFAULT now() NOT NULL,
+    actualizado timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT pedidos_juegos_estado_check CHECK ((estado = ANY (ARRAY['pedido'::text, 'en_curso'::text, 'listo'::text, 'cancelado'::text]))),
+    CONSTRAINT pedidos_juegos_juego_check CHECK ((juego = ANY (ARRAY['anderson'::text, 'corazonadas'::text, 'desafio'::text, 'concurso'::text, 'mapa'::text, 'hilo'::text, 'falsificador'::text, 'explicaselo'::text, 'capsula'::text])))
+);
 
 
 --
@@ -7208,6 +9724,36 @@ CREATE TABLE public.sesiones_lectura (
 
 
 --
+-- Name: solicitudes_escritor; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.solicitudes_escritor (
+    id bigint NOT NULL,
+    nombre text NOT NULL,
+    correo text NOT NULL,
+    user_id uuid,
+    creado timestamp with time zone DEFAULT now() NOT NULL,
+    atendida timestamp with time zone,
+    CONSTRAINT solicitudes_escritor_correo_check CHECK (((char_length(correo) >= 3) AND (char_length(correo) <= 254))),
+    CONSTRAINT solicitudes_escritor_nombre_check CHECK (((char_length(nombre) >= 1) AND (char_length(nombre) <= 120)))
+);
+
+
+--
+-- Name: solicitudes_escritor_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.solicitudes_escritor ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.solicitudes_escritor_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
 -- Name: subrayados_usuario; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -7298,6 +9844,14 @@ ALTER TABLE ONLY public.anderson_jugadas
 
 ALTER TABLE ONLY public.anotaciones_usuario
     ADD CONSTRAINT anotaciones_usuario_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: archivos_por_borrar archivos_por_borrar_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.archivos_por_borrar
+    ADD CONSTRAINT archivos_por_borrar_pkey PRIMARY KEY (ruta);
 
 
 --
@@ -7637,6 +10191,14 @@ ALTER TABLE ONLY public.elementos_interactivos
 
 
 --
+-- Name: escritores escritores_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.escritores
+    ADD CONSTRAINT escritores_pkey PRIMARY KEY (user_id);
+
+
+--
 -- Name: expedientes_compras expedientes_compras_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7757,6 +10319,30 @@ ALTER TABLE ONLY public.hilo_jugadas
 
 
 --
+-- Name: ilustraciones_propuestas ilustraciones_propuestas_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ilustraciones_propuestas
+    ADD CONSTRAINT ilustraciones_propuestas_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: imagenes_escritor imagenes_escritor_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.imagenes_escritor
+    ADD CONSTRAINT imagenes_escritor_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: juegos_originales juegos_originales_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.juegos_originales
+    ADD CONSTRAINT juegos_originales_pkey PRIMARY KEY (libro_id, juego);
+
+
+--
 -- Name: libro_reels libro_reels_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7818,6 +10404,14 @@ ALTER TABLE ONLY public.parrafos
 
 ALTER TABLE ONLY public.parrafos
     ADD CONSTRAINT parrafos_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pedidos_juegos pedidos_juegos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pedidos_juegos
+    ADD CONSTRAINT pedidos_juegos_pkey PRIMARY KEY (id);
 
 
 --
@@ -7957,6 +10551,14 @@ ALTER TABLE ONLY public.sesiones_lectura
 
 
 --
+-- Name: solicitudes_escritor solicitudes_escritor_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solicitudes_escritor
+    ADD CONSTRAINT solicitudes_escritor_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: subrayados_usuario subrayados_usuario_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7970,6 +10572,14 @@ ALTER TABLE ONLY public.subrayados_usuario
 
 ALTER TABLE ONLY public.superusuarios
     ADD CONSTRAINT superusuarios_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: trabajos trabajos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trabajos
+    ADD CONSTRAINT trabajos_pkey PRIMARY KEY (id);
 
 
 --
@@ -8428,10 +11038,87 @@ CREATE INDEX idx_subrayados_user_libro ON public.subrayados_usuario USING btree 
 
 
 --
+-- Name: ilustraciones_propuestas_libro_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ilustraciones_propuestas_libro_idx ON public.ilustraciones_propuestas USING btree (libro_id, tipo);
+
+
+--
+-- Name: imagenes_escritor_borradores_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX imagenes_escritor_borradores_idx ON public.imagenes_escritor USING btree (creado) WHERE (estado = 'borrador'::text);
+
+
+--
+-- Name: imagenes_escritor_libro_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX imagenes_escritor_libro_idx ON public.imagenes_escritor USING btree (libro_id, tipo);
+
+
+--
 -- Name: libro_reels_libro_orden_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX libro_reels_libro_orden_idx ON public.libro_reels USING btree (libro_id, orden);
+
+
+--
+-- Name: libros_propietario_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX libros_propietario_idx ON public.libros USING btree (propietario_id) WHERE (propietario_id IS NOT NULL);
+
+
+--
+-- Name: pedidos_juegos_activo_uidx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX pedidos_juegos_activo_uidx ON public.pedidos_juegos USING btree (libro_id, juego) WHERE (estado <> 'cancelado'::text);
+
+
+--
+-- Name: pedidos_juegos_sin_aviso_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX pedidos_juegos_sin_aviso_idx ON public.pedidos_juegos USING btree (creado) WHERE (NOT avisado);
+
+
+--
+-- Name: solicitudes_escritor_correo; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX solicitudes_escritor_correo ON public.solicitudes_escritor USING btree (lower(correo));
+
+
+--
+-- Name: solicitudes_escritor_pendientes; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX solicitudes_escritor_pendientes ON public.solicitudes_escritor USING btree (creado) WHERE (atendida IS NULL);
+
+
+--
+-- Name: trabajos_libro_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX trabajos_libro_idx ON public.trabajos USING btree (libro_id);
+
+
+--
+-- Name: trabajos_pendientes_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX trabajos_pendientes_idx ON public.trabajos USING btree (creado) WHERE (estado = 'pendiente'::text);
+
+
+--
+-- Name: trabajos_user_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX trabajos_user_idx ON public.trabajos USING btree (user_id);
 
 
 --
@@ -8547,6 +11234,13 @@ CREATE TRIGGER trg_foro_recortar_tags BEFORE INSERT OR UPDATE ON public.foros_co
 
 
 --
+-- Name: imagenes_escritor trg_imagen_escritor_borrada; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_imagen_escritor_borrada AFTER DELETE ON public.imagenes_escritor FOR EACH ROW EXECUTE FUNCTION public._imagen_escritor_borrada();
+
+
+--
 -- Name: comunidad_lecturas trg_lectura_aula_dar_libro; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -8607,6 +11301,20 @@ CREATE TRIGGER trg_parrafos_palabras_ins AFTER INSERT ON public.parrafos REFEREN
 --
 
 CREATE TRIGGER trg_parrafos_palabras_upd AFTER UPDATE ON public.parrafos REFERENCING OLD TABLE AS viejos NEW TABLE AS nuevos FOR EACH STATEMENT EXECUTE FUNCTION public.trg_palabras_update();
+
+
+--
+-- Name: libro_reels trg_reel_archivos; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_reel_archivos AFTER DELETE OR UPDATE OF imagen_url, audio_url ON public.libro_reels FOR EACH ROW EXECUTE FUNCTION public._reel_archivos_por_borrar();
+
+
+--
+-- Name: libros trg_trabajo_borrar_libro; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_trabajo_borrar_libro AFTER DELETE ON public.libros FOR EACH ROW WHEN ((old.propietario_id IS NOT NULL)) EXECUTE FUNCTION public._trabajo_borrar_libro();
 
 
 --
@@ -9122,6 +11830,14 @@ ALTER TABLE ONLY public.elementos_interactivos
 
 
 --
+-- Name: escritores escritores_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.escritores
+    ADD CONSTRAINT escritores_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: expedientes_compras expedientes_compras_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9282,11 +11998,59 @@ ALTER TABLE ONLY public.hilo_jugadas
 
 
 --
+-- Name: ilustraciones_propuestas ilustraciones_propuestas_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ilustraciones_propuestas
+    ADD CONSTRAINT ilustraciones_propuestas_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
+-- Name: imagenes_escritor imagenes_escritor_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.imagenes_escritor
+    ADD CONSTRAINT imagenes_escritor_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
+-- Name: imagenes_escritor imagenes_escritor_media_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.imagenes_escritor
+    ADD CONSTRAINT imagenes_escritor_media_id_fkey FOREIGN KEY (media_id) REFERENCES public.biblioteca_media(id) ON DELETE SET NULL;
+
+
+--
+-- Name: imagenes_escritor imagenes_escritor_propuesta_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.imagenes_escritor
+    ADD CONSTRAINT imagenes_escritor_propuesta_id_fkey FOREIGN KEY (propuesta_id) REFERENCES public.ilustraciones_propuestas(id) ON DELETE SET NULL;
+
+
+--
+-- Name: juegos_originales juegos_originales_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.juegos_originales
+    ADD CONSTRAINT juegos_originales_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
 -- Name: libro_reels libro_reels_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.libro_reels
     ADD CONSTRAINT libro_reels_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
+-- Name: libros libros_propietario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.libros
+    ADD CONSTRAINT libros_propietario_id_fkey FOREIGN KEY (propietario_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
 
 --
@@ -9375,6 +12139,22 @@ ALTER TABLE ONLY public.ovillos_movimientos
 
 ALTER TABLE ONLY public.parrafos
     ADD CONSTRAINT parrafos_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
+-- Name: pedidos_juegos pedidos_juegos_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pedidos_juegos
+    ADD CONSTRAINT pedidos_juegos_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+
+--
+-- Name: pedidos_juegos pedidos_juegos_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pedidos_juegos
+    ADD CONSTRAINT pedidos_juegos_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
 
 --
@@ -9594,6 +12374,14 @@ ALTER TABLE ONLY public.sesiones_lectura
 
 
 --
+-- Name: solicitudes_escritor solicitudes_escritor_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solicitudes_escritor
+    ADD CONSTRAINT solicitudes_escritor_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+
+--
 -- Name: subrayados_usuario subrayados_usuario_libro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9626,17 +12414,18 @@ ALTER TABLE ONLY public.superusuarios
 
 
 --
+-- Name: trabajos trabajos_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trabajos
+    ADD CONSTRAINT trabajos_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: perfiles Perfiles visibles por dueño; Type: POLICY; Schema: public; Owner: -
 --
 
 CREATE POLICY "Perfiles visibles por dueño" ON public.perfiles FOR SELECT TO authenticated USING ((auth.uid() = id));
-
-
---
--- Name: libro_reels Reels visibles para todos; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Reels visibles para todos" ON public.libro_reels FOR SELECT USING (true);
 
 
 --
@@ -9727,6 +12516,12 @@ CREATE POLICY anotaciones_update ON public.anotaciones_usuario FOR UPDATE TO aut
 ALTER TABLE public.anotaciones_usuario ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: archivos_por_borrar; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.archivos_por_borrar ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: biblioteca_media; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -9766,7 +12561,9 @@ CREATE POLICY capitulos_select ON public.capitulos FOR SELECT TO authenticated U
    FROM public.bibliotecas_usuarios bu
   WHERE ((bu.user_id = ( SELECT auth.uid() AS uid)) AND (bu.libro_id = capitulos.libro_id)))) OR (EXISTS ( SELECT 1
    FROM public.superusuarios s
-  WHERE (s.user_id = ( SELECT auth.uid() AS uid))))));
+  WHERE (s.user_id = ( SELECT auth.uid() AS uid)))) OR (EXISTS ( SELECT 1
+   FROM public.libros l
+  WHERE ((l.id = capitulos.libro_id) AND (l.propietario_id = ( SELECT auth.uid() AS uid)))))));
 
 
 --
@@ -9797,14 +12594,18 @@ ALTER TABLE public.cartelera_principal ENABLE ROW LEVEL SECURITY;
 -- Name: cartelera_principal cartelera_principal_select; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY cartelera_principal_select ON public.cartelera_principal FOR SELECT TO authenticated USING (true);
+CREATE POLICY cartelera_principal_select ON public.cartelera_principal FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.libros l
+  WHERE (l.id = cartelera_principal.libro_id))));
 
 
 --
 -- Name: cartelera_items cartelera_select; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY cartelera_select ON public.cartelera_items FOR SELECT TO authenticated USING (true);
+CREATE POLICY cartelera_select ON public.cartelera_items FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.libros l
+  WHERE (l.id = cartelera_items.libro_id))));
 
 
 --
@@ -10180,6 +12981,41 @@ ALTER TABLE public.desafio_llamadas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.elementos_interactivos ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: elementos_interactivos escritor_ei_delete; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY escritor_ei_delete ON public.elementos_interactivos FOR DELETE TO authenticated USING ((EXISTS ( SELECT 1
+   FROM (public.parrafos p
+     JOIN public.libros l ON ((l.id = p.libro_id)))
+  WHERE ((p.id = elementos_interactivos.parrafo_id) AND (l.propietario_id = ( SELECT auth.uid() AS uid))))));
+
+
+--
+-- Name: elementos_interactivos escritor_ei_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY escritor_ei_insert ON public.elementos_interactivos FOR INSERT TO authenticated WITH CHECK (((EXISTS ( SELECT 1
+   FROM (public.parrafos p
+     JOIN public.libros l ON ((l.id = p.libro_id)))
+  WHERE ((p.id = elementos_interactivos.parrafo_id) AND (l.propietario_id = ( SELECT auth.uid() AS uid))))) AND (EXISTS ( SELECT 1
+   FROM public.biblioteca_media m
+  WHERE ((m.id = elementos_interactivos.media_id) AND (m.tipo = 'audio'::text)))) AND ((metadata - 'texto_ref'::text) = '{}'::jsonb) AND (length(COALESCE((metadata ->> 'texto_ref'::text), ''::text)) <= 500)));
+
+
+--
+-- Name: escritores; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.escritores ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: escritores escritores_select_propio; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY escritores_select_propio ON public.escritores FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
 -- Name: expedientes_compras; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -10283,6 +13119,36 @@ ALTER TABLE public.hilo_contenido ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.hilo_jugadas ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: ilustraciones_propuestas; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.ilustraciones_propuestas ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: ilustraciones_propuestas ilustraciones_propuestas_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY ilustraciones_propuestas_select ON public.ilustraciones_propuestas FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.libros l
+  WHERE ((l.id = ilustraciones_propuestas.libro_id) AND (l.propietario_id = ( SELECT auth.uid() AS uid))))));
+
+
+--
+-- Name: imagenes_escritor; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.imagenes_escritor ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: imagenes_escritor imagenes_escritor_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY imagenes_escritor_select ON public.imagenes_escritor FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.libros l
+  WHERE ((l.id = imagenes_escritor.libro_id) AND (l.propietario_id = ( SELECT auth.uid() AS uid))))));
+
+
+--
 -- Name: elementos_interactivos interactivos_select; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -10290,10 +13156,25 @@ CREATE POLICY interactivos_select ON public.elementos_interactivos FOR SELECT TO
 
 
 --
+-- Name: juegos_originales; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.juegos_originales ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: libro_reels; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
 ALTER TABLE public.libro_reels ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: libro_reels libro_reels_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY libro_reels_select ON public.libro_reels FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM public.libros l
+  WHERE (l.id = libro_reels.libro_id))));
+
 
 --
 -- Name: libros; Type: ROW SECURITY; Schema: public; Owner: -
@@ -10305,14 +13186,16 @@ ALTER TABLE public.libros ENABLE ROW LEVEL SECURITY;
 -- Name: libros libros_public_read; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY libros_public_read ON public.libros FOR SELECT TO anon USING (true);
+CREATE POLICY libros_public_read ON public.libros FOR SELECT TO anon USING ((visible OR (propietario_id IS NULL)));
 
 
 --
 -- Name: libros libros_select; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY libros_select ON public.libros FOR SELECT TO authenticated USING (true);
+CREATE POLICY libros_select ON public.libros FOR SELECT TO authenticated USING ((visible OR (propietario_id IS NULL) OR (propietario_id = ( SELECT auth.uid() AS uid)) OR public.es_superusuario() OR (EXISTS ( SELECT 1
+   FROM public.bibliotecas_usuarios bu
+  WHERE ((bu.user_id = ( SELECT auth.uid() AS uid)) AND (bu.libro_id = libros.id))))));
 
 
 --
@@ -10406,7 +13289,22 @@ CREATE POLICY parrafos_select ON public.parrafos FOR SELECT TO authenticated USI
    FROM public.bibliotecas_usuarios bu
   WHERE ((bu.user_id = ( SELECT auth.uid() AS uid)) AND (bu.libro_id = parrafos.libro_id)))) OR (EXISTS ( SELECT 1
    FROM public.superusuarios s
-  WHERE (s.user_id = ( SELECT auth.uid() AS uid)))) OR en_muestra));
+  WHERE (s.user_id = ( SELECT auth.uid() AS uid)))) OR en_muestra OR (EXISTS ( SELECT 1
+   FROM public.libros l
+  WHERE ((l.id = parrafos.libro_id) AND (l.propietario_id = ( SELECT auth.uid() AS uid)))))));
+
+
+--
+-- Name: pedidos_juegos; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.pedidos_juegos ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: pedidos_juegos pedidos_juegos_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY pedidos_juegos_select ON public.pedidos_juegos FOR SELECT TO authenticated USING (((user_id = ( SELECT auth.uid() AS uid)) OR public.es_superusuario()));
 
 
 --
@@ -10666,6 +13564,12 @@ CREATE POLICY sesiones_update ON public.sesiones_lectura FOR UPDATE TO authentic
 
 
 --
+-- Name: solicitudes_escritor; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.solicitudes_escritor ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: subrayados_usuario subrayados_delete; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -10760,6 +13664,19 @@ CREATE POLICY superusuarios_select_own ON public.superusuarios FOR SELECT TO aut
 
 
 --
+-- Name: trabajos; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.trabajos ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: trabajos trabajos_select_propio; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY trabajos_select_propio ON public.trabajos FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: -
 --
 
@@ -10818,6 +13735,14 @@ GRANT ALL ON FUNCTION public._bote_juntado(p_rec uuid) TO service_role;
 
 
 --
+-- Name: FUNCTION _cancelar_pedido_juego(p_id uuid, p_nota text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._cancelar_pedido_juego(p_id uuid, p_nota text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._cancelar_pedido_juego(p_id uuid, p_nota text) TO service_role;
+
+
+--
 -- Name: FUNCTION _capsula_estado(p_user uuid, p_libro uuid); Type: ACL; Schema: public; Owner: -
 --
 
@@ -10873,6 +13798,14 @@ GRANT ALL ON FUNCTION public._codigo_colegio(prefijo text) TO service_role;
 
 REVOKE ALL ON FUNCTION public._colegio_ultimo_admin() FROM PUBLIC;
 GRANT ALL ON FUNCTION public._colegio_ultimo_admin() TO service_role;
+
+
+--
+-- Name: FUNCTION _colocar_imagen_escritor(p_imagen uuid, p_capitulo integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._colocar_imagen_escritor(p_imagen uuid, p_capitulo integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._colocar_imagen_escritor(p_imagen uuid, p_capitulo integer) TO service_role;
 
 
 --
@@ -11070,6 +14003,14 @@ GRANT ALL ON FUNCTION public._falsificador_estado(p_user uuid, p_libro uuid) TO 
 
 
 --
+-- Name: FUNCTION _guardar_juego(p_libro uuid, p_juego text, p_datos jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._guardar_juego(p_libro uuid, p_juego text, p_datos jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._guardar_juego(p_libro uuid, p_juego text, p_datos jsonb) TO service_role;
+
+
+--
 -- Name: FUNCTION _hilo_armadas(p_user uuid, p_libro uuid); Type: ACL; Schema: public; Owner: -
 --
 
@@ -11091,6 +14032,14 @@ GRANT ALL ON FUNCTION public._hilo_estado(p_user uuid, p_libro uuid) TO service_
 
 REVOKE ALL ON FUNCTION public._hilo_premio(p_idea jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public._hilo_premio(p_idea jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION _imagen_escritor_borrada(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._imagen_escritor_borrada() FROM PUBLIC;
+GRANT ALL ON FUNCTION public._imagen_escritor_borrada() TO service_role;
 
 
 --
@@ -11123,6 +14072,23 @@ GRANT ALL ON FUNCTION public._juegos_por_defecto() TO service_role;
 
 REVOKE ALL ON FUNCTION public._lectura_aula_dar_libro() FROM PUBLIC;
 GRANT ALL ON FUNCTION public._lectura_aula_dar_libro() TO service_role;
+
+
+--
+-- Name: TABLE libros; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.libros TO anon;
+GRANT ALL ON TABLE public.libros TO authenticated;
+GRANT ALL ON TABLE public.libros TO service_role;
+
+
+--
+-- Name: FUNCTION _libro_del_escritor(p_libro uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._libro_del_escritor(p_libro uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._libro_del_escritor(p_libro uuid) TO service_role;
 
 
 --
@@ -11159,6 +14125,14 @@ GRANT ALL ON FUNCTION public._mapa_norm(p text) TO service_role;
 
 
 --
+-- Name: FUNCTION _media_de_imagen_escritor(p_imagen uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._media_de_imagen_escritor(p_imagen uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._media_de_imagen_escritor(p_imagen uuid) TO service_role;
+
+
+--
 -- Name: FUNCTION _meta_aula(p_aula uuid, p_zona text); Type: ACL; Schema: public; Owner: -
 --
 
@@ -11183,6 +14157,15 @@ GRANT ALL ON FUNCTION public._ovillos_saldo(p_user uuid, p_libro uuid) TO servic
 
 
 --
+-- Name: FUNCTION _precio_juegos(n integer); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public._precio_juegos(n integer) TO anon;
+GRANT ALL ON FUNCTION public._precio_juegos(n integer) TO authenticated;
+GRANT ALL ON FUNCTION public._precio_juegos(n integer) TO service_role;
+
+
+--
 -- Name: FUNCTION _profe_de_aula(p_aula uuid); Type: ACL; Schema: public; Owner: -
 --
 
@@ -11199,11 +14182,54 @@ GRANT ALL ON FUNCTION public._recompensa_bloqueo(p_user uuid, p_rec uuid, p_libr
 
 
 --
+-- Name: FUNCTION _reel_archivos_por_borrar(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._reel_archivos_por_borrar() FROM PUBLIC;
+GRANT ALL ON FUNCTION public._reel_archivos_por_borrar() TO service_role;
+
+
+--
 -- Name: FUNCTION _referencia_ovillos(p_libro uuid, p_juegos jsonb); Type: ACL; Schema: public; Owner: -
 --
 
 REVOKE ALL ON FUNCTION public._referencia_ovillos(p_libro uuid, p_juegos jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public._referencia_ovillos(p_libro uuid, p_juegos jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION _ruta_escritores(p_url text); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public._ruta_escritores(p_url text) TO anon;
+GRANT ALL ON FUNCTION public._ruta_escritores(p_url text) TO authenticated;
+GRANT ALL ON FUNCTION public._ruta_escritores(p_url text) TO service_role;
+
+
+--
+-- Name: FUNCTION _seccion_valida(p_es_ficcion boolean, p_seccion text); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public._seccion_valida(p_es_ficcion boolean, p_seccion text) TO anon;
+GRANT ALL ON FUNCTION public._seccion_valida(p_es_ficcion boolean, p_seccion text) TO authenticated;
+GRANT ALL ON FUNCTION public._seccion_valida(p_es_ficcion boolean, p_seccion text) TO service_role;
+
+
+--
+-- Name: FUNCTION _texto_juego(p jsonb, p_max integer, p_vacio boolean); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public._texto_juego(p jsonb, p_max integer, p_vacio boolean) TO anon;
+GRANT ALL ON FUNCTION public._texto_juego(p jsonb, p_max integer, p_vacio boolean) TO authenticated;
+GRANT ALL ON FUNCTION public._texto_juego(p jsonb, p_max integer, p_vacio boolean) TO service_role;
+
+
+--
+-- Name: FUNCTION _trabajo_borrar_libro(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._trabajo_borrar_libro() FROM PUBLIC;
+GRANT ALL ON FUNCTION public._trabajo_borrar_libro() TO service_role;
 
 
 --
@@ -11239,11 +14265,45 @@ GRANT ALL ON FUNCTION public._trg_perfil_al_registrarse() TO service_role;
 
 
 --
+-- Name: FUNCTION _ubicar_cita(p_libro uuid, p_cap integer, p_cita text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public._ubicar_cita(p_libro uuid, p_cap integer, p_cita text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public._ubicar_cita(p_libro uuid, p_cap integer, p_cita text) TO service_role;
+
+
+--
 -- Name: FUNCTION _zona_valida(p_zona text); Type: ACL; Schema: public; Owner: -
 --
 
 REVOKE ALL ON FUNCTION public._zona_valida(p_zona text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public._zona_valida(p_zona text) TO service_role;
+
+
+--
+-- Name: FUNCTION activar_escritor(p_correo text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.activar_escritor(p_correo text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.activar_escritor(p_correo text) TO service_role;
+
+
+--
+-- Name: FUNCTION actualizar_imagen_escritor(p_imagen uuid, p_capitulo integer, p_pie text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.actualizar_imagen_escritor(p_imagen uuid, p_capitulo integer, p_pie text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.actualizar_imagen_escritor(p_imagen uuid, p_capitulo integer, p_pie text) TO authenticated;
+GRANT ALL ON FUNCTION public.actualizar_imagen_escritor(p_imagen uuid, p_capitulo integer, p_pie text) TO service_role;
+
+
+--
+-- Name: FUNCTION actualizar_pedido_juego(p_id uuid, p_estado text, p_nota text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.actualizar_pedido_juego(p_id uuid, p_estado text, p_nota text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.actualizar_pedido_juego(p_id uuid, p_estado text, p_nota text) TO authenticated;
+GRANT ALL ON FUNCTION public.actualizar_pedido_juego(p_id uuid, p_estado text, p_nota text) TO service_role;
 
 
 --
@@ -11301,6 +14361,42 @@ GRANT ALL ON FUNCTION public.asignar_lectura(p_aula uuid, p_libro uuid, p_fecha_
 
 
 --
+-- Name: FUNCTION borrar_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.borrar_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.borrar_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text) TO authenticated;
+GRANT ALL ON FUNCTION public.borrar_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text) TO service_role;
+
+
+--
+-- Name: FUNCTION borrar_item_cartelera(p_libro uuid, p_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.borrar_item_cartelera(p_libro uuid, p_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.borrar_item_cartelera(p_libro uuid, p_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.borrar_item_cartelera(p_libro uuid, p_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION borrar_libro_escritor(p_libro uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.borrar_libro_escritor(p_libro uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.borrar_libro_escritor(p_libro uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.borrar_libro_escritor(p_libro uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION borrar_propuesta_ilustracion(p_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.borrar_propuesta_ilustracion(p_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.borrar_propuesta_ilustracion(p_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.borrar_propuesta_ilustracion(p_id uuid) TO service_role;
+
+
+--
 -- Name: FUNCTION bote_entregar(p_recompensa uuid); Type: ACL; Schema: public; Owner: -
 --
 
@@ -11316,6 +14412,15 @@ GRANT ALL ON FUNCTION public.bote_entregar(p_recompensa uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.buscar_comunidades(p_texto text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.buscar_comunidades(p_texto text) TO authenticated;
 GRANT ALL ON FUNCTION public.buscar_comunidades(p_texto text) TO service_role;
+
+
+--
+-- Name: FUNCTION cancelar_juego(p_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.cancelar_juego(p_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.cancelar_juego(p_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.cancelar_juego(p_id uuid) TO service_role;
 
 
 --
@@ -11370,6 +14475,14 @@ GRANT ALL ON FUNCTION public.capsula_libro(p_libro uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.capsula_sellar(p_libro uuid, p_respuestas text[]) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.capsula_sellar(p_libro uuid, p_respuestas text[]) TO authenticated;
 GRANT ALL ON FUNCTION public.capsula_sellar(p_libro uuid, p_respuestas text[]) TO service_role;
+
+
+--
+-- Name: FUNCTION cerrar_cobro(p_trabajo uuid, p_costo numeric); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.cerrar_cobro(p_trabajo uuid, p_costo numeric) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.cerrar_cobro(p_trabajo uuid, p_costo numeric) TO service_role;
 
 
 --
@@ -11514,6 +14627,15 @@ GRANT ALL ON FUNCTION public.crear_comunidad(p_nombre text, p_descripcion text, 
 
 
 --
+-- Name: FUNCTION crear_libro_escritor(p_titulo text, p_autor text, p_es_ficcion boolean, p_capitulos jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.crear_libro_escritor(p_titulo text, p_autor text, p_es_ficcion boolean, p_capitulos jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.crear_libro_escritor(p_titulo text, p_autor text, p_es_ficcion boolean, p_capitulos jsonb) TO authenticated;
+GRANT ALL ON FUNCTION public.crear_libro_escritor(p_titulo text, p_autor text, p_es_ficcion boolean, p_capitulos jsonb) TO service_role;
+
+
+--
 -- Name: FUNCTION delete_parrafo_superuser(p_id uuid); Type: ACL; Schema: public; Owner: -
 --
 
@@ -11575,6 +14697,15 @@ GRANT ALL ON FUNCTION public.desafio_responder(p_user uuid, p_libro uuid, p_mome
 
 
 --
+-- Name: FUNCTION descartar_imagen_escritor(p_imagen uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.descartar_imagen_escritor(p_imagen uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.descartar_imagen_escritor(p_imagen uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.descartar_imagen_escritor(p_imagen uuid) TO service_role;
+
+
+--
 -- Name: FUNCTION edad_permite_contacto(uid uuid); Type: ACL; Schema: public; Owner: -
 --
 
@@ -11584,12 +14715,74 @@ GRANT ALL ON FUNCTION public.edad_permite_contacto(uid uuid) TO service_role;
 
 
 --
+-- Name: FUNCTION editar_anderson(p_libro uuid, p_pistas jsonb, p_rasgos jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.editar_anderson(p_libro uuid, p_pistas jsonb, p_rasgos jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.editar_anderson(p_libro uuid, p_pistas jsonb, p_rasgos jsonb) TO authenticated;
+GRANT ALL ON FUNCTION public.editar_anderson(p_libro uuid, p_pistas jsonb, p_rasgos jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION editar_capsula(p_libro uuid, p_preguntas jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.editar_capsula(p_libro uuid, p_preguntas jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.editar_capsula(p_libro uuid, p_preguntas jsonb) TO authenticated;
+GRANT ALL ON FUNCTION public.editar_capsula(p_libro uuid, p_preguntas jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION editar_corazonadas(p_libro uuid, p_items jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.editar_corazonadas(p_libro uuid, p_items jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.editar_corazonadas(p_libro uuid, p_items jsonb) TO authenticated;
+GRANT ALL ON FUNCTION public.editar_corazonadas(p_libro uuid, p_items jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION editar_falsificador(p_libro uuid, p_autor text, p_items jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.editar_falsificador(p_libro uuid, p_autor text, p_items jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.editar_falsificador(p_libro uuid, p_autor text, p_items jsonb) TO authenticated;
+GRANT ALL ON FUNCTION public.editar_falsificador(p_libro uuid, p_autor text, p_items jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION editar_hilo(p_libro uuid, p_pistas jsonb, p_ideas jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.editar_hilo(p_libro uuid, p_pistas jsonb, p_ideas jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.editar_hilo(p_libro uuid, p_pistas jsonb, p_ideas jsonb) TO authenticated;
+GRANT ALL ON FUNCTION public.editar_hilo(p_libro uuid, p_pistas jsonb, p_ideas jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION editar_mapa(p_libro uuid, p_tesoros jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.editar_mapa(p_libro uuid, p_tesoros jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.editar_mapa(p_libro uuid, p_tesoros jsonb) TO authenticated;
+GRANT ALL ON FUNCTION public.editar_mapa(p_libro uuid, p_tesoros jsonb) TO service_role;
+
+
+--
 -- Name: FUNCTION eliminar_mi_cuenta(); Type: ACL; Schema: public; Owner: -
 --
 
 REVOKE ALL ON FUNCTION public.eliminar_mi_cuenta() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.eliminar_mi_cuenta() TO authenticated;
 GRANT ALL ON FUNCTION public.eliminar_mi_cuenta() TO service_role;
+
+
+--
+-- Name: FUNCTION enlazar_imagenes_cartelera(p_libro uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.enlazar_imagenes_cartelera(p_libro uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.enlazar_imagenes_cartelera(p_libro uuid) TO service_role;
 
 
 --
@@ -11744,6 +14937,51 @@ GRANT ALL ON FUNCTION public.foro_recortar_tags() TO service_role;
 
 
 --
+-- Name: FUNCTION guardar_ambientes_escritor(p_capitulo uuid, p_tramos jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.guardar_ambientes_escritor(p_capitulo uuid, p_tramos jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.guardar_ambientes_escritor(p_capitulo uuid, p_tramos jsonb) TO authenticated;
+GRANT ALL ON FUNCTION public.guardar_ambientes_escritor(p_capitulo uuid, p_tramos jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION guardar_imagen_escritor(p_imagen uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.guardar_imagen_escritor(p_imagen uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.guardar_imagen_escritor(p_imagen uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.guardar_imagen_escritor(p_imagen uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION guardar_item_cartelera(p_libro uuid, p_id uuid, p_seccion text, p_capitulo integer, p_nombre text, p_descripcion text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.guardar_item_cartelera(p_libro uuid, p_id uuid, p_seccion text, p_capitulo integer, p_nombre text, p_descripcion text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.guardar_item_cartelera(p_libro uuid, p_id uuid, p_seccion text, p_capitulo integer, p_nombre text, p_descripcion text) TO authenticated;
+GRANT ALL ON FUNCTION public.guardar_item_cartelera(p_libro uuid, p_id uuid, p_seccion text, p_capitulo integer, p_nombre text, p_descripcion text) TO service_role;
+
+
+--
+-- Name: FUNCTION guardar_propuesta_ilustracion(p_libro uuid, p_id uuid, p_tipo text, p_nombre text, p_capitulo integer, p_descripcion text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.guardar_propuesta_ilustracion(p_libro uuid, p_id uuid, p_tipo text, p_nombre text, p_capitulo integer, p_descripcion text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.guardar_propuesta_ilustracion(p_libro uuid, p_id uuid, p_tipo text, p_nombre text, p_capitulo integer, p_descripcion text) TO authenticated;
+GRANT ALL ON FUNCTION public.guardar_propuesta_ilustracion(p_libro uuid, p_id uuid, p_tipo text, p_nombre text, p_capitulo integer, p_descripcion text) TO service_role;
+
+
+--
+-- Name: FUNCTION guardar_texto_avance(p_libro uuid, p_orden integer, p_titulo text, p_subtexto text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.guardar_texto_avance(p_libro uuid, p_orden integer, p_titulo text, p_subtexto text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.guardar_texto_avance(p_libro uuid, p_orden integer, p_titulo text, p_subtexto text) TO authenticated;
+GRANT ALL ON FUNCTION public.guardar_texto_avance(p_libro uuid, p_orden integer, p_titulo text, p_subtexto text) TO service_role;
+
+
+--
 -- Name: FUNCTION hilo_aula(p_aula uuid); Type: ACL; Schema: public; Owner: -
 --
 
@@ -11780,12 +15018,47 @@ GRANT ALL ON FUNCTION public.hilo_tablero(p_libro uuid) TO service_role;
 
 
 --
+-- Name: FUNCTION imagen_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text, p_imagen uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.imagen_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text, p_imagen uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.imagen_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text, p_imagen uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.imagen_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text, p_imagen uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION imagen_principal_cartelera(p_libro uuid, p_seccion text, p_imagen uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.imagen_principal_cartelera(p_libro uuid, p_seccion text, p_imagen uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.imagen_principal_cartelera(p_libro uuid, p_seccion text, p_imagen uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.imagen_principal_cartelera(p_libro uuid, p_seccion text, p_imagen uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION importar_propuestas_analisis(p_trabajo uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.importar_propuestas_analisis(p_trabajo uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.importar_propuestas_analisis(p_trabajo uuid) TO service_role;
+
+
+--
 -- Name: FUNCTION invitar_admin(p_colegio uuid); Type: ACL; Schema: public; Owner: -
 --
 
 REVOKE ALL ON FUNCTION public.invitar_admin(p_colegio uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.invitar_admin(p_colegio uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.invitar_admin(p_colegio uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION juego_escritor(p_libro uuid, p_juego text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.juego_escritor(p_libro uuid, p_juego text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.juego_escritor(p_libro uuid, p_juego text) TO authenticated;
+GRANT ALL ON FUNCTION public.juego_escritor(p_libro uuid, p_juego text) TO service_role;
 
 
 --
@@ -11879,12 +15152,48 @@ GRANT ALL ON FUNCTION public.mis_juegos() TO service_role;
 
 
 --
+-- Name: FUNCTION mis_lectores(p_libro uuid, p_desde timestamp with time zone, p_zona text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.mis_lectores(p_libro uuid, p_desde timestamp with time zone, p_zona text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.mis_lectores(p_libro uuid, p_desde timestamp with time zone, p_zona text) TO authenticated;
+GRANT ALL ON FUNCTION public.mis_lectores(p_libro uuid, p_desde timestamp with time zone, p_zona text) TO service_role;
+
+
+--
 -- Name: FUNCTION ovillos_saldo(p_libro uuid); Type: ACL; Schema: public; Owner: -
 --
 
 REVOKE ALL ON FUNCTION public.ovillos_saldo(p_libro uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.ovillos_saldo(p_libro uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.ovillos_saldo(p_libro uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION pedir_juegos(p_libro uuid, p_juegos text[]); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.pedir_juegos(p_libro uuid, p_juegos text[]) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.pedir_juegos(p_libro uuid, p_juegos text[]) TO authenticated;
+GRANT ALL ON FUNCTION public.pedir_juegos(p_libro uuid, p_juegos text[]) TO service_role;
+
+
+--
+-- Name: FUNCTION pedir_trabajo(p_libro uuid, p_tipo text, p_parametros jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.pedir_trabajo(p_libro uuid, p_tipo text, p_parametros jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.pedir_trabajo(p_libro uuid, p_tipo text, p_parametros jsonb) TO authenticated;
+GRANT ALL ON FUNCTION public.pedir_trabajo(p_libro uuid, p_tipo text, p_parametros jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION precios_escritor(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.precios_escritor() TO anon;
+GRANT ALL ON FUNCTION public.precios_escritor() TO authenticated;
+GRANT ALL ON FUNCTION public.precios_escritor() TO service_role;
 
 
 --
@@ -11903,6 +15212,14 @@ GRANT ALL ON FUNCTION public.progreso_comunidad(p_comunidad uuid) TO service_rol
 REVOKE ALL ON FUNCTION public.puede_recibir_mensajitos(p_comunidad uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.puede_recibir_mensajitos(p_comunidad uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.puede_recibir_mensajitos(p_comunidad uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION purgar_borradores_escritor(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.purgar_borradores_escritor() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.purgar_borradores_escritor() TO service_role;
 
 
 --
@@ -12010,12 +15327,39 @@ GRANT ALL ON FUNCTION public.regenerar_codigo_profesor(p_aula uuid) TO service_r
 
 
 --
+-- Name: FUNCTION registrar_imagen_propia(p_libro uuid, p_ruta text, p_url text, p_capitulo integer, p_pie text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.registrar_imagen_propia(p_libro uuid, p_ruta text, p_url text, p_capitulo integer, p_pie text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.registrar_imagen_propia(p_libro uuid, p_ruta text, p_url text, p_capitulo integer, p_pie text) TO authenticated;
+GRANT ALL ON FUNCTION public.registrar_imagen_propia(p_libro uuid, p_ruta text, p_url text, p_capitulo integer, p_pie text) TO service_role;
+
+
+--
+-- Name: FUNCTION renombrar_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text, p_nuevo text, p_aliases jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.renombrar_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text, p_nuevo text, p_aliases jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.renombrar_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text, p_nuevo text, p_aliases jsonb) TO authenticated;
+GRANT ALL ON FUNCTION public.renombrar_ficha_cartelera(p_libro uuid, p_seccion text, p_nombre text, p_nuevo text, p_aliases jsonb) TO service_role;
+
+
+--
 -- Name: FUNCTION resolver_denuncia(p_id uuid, p_accion text); Type: ACL; Schema: public; Owner: -
 --
 
 REVOKE ALL ON FUNCTION public.resolver_denuncia(p_id uuid, p_accion text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.resolver_denuncia(p_id uuid, p_accion text) TO authenticated;
 GRANT ALL ON FUNCTION public.resolver_denuncia(p_id uuid, p_accion text) TO service_role;
+
+
+--
+-- Name: FUNCTION restaurar_juego(p_libro uuid, p_juego text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.restaurar_juego(p_libro uuid, p_juego text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.restaurar_juego(p_libro uuid, p_juego text) TO authenticated;
+GRANT ALL ON FUNCTION public.restaurar_juego(p_libro uuid, p_juego text) TO service_role;
 
 
 --
@@ -12037,12 +15381,38 @@ GRANT ALL ON FUNCTION public.salon_aula(p_aula uuid, p_zona text) TO service_rol
 
 
 --
+-- Name: FUNCTION solicitar_escritor(p_nombre text, p_correo text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.solicitar_escritor(p_nombre text, p_correo text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.solicitar_escritor(p_nombre text, p_correo text) TO anon;
+GRANT ALL ON FUNCTION public.solicitar_escritor(p_nombre text, p_correo text) TO authenticated;
+GRANT ALL ON FUNCTION public.solicitar_escritor(p_nombre text, p_correo text) TO service_role;
+
+
+--
 -- Name: FUNCTION tienda_recompensas(p_libro uuid); Type: ACL; Schema: public; Owner: -
 --
 
 REVOKE ALL ON FUNCTION public.tienda_recompensas(p_libro uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.tienda_recompensas(p_libro uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.tienda_recompensas(p_libro uuid) TO service_role;
+
+
+--
+-- Name: TABLE trabajos; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT,REFERENCES,TRIGGER,MAINTAIN ON TABLE public.trabajos TO authenticated;
+GRANT ALL ON TABLE public.trabajos TO service_role;
+
+
+--
+-- Name: FUNCTION tomar_trabajo(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.tomar_trabajo() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.tomar_trabajo() TO service_role;
 
 
 --
@@ -12097,6 +15467,15 @@ GRANT ALL ON FUNCTION public.trg_palabras_insert() TO service_role;
 GRANT ALL ON FUNCTION public.trg_palabras_update() TO anon;
 GRANT ALL ON FUNCTION public.trg_palabras_update() TO authenticated;
 GRANT ALL ON FUNCTION public.trg_palabras_update() TO service_role;
+
+
+--
+-- Name: FUNCTION ubicar_cita_escritor(p_libro uuid, p_cap integer, p_cita text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.ubicar_cita_escritor(p_libro uuid, p_cap integer, p_cita text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.ubicar_cita_escritor(p_libro uuid, p_cap integer, p_cita text) TO authenticated;
+GRANT ALL ON FUNCTION public.ubicar_cita_escritor(p_libro uuid, p_cap integer, p_cita text) TO service_role;
 
 
 --
@@ -12187,6 +15566,13 @@ GRANT ALL ON TABLE public.anderson_jugadas TO service_role;
 GRANT ALL ON TABLE public.anotaciones_usuario TO anon;
 GRANT ALL ON TABLE public.anotaciones_usuario TO authenticated;
 GRANT ALL ON TABLE public.anotaciones_usuario TO service_role;
+
+
+--
+-- Name: TABLE archivos_por_borrar; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.archivos_por_borrar TO service_role;
 
 
 --
@@ -12514,21 +15900,20 @@ GRANT ALL ON SEQUENCE public.desafio_llamadas_id_seq TO service_role;
 
 
 --
--- Name: TABLE libros; Type: ACL; Schema: public; Owner: -
---
-
-GRANT ALL ON TABLE public.libros TO anon;
-GRANT ALL ON TABLE public.libros TO authenticated;
-GRANT ALL ON TABLE public.libros TO service_role;
-
-
---
 -- Name: TABLE elementos_con_contexto; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.elementos_con_contexto TO anon;
 GRANT ALL ON TABLE public.elementos_con_contexto TO authenticated;
 GRANT ALL ON TABLE public.elementos_con_contexto TO service_role;
+
+
+--
+-- Name: TABLE escritores; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT,REFERENCES,TRIGGER,MAINTAIN ON TABLE public.escritores TO authenticated;
+GRANT ALL ON TABLE public.escritores TO service_role;
 
 
 --
@@ -12631,6 +16016,29 @@ GRANT ALL ON TABLE public.hilo_jugadas TO service_role;
 
 
 --
+-- Name: TABLE ilustraciones_propuestas; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT,REFERENCES,TRIGGER,MAINTAIN ON TABLE public.ilustraciones_propuestas TO authenticated;
+GRANT ALL ON TABLE public.ilustraciones_propuestas TO service_role;
+
+
+--
+-- Name: TABLE imagenes_escritor; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT,REFERENCES,TRIGGER,MAINTAIN ON TABLE public.imagenes_escritor TO authenticated;
+GRANT ALL ON TABLE public.imagenes_escritor TO service_role;
+
+
+--
+-- Name: TABLE juegos_originales; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.juegos_originales TO service_role;
+
+
+--
 -- Name: TABLE libro_reels; Type: ACL; Schema: public; Owner: -
 --
 
@@ -12698,6 +16106,15 @@ GRANT UPDATE(leido_at) ON TABLE public.mensajitos TO authenticated;
 GRANT ALL ON TABLE public.ovillos_movimientos TO anon;
 GRANT ALL ON TABLE public.ovillos_movimientos TO authenticated;
 GRANT ALL ON TABLE public.ovillos_movimientos TO service_role;
+
+
+--
+-- Name: TABLE pedidos_juegos; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.pedidos_juegos TO anon;
+GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.pedidos_juegos TO authenticated;
+GRANT ALL ON TABLE public.pedidos_juegos TO service_role;
 
 
 --
@@ -12814,6 +16231,22 @@ GRANT ALL ON TABLE public.salas TO service_role;
 GRANT ALL ON TABLE public.sesiones_lectura TO anon;
 GRANT ALL ON TABLE public.sesiones_lectura TO authenticated;
 GRANT ALL ON TABLE public.sesiones_lectura TO service_role;
+
+
+--
+-- Name: TABLE solicitudes_escritor; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.solicitudes_escritor TO service_role;
+
+
+--
+-- Name: SEQUENCE solicitudes_escritor_id_seq; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON SEQUENCE public.solicitudes_escritor_id_seq TO anon;
+GRANT ALL ON SEQUENCE public.solicitudes_escritor_id_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.solicitudes_escritor_id_seq TO service_role;
 
 
 --
