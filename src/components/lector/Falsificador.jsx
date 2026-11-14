@@ -18,10 +18,14 @@
 // atrás), el foco se apaga y vuelve a saltar la próxima vez.
 // El sello va ENCIMA del párrafo (position absolute): no cambian el alto,
 // así que no hay que volver a paginar al responder.
+// Vista previa del escritor («Ver en tu libro» desde su editor): la tarjeta
+// se abre sola sobre ese párrafo y el veredicto sale de su propio JSON, sin
+// guardar la respuesta ni mover ovillos.
 // Reglas: Documentation/colegios/falsificador-prompt.md.
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useFalsificador } from '../../hooks/useFalsificador.js'
+import { useJuegoEscritor } from '../../hooks/useEscritor.js'
 import { esComienzo, trozoEn } from '../../utils/falsificador.js'
 import { rectsDe, posicionar } from './Concurso.jsx'
 import { Ovillo } from './Corazonada.jsx'
@@ -74,7 +78,7 @@ function posicionarFx(rects) {
 
 // ── Tarjeta ────────────────────────────────────────────────
 
-function Tarjeta({ item, autor, saldo, gatoColor, sigue, viene, ocupado, onResponder, onResto, onComienzo, onVolver }) {
+function Tarjeta({ item, autor, saldo, gatoColor, sigue, viene, ocupado, onResponder, onResto, onComienzo, onVolver, ensayo = false }) {
   const [resultado, setResultado] = useState(null)
   const [error, setError] = useState(null)
   const r = resultado ? resultado.estado.items.find(x => x.id === item.id)?.respuesta : null
@@ -87,8 +91,8 @@ function Tarjeta({ item, autor, saldo, gatoColor, sigue, viene, ocupado, onRespo
 
   const head = (
     <div className="cc-head">
-      <div><div className="cc-kicker">El falsificador</div><h3>{r ? 'El veredicto' : '¿Quién escribió este párrafo?'}</h3></div>
-      <span className="cc-saldo" title="Tus ovillos en este libro"><Ovillo />{resultado?.estado.saldo ?? saldo}</span>
+      <div><div className="cc-kicker">{ensayo ? 'El falsificador · así lo verá tu lector' : 'El falsificador'}</div><h3>{r ? 'El veredicto' : '¿Quién escribió este párrafo?'}</h3></div>
+      {!ensayo && <span className="cc-saldo" title="Tus ovillos en este libro"><Ovillo />{resultado?.estado.saldo ?? saldo}</span>}
     </div>
   )
 
@@ -127,6 +131,7 @@ function Tarjeta({ item, autor, saldo, gatoColor, sigue, viene, ocupado, onRespo
         </button>
       </div>
       {error && <p className="cc-error" role="alert">{error}</p>}
+      {ensayo && <p className="fx-sub">Vista previa: tu respuesta no se guarda.</p>}
     </div>
   )
 }
@@ -136,16 +141,22 @@ function Tarjeta({ item, autor, saldo, gatoColor, sigue, viene, ocupado, onRespo
 /**
  * @param {{ libroId: string|null, userId: string|null, capNum: number|null,
  *   visibles: any[], previas: any[], siguientes: any[], clavePagina: string,
- *   atras?: () => void, gatoColor?: string, movil?: boolean, deshabilitado?: boolean }} opts
+ *   atras?: () => void, gatoColor?: string, movil?: boolean, deshabilitado?: boolean, soloVer?: boolean,
+ *   ensayo?: string|null, adelante?: () => void }} opts
+ *   soloVer: los falsos entran en el capítulo pero no salta la tarjeta al pasar página (el escritor revisando su libro).
+ *   ensayo: id de un sospechoso: vista previa del escritor (la tarjeta se abre sola sobre él, sin guardar nada).
+ *   adelante: pasar de página (para «Leer el resto» en la vista previa).
  *   visibles: los párrafos (con los falsos) que hay en pantalla; previas y
  *   siguientes: los de la pantalla de antes y de después (para saber si el
  *   párrafo viene de la anterior o sigue en la siguiente).
  */
 export function useFalsificadorLector({ libroId, userId, capNum, visibles, previas, siguientes, clavePagina,
-  atras = null, gatoColor = 'negro', movil = false, deshabilitado = false }) {
+  atras = null, gatoColor = 'negro', movil = false, deshabilitado = false, soloVer = false, ensayo = null, adelante = null }) {
   const fx = useFalsificador(deshabilitado ? null : libroId, userId)
+  // Vista previa: el veredicto sale del JSON del dueño (juego_escritor, solo él lo lee).
+  const propio = useJuegoEscritor(libroId, 'falsificador', !!ensayo && !deshabilitado).data?.datos
   const items = useMemo(() => fx.estado?.items ?? [], [fx.estado])
-  const autor = fx.estado?.autor || 'el autor'
+  const autor = (ensayo && propio?.autor) || fx.estado?.autor || 'el autor'
 
   // Solo cambia si cambia DÓNDE van los falsos: responder no repagina.
   const clave = items.filter(x => x.cap === capNum && x.texto).map(x => `${x.id}@${x.parrafo}`).join(',')
@@ -190,7 +201,7 @@ export function useFalsificadorLector({ libroId, userId, capNum, visibles, previ
   }, [clavePagina])
 
   const interceptar = useCallback((continuar) => {
-    if (pasando.current) return false
+    if (soloVer || pasando.current) return false
     if (activa) return true
     for (const x of items) {
       if (x.cap !== capNum || x.respuesta || respondidas.current.has(x.id)) continue
@@ -200,7 +211,25 @@ export function useFalsificadorLector({ libroId, userId, capNum, visibles, previ
       return true
     }
     return false
-  }, [activa, items, capNum, visibles, raiz])
+  }, [activa, items, capNum, visibles, raiz, soloVer])
+
+  // Vista previa: se abre sola, una vez, cuando su párrafo está en pantalla.
+  const ensayoAbierto = useRef(false)
+  useEffect(() => {
+    if (!ensayo || ensayoAbierto.current || activa || !propio) return
+    const x = items.find(i => i.id === ensayo)
+    if (!x || x.cap !== capNum) return
+    const trozo = trozoEn(x, visibles)
+    if (!trozo || !elementos(raiz(), x, trozo.id).length) return
+    ensayoAbierto.current = true
+    setActiva({ id: x.id, continuar: adelante })
+  }, [ensayo, activa, propio, items, capNum, visibles, raiz, adelante])
+  const responderEnsayo = useCallback(async (id, dice) => {
+    const x = propio?.items?.find(i => i.id === id)
+    if (!x) throw new Error('sin datos')
+    const respuesta = { dijo: dice, acierto: (dice === 'gato') === !!x.falso, falso: !!x.falso, raro: x.raro, verdad: x.verdad }
+    return { acierto: respuesta.acierto, premio: 0, estado: { saldo: 0, autor: propio.autor, items: [{ id, respuesta }] } }
+  }, [propio])
 
   const cerrar = useCallback(() => {
     if (!activa) return
@@ -224,14 +253,14 @@ export function useFalsificadorLector({ libroId, userId, capNum, visibles, previ
   // (solo en el primer trozo si el paginador lo partió).
   const respuestaDe = useMemo(() => Object.fromEntries(items.filter(x => x.respuesta).map(x => [x.id, x.respuesta])), [items])
   const renderFalso = useCallback((p) => {
-    if (!respuestaDe[p.falsoId]) return p.contenido
+    if (ensayo || !respuestaDe[p.falsoId]) return p.contenido
     return (
       <>
         <span className="fx-tachado">{p.contenido}</span>
         {esComienzo(p) && <span className="fx-sello" aria-label="Este párrafo lo coló el gato">LO COLÓ EL GATO</span>}
       </>
     )
-  }, [respuestaDe])
+  }, [respuestaDe, ensayo])
 
   let panel = null
   if (item && medida) {
@@ -241,12 +270,12 @@ export function useFalsificadorLector({ libroId, userId, capNum, visibles, previ
     const pos = movil ? null : posicionarFx(rects)
     const ultimo = rects[rects.length - 1]
     const primero = rects[0]
-    const respondida = !!item.respuesta
+    const respondida = !ensayo && !!item.respuesta
     const tarjeta = (
       <Tarjeta key={item.id} item={item} autor={autor} saldo={fx.estado?.saldo ?? 0} gatoColor={gatoColor}
         sigue={medida.sigue} viene={medida.viene} ocupado={fx.ocupado}
-        onResponder={(dice) => fx.responder({ id: item.id, dice })}
-        onResto={resto} onComienzo={atras ? comienzo : null} onVolver={cerrar} />
+        onResponder={(dice) => (ensayo ? responderEnsayo(item.id, dice) : fx.responder({ id: item.id, dice }))}
+        onResto={resto} onComienzo={atras ? comienzo : null} onVolver={cerrar} ensayo={!!ensayo} />
     )
     panel = createPortal(
       <div className="cc-escena">

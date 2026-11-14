@@ -22,8 +22,9 @@ const BARRA_ANCHO_COMPACTO = 1000
 
 // `onGoColegio`: solo llega si es administrador o profesor de un colegio
 // (mis_colegios); sin él, el botón «Mi colegio» no se pinta. En compacto
-// queda solo el ícono.
-function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, onGoPerfil, onSignOut, comunidades = null, onGoColegio = null }) {
+// queda solo el ícono. `onGoEstudio`, igual: solo si la cuenta tiene el
+// modo escritor (migración 103).
+function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, onGoPerfil, onSignOut, comunidades = null, onGoColegio = null, onGoEstudio = null }) {
   const ink = INK;
   const [barraRef, ancho] = useAnchoContenedor();
   // ancho 0 = todavía sin medir; asumimos holgado para no parpadear.
@@ -54,6 +55,12 @@ function InmHeader({ search, onSearch, onSearchKeyDown, displayName, inicial, on
             <button onClick={onGoColegio} style={{ ...navBtn, padding: compacto ? '8px 11px' : '8px 15px' }} title="Mi colegio" aria-label="Mi colegio">
               <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10l9-6 9 6M5 9v10h14V9M9 19v-5h6v5"/></svg>
               {!compacto && 'Mi colegio'}
+            </button>
+          )}
+          {onGoEstudio && (
+            <button onClick={onGoEstudio} style={{ ...navBtn, padding: compacto ? '8px 11px' : '8px 15px' }} title="Mi estudio" aria-label="Mi estudio">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+              {!compacto && 'Mi estudio'}
             </button>
           )}
           <button onClick={onGoPerfil} style={{ ...navBtn, padding: compacto ? '7px 8px' : '7px 15px 7px 8px' }}

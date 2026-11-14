@@ -4,7 +4,7 @@
 // viven en las placas del landing. Lee todo de Supabase con useCartelera.
 //   <CartelaView onGoLectura book user onGoForo />
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams, useLocation } from 'react-router-dom'
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import { useBookBySlug } from '../hooks/useBookBySlug.js'
 
 const VALID_SECCIONES = ['personajes', 'lugares', 'hechos', 'datos', 'notas', 'glosario', 'referencias', 'resumen']
@@ -55,7 +55,12 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
   const { book, loading: bookLoading } = useBookBySlug(bookProp)
   const esNoficcion = book?.es_ficcion === false
   const secciones  = getSecciones(esNoficcion)
-  const data = useCartelera(book?.libro_id || null, user?.id || null, isSuperuser)
+  const location = useLocation()
+  const navigate = useNavigate()
+  // Vista del autor (Rincón del escritor → «Ver en la cartelera»): como un
+  // lector que terminó ese capítulo, sin mirar su progreso.
+  const capAutor = location.state?.vistaAutor?.cap ?? null
+  const data = useCartelera(book?.libro_id || null, user?.id || null, isSuperuser, capAutor)
   // La carpeta del centro es la mesa de investigación. Misma query que usa la
   // mesa: React Query la comparte, así que abrirla no vuelve a pedir nada.
   // Apagada en el Perfil (o por el profe, en su aula): carpeta de relleno y sin pedir nada.
@@ -65,7 +70,6 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
   const mesa = useMesaInvestigacion(conMesa && !esNoficcion ? (book?.libro_id || null) : null, user?.id || null)
   const hilo = useHiloIdeas(conMesa && esNoficcion ? (book?.libro_id || null) : null, user?.id || null)
   const [searchParams, setSearchParams] = useSearchParams()
-  const location = useLocation()
   const [view, setView] = useState(() => {
     const s = searchParams.get('seccion')
     if (s === 'mesa') return { kind: 'mesa', key: 'mesa' }
@@ -200,6 +204,12 @@ export default function CartelaView({ onGoLectura, book: bookProp, user, onGoFor
   return (
     <div className="cart-root">
       <Filters />
+      {capAutor != null && (
+        <div className="cart-vista-autor" role="status">
+          <span>Vista del autor: así ve tu cartelera un lector que terminó el <b>capítulo {capAutor}</b>.</span>
+          <button type="button" onClick={() => navigate(-1)}>Volver a la Sala de análisis</button>
+        </div>
+      )}
       {content}
 
       {showIntro && (

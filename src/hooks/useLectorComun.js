@@ -45,7 +45,7 @@ const EMPTY_MEDIA = {}
  * @param {() => void} [p.onNotebookStarted]
  * @param {(itemId?: string) => void} p.onGoCartelera
  */
-export function useLectorComun({ book, guestMode, startWithNotebook, onNotebookStarted, onGoCartelera }) {
+export function useLectorComun({ book, guestMode, startWithNotebook, onNotebookStarted, onGoCartelera, irA = null }) {
   // ── Navegación y capas ──
   const [chapterIndex, setChapterIndex] = useState(0)
   const [pageIndex,    setPageIndex]    = useState(0)
@@ -57,7 +57,7 @@ export function useLectorComun({ book, guestMode, startWithNotebook, onNotebookS
   // Capítulo cuya tira de predicción ya se cerró (con × o al anotar).
   const [tiraCerrada,  setTiraCerrada]  = useState(null)
 
-  const datos = useLectorData(book, setChapterIndex, setPageIndex, guestMode)
+  const datos = useLectorData(book, setChapterIndex, setPageIndex, guestMode, irA)
   const { userId, capitulos, chapterCache, subrayadosPorCap, setError, setLoadingCap,
     fetchChapter, peekChapter, precargarSiguiente, playSfx, submitResena } = datos
 

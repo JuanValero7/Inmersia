@@ -38,7 +38,7 @@ const ERRORES = {
 
 // ── Localizar la frase en pantalla ─────────────────────────
 
-function textoDe(el) {
+export function textoDe(el) {
   const nodos = []
   let texto = ''
   const w = document.createTreeWalker(el, window.NodeFilter.SHOW_TEXT)
@@ -49,7 +49,7 @@ function textoDe(el) {
   return { texto, nodos }
 }
 
-function rango(nodos, start, end) {
+export function rango(nodos, start, end) {
   const donde = (pos) => {
     const k = nodos.findLastIndex(x => x.start <= pos)
     const { node, start: s } = nodos[Math.max(0, k)]

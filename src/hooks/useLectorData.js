@@ -62,9 +62,14 @@ function agruparSubrayados(filas) {
  * @param {(n: number) => void} setPageIndex
  * @param {boolean} [muestra]   modo muestra: solo los primeros 10 minutos, sin subrayado,
  *                              cuaderno ni progreso
+ * @param {{ cap: number, parrafo: number }|null} [irA]  abrir en ese capítulo y párrafo (número
+ *                              dentro del capítulo) en vez de donde quedó; lo usa el escritor
+ *                              para ver un juego en su libro («Ver en tu libro»)
  * @returns {object} datos, operaciones y estado de la reseña
  */
-export function useLectorData(book, setChapterIndex, setPageIndex, muestra = false) {
+export function useLectorData(book, setChapterIndex, setPageIndex, muestra = false, irA = null) {
+  // En un ref: solo cuenta al abrir el libro, no debe volver a lanzar la carga.
+  const irARef = useRef(irA)
   const [capitulos, setCapitulos] = useState([])
   const [palabrasLibro, setPalabrasLibro] = useState(null)   // para el "% del libro"
   // El caché es estado porque el render lo lee (currentChapData), pero
@@ -167,7 +172,14 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
         // del párrafo) afina la restauración cuando el párrafo es largo y está
         // dividido en varias páginas (ver paginaDeAnclaje en readerHelpers).
         let startChapter = 0, pendingAnchor = null
-        if (enMemoria && enMemoria.chapterIndex < caps.length) {
+        const destino = irARef.current
+        const idxDestino = destino ? caps.findIndex(c => c.numero === destino.cap) : -1
+        if (idxDestino >= 0) {
+          startChapter = idxDestino
+          const { data: p } = await supabase.from('parrafos').select('id')
+            .eq('capitulo_id', caps[idxDestino].id).eq('numero', destino.parrafo).maybeSingle()
+          if (p) pendingAnchor = { parrafoId: p.id, offset: 0 }
+        } else if (enMemoria && enMemoria.chapterIndex < caps.length) {
           startChapter = enMemoria.chapterIndex
           pendingAnchor = { parrafoId: enMemoria.parrafoId, offset: enMemoria.offset }
         } else if (prog?.ultimo_parrafo_id && prog?.parrafos?.capitulo_id) {
@@ -385,6 +397,12 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
     return true
   }
 
+  // Rincón del escritor (104): tras guardar los tramos de ambiente de un
+  // capítulo, el lector los usa al momento sin recargar el libro.
+  function actualizarAmbientes(capituloId, tramos) {
+    setCapitulos(prev => prev.map(c => (c.id === capituloId ? { ...c, ambientes: tramos } : c)))
+  }
+
   // Elimina un párrafo permanentemente via RPC (SECURITY DEFINER).
   // La función de DB actualiza progreso_lectura antes de borrar.
   async function borrarParrafo(parrafoId, capituloId) {
@@ -411,6 +429,8 @@ export function useLectorData(book, setChapterIndex, setPageIndex, muestra = fal
     fetchChapter, peekChapter, precargarSiguiente, playSfx, persistChapterAdvance, subrayar, recordarPosicion,
     // superusuario
     quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
+    // escritor (dueño del libro)
+    actualizarAmbientes,
     // reseña
     miResena: resena.miResena, resenaForm: resena.form, setResenaForm: resena.setForm,
     resenaEnviando: resena.enviando, submitResena: resena.submitResena,

@@ -50,6 +50,9 @@ const VistaAlbum            = lazy(() => import('./components/Album.jsx'))
 const AlbumMobile           = lazy(() => import('./components/mobile/AlbumMobile.jsx'))
 const ComunidadesMobile     = lazy(() => import('./components/mobile/ComunidadesMobile.jsx'))
 const PanelColegio          = lazy(() => import('./components/colegio/PanelColegio.jsx'))
+const VistaEscritor         = lazy(() => import('./components/Escritor.jsx'))
+const PedidosJuegos         = lazy(() => import('./components/escritor/PedidosJuegos.jsx'))
+const MisLectores           = lazy(() => import('./components/escritor/MisLectores.jsx'))
 const TiendaRecompensas     = lazy(() => import('./components/recompensas/TiendaRecompensas.jsx'))
 
 const Fallback = (
@@ -334,6 +337,7 @@ export default function App() {
                 onGoNotebook={handleGoNotebook}
                 onGoComunidades={(vista) => navigate('/comunidades', { state: { from: location.pathname, vista } })}
                 onGoColegio={() => navigate('/colegio')}
+                onGoEstudio={() => navigate('/escritor')}
               />
             } />
 
@@ -359,6 +363,24 @@ export default function App() {
                 A quien no es de ningún colegio le dice cómo entrar. */}
             <Route path="/colegio" element={
               <PanelColegio user={user} onGoBack={() => navigate('/biblioteca')} />
+            } />
+
+            {/* Rincón del escritor (migración 103). Solo escritorio; a quien no
+                tiene el modo escritor le explica qué es. */}
+            <Route path="/escritor" element={
+              <VistaEscritor user={user} onLeer={() => navigate('/biblioteca')} onGoPerfil={() => navigate('/perfil')}
+                onPonerSonido={(slug) => navigate(`/libro/${slug}`, { state: { sonidos: true } })}
+                isSuperuser={isSuperuser} onPedidos={() => navigate('/escritor/pedidos')}
+                onLectores={(libroId) => navigate(`/escritor/lectores?libro=${libroId}`)} />
+            } />
+            {/* Mis lectores (migración 118): dueño del libro o superusuario. */}
+            <Route path="/escritor/lectores" element={
+              <MisLectores user={user} isSuperuser={isSuperuser}
+                onGoEstudio={(libroId) => navigate('/escritor', { state: { libroId } })} onGoPerfil={() => navigate('/perfil')} />
+            } />
+            {/* Pedidos de juegos de los escritores (migración 113): solo superusuario. */}
+            <Route path="/escritor/pedidos" element={
+              <PedidosJuegos isSuperuser={isSuperuser} onGoBack={() => navigate('/escritor')} />
             } />
 
             {/* Tienda de recompensas: el local de la izquierda en la calle de

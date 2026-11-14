@@ -45,6 +45,9 @@ export const queryKeys = {
   explicaseloAula: (aulaId) => ['explicaseloAula', aulaId],
   juegosAula: (aulaId) => ['juegosAula', aulaId],
   recompensasAula: (aulaId) => ['recompensasAula', aulaId],
+  // Rincón del escritor (ver src/hooks/useEscritor.js)
+  escritor: (userId) => ['escritor', userId],
+  librosEscritor: (userId) => ['librosEscritor', userId],
   // Tienda de recompensas del alumno (ver src/hooks/useRecompensas.js)
   tiendaRecompensas: (userId, libroId) => ['tiendaRecompensas', userId, libroId],
   expediente: (libroId, id) => ['expediente', libroId, id],

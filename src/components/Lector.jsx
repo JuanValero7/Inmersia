@@ -20,6 +20,7 @@ import { NotebookIcon } from './lector/RecorderPlayer.jsx'
 import { Notebook }        from './lector/Notebook.jsx'
 import { theme, ClayButton, getReaderPalette } from './lector/clay.jsx'
 import SuperuserSoundsPanel from './lector/SuperuserSoundsPanel.jsx'
+import PanelSonidosEscritor from './lector/PanelSonidosEscritor.jsx'
 import { useCapaEscritorio } from './comunidades/capa/CapaEscritorio.jsx'
 import { useCorazonadasLector } from './lector/Corazonada.jsx'
 import { useConcursoLector } from './lector/Concurso.jsx'
@@ -50,9 +51,11 @@ const POLAROID_ASOMA = POLAROID_W - POLAROID_SOLAPE
 // el margen a 56 (50 + 6 de holgura); cuesta 24px de página por lado.
 const MARGEN_LATERAL = 56
 
-function computeGeom(doubleView) {
+// `reserva`: ancho que tapa un panel fijo a la derecha (el de sonidos del
+// escritor, 380px). El libro sigue centrado, así que se resta a los dos lados.
+function computeGeom(doubleView, reserva = 0) {
   const pageH = Math.min(760, Math.max(360, window.innerHeight - 230))
-  const availW = window.innerWidth - 2 * MARGEN_LATERAL
+  const availW = window.innerWidth - 2 * MARGEN_LATERAL - 2 * reserva
   let pageW = doubleView
     ? Math.min(Math.round(pageH * 0.92), Math.floor((availW - 34) / 2))
     : Math.min(Math.round(pageH * 1.6), availW)
@@ -98,6 +101,12 @@ function EstrellaLector({ valor, onChange }) {
  * @property {boolean} startWithNotebook    abrir directamente en el cuaderno
  * @property {() => void} onNotebookStarted
  * @property {boolean} [isSuperuser]
+ * @property {boolean} [esDueno]       el usuario es el escritor dueño del libro (migr. 103/104)
+ * @property {boolean} [abrirSonidos]  abrir el panel de sonidos del escritor al entrar
+ * @property {{ cap: number, parrafo: number, falso?: string, sospechoso?: string }|null} [irA]  abrir en ese capítulo y
+ *                                          párrafo (escritor); falso: id de un párrafo inventado (se va a ese);
+ *                                          sospechoso: vista previa del falsificador sobre ese párrafo;
+ *                                          mapa: el mapa del tesoro en ensayo del escritor
  * @property {boolean} [guestMode]          muestra: solo los primeros 10 minutos, sin subrayado
  *                                          ni cuaderno ni progreso
  * @property {'invitado'|'limite'} [muestraMotivo]  por qué se muestra el aviso de muestra
@@ -111,19 +120,19 @@ function EstrellaLector({ valor, onChange }) {
  * Todo el wiring de datos vive en useLectorData, compartido con la versión móvil.
  * @param {PropsLector} props
  */
-export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, guestMode = false, muestraMotivo = 'invitado', onRequestAuth, onGoTienda, gatoColor = 'negro' }) {
+export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, startWithNotebook, onNotebookStarted, isSuperuser = false, esDueno = false, abrirSonidos = false, irA = null, guestMode = false, muestraMotivo = 'invitado', onRequestAuth, onGoTienda, gatoColor = 'negro' }) {
   const [doubleView,     setDoubleView]     = useState(true)
   const [explorarOpen,   setExplorarOpen]   = useState(false)
   const [xrayOpen,       setXrayOpen]       = useState(false)
 
   // Todo lo que el escritorio hace igual que el móvil (datos, muestra, tutorial,
   // preferencias, capítulo actual, reseña, cuaderno): ver hooks/useLectorComun.js
-  const lector = useLectorComun({ book, guestMode, startWithNotebook, onNotebookStarted, onGoCartelera })
+  const lector = useLectorComun({ book, guestMode, startWithNotebook, onNotebookStarted, onGoCartelera, irA })
   const {
     userId, capitulos, palabrasLibro, loading, loadingCap, error,
     isLeido, pendingRestore, setPendingRestore, restoredRef,
     persistChapterAdvance, subrayar, playSfx,
-    quitarMedia, marcarMedia, sugerirMedia, borrarParrafo,
+    quitarMedia, marcarMedia, sugerirMedia, borrarParrafo, actualizarAmbientes,
     miResena, resenaForm, setResenaForm, resenaEnviando,
     chapterIndex, setChapterIndex, pageIndex, setPageIndex, goToLastPage, setGoToLastPage,
     notebookOpen, setNotebookOpen, resenaOpen, setResenaOpen, adminPanelOpen, setAdminPanelOpen,
@@ -147,14 +156,19 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
 
   const [pendingSelection,  setPendingSelection]  = useState(null)
 
-  const [geom, setGeom] = useState(() => computeGeom(true))
+  // Panel de sonidos del escritor (dueño del libro). Aquí arriba porque el
+  // tamaño de la página depende de si está abierto.
+  const [sonidosOpen, setSonidosOpen] = useState(() => esDueno && abrirSonidos)
+  const reservaPanel = sonidosOpen ? 380 : 0
+
+  const [geom, setGeom] = useState(() => computeGeom(true, reservaPanel))
   useEffect(() => {
     let raf = 0
-    const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setGeom(computeGeom(doubleView))) }
-    setGeom(computeGeom(doubleView))
+    const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setGeom(computeGeom(doubleView, reservaPanel))) }
+    setGeom(computeGeom(doubleView, reservaPanel))
     window.addEventListener('resize', onResize)
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize) }
-  }, [doubleView])
+  }, [doubleView, reservaPanel])
   // Las páginas tal como se pintan (con los chips de corazonada entre párrafos)
   // y sin ellos, que es lo que usa todo lo demás (posición, comunidad, % leído…).
   // Las dos tienen el mismo número de páginas: ver utils/corazonadas.js.
@@ -181,6 +195,8 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     visibles: visiblesCz, clavePagina: `${chapterIndex}:${pageIndex}`,
     gatoColor, deshabilitada: guestMode || onboarding.active || !jg.corazonadas,
   })
+  // Pasar de página desde la vista previa del escritor (falsificador).
+  const adelanteRef = useRef(null)
   // El concurso: el foco salta al intentar pasar la página de la frase (Concurso.jsx).
   const concurso = useConcursoLector({
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
@@ -201,7 +217,9 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     visibles: visiblesCz, previas: previasFx, siguientes: siguientesFx, clavePagina: `${chapterIndex}:${pageIndex}`,
     atras: () => atrasRef.current?.(), gatoColor,
-    deshabilitado: guestMode || onboarding.active || !jg.falsificador,
+    // «Ver en tu libro» del escritor: se ven los falsos aunque tenga el juego apagado, sin la tarjeta.
+    deshabilitado: guestMode || onboarding.active || (!jg.falsificador && !irA), soloVer: !!irA,
+    ensayo: irA?.sospechoso ?? null, adelante: () => adelanteRef.current?.(),
   })
   const interceptarFalso = falsificador.interceptar
   // El desafío del gato: salta al pasar del final del capítulo de la mitad y del libro (Desafio.jsx).
@@ -228,8 +246,34 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   const mapa = useMapaTesoroLector({
     libroId: book?.libro_id, userId, capNum: currentChapter?.numero ?? null,
     visibles: visiblesCz, parrafos: currentChapData?.parrafos,
-    gatoColor, deshabilitado: guestMode || onboarding.active || !jg.mapa,
+    gatoColor, deshabilitado: guestMode || onboarding.active || (irA ? !irA.mapa : !jg.mapa), ensayo: !!irA?.mapa,
   })
+
+  // «Ver en tu libro» (escritor): resaltar unos segundos el párrafo destino.
+  // Sin el mapa del tesoro, que al entrar en el capítulo taparía la página.
+  const resaltadoRef = useRef(false)
+  const saltoFalsoRef = useRef(false)
+  useEffect(() => {
+    if (!irA || resaltadoRef.current || currentChapter?.numero !== irA.cap) return
+    const destino = currentChapData?.parrafos?.find(p => p.numero === irA.parrafo)
+    if (!destino) return
+    // Un falso del falsificador va después de su párrafo; si aún no está en la página, se espera.
+    const sel = irA.falso ? `[data-falso-id="${window.CSS.escape(irA.falso)}"]` : `[data-parrafo-id="${window.CSS.escape(String(destino.id))}"]`
+    const els = document.querySelectorAll(sel)
+    if (!els.length) {
+      // El falso suele caer en la página siguiente a la de su párrafo: se salta ahí una vez.
+      if (!irA.falso || pendingRestore || saltoFalsoRef.current) return
+      const idx = paginasConChips.findIndex(pag => pag?.some(p => p.falsoId === irA.falso))
+      if (idx < 0) return
+      saltoFalsoRef.current = true
+      setPageIndex(doubleView ? idx - (idx % 2) : idx)
+      return
+    }
+    resaltadoRef.current = true
+    if (irA.sospechoso || irA.mapa) return   // las vistas previas (falsificador, mapa) ya lo marcan a su manera
+    els.forEach(el => el.classList.add('parrafo-resaltado'))
+    setTimeout(() => els.forEach(el => el.classList.remove('parrafo-resaltado')), 6000)
+  }, [irA, currentChapter?.numero, currentChapData?.parrafos, pageIndex, paginasConChips, pendingRestore, doubleView, setPageIndex])
 
   // Pie de página: % del libro o del capítulo según Aa (null = número de página).
   // En doble página cuenta hasta el final de la de la derecha.
@@ -310,9 +354,20 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
   // Qué tramo de ambiente suena (hooks/useAmbiente.js).
   useAmbienteEnPagina(lector, currentPaginas)
 
+  // Con el panel de sonidos abierto, lo que se subraya va al panel en vez
+  // de al popup de subrayar.
+  // Con el panel abierto, una sola página centrada: a doble página el panel
+  // tapaba la de la derecha. Al cerrarlo vuelve como estaba.
+  const dobleAntesDelPanel = useRef(null)
+  useEffect(() => {
+    if (sonidosOpen) { dobleAntesDelPanel.current ??= doubleView; setDoubleView(false) }
+    else if (dobleAntesDelPanel.current !== null) { setDoubleView(dobleAntesDelPanel.current); dobleAntesDelPanel.current = null }
+  }, [sonidosOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [seleccionSonido, setSeleccionSonido] = useState(null)
   const handleTextSelect = useCallback(({ text, parrafoId, parrafoFinId, rect }) => {
+    if (sonidosOpen) { setSeleccionSonido({ text, parrafoId, parrafoFinId }); return }
     setPendingSelection({ text, parrafoId, parrafoFinId, rect })
-  }, [])
+  }, [sonidosOpen])
 
   async function handleSubrayar() {
     if (!pendingSelection || !userId || !book?.libro_id) return
@@ -401,6 +456,7 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
       setShowPaywall(true)
     }
   }, [doubleView, pageIndex, currentPaginas.length, guestMode, chapterIndex, capitulos.length, book?.libro_id, marcarPista, setPageIndex, setShowPaywall, interceptarConcurso, interceptarFalso])
+  adelanteRef.current = handleNextPage
   // Fin de capítulo: se avanza sin abrir el Cuaderno. La predicción se ofrece
   // ANTES, con la tira que aparece en la última página (ver `tira` más abajo).
   const handleNextChapter = useCallback(() => {
@@ -545,6 +601,12 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
           <span style={{ fontSize: 18, fontWeight: 700, color: '#8a7355', fontFamily: "'Baloo 2', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{book?.title}</span>
         </button>
         <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexShrink: 0 }}>
+          {esDueno && !loading && !error && book?.libro_id && book?.es_ficcion !== false && (
+            <button type="button" onClick={() => { setSonidosOpen(v => !v); setSeleccionSonido(null) }} title="Poner sonidos a tu libro"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13, cursor: 'pointer', border: `2px solid ${sonidosOpen ? theme.accent : theme.ink}`, borderRadius: 999, padding: '8px 14px', background: sonidosOpen ? theme.accent : theme.navBg, color: sonidosOpen ? '#fff' : theme.ink, boxShadow: `1.6px 2.4px 0 ${theme.ink}30` }}>
+              🔊 Sonidos
+            </button>
+          )}
           {isSuperuser && !loading && !error && book?.libro_id && (
             <button type="button" onClick={() => setAdminPanelOpen(v => !v)} title="Panel de media (superusuario)"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 13, cursor: 'pointer', border: `2px solid ${adminPanelOpen ? theme.accent : theme.ink}`, borderRadius: 999, padding: '8px 14px', background: adminPanelOpen ? theme.accent : theme.navBg, color: adminPanelOpen ? '#fff' : '#000', boxShadow: `1.6px 2.4px 0 ${theme.ink}30` }}>
@@ -794,6 +856,21 @@ export default function VistaLectura({ book, onGoBack, onGoCartelera, onGoForo, 
             </div>
           </div>
         </div>
+      )}
+
+      {/* Panel de sonidos del escritor (dueño del libro) */}
+      {esDueno && sonidosOpen && currentChapter && (
+        <PanelSonidosEscritor
+          capitulo={currentChapter}
+          parrafos={currentChapData?.parrafos || []}
+          mediaByParrafo={currentMedia}
+          seleccion={seleccionSonido}
+          onLimpiarSeleccion={() => setSeleccionSonido(null)}
+          onVincular={sugerirMedia}
+          onQuitar={quitarMedia}
+          onAmbientesGuardados={actualizarAmbientes}
+          onClose={() => { setSonidosOpen(false); setSeleccionSonido(null) }}
+        />
       )}
 
       {/* Panel de superusuario */}

@@ -524,3 +524,7 @@
 .cart-root .cart-postit .cart-pin{ background:radial-gradient(circle at 35% 30%, #fff7, #c23b2e 62%, rgba(0,0,0,.35)); }
 .cart-root .cart-portada-tag.is-volver{ font-family:inherit; cursor:pointer; color:#8a7355; }
 .cart-root .cart-portada-tag.is-volver:hover{ transform:translateY(-1px); box-shadow:2px 3px 0 rgba(74,54,34,.25); }
+
+/* Vista del autor (Rincón del escritor → «Ver en la cartelera»). */
+.cart-vista-autor { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: 14px; padding: 10px 12px 10px 18px; background: var(--ink); color: #fff8ec; border-radius: 999px; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); font-size: 14px; max-width: calc(100% - 32px); }
+.cart-vista-autor button { border: 0; border-radius: 999px; padding: 7px 14px; background: var(--accent); color: #fff; font-weight: 700; font-size: 13.5px; cursor: pointer; white-space: nowrap; }

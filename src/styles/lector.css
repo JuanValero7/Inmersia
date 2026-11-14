@@ -84,3 +84,6 @@ input.inm-vol::-moz-range-thumb {
 }
 
 
+
+/* «Ver en tu libro» (Rincón del escritor): el párrafo al que se llegó. */
+.parrafo-resaltado { background: rgba(242, 121, 42, .2); box-shadow: 0 0 0 6px rgba(242, 121, 42, .2); border-radius: 4px; transition: background .6s, box-shadow .6s; }

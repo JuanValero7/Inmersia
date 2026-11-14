@@ -27,10 +27,12 @@ const STATS_FROM_PCT = 90
  * @param {string|null} libroId
  * @param {string|null} userId
  * @param {boolean} [isSuperuser]   ve todo el tablero, sin el filtro por capítulo
+ * @param {number|null} [capAutor]  vista del autor (Rincón del escritor): como un lector que
+ *                                  terminó ese capítulo, sin mirar su progreso
  * @returns {{ loading: boolean, capituloActual: number, porcentaje: number,
  *             itemsBySeccion: object, principal: object, stats: object|null }}
  */
-export function useCartelera(libroId, userId, isSuperuser = false) {
+export function useCartelera(libroId, userId, isSuperuser = false, capAutor = null) {
   const [loading, setLoading]       = useState(true)
   const [capituloActual, setCap]    = useState(0)
   const [porcentaje, setPorcentaje] = useState(0)
@@ -59,16 +61,21 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
         .eq('libro_id', libroId)
         .maybeSingle()
 
-      const pct = Math.max(0, Math.min(100, prog?.porcentaje ?? 0))
+      let pct = Math.max(0, Math.min(100, prog?.porcentaje ?? 0))
 
-      const capActual = capituloActualDesdeProgreso(prog?.capitulos_completados, pct)
+      const capActual = capAutor != null ? capAutor + 1 : capituloActualDesdeProgreso(prog?.capitulos_completados, pct)
+      // Vista del autor: las placas del tablero se destapan como para ese lector.
+      if (capAutor != null) {
+        const { count } = await supabase.from('capitulos').select('id', { count: 'exact', head: true }).eq('libro_id', libroId)
+        pct = count ? Math.min(100, Math.round(capAutor / count * 100)) : 0
+      }
 
       // 2) En paralelo: items + imágenes + predicciones, filtrados en servidor
       let itemsQuery = supabase.from('cartelera_items')
         .select('id, seccion, nombre, descripcion, capitulo_numero, metadata, imagen:biblioteca_media!imagen_media_id(url, slug, titulo)')
         .eq('libro_id', libroId)
         .order('capitulo_numero', { ascending: true })
-      if (!isSuperuser) itemsQuery = itemsQuery.lt('capitulo_numero', capActual)
+      if (!isSuperuser || capAutor != null) itemsQuery = itemsQuery.lt('capitulo_numero', capActual)
 
       let predQuery = supabase.from('predicciones_usuario')
         .select('capitulo_num, contenido')
@@ -143,7 +150,7 @@ export function useCartelera(libroId, userId, isSuperuser = false) {
 
     cargar()
     return () => { cancelled = true }
-  }, [libroId, userId, isSuperuser])
+  }, [libroId, userId, isSuperuser, capAutor])
 
   return { loading, capituloActual, porcentaje, itemsBySeccion, principal, stats }
 }

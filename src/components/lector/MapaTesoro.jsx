@@ -13,10 +13,16 @@
 // La lista se abre sola la primera vez que se entra en un capítulo con tesoros;
 // después vive en el Cuaderno (decisión de Juan, 8 nov: el botón suelto era feo).
 // Sin usuario, sin la 091 o sin mapa en el libro, no aparece nada.
+// Ensayo del escritor («Cómo lo ve el lector» desde su editor): el mapa sale
+// de su propio JSON, se juega en local (sin ovillos ni guardar nada) y las
+// frases buenas se ven subrayadas con el color de su ficha (solo él).
 // Reglas: Documentation/colegios/mapa-tesoro-prompt.md.
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useMapaTesoro } from '../../hooks/useMapaTesoro.js'
+import { useJuegoEscritor } from '../../hooks/useEscritor.js'
+import { ubicarCita } from '../../utils/concurso.js'
+import { textoDe, rango } from './Concurso.jsx'
 import { fichasDelCapitulo, brilla as brillaEn, quedanTesoros } from '../../utils/mapaTesoro.js'
 import { Ovillo } from './Corazonada.jsx'
 import '../../styles/corazonada.css'
@@ -46,7 +52,7 @@ function marcarVista(libroId, cap) {
 }
 
 // Las fichas de un capítulo: la lista del mapa y la pestaña «Tesoros» del Cuaderno.
-export function FichasTesoro({ fichas }) {
+export function FichasTesoro({ fichas, colores = null }) {
   const encontrados = fichas.filter(t => t.encontrado).length
   return (
     <>
@@ -54,7 +60,7 @@ export function FichasTesoro({ fichas }) {
       <ol className="mt-lista">
         {fichas.map((t, i) => (
           <li key={t.id} className={'mt-ficha' + (t.encontrado ? ' is-encontrado' : '')}>
-            <span className="mt-n">{i + 1}</span>
+            <span className={'mt-n' + (colores && colores[t.id] != null ? ` mt-esc-${colores[t.id] % 6}` : '')}>{colores?.[t.id] != null ? colores[t.id] + 1 : i + 1}</span>
             <div>
               <span className={'mt-tag is-' + t.tipo}>{TIPO[t.tipo]}</span>
               <p className="mt-q">{t.pregunta}</p>
@@ -74,29 +80,30 @@ export function FichasTesoro({ fichas }) {
 
 export const AYUDA_MAPA = 'Cuando el libro brille, hay un tesoro cerca. Subraya la frase y elige «Mapa del tesoro». Acertar +1 · fallar −1.'
 
-function Lista({ fichas, cap, saldo, gatoColor, onCerrar }) {
+function Lista({ fichas, cap, saldo, gatoColor, onCerrar, colores = null }) {
   return (
     <div className="cz-panel mt-panel">
       <div className="cz-head">
         <img className="cz-gato" src={gatoSrc(gatoColor, '7')} alt="" />
-        <div><div className="cz-kicker mt-kicker">Mapa del tesoro</div><h3>Capítulo {cap}</h3></div>
-        <span className="cz-saldo" title="Tus ovillos en este libro"><Ovillo />{saldo}</span>
+        <div><div className="cz-kicker mt-kicker">{colores ? 'Mapa del tesoro · así lo verá tu lector' : 'Mapa del tesoro'}</div><h3>Capítulo {cap}</h3></div>
+        {saldo != null && <span className="cz-saldo" title="Tus ovillos en este libro"><Ovillo />{saldo}</span>}
       </div>
-      <FichasTesoro fichas={fichas} />
+      <FichasTesoro fichas={fichas} colores={colores} />
+      {colores && <p className="cz-nota">Solo lo ves tú: las frases buenas están subrayadas en el texto con el color del número de su ficha. Aquí no se gasta ni se guarda nada.</p>}
       <p className="cz-nota">{AYUDA_MAPA} También están en tu Cuaderno.</p>
       <div className="cz-btns"><button type="button" className="cz-btn is-main" onClick={onCerrar}>Seguir leyendo</button></div>
     </div>
   )
 }
 
-function Respuesta({ r, gatoColor, onCerrar }) {
+function Respuesta({ r, gatoColor, onCerrar, ensayo = false }) {
   const d = r.error ? { texto: r.error, pose: '7', ovillos: null } : RESPUESTA[r.resultado]
   return (
     <div className="cz-panel mt-panel">
       <div className="cz-head">
         <img className="cz-gato" src={gatoSrc(gatoColor, d.pose)} alt="" />
         <div><div className="cz-kicker mt-kicker">Mapa del tesoro</div><h3>{d.texto}</h3></div>
-        {d.ovillos && <span className={'cz-saldo mt-delta' + (r.resultado === 'tesoro' ? ' is-gana' : '')}><Ovillo />{d.ovillos}</span>}
+        {d.ovillos && !ensayo && <span className={'cz-saldo mt-delta' + (r.resultado === 'tesoro' ? ' is-gana' : '')}><Ovillo />{d.ovillos}</span>}
       </div>
       {r.tesoro && (
         <div className="mt-hallado">
@@ -123,12 +130,15 @@ function posicionar() {
 /**
  * @param {{ libroId: string|null, userId: string|null, capNum: number|null,
  *   visibles: { numero?: number, tipo?: string }[], parrafos: { id: string, numero: number }[],
- *   gatoColor?: string, movil?: boolean, deshabilitado?: boolean }} opts
+ *   gatoColor?: string, movil?: boolean, deshabilitado?: boolean, ensayo?: boolean }} opts
+ *   ensayo: el escritor probando su mapa (ver arriba).
  *   visibles: los párrafos que hay en pantalla (en doble página, las dos).
  *   parrafos: los del capítulo, para pasar del id del subrayado a su número.
  */
-export function useMapaTesoroLector({ libroId, userId, capNum, visibles, parrafos, gatoColor = 'negro', movil = false, deshabilitado = false }) {
-  const mt = useMapaTesoro(deshabilitado ? null : libroId, userId)
+export function useMapaTesoroLector({ libroId, userId, capNum, visibles, parrafos, gatoColor = 'negro', movil = false, deshabilitado = false, ensayo = false }) {
+  const servidor = useMapaTesoro(deshabilitado || ensayo ? null : libroId, userId)
+  const local = useMapaEnsayo(ensayo && !deshabilitado ? libroId : null)
+  const mt = ensayo ? local : servidor
   const tesoros = useMemo(() => mt.estado?.tesoros ?? [], [mt.estado])
   const enPantalla = useMemo(() => visibles.map(p => p.numero).filter(n => typeof n === 'number'), [visibles])
 
@@ -163,11 +173,13 @@ export function useMapaTesoroLector({ libroId, userId, capNum, visibles, parrafo
 
   // La primera vez en un capítulo con tesoros, la lista se abre sola.
   const hayFichas = fichas.length > 0
+  const vistasEnsayo = useRef(new Set())
   useEffect(() => {
-    if (!hayFichas || !libroId || capNum == null || yaVista(libroId, capNum)) return
-    marcarVista(libroId, capNum)
+    if (!hayFichas || !libroId || capNum == null) return
+    if (ensayo) { if (vistasEnsayo.current.has(capNum)) return; vistasEnsayo.current.add(capNum) }
+    else { if (yaVista(libroId, capNum)) return; marcarVista(libroId, capNum) }
     setLista({ pos: movil ? null : posicionar() })
-  }, [hayFichas, libroId, capNum, movil])
+  }, [hayFichas, libroId, capNum, movil, ensayo])
 
   // Los fallos se cierran solos; el tesoro se queda hasta que lo cierre (puede llevar el porque).
   useEffect(() => {
@@ -193,8 +205,9 @@ export function useMapaTesoroLector({ libroId, userId, capNum, visibles, parrafo
   const cerrar = () => { setLista(null); setRespuesta(null) }
   const abierta = respuesta ?? lista
   const contenido = respuesta
-    ? <Respuesta r={respuesta} gatoColor={gatoColor} onCerrar={cerrar} />
-    : lista && <Lista fichas={fichas} cap={capNum} saldo={mt.estado?.saldo ?? 0} gatoColor={gatoColor} onCerrar={cerrar} />
+    ? <Respuesta r={respuesta} gatoColor={gatoColor} onCerrar={cerrar} ensayo={ensayo} />
+    : lista && <Lista fichas={fichas} cap={capNum} saldo={ensayo ? null : mt.estado?.saldo ?? 0} gatoColor={gatoColor} onCerrar={cerrar}
+        colores={ensayo ? local.colores : null} />
 
   // En móvil la hoja va dentro de la pantalla del lector (usa sus variables
   // de color, .lm-screen); en escritorio, en el body, sobre la mesa.
@@ -209,6 +222,9 @@ export function useMapaTesoroLector({ libroId, userId, capNum, visibles, parrafo
   ) : null
   const panel = piezas && !movil ? createPortal(piezas, document.body) : piezas
 
+  // Ensayo: las frases buenas del capítulo, subrayadas en pantalla con el color de su ficha.
+  useSubrayadoEscritor(ensayo ? local : null, capNum, parrafos, visibles, movil)
+
   return {
     brilla,
     quedan,
@@ -217,4 +233,94 @@ export function useMapaTesoroLector({ libroId, userId, capNum, visibles, parrafo
     ocupado: mt.ocupado,
     panel,
   }
+}
+
+// ── Ensayo del escritor ────────────────────────────────────
+
+// La misma normalización que _mapa_norm (091): rayas, comillas y espacios.
+const normMapa = (t) => (t || '').replace(/[–—-]+/g, '-').replace(/[«»“”"]/g, '"').replace(/\s+/g, ' ').trim()
+const citaDe = (datos, t, r) => (datos.textos?.[`${t.cap}:${r.parrafo}`] || '').slice(r.inicio - 1, r.fin)
+
+// El mapa jugado en local con las reglas de mapa_subrayar (091), sin ovillos.
+function useMapaEnsayo(libroId) {
+  const datos = useJuegoEscritor(libroId, 'mapa', !!libroId).data?.datos
+  const [hallados, setHallados] = useState([])
+  const estado = useMemo(() => datos ? {
+    saldo: null,
+    tesoros: (datos.tesoros || []).map(t => {
+      const encontrado = hallados.includes(t.id)
+      return {
+        id: t.id, cap: t.cap, tipo: t.tipo, spoiler: !!t.spoiler, pregunta: t.pregunta, brillo: t.brillo, encontrado,
+        ...(encontrado ? { parrafo: t.respuestas[0].parrafo, cita: citaDe(datos, t, t.respuestas[0]), porque: t.porque } : {}),
+      }
+    }),
+  } : null, [datos, hallados])
+  // Color de cada tesoro: su orden dentro del capítulo.
+  const colores = useMemo(() => {
+    const out = {}
+    const porCap = {}
+    for (const t of datos?.tesoros || []) { porCap[t.cap] = (porCap[t.cap] ?? -1) + 1; out[t.id] = porCap[t.cap] }
+    return out
+  }, [datos])
+
+  const subrayar = useCallback(async ({ cap, parrafo, texto }) => {
+    const sel = normMapa(texto)
+    if (!sel || sel.split(' ').length < 3) throw new Error('Subraya al menos tres palabras.')
+    const textoP = datos.textos?.[`${cap}:${parrafo}`]
+    const pos = textoP != null ? textoP.indexOf(sel) + 1 : 0
+    if (textoP != null && pos === 0) throw new Error('texto_no_coincide')
+    const comun = (r) => Math.min(pos + sel.length - 1, r.fin) - Math.max(pos, r.inicio) + 1
+    let hallado = null, repetido = false, cerca = false, pend = 0
+    for (const t of (datos.tesoros || []).filter(x => x.cap === cap)) {
+      if (hallados.includes(t.id)) {
+        if (pos > 0 && t.respuestas.some(r => r.parrafo === parrafo && comun(r) * 2 > sel.length)) repetido = true
+        continue
+      }
+      pend++
+      for (const r of t.respuestas) {
+        if (Math.abs(r.parrafo - parrafo) <= 1) cerca = true
+        if (!hallado && pos > 0 && r.parrafo === parrafo && comun(r) * 2 > sel.length) hallado = t
+      }
+    }
+    if (!hallado && repetido) return { resultado: 'ya_encontrado', estado }
+    if (!pend) throw new Error('En este capítulo no quedan tesoros.')
+    if (hallado) {
+      const ahora = [...hallados, hallado.id]
+      setHallados(ahora)
+      const t = { ...hallado, encontrado: true, porque: hallado.porque }
+      return { resultado: 'tesoro', tesoro: hallado.id, estado: { ...estado, tesoros: estado.tesoros.map(x => (x.id === t.id ? { ...x, encontrado: true, porque: t.porque } : x)) } }
+    }
+    return { resultado: cerca ? 'cerca' : 'no', estado }
+  }, [datos, hallados, estado])
+
+  return { estado, subrayar, ocupado: false, colores, datos }
+}
+
+// Subraya (con el resaltador del navegador, sin tocar el texto) las frases
+// buenas del capítulo que hay en pantalla, una capa por color de ficha.
+function useSubrayadoEscritor(local, capNum, parrafos, visibles, movil) {
+  const datos = local?.datos
+  const colores = local?.colores
+  useEffect(() => {
+    const css = typeof window !== 'undefined' ? window.CSS : null
+    if (!css?.highlights || !datos || capNum == null) return
+    const raiz = document.querySelector(movil ? '[data-lm-pagebox]' : '.book-shadow')
+    if (!raiz) return
+    const idDe = new Map((parrafos || []).map(p => [p.numero, p.id]))
+    const capas = Array.from({ length: 6 }, () => [])
+    for (const t of (datos.tesoros || []).filter(x => x.cap === capNum)) {
+      for (const r of t.respuestas) {
+        const id = idDe.get(r.parrafo)
+        if (!id) continue
+        const cita = citaDe(datos, t, r)
+        for (const el of raiz.querySelectorAll(`[data-parrafo-id="${css.escape(String(id))}"]`)) {
+          const { texto, nodos } = textoDe(el)
+          const u = ubicarCita(texto, cita)
+          if (u && nodos.length) capas[colores[t.id] % 6].push(rango(nodos, u.start, u.end))
+        }
+      }
+    }
+    capas.forEach((rs, k) => { css.highlights.set(`mapa-esc-${k}`, new window.Highlight(...rs)) })
+    return () => { for (let k = 0; k < 6; k++) css.highlights.delete(`mapa-esc-${k}`) }
+  }, [datos, colores, capNum, parrafos, visibles, movil])
 }

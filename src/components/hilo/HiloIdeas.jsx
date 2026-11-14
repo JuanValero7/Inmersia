@@ -11,6 +11,9 @@
 // con «Jugar 🧶1». Las reglas viven en la base de datos (migración 100): aquí
 // solo se elige y se pinta el tablero que devuelve. Cabecera y navegación las
 // pone quien lo monta (Cartelera.jsx / CarteleraMobile.jsx).
+// Ensayo del escritor (EditoresJuegos.jsx): con `ensayo`, el tablero y las
+// jugadas vienen de fuera (reglas copiadas en local, sin base ni ovillos) y
+// cada idea y sus pistas llevan un sello que solo ve el escritor.
 import { useState, useMemo, useRef, useLayoutEffect, useEffect } from 'react'
 import { useHiloIdeas } from '../../hooks/useHiloIdeas.js'
 import { colocar, infoIdea, marcasPareja, sePuedeArmar } from '../../utils/hilo.js'
@@ -50,9 +53,11 @@ const teclas = (fn) => (e) => { if (e.key === 'Enter' || e.key === ' ') { e.prev
  * @param {string|null} props.userId
  * @param {boolean} [props.movil]
  * @param {'negro'|'blanco'|'naranja'} [props.gatoColor]
+ * @param {{ estado: any, jugar: Function, pedirAyuda: Function, sello: (id: string) => any, selloIdea: (id: string) => any }|null} [props.ensayo]
  */
-export default function HiloIdeas({ libroId, userId, movil = false, gatoColor = 'negro' }) {
-  const { estado, cargando, jugar, pedirAyuda, ocupado } = useHiloIdeas(libroId, userId)
+export default function HiloIdeas({ libroId, userId, movil = false, gatoColor = 'negro', ensayo = null }) {
+  const servidor = useHiloIdeas(ensayo ? null : libroId, userId)
+  const { estado, cargando, jugar, pedirAyuda, ocupado } = ensayo ? { ...ensayo, cargando: false, ocupado: false } : servidor
   const [activoSel, setActivoSel] = useState(null)
   const [puestas, setPuestas] = useState({})      // idea → pistas puestas a mano (aún sin jugar)
   const [msg, setMsg] = useState(null)            // { texto, tono: 'bien'|'mal'|'' }
@@ -183,7 +188,7 @@ export default function HiloIdeas({ libroId, userId, movil = false, gatoColor = 
   }
 
   // ── Piezas ──
-  const saldo = <span className="mesa-saldo" title="Tus ovillos en este libro"><Ovillo />{estado.saldo}</span>
+  const saldo = ensayo ? null : <span className="mesa-saldo" title="Tus ovillos en este libro"><Ovillo />{estado.saldo}</span>
 
   const jugarBtn = (i) => {
     const info = infoIdea(i, mano(i.id), porId)
@@ -223,6 +228,7 @@ export default function HiloIdeas({ libroId, userId, movil = false, gatoColor = 
         aria-label={i.estado === 'armada' ? `Idea armada: ${i.titulo}` : `Idea: ${i.pregunta}`}
         onClick={() => activar(i.id)} onKeyDown={teclas(() => activar(i.id))}>
         <span className="hilo-pin" />
+        {ensayo?.selloIdea(i.id)}
         <span className="hilo-chip">{chipDe(i)}</span>
         {sePuedeArmar(i, porId) && <span className="hilo-puedes" title="Ya tienes lo necesario para armarla">✓ Ya puedes</span>}
         {i.estado === 'armada'
@@ -325,6 +331,7 @@ export default function HiloIdeas({ libroId, userId, movil = false, gatoColor = 
         <span className="hilo-pin" />
         {p.cap === estado.capitulos_completados && !usada && <span className="hilo-pista-tag">nueva</span>}
         <span className="hilo-pista-t">{p.t}</span>
+        {ensayo?.sello(p.id)}
         {(usada || enIdea || par != null) && (
           <span className="hilo-pista-donde">
             {par != null && <span className={`mesa-par par-${par % 6}`} title="Va junto con otra pista marcada igual">🔗{par + 1}</span>}

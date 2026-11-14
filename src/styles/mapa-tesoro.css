@@ -56,3 +56,15 @@
 /* Móvil: la opción del mapa en la hoja de subrayado (LectorSheets.jsx → ConfirmSubrayadoSheet) */
 .lm-csub-mapa { display: flex; padding: 10px 20px 0; font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 13px; color: var(--cz-ink-soft); }
 .lm-csub-btn--mapa { background: var(--mt-oro-bg); color: var(--mt-oro-ink); border-color: var(--mt-oro); }
+
+/* Ensayo del escritor: las frases buenas subrayadas con el color de su ficha
+   (resaltador del navegador; el lector nunca lo ve). */
+::highlight(mapa-esc-0) { background-color: rgba(47, 127, 209, .28); }
+::highlight(mapa-esc-1) { background-color: rgba(194, 65, 12, .25); }
+::highlight(mapa-esc-2) { background-color: rgba(124, 58, 237, .25); }
+::highlight(mapa-esc-3) { background-color: rgba(15, 118, 110, .25); }
+::highlight(mapa-esc-4) { background-color: rgba(190, 24, 93, .22); }
+::highlight(mapa-esc-5) { background-color: rgba(161, 98, 7, .25); }
+.mt-n.mt-esc-0 { background: #2f7fd1; color: #fff; } .mt-n.mt-esc-1 { background: #c2410c; color: #fff; }
+.mt-n.mt-esc-2 { background: #7c3aed; color: #fff; } .mt-n.mt-esc-3 { background: #0f766e; color: #fff; }
+.mt-n.mt-esc-4 { background: #be185d; color: #fff; } .mt-n.mt-esc-5 { background: #a16207; color: #fff; }

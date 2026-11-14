@@ -15,6 +15,7 @@ import { MANUAL_LIBRO_ID, FORO_VISIBLE } from '../lib/constants.js'
 import { useBibliotecaUsuarioQuery } from '../lib/queries.js'
 import { evento } from '../lib/analytics.js'
 import { mapLibro } from '../hooks/useBookBySlug.js'
+import { useEscritorQuery, useLibrosEscritorQuery } from '../hooks/useEscritor.js'
 
 const LoadingScreen = (
   <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,background:'var(--bg-warm)'}}>
@@ -106,8 +107,22 @@ export function LectorRoute({ LectorCmp, user, isSuperuser, gatoColor, openAuth,
   const bibliotecaQuery = useBibliotecaUsuarioQuery(user?.id)
   const filas = bibliotecaQuery.data
 
+  // Rincón del escritor (103/104): el dueño lee su libro entero (sin
+  // publicar no tiene muestra) y edita sus sonidos. Para quien no es
+  // escritor es una sola consulta pequeña, cacheada.
+  const escritorQuery = useEscritorQuery(isAuthed ? user?.id : null)
+  const librosEscritorQuery = useLibrosEscritorQuery(user?.id, !!escritorQuery.data)
+  const esDueno =
+    !isAuthed || !libroId          ? false
+    : escritorQuery.isLoading      ? null
+    : !escritorQuery.data          ? false
+    : librosEscritorQuery.isLoading ? null
+    : (librosEscritorQuery.data || []).some(l => l.id === libroId)
+
   const tieneLibro =
     !isAuthed                  ? false
+    : esDueno === null         ? null
+    : esDueno                  ? true
     : libroId === MANUAL_LIBRO_ID ? true   // lo tienen todos por definición
     : bibliotecaQuery.isError  ? true      // fallo de red → abrir, la RLS manda
     : filas === undefined      ? null      // todavía sin resolver
@@ -150,13 +165,17 @@ export function LectorRoute({ LectorCmp, user, isSuperuser, gatoColor, openAuth,
       onRequestAuth={(tab) => openAuth?.(tab || 'login')}
       // El invitado casi siempre llegó desde el catálogo (y desde ahí vuelve a la
       // landing con su propio "Volver"); el usuario, a su Biblioteca.
-      onGoBack={() => navigate(user ? '/biblioteca' : '/tienda')}
+      // Si vino desde un juego («Ver en tu libro»), atrás vuelve a la Sala de juegos.
+      onGoBack={() => (location.state?.irA ? navigate(-1) : navigate(esDueno ? '/escritor' : user ? '/biblioteca' : '/tienda'))}
       onGoTienda={() => navigate('/tienda')}
       onGoCartelera={(itemId) => { setCartelaJumpId(itemId || null); irA(`/investigacion/${book.slug || book.id}`) }}
       onGoForo={FORO_VISIBLE ? () => irA(`/foro/${book.slug || book.id}`) : undefined}
       startWithNotebook={lectorStartNotebook}
       onNotebookStarted={() => setLectorStartNotebook(false)}
       isSuperuser={isSuperuser}
+      esDueno={!!esDueno}
+      abrirSonidos={!!location.state?.sonidos}
+      irA={location.state?.irA || null}
       gatoColor={gatoColor}
     />
   )
