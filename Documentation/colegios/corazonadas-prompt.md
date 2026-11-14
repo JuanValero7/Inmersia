@@ -62,7 +62,10 @@ Para cada momento, ponte en la piel de un lector atento que solo ha leído hasta
   descarta el momento.
 
 PASO 3 — Elegir
-- De 0 a 2 por capítulo; en total, alrededor de una por capítulo. Mejor ninguna que una
+- TOPE POR LARGO (manda sobre todo lo demás): en total, como mucho una por cada
+  {PALABRAS_POR_CORAZONADA} palabras del libro (4.500; mínimo 2 en el libro). Si el
+  libro tiene muchos capítulos cortos, quedan capítulos sin ninguna.
+- De 0 a 2 por capítulo. Mejor ninguna que una
   floja.
 - Al menos dos de cada tres son deducibles.
 - Mezcla los dos tipos si el libro lo permite.

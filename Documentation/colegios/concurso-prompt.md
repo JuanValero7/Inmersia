@@ -4,7 +4,7 @@ Vale para cualquier libro de ficción. Primera prueba: *El signo de los cuatro*,
 
 **Qué es el concurso:** justo después de leer una frase difícil, se apagan las luces y un foco cae sobre la frase, en su sitio dentro del libro. El alumno escribe con sus palabras qué quiso decir. Una IA compara lo que escribió con la referencia y dice: «¡Correeeecto!» (+3), «Uy, casi» (+1) o «Ehhhh, no». Después se muestra «Así lo entendemos nosotros». Comodines: «más contexto» (1 ovillo) y 50/50 (2 ovillos).
 
-**Cuántas:** el pipeline prepara **hasta 5 frases por capítulo**. A cada alumno le salen **una o dos al azar** de esas cinco. Por eso las cinco tienen que ser igual de buenas: cualquiera puede ser la que le toque.
+**Cuántas:** el pipeline prepara **hasta 3 frases por capítulo** (antes 5; bajado el 9 nov 2026 por costo de generación). A cada alumno le salen **una o dos al azar** de esas tres. Por eso las tres tienen que ser igual de buenas: cualquiera puede ser la que le toque.
 
 **Dónde vive el juego de cada libro:** `Documents/<libro>/concurso/concurso.json`, como Anderson y las corazonadas.
 
@@ -55,8 +55,13 @@ Reglas para que una candidata valga:
 - Explicarla no obliga a hablar de nada inapropiado para un alumno de 12 años.
 
 PASO 2 — Elegir
-- Hasta 5 por capítulo. A cada alumno le tocan una o dos al azar, así que las cinco
-  tienen que ser igual de buenas. Mejor 3 buenas que 5 con relleno.
+- TOPE POR LARGO (manda sobre todo lo demás): no todos los capítulos llevan frases.
+  Entre un capítulo con frases y el siguiente con frases hay al menos {PALABRAS_ENTRE}
+  palabras de lectura (4.500). Así el alumno ve una frase cada ~3.000 palabras (~10
+  páginas), porque en cada capítulo con frases le tocan 1 o 2. Si los
+  capítulos son largos, salen todos; si son cortos, elige los de frases más jugosas.
+- Hasta 3 por capítulo con frases. A cada alumno le tocan una o dos al azar, así que las tres
+  tienen que ser igual de buenas. Mejor 2 buenas que 3 con relleno.
 - Cada una en un párrafo distinto, repartidas por el capítulo.
 - Al menos dos tipos distintos por capítulo si el capítulo lo permite. Ironía e
   intención son las más valiosas: no las dejes fuera si las hay.
@@ -124,13 +129,13 @@ Devuelve SOLO JSON:
 
 - La cita y el contexto están literales en el capítulo que dice, y la cita una sola vez en el libro. Se les añade el número de párrafo.
 - El contexto va antes de la cita: en el mismo párrafo o en uno de los tres anteriores.
-- Hasta 5 por capítulo y cada una en un párrafo distinto.
+- Hasta 3 por capítulo y cada una en un párrafo distinto.
 - Aviso si la cita pasa de 45 palabras, si un capítulo con 3 o más frases tiene un solo tipo, o si una opción del 50/50 es mucho más larga que la otra.
 - **Proceso PISA** (lo pone el script, no la IA): vocabulario, sintaxis y figurado = *comprender*; ironía e intención = *evaluar y reflexionar*.
 
 ## 3. Reglas del juego
 
-- **Al azar, una o dos por capítulo** de las cinco. El sorteo se hace una vez por alumno y libro y queda guardado: si vuelve a leer, le salen las mismas. Dos compañeros casi nunca tienen la misma frase, así que copiarse no sirve.
+- **Al azar, una o dos por capítulo** de las tres. El sorteo se hace una vez por alumno y libro y queda guardado: si vuelve a leer, le salen las mismas. Dos compañeros casi nunca tienen la misma frase, así que copiarse no sirve.
 - **Cuándo salta:** al pasar la página que contiene la frase. Siempre se puede decir «Ahora no»; la frase queda en el Cuaderno para volver.
 - **Solo escribir, pegar bloqueado.** Mínimo unas pocas palabras antes de poder enviar y **200 palabras como máximo** (el cuadro no deja escribir más, y el servidor lo vuelve a comprobar).
 - **Veredictos y premios:** «¡Correeeecto!» +3 · «Uy, casi» +1 · «Ehhhh, no» 0. Con 50/50: acertar +1, fallar 0. Comodines: más contexto −1, 50/50 −2.
