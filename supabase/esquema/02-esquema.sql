@@ -2084,36 +2084,6 @@ CREATE FUNCTION public._zona_valida(p_zona text) RETURNS text
 
 
 --
--- Name: activar_escritor(text); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.activar_escritor(p_correo text) RETURNS text
-    LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
-DECLARE
-  v_correo text := lower(btrim(coalesce(p_correo, '')));
-  v_uid    uuid;
-  v_nuevo  boolean;
-BEGIN
-  SELECT id INTO v_uid FROM auth.users WHERE lower(email) = v_correo LIMIT 1;
-  IF v_uid IS NULL THEN
-    RETURN 'sin_cuenta';
-  END IF;
-
-  INSERT INTO escritores (user_id) VALUES (v_uid)
-  ON CONFLICT (user_id) DO NOTHING;
-  v_nuevo := FOUND;
-
-  UPDATE solicitudes_escritor SET atendida = now()
-  WHERE lower(correo) = v_correo AND atendida IS NULL;
-
-  RETURN CASE WHEN v_nuevo THEN 'activado' ELSE 'ya_era' END;
-END;
-$$;
-
-
---
 -- Name: actualizar_imagen_escritor(uuid, integer, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2650,72 +2620,93 @@ $$;
 CREATE FUNCTION public.canjear_codigo(p_codigo text, p_nombre_en_aula text DEFAULT NULL::text) RETURNS jsonb
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-DECLARE
-  uid         uuid := auth.uid();
-  v_codigo    text := upper(btrim(p_codigo));
-  v_nombre    text := nullif(btrim(regexp_replace(coalesce(p_nombre_en_aula, ''), '\s+', ' ', 'g')), '');
-  r           colegio_codigos%ROWTYPE;
-  v_comunidad uuid;
-  v_colegio   uuid;
-BEGIN
-  IF uid IS NULL THEN
-    RAISE EXCEPTION 'Hace falta iniciar sesión.';
-  END IF;
-
-  -- Códigos del colegio (llevan guion).
-  IF position('-' IN v_codigo) > 0 THEN
-    SELECT * INTO r FROM colegio_codigos
-    WHERE codigo = v_codigo AND (expira_at IS NULL OR expira_at > now());
-
-    IF NOT FOUND THEN
-      RAISE EXCEPTION 'El código no es válido.' USING ERRCODE = 'P0002', HINT = 'codigo_invalido';
-    END IF;
-
-    IF r.tipo = 'admin' THEN
-      INSERT INTO colegio_admins (colegio_id, user_id) VALUES (r.colegio_id, uid)
-      ON CONFLICT DO NOTHING;
-      DELETE FROM colegio_codigos WHERE codigo = v_codigo;   -- un solo uso
-      RETURN jsonb_build_object('tipo', 'admin', 'colegio_id', r.colegio_id);
-    END IF;
-
-    -- Profesor: si ya estaba en el aula como alumno, pasa a moderador.
-    INSERT INTO comunidad_miembros (comunidad_id, user_id, rol)
-    VALUES (r.comunidad_id, uid, 'moderador')
-    ON CONFLICT (comunidad_id, user_id) DO UPDATE SET rol = 'moderador';
-    PERFORM _dar_libro_aula(r.comunidad_id, uid);
-
-    RETURN jsonb_build_object('tipo', 'profesor', 'colegio_id', r.colegio_id, 'comunidad_id', r.comunidad_id);
-  END IF;
-
-  -- ¿Aula o comunidad normal?
-  SELECT cc.comunidad_id, co.colegio_id INTO v_comunidad, v_colegio
-  FROM comunidad_codigos cc JOIN comunidades co ON co.id = cc.comunidad_id
-  WHERE cc.codigo = v_codigo;
-
-  IF v_comunidad IS NULL THEN
-    RAISE EXCEPTION 'El código no es válido.' USING ERRCODE = 'P0002', HINT = 'codigo_invalido';
-  END IF;
-
-  IF v_colegio IS NULL THEN
-    PERFORM unirse_con_codigo(v_codigo);
-    RETURN jsonb_build_object('tipo', 'comunidad', 'colegio_id', NULL, 'comunidad_id', v_comunidad);
-  END IF;
-
-  -- Aula. La app avisa con el HINT y muestra los campos de nombre.
-  IF v_nombre IS NULL THEN
-    RAISE EXCEPTION 'Para entrar a un aula hacen falta tu nombre y apellido.'
-      USING ERRCODE = 'P0001', HINT = 'falta_nombre_aula';
-  END IF;
-
-  -- Si ya estaba (alumno o profe), solo se corrige el nombre; el rol no cambia.
-  INSERT INTO comunidad_miembros (comunidad_id, user_id, rol, nombre_en_aula)
-  VALUES (v_comunidad, uid, 'miembro', v_nombre)
-  ON CONFLICT (comunidad_id, user_id) DO UPDATE SET nombre_en_aula = EXCLUDED.nombre_en_aula;
-  PERFORM _dar_libro_aula(v_comunidad, uid);
-
-  RETURN jsonb_build_object('tipo', 'alumno', 'colegio_id', v_colegio, 'comunidad_id', v_comunidad);
-END;
+    AS $$
+DECLARE
+  uid         uuid := auth.uid();
+  v_codigo    text := upper(btrim(p_codigo));
+  v_nombre    text := nullif(btrim(regexp_replace(coalesce(p_nombre_en_aula, ''), '\s+', ' ', 'g')), '');
+  r           colegio_codigos%ROWTYPE;
+  e           escritor_codigos%ROWTYPE;
+  v_comunidad uuid;
+  v_colegio   uuid;
+BEGIN
+  IF uid IS NULL THEN
+    RAISE EXCEPTION 'Hace falta iniciar sesión.';
+  END IF;
+
+  -- Código de escritor.
+  IF v_codigo LIKE 'ESCR-%' THEN
+    DELETE FROM escritor_codigos                      -- un solo uso
+    WHERE codigo = v_codigo AND expira_at > now()
+    RETURNING * INTO e;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'El código no es válido.' USING ERRCODE = 'P0002', HINT = 'codigo_invalido';
+    END IF;
+
+    INSERT INTO escritores (user_id, saldo_cupon) VALUES (uid, e.saldo)
+    ON CONFLICT (user_id) DO UPDATE SET saldo_cupon = escritores.saldo_cupon + EXCLUDED.saldo_cupon;
+
+    UPDATE solicitudes_escritor SET atendida = now()
+    WHERE atendida IS NULL
+      AND lower(correo) = (SELECT lower(email) FROM auth.users WHERE id = uid);
+
+    RETURN jsonb_build_object('tipo', 'escritor', 'colegio_id', NULL, 'comunidad_id', NULL);
+  END IF;
+
+  -- Códigos del colegio (llevan guion).
+  IF position('-' IN v_codigo) > 0 THEN
+    SELECT * INTO r FROM colegio_codigos
+    WHERE codigo = v_codigo AND (expira_at IS NULL OR expira_at > now());
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'El código no es válido.' USING ERRCODE = 'P0002', HINT = 'codigo_invalido';
+    END IF;
+
+    IF r.tipo = 'admin' THEN
+      INSERT INTO colegio_admins (colegio_id, user_id) VALUES (r.colegio_id, uid)
+      ON CONFLICT DO NOTHING;
+      DELETE FROM colegio_codigos WHERE codigo = v_codigo;   -- un solo uso
+      RETURN jsonb_build_object('tipo', 'admin', 'colegio_id', r.colegio_id);
+    END IF;
+
+    -- Profesor: si ya estaba en el aula como alumno, pasa a moderador.
+    INSERT INTO comunidad_miembros (comunidad_id, user_id, rol)
+    VALUES (r.comunidad_id, uid, 'moderador')
+    ON CONFLICT (comunidad_id, user_id) DO UPDATE SET rol = 'moderador';
+    PERFORM _dar_libro_aula(r.comunidad_id, uid);
+
+    RETURN jsonb_build_object('tipo', 'profesor', 'colegio_id', r.colegio_id, 'comunidad_id', r.comunidad_id);
+  END IF;
+
+  -- ¿Aula o comunidad normal?
+  SELECT cc.comunidad_id, co.colegio_id INTO v_comunidad, v_colegio
+  FROM comunidad_codigos cc JOIN comunidades co ON co.id = cc.comunidad_id
+  WHERE cc.codigo = v_codigo;
+
+  IF v_comunidad IS NULL THEN
+    RAISE EXCEPTION 'El código no es válido.' USING ERRCODE = 'P0002', HINT = 'codigo_invalido';
+  END IF;
+
+  IF v_colegio IS NULL THEN
+    PERFORM unirse_con_codigo(v_codigo);
+    RETURN jsonb_build_object('tipo', 'comunidad', 'colegio_id', NULL, 'comunidad_id', v_comunidad);
+  END IF;
+
+  -- Aula. La app avisa con el HINT y muestra los campos de nombre.
+  IF v_nombre IS NULL THEN
+    RAISE EXCEPTION 'Para entrar a un aula hacen falta tu nombre y apellido.'
+      USING ERRCODE = 'P0001', HINT = 'falta_nombre_aula';
+  END IF;
+
+  -- Si ya estaba (alumno o profe), solo se corrige el nombre; el rol no cambia.
+  INSERT INTO comunidad_miembros (comunidad_id, user_id, rol, nombre_en_aula)
+  VALUES (v_comunidad, uid, 'miembro', v_nombre)
+  ON CONFLICT (comunidad_id, user_id) DO UPDATE SET nombre_en_aula = EXCLUDED.nombre_en_aula;
+  PERFORM _dar_libro_aula(v_comunidad, uid);
+
+  RETURN jsonb_build_object('tipo', 'alumno', 'colegio_id', v_colegio, 'comunidad_id', v_comunidad);
+END;
 $$;
 
 
@@ -3506,6 +3497,24 @@ BEGIN
   RETURNING id INTO v_aula;
 
   RETURN v_aula;
+END;
+$$;
+
+
+--
+-- Name: crear_codigo_escritor(numeric, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.crear_codigo_escritor(p_saldo numeric DEFAULT 35, p_nota text DEFAULT NULL::text) RETURNS text
+    LANGUAGE plpgsql
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_codigo text := _codigo_colegio('ESCR');
+BEGIN
+  INSERT INTO escritor_codigos (codigo, saldo, nota)
+  VALUES (v_codigo, coalesce(p_saldo, 35), nullif(btrim(p_nota), ''));
+  RETURN v_codigo;
 END;
 $$;
 
@@ -8891,12 +8900,28 @@ CREATE VIEW public.elementos_con_contexto WITH (security_invoker='on') AS
 
 
 --
+-- Name: escritor_codigos; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.escritor_codigos (
+    codigo text NOT NULL,
+    saldo numeric(8,2) DEFAULT 35 NOT NULL,
+    nota text,
+    creado timestamp with time zone DEFAULT now() NOT NULL,
+    expira_at timestamp with time zone DEFAULT (now() + '30 days'::interval) NOT NULL,
+    CONSTRAINT escritor_codigos_codigo_check CHECK ((codigo ~ '^ESCR-[A-Z0-9]{8}$'::text)),
+    CONSTRAINT escritor_codigos_nota_check CHECK (((nota IS NULL) OR (char_length(nota) <= 200))),
+    CONSTRAINT escritor_codigos_saldo_check CHECK ((saldo >= (0)::numeric))
+);
+
+
+--
 -- Name: escritores; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.escritores (
     user_id uuid NOT NULL,
-    saldo_cupon numeric(8,2) DEFAULT 50 NOT NULL,
+    saldo_cupon numeric(8,2) DEFAULT 35 NOT NULL,
     creado timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT escritores_saldo_cupon_check CHECK ((saldo_cupon >= (0)::numeric))
 );
@@ -10188,6 +10213,14 @@ ALTER TABLE ONLY public.elementos_interactivos
 
 ALTER TABLE ONLY public.elementos_interactivos
     ADD CONSTRAINT elementos_interactivos_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: escritor_codigos escritor_codigos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.escritor_codigos
+    ADD CONSTRAINT escritor_codigos_pkey PRIMARY KEY (codigo);
 
 
 --
@@ -12981,6 +13014,12 @@ ALTER TABLE public.desafio_llamadas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.elementos_interactivos ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: escritor_codigos; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.escritor_codigos ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: elementos_interactivos escritor_ei_delete; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -14281,14 +14320,6 @@ GRANT ALL ON FUNCTION public._zona_valida(p_zona text) TO service_role;
 
 
 --
--- Name: FUNCTION activar_escritor(p_correo text); Type: ACL; Schema: public; Owner: -
---
-
-REVOKE ALL ON FUNCTION public.activar_escritor(p_correo text) FROM PUBLIC;
-GRANT ALL ON FUNCTION public.activar_escritor(p_correo text) TO service_role;
-
-
---
 -- Name: FUNCTION actualizar_imagen_escritor(p_imagen uuid, p_capitulo integer, p_pie text); Type: ACL; Schema: public; Owner: -
 --
 
@@ -14607,6 +14638,14 @@ GRANT ALL ON FUNCTION public.corazonadas_libro(p_libro uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.crear_aula(p_colegio uuid, p_grado text, p_seccion text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.crear_aula(p_colegio uuid, p_grado text, p_seccion text) TO authenticated;
 GRANT ALL ON FUNCTION public.crear_aula(p_colegio uuid, p_grado text, p_seccion text) TO service_role;
+
+
+--
+-- Name: FUNCTION crear_codigo_escritor(p_saldo numeric, p_nota text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.crear_codigo_escritor(p_saldo numeric, p_nota text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.crear_codigo_escritor(p_saldo numeric, p_nota text) TO service_role;
 
 
 --
@@ -15906,6 +15945,13 @@ GRANT ALL ON SEQUENCE public.desafio_llamadas_id_seq TO service_role;
 GRANT ALL ON TABLE public.elementos_con_contexto TO anon;
 GRANT ALL ON TABLE public.elementos_con_contexto TO authenticated;
 GRANT ALL ON TABLE public.elementos_con_contexto TO service_role;
+
+
+--
+-- Name: TABLE escritor_codigos; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.escritor_codigos TO service_role;
 
 
 --
