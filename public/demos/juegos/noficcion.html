@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Juegos de no ficción · Inmersia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="demo.css">
+</head>
+<body>
+<header class="cab">
+  <h1>Los juegos de no ficción, como los ve tu lector</h1>
+  <p>Son capturas reales de Inmersia, con <i>Del origen del dinero</i> de Carl Menger. Pasa los momentos con las flechas y cambia entre teléfono y computadora.</p>
+</header>
+<nav class="barra"><div class="barra-in">
+  <a href="#hilo">Hilo de ideas</a><a href="#falsificador">El falsificador</a><a href="#capsula">Cápsula del tiempo</a>
+  <span class="hueco"></span>
+  <div class="modo" role="group" aria-label="Ver en">
+    <button type="button" data-modo="m" class="on">Teléfono</button><button type="button" data-modo="d">Computadora</button>
+  </div>
+</div></nav>
+<main id="juegos"></main>
+<p class="pie">Lo que el lector hace en cada juego lo ves, agrupado, en Mis lectores. Nunca ves lo que hizo una persona concreta.</p>
+<script>
+window.JUEGOS = [
+  {
+    id: 'hilo', prefijo: 'hi', kicker: 'No ficción', nombre: 'Hilo de ideas',
+    lead: 'Las grandes ideas de tu libro están tapadas en una pizarra. El lector las destapa juntando las tres pistas que las sostienen.',
+    cuando: 'Al terminar cada capítulo le llegan pistas nuevas. La pizarra vive en el tablero de investigación del libro.',
+    mide: 'Seguir el argumento: ver qué idea sostiene cada dato y cómo una idea lleva a otra.',
+    tu: 'Qué porcentaje juntó cada idea y cuántos la intentaron.',
+    pasos: [
+      { img: '1_tablero', t: 'El tablero de la investigación', d: 'Cada libro tiene su tablero. La carpeta «Hilo de ideas» dice cuántas ideas lleva armadas.' },
+      { img: '2_pizarra', t: 'La pizarra', d: 'Las ideas del libro, tapadas. Las que ya puede armar se marcan; las demás se abren más adelante. Debajo, sus pistas.' },
+      { img: '3_tres', t: 'Tres pistas para una idea', d: 'Toca una idea y le suma tres pistas. Entre las pistas hay señuelos: son ciertos, pero no van en esa idea.' },
+      { img: '4_resultado', t: '¡Encaja!', d: 'La idea se destapa y su expediente muestra la conclusión con las tres pistas que la sostienen.' },
+    ],
+  },
+  {
+    id: 'falsificador', prefijo: 'fa', kicker: 'No ficción', nombre: 'El falsificador',
+    lead: 'De vez en cuando se apagan las luces sobre un párrafo: ¿lo escribiste tú o lo coló el gato? La mitad son inventados imitando tu estilo.',
+    cuando: 'Mientras lee, al pasar la página donde hay un párrafo sospechoso.',
+    mide: 'Leer con atención: notar cuando algo no encaja con lo que dice el libro.',
+    tu: 'Qué porcentaje acertó en cada párrafo, sea tuyo o inventado.',
+    pasos: [
+      { img: '1_luces', t: 'Se apagan las luces', d: 'Un foco cae sobre el párrafo, en su sitio dentro del libro.' },
+      { img: '1b_tarjeta', t: '¿Quién escribió este párrafo?', d: 'En el teléfono, la pregunta sube desde abajo: lo escribió el autor o lo coló el gato.', solo: 'm' },
+      { img: '2_veredicto', t: 'El veredicto', d: 'Si era inventado, le explicamos qué tenía de raro y qué dice de verdad tu libro.' },
+      { img: '3_tachado', t: 'Nadie se queda con la mentira', d: 'El párrafo inventado queda tachado con el sello «Lo coló el gato».' },
+    ],
+  },
+  {
+    id: 'capsula', prefijo: 'ca', kicker: 'No ficción', nombre: 'Cápsula del tiempo',
+    lead: 'Antes de leer, el lector deja escrito lo que piensa sobre los temas de tu libro. Al terminarlo, responde lo mismo y compara.',
+    cuando: 'Al abrir el libro, y otra vez al pasar del último capítulo.',
+    mide: 'Qué le dejó el libro: cómo cambió lo que pensaba.',
+    tu: 'Cuántos la sellaron y cuántos la abrieron al terminar. Lo que escriben es suyo: no lo ves.',
+    pasos: [
+      { img: '1_empezar', t: 'Al abrir el libro', d: 'El gato le propone guardar lo que piensa hoy, con unas preguntas abiertas.' },
+      { img: '2_respuestas', t: 'Con sus palabras', d: 'No hay respuestas buenas ni malas: una o dos frases por pregunta.' },
+      { img: '3_sellada', t: 'Cápsula sellada', d: 'Nadie la ve hasta terminar el libro, ni siquiera él.' },
+      { img: '4_terminar', t: 'Al terminar el libro', d: 'La cápsula se abre: responde lo mismo, sin ver lo que dijo antes.' },
+      { img: '5_antes_ahora', t: 'Antes y ahora', d: 'Lee sus dos respuestas juntas y ve qué cambió. Queda guardada en su Cuaderno.' },
+    ],
+  },
+]
+</script>
+<script src="demo.js"></script>
+</body>
+</html>

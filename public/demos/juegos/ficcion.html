@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Juegos de ficción · Inmersia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="demo.css">
+</head>
+<body>
+<header class="cab">
+  <h1>Los juegos de ficción, como los ve tu lector</h1>
+  <p>Son capturas reales de Inmersia, con <i>El signo de los cuatro</i>. Pasa los momentos con las flechas y cambia entre teléfono y computadora.</p>
+</header>
+<nav class="barra"><div class="barra-in">
+  <a href="#mesa">Método Anderson</a><a href="#corazonada">Corazonadas</a><a href="#mapa">El mapa del tesoro</a>
+  <span class="hueco"></span>
+  <div class="modo" role="group" aria-label="Ver en">
+    <button type="button" data-modo="m" class="on">Teléfono</button><button type="button" data-modo="d">Computadora</button>
+  </div>
+</div></nav>
+<main id="juegos"></main>
+<p class="pie">Lo que el lector hace en cada juego lo ves, agrupado, en Mis lectores. Nunca ves lo que hizo una persona concreta.</p>
+<script>
+window.JUEGOS = [
+  {
+    id: 'mesa', prefijo: 'ms', kicker: 'Ficción', nombre: 'Método Anderson',
+    lead: 'Una mesa de investigación por personaje. Las pistas salen de tu libro; el lector junta tres que digan lo mismo y deduce cómo es ese personaje.',
+    cuando: 'Al terminar cada capítulo le llegan pistas nuevas. La mesa vive en el tablero de investigación del libro y se juega cuando quiera.',
+    mide: 'Entender a los personajes: deducir cómo es alguien por lo que hace y dice.',
+    tu: 'Qué porcentaje armó el perfil de cada personaje y cuántos intentos le costó. Si uno cuesta mucho, quizás no se deduce bien.',
+    pasos: [
+      { img: '1_tablero', t: 'El tablero de la investigación', d: 'Cada libro tiene su tablero. La carpeta «Mesa de investigación» dice cuántas deducciones hay por descubrir.' },
+      { img: '2_mesa', t: 'La mesa de un personaje', d: 'Arriba, los personajes; debajo, las pistas sacadas del libro, con su capítulo y un enlace al párrafo. Las grises llegan más adelante.' },
+      { img: '3_tres', t: 'Tres pistas en la mesa', d: 'El lector elige tres pistas que crea que hablan de lo mismo y toca «Jugar».' },
+      { img: '4_pregunta', t: '¿Qué te dicen estas tres?', d: 'Si encajan, elige qué rasgo del personaje muestran entre tres opciones.' },
+      { img: '5_resultado', t: 'Nueva deducción', d: 'Si acierta, el rasgo queda guardado y la mesa le dice cuántos quedan por descubrir.' },
+      { img: '6_ficha', t: 'La ficha del personaje', d: 'Todo lo que ya dedujo de cada personaje, en un solo sitio.', solo: 'm' },
+    ],
+  },
+  {
+    id: 'corazonada', prefijo: 'cz', kicker: 'Ficción', nombre: 'Corazonadas',
+    lead: 'En los momentos de suspense, el lector apuesta qué va a pasar. Tu libro le dice después si acertó.',
+    cuando: 'Mientras lee: un chip aparece entre dos párrafos. La revelación llega capítulos después, en el párrafo donde lo cuentas.',
+    mide: 'Anticipar e inferir: usar lo que ya sabe para adivinar lo que viene.',
+    tu: 'Qué porcentaje acertó cada corazonada y cuántos la jugaron.',
+    pasos: [
+      { img: '1_chip', t: 'Un chip en el texto', d: 'Justo donde hay suspense aparece «Corazonada» con la pregunta. Puede tocarlo o seguir leyendo.' },
+      { img: '2_tarjeta', t: '¿Qué crees que va a pasar?', d: 'Elige una de tres respuestas y cuánto se juega según lo seguro que esté.' },
+      { img: '3_guardada', t: 'Guardada', d: 'Sigue leyendo. Se lo diremos cuando el libro lo cuente.' },
+      { img: '4_corazon', t: 'Un corazón en el margen', d: 'En el párrafo donde se revela, aparece un corazón junto al texto.' },
+      { img: '5_revelar', t: '¿Acerté?', d: 'Al tocar el corazón recuerda lo que eligió y lo descubre.' },
+      { img: '6_resultado', t: 'El resultado', d: 'Si acertó, gana; y en los dos casos ve las pistas del libro con las que se podía saber.' },
+    ],
+  },
+  {
+    id: 'mapa', prefijo: 'mt', kicker: 'Ficción', nombre: 'El mapa del tesoro',
+    lead: 'Preguntas sobre el capítulo cuya respuesta está escrita en tu libro. El lector la encuentra, la subraya y la manda al mapa.',
+    cuando: 'Al empezar cada capítulo le llegan las fichas. Después viven en su Cuaderno, en la pestaña «Tesoros».',
+    mide: 'Fijarse y localizar: encontrar en el texto un detalle o una idea.',
+    tu: 'Qué porcentaje encontró cada tesoro, entre los que buscaron en ese capítulo.',
+    pasos: [
+      { img: '1_fichas', t: 'Las fichas del capítulo', d: 'Al empezar el capítulo, el gato le da las preguntas: unas «a la vista» (un dato que el libro dice tal cual) y otras «escondidas» (una idea que hay que entender).' },
+      { img: '2_brilla', t: 'El libro brilla', d: 'Cuando hay un tesoro cerca, el borde del libro brilla. Así sabe que vale la pena leer con atención.' },
+      { img: '3_subrayar', t: 'Subraya y manda al mapa', d: 'Subraya la frase que responde y elige «Mapa del tesoro».' },
+      { img: '4_respuesta', t: '¡Bravo!', d: 'El gato le dice si dio en el clavo y por qué esa frase es la respuesta.' },
+      { img: '5_cuaderno', t: 'En el Cuaderno', d: 'Los tesoros se quedan en su Cuaderno, pestaña «Tesoros», con la frase que encontró. Ahí sigue buscando los que le faltan.' },
+    ],
+  },
+]
+</script>
+<script src="demo.js"></script>
+</body>
+</html>
