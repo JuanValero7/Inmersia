@@ -9,7 +9,7 @@
 //
 // El guía de esta landing es Yuri (naranja), el gato del lector. En el hero,
 // «¿Cómo vas a usar Inmersia?» separa los públicos por gato: Yuri para leer (esta
-// página), Katana para colegios (/colegios) y Mancha para escribir (pronto).
+// página), Katana para colegios (/colegios) y Mancha para escribir (/escritores).
 // Elegir a Yuri guarda el naranja como gato de la cuenta al registrarse (ver
 // hooks/useGatoColor.js).
 //
@@ -80,7 +80,6 @@ export default function Landing({ onAuth, onGoTienda, mobile = false }) {
   const elegirPublico = (p) => {
     evento('landing_publico', { publico: p.id })
     if (p.ruta) { navigate(p.ruta); return }
-    if (p.pronto) { hero.decir(`${GATOS[p.color]} está preparando el rincón de los escritores. ¡Pronto!`); hero.mover('hop'); return }
     try { localStorage.setItem(GATO_ELEGIDO_KEY, p.color) } catch { /* sin almacenamiento: solo dura esta visita */ }
     hero.decir('¡Esta es tu página! Te acompaño mientras lees.'); hero.mover('hop')
   }

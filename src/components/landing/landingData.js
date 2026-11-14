@@ -32,11 +32,11 @@ export const gatoSrc = (color, pose) => `/assets/landing/gatos/${color}-${pose}.
 
 // «¿Cómo vas a usar Inmersia?»: cada gato es un público. Yuri (naranja) es el
 // lector, y es el gato de toda esta landing; Katana (negro) es la guía de la
-// landing para colegios; Mancha (blanco), el rincón de escritores, que aún no existe.
+// landing para colegios; Mancha (blanco), la de escritores (/escritores).
 export const PUBLICOS = [
   { color: 'naranja', id: 'lector', para: 'Para leer' },
   { color: 'negro', id: 'colegio', para: 'Para colegios', ruta: '/colegios' },
-  { color: 'blanco', id: 'escritor', para: 'Para escribir', pronto: true },
+  { color: 'blanco', id: 'escritor', para: 'Para escribir', ruta: '/escritores' },
 ]
 
 // Lo que dice cada gato al tocarlo (el primero es el que se ve al cargar).

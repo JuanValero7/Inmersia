@@ -1,0 +1,178 @@
+/* src/styles/landing-escritores.css
+   ─────────────────────────────────────────────────────────────
+   Landing de escritores (/escritores): el viaje del libro, un carrusel
+   horizontal de láminas (components/LandingEscritores.jsx). Todo con prefijo
+   `le-` y bajo .le-landing, que ocupa la pantalla entera (position: fixed)
+   para que el carrusel no dependa del scroll de la página.
+   Móvil: landing-escritores.mobile.css (scopeado en .le-mobile).
+   Maqueta aprobada: Documents/Inmersia_maquetas/landing/escritores/viaje.html
+   ───────────────────────────────────────────────────────────── */
+.le-landing{--bg:#f5efe2;--ink:#4a3622;--accent:#f2792a;--paper:#fffdf8;--soft:#9a6a4a;--linea:#e3d3b5;--verde:#4a7c59;--noche:#1c120a;--cab:64px;--linea-t:70px;
+  position:fixed;inset:0;z-index:5;overflow:hidden;background:var(--noche);color:var(--ink);font-family:'Poppins',system-ui,sans-serif;color-scheme:light}
+.le-landing *{box-sizing:border-box}
+/* Base con :where() (especificidad 0): que no les gane a .le-pill y compañía */
+.le-landing h1,.le-landing h2,.le-landing h3,.le-landing h4{font-family:'Baloo 2',cursive}
+:where(.le-landing) :where(button){font-family:'Baloo 2',cursive}
+:where(.le-landing) :where(button){cursor:pointer;color:inherit}
+:where(.le-landing) :where(img){display:block}
+:where(.le-landing) :where(a){color:inherit}
+
+/* Cabecera */
+.le-cab{position:relative;z-index:20;height:var(--cab);background:var(--paper);border-bottom:2.5px solid var(--ink);display:flex;align-items:center;gap:16px;padding:0 24px}
+.le-cab img{height:26px}
+.le-cab .le-lugar{font-family:'Baloo 2';font-weight:700;font-size:18px;color:var(--soft);border-left:2px solid var(--linea);padding-left:16px}
+.le-cab .le-hueco{flex:1}
+.le-pill{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 20px;border-radius:999px;border:2.5px solid var(--ink);
+  background:var(--paper);font-weight:700;font-size:16px;box-shadow:2px 3px 0 rgba(74,54,34,.16);transition:transform .15s;text-decoration:none;color:var(--ink)}
+.le-pill:hover{transform:translateY(-1px)}
+.le-pill.le-naranja{background:var(--accent);color:#fff}
+.le-pill.le-plana{border-color:transparent;box-shadow:none;background:transparent}
+
+/* Carril horizontal */
+.le-carril{display:flex;height:calc(100dvh - var(--cab));overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+.le-carril::-webkit-scrollbar{display:none}
+.le-lamina{position:relative;flex:0 0 100%;height:100%;scroll-snap-align:start;overflow:hidden;background:#2a1c12}
+
+/* Índice (entrada) */
+.le-era>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.06);transition:transform 6s cubic-bezier(.2,.6,.3,1)}
+.le-lamina.le-activa>img{transform:scale(1)}
+.le-portada::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(28,18,10,.88) 0%,rgba(28,18,10,.6) 32%,rgba(28,18,10,0) 52%)}
+.le-portada>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:70% 50%}
+.le-portada .le-centro{position:absolute;z-index:2;top:0;bottom:0;left:max(84px,5vw);width:min(520px,36vw);display:flex;flex-direction:column;justify-content:center;color:#fff8ec}
+.le-portada .le-kicker{font-family:'Baloo 2';font-weight:700;color:#ffc79a;font-size:16px}
+.le-portada h1{font-size:clamp(34px,3.7vw,56px);line-height:1;margin:6px 0 14px;font-weight:800;text-shadow:0 3px 18px rgba(0,0,0,.5)}
+.le-portada p{font-size:17px;line-height:1.55;margin:0 0 24px;color:#f3e6d2}
+.le-portada .le-botones{display:flex;flex-wrap:wrap;gap:10px}
+
+/* Eras */
+.le-era::after{content:'';position:absolute;inset:0;pointer-events:none}
+.le-era.le-izq::after{background:linear-gradient(90deg,rgba(28,18,10,.86) 0%,rgba(28,18,10,.55) 38%,rgba(28,18,10,0) 60%)}
+.le-era.le-der::after{background:linear-gradient(270deg,rgba(28,18,10,.86) 0%,rgba(28,18,10,.55) 38%,rgba(28,18,10,0) 60%)}
+.le-era.le-ancha.le-izq::after{background:linear-gradient(90deg,rgba(28,18,10,.88) 0%,rgba(28,18,10,.6) 44%,rgba(28,18,10,0) 66%)}
+.le-era.le-ancha.le-der::after{background:linear-gradient(270deg,rgba(28,18,10,.88) 0%,rgba(28,18,10,.6) 44%,rgba(28,18,10,0) 66%)}
+.le-texto{position:absolute;z-index:2;top:0;bottom:var(--linea-t);width:min(540px,40vw);display:flex;flex-direction:column;justify-content:center;color:#fff8ec;
+  opacity:0;transition:opacity .6s .15s,transform .6s .15s}
+.le-izq .le-texto{left:max(84px,5vw);transform:translateX(-24px)}
+.le-der .le-texto{right:max(84px,5vw);transform:translateX(24px)}
+.le-lamina.le-activa .le-texto{opacity:1;transform:none}
+.le-cuando{font-family:'Baloo 2';font-weight:700;font-size:13.5px;color:#ffc79a}
+.le-ancha .le-texto{width:min(660px,48vw)}
+.le-texto h2{font-size:clamp(22px,2vw,28px);line-height:1.05;margin:0 0 4px;font-weight:800;text-shadow:0 2px 12px rgba(0,0,0,.45)}
+.le-texto .le-hist{font-size:13.5px;line-height:1.45;margin:0 0 40px;color:#e6d6bf;max-width:440px}
+.le-hoy{position:relative;background:var(--paper);color:var(--ink);border:2.5px solid var(--ink);border-radius:18px;padding:14px 18px 18px;box-shadow:4px 6px 0 rgba(0,0,0,.35)}
+.le-hoy .le-que{font-family:'Baloo 2';font-weight:800;font-size:13.5px;color:var(--accent);letter-spacing:.05em;text-transform:uppercase}
+.le-hoy b.le-paso{display:block;font-family:'Baloo 2';font-size:clamp(24px,2.1vw,30px);line-height:1.05;margin:0 0 10px;padding-right:70px}
+.le-captura{display:block;width:100%;border:2px solid var(--ink);border-radius:10px;overflow:hidden;padding:0;background:#f5efe2;cursor:zoom-in;position:relative}
+.le-captura img{width:100%;height:auto;max-height:min(290px,32vh);object-fit:contain;background:#efe6d3;transition:transform .3s}
+.le-captura:hover img{transform:scale(1.03)}
+.le-captura .le-lupa{position:absolute;right:8px;bottom:8px;background:rgba(43,33,24,.8);color:#fff;border-radius:999px;font-size:12px;padding:2px 10px;font-family:'Poppins'}
+/* Cuerpo propio (Egipto, Roma) */
+.le-cuerpo .le-intro{font-size:15px;line-height:1.5;margin:0 0 10px}
+.le-cuerpo .le-prueba{background:#eaf3e6;border:2px solid var(--verde);border-radius:12px;padding:8px 12px;font-size:14px;margin:0 0 12px}
+.le-cuerpo .le-prueba b{color:var(--verde)}
+.le-cuerpo .le-duo{display:grid;grid-template-columns:.9fr 1.1fr;gap:12px;align-items:center}
+.le-cuerpo .le-trato{background:#fbf3e4;border:2px solid var(--linea);border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.4}
+.le-cuerpo .le-trato b{font-family:'Baloo 2';font-size:17px}
+.le-cuerpo .le-trato ul{margin:4px 0 0;padding:0;list-style:none}
+.le-cuerpo .le-trato li{position:relative;padding-left:20px;margin:3px 0}
+.le-cuerpo .le-trato li::before{content:'✓';position:absolute;left:2px;color:var(--verde);font-weight:700}
+.le-cuerpo .le-captura img{max-height:min(200px,22vh)}
+.le-cuerpo .le-sub{font-family:'Baloo 2';font-weight:800;font-size:13px;color:var(--accent);letter-spacing:.05em;text-transform:uppercase;margin:14px 0 6px}
+.le-pasos{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.le-pasos div,.le-salas div{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:8px 10px;box-shadow:2px 3px 0 rgba(74,54,34,.14)}
+.le-pasos i{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-style:normal;font-family:'Baloo 2';font-weight:800;font-size:14px;margin-bottom:3px}
+.le-pasos b,.le-salas b{display:block;font-family:'Baloo 2';font-size:16px;line-height:1.1}
+.le-pasos small,.le-salas small{display:block;font-size:12.5px;line-height:1.3;color:var(--soft);margin-top:2px}
+.le-salas{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.le-salas div{display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center}
+.le-salas div{display:block;border-top:5px solid var(--accent)}
+.le-piezas{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.le-piezas div{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:10px 12px 12px;box-shadow:2px 3px 0 rgba(74,54,34,.14)}
+.le-piezas b{display:block;font-family:'Baloo 2';font-size:17px;line-height:1.1}
+.le-piezas small{display:block;font-size:12.5px;line-height:1.35;color:var(--soft);margin-top:3px}
+.le-vis{display:flex;align-items:flex-end;gap:4px;height:62px;margin-bottom:8px}
+.le-v-portada::before{content:'';width:42px;height:60px;border-radius:3px 6px 6px 3px;background:linear-gradient(90deg,#c95f1a 0 5px,var(--accent) 5px);box-shadow:2px 2px 0 rgba(74,54,34,.25)}
+.le-v-fondo{border-radius:8px;background:linear-gradient(160deg,#f6c98f,#e58f5a 55%,#7a4a3a);height:52px;margin-top:10px;width:100%}
+.le-v-historias i{flex:1;max-width:20px;height:60px;border-radius:5px;background:linear-gradient(180deg,#f3b07c,#9a6a4a);border:1.5px solid var(--ink)}
+.le-v-historias i:first-child{background:var(--accent)}
+.le-tipos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0}
+.le-tipos span{background:#fbf3e4;border:2px solid var(--linea);border-radius:10px;padding:6px 10px;font-size:12.5px;line-height:1.3;color:var(--soft)}
+.le-tipos b{display:block;font-family:'Baloo 2';font-size:16px;color:var(--ink)}
+.le-estilos{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.le-estilos button{position:relative;padding:0;border:2px solid var(--ink);border-radius:9px;overflow:hidden;background:#000;cursor:zoom-in}
+.le-estilos img{width:100%;aspect-ratio:3/2;object-fit:cover;max-height:10vh}
+.le-estilos span{position:absolute;left:0;right:0;bottom:0;padding:10px 6px 3px;background:linear-gradient(transparent,rgba(20,12,6,.85));color:#fff;font-family:'Baloo 2';font-weight:700;font-size:13px;text-align:left}
+.le-cuerpo .le-nota{margin:12px 0 0;font-size:13.5px;color:var(--soft)}
+.le-cuerpo>.le-captura img{max-height:min(200px,20vh)}
+.le-chips{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.le-chips span{background:#fff;border:2px solid var(--ink);border-top:6px solid;border-radius:10px;padding:5px 8px;font-size:11.5px;line-height:1.25;color:var(--soft)}
+.le-chips b{display:block;font-family:'Baloo 2';font-size:15px;color:var(--ink)}
+.le-sonidos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.le-sonidos>div{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:10px 12px 12px;box-shadow:2px 3px 0 rgba(74,54,34,.14)}
+.le-sonidos b{display:block;font-family:'Baloo 2';font-size:17px;line-height:1.1}
+.le-sonidos small{display:block;font-size:12.5px;color:var(--soft);margin:1px 0 4px}
+.le-son{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--ink);border-radius:999px;background:var(--paper);padding:3px 11px 3px 4px;font-size:13.5px;font-weight:700;margin:5px 5px 0 0}
+.le-son i{flex:none;width:22px;height:22px;border-radius:50%;background:var(--accent);position:relative}
+.le-son i::after{content:'';position:absolute;left:8px;top:6px;border-left:8px solid #fff;border-top:5px solid transparent;border-bottom:5px solid transparent}
+.le-son.le-on{background:#fbe8d6}
+.le-son.le-on i::after{left:7px;top:7px;border:0;width:8px;height:8px;background:#fff}
+.le-nf{display:flex;gap:12px;align-items:center;background:#eaeef5;border:2px solid #2F4A6B;border-radius:12px;padding:9px 12px;font-size:13.5px;line-height:1.4}
+.le-nf b{color:#2F4A6B}.le-nf .le-son{flex:none;margin:0}
+.le-juegos2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.le-juegos2>div{display:flex;flex-direction:column;background:#fff;border:2px solid var(--ink);border-radius:12px;padding:10px 12px 12px;box-shadow:2px 3px 0 rgba(74,54,34,.14)}
+.le-juegos2 h4{margin:0 0 4px;font-family:'Baloo 2';font-size:13px;color:var(--accent);text-transform:uppercase;letter-spacing:.05em}
+.le-juegos2 p{margin:0 0 8px;font-size:13px;line-height:1.35;color:var(--soft)}
+.le-juegos2 p b{display:block;font-family:'Baloo 2';font-size:16.5px;color:var(--ink)}
+.le-juegos2 .le-pill{margin-top:auto;align-self:flex-start;height:36px;font-size:14.5px;padding:0 16px}
+.le-datos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.le-datos div{background:#fff;border:2px solid var(--ink);border-left:6px solid var(--accent);border-radius:10px;padding:6px 10px;box-shadow:2px 3px 0 rgba(74,54,34,.14)}
+.le-datos b{display:block;font-family:'Baloo 2';font-size:17px;line-height:1.1}
+.le-datos small{display:block;font-size:12px;line-height:1.3;color:var(--soft)}
+@media (min-width:821px) and (max-height:800px){.le-captura img{max-height:22vh}.le-cuerpo .le-captura img{max-height:19vh}.le-texto .le-hist{margin-bottom:34px;font-size:13px}.le-hoy .le-exp{font-size:13px;margin-top:7px}.le-hoy b.le-paso{font-size:23px;margin-bottom:6px}.le-cuerpo .le-intro{font-size:13.5px;margin-bottom:7px}.le-cuerpo .le-prueba{padding:5px 10px;font-size:13px;margin-bottom:8px}.le-cuerpo .le-trato{font-size:12.5px}.le-cuerpo .le-sub{margin:9px 0 5px}.le-pasos small,.le-salas small{font-size:11.5px}.le-piezas small{font-size:11.5px}.le-vis{height:44px}.le-v-portada::before{height:42px;width:30px}.le-v-historias i{height:42px}.le-v-fondo{height:36px}.le-estilos img{max-height:8.5vh}.le-tipos span{padding:4px 8px}.le-cuerpo>.le-captura img{max-height:16vh}.le-chips span{padding:3px 7px;font-size:11px}.le-juegos2 p{margin-bottom:5px;font-size:12.5px}.le-datos div{padding:4px 9px}}
+.le-hoy .le-gato{position:absolute;right:-14px;top:-50px;width:96px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35));pointer-events:none}
+
+/* Flechas */
+.le-flecha{position:fixed;z-index:12;top:calc(var(--cab) + (100dvh - var(--cab) - var(--linea-t))/2);transform:translateY(-50%);width:56px;height:56px;border-radius:50%;
+  border:2.5px solid var(--ink);background:var(--paper);font-size:26px;line-height:1;box-shadow:2px 3px 0 rgba(0,0,0,.35);transition:transform .15s,opacity .3s}
+.le-flecha:hover{transform:translateY(-50%) scale(1.07)}
+.le-flecha.le-ant{left:16px}.le-flecha.le-sig{right:16px}
+.le-flecha:disabled{opacity:0;pointer-events:none}
+.le-flecha.le-sig.le-late{animation:le-late 1.6s ease-in-out infinite}
+@keyframes le-late{50%{transform:translateY(-50%) translateX(5px)}}
+
+/* Línea del tiempo */
+.le-tiempo{position:fixed;z-index:11;left:0;right:0;bottom:0;height:var(--linea-t);background:linear-gradient(transparent,rgba(20,12,6,.75) 35%);display:flex;align-items:center;justify-content:center;transition:opacity .3s}
+.le-tiempo.le-fuera{opacity:0;pointer-events:none}
+.le-riel{position:relative;width:min(900px,86vw);height:40px}
+.le-riel::before{content:'';position:absolute;left:0;right:0;top:12px;height:3px;border-radius:3px;background:rgba(255,248,236,.35)}
+.le-riel .le-lleno{position:absolute;left:0;top:12px;height:3px;border-radius:3px;background:var(--accent);transition:width .5s}
+.le-riel button{position:absolute;top:0;transform:translateX(-50%);border:0;background:none;padding:0;color:#e9dcc6;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12.5px;font-weight:700;white-space:nowrap}
+.le-riel button i{width:14px;height:14px;border-radius:50%;background:#2a1c12;border:2.5px solid #e9dcc6;margin-top:6px}
+.le-riel button.le-paso i{background:var(--accent);border-color:var(--accent)}
+.le-riel button.le-on{color:#fff}
+.le-riel button.le-on i{transform:scale(1.35);background:var(--accent);border-color:#fff}
+.le-libro-riel{position:absolute;top:2px;width:16px;height:22px;border-radius:2px 4px 4px 2px;background:linear-gradient(90deg,#c95f1a 0 3px,var(--accent) 3px);box-shadow:1px 2px 0 rgba(0,0,0,.4);transform:translateX(-50%) translateY(-14px);transition:left .5s cubic-bezier(.4,0,.2,1)}
+
+/* Visor de capturas */
+.le-visor{position:fixed;inset:0;z-index:40;background:rgba(20,12,6,.85);display:none;align-items:center;justify-content:center;padding:30px;cursor:zoom-out}
+.le-visor.le-on{display:flex}
+.le-visor img{max-width:min(1280px,100%);max-height:100%;border-radius:12px;border:2.5px solid var(--paper)}
+
+/* «¿Cómo vas a usar Inmersia?» (SelectorPublico) sobre la portada oscura */
+.le-portada .le-publico{margin-top:28px;flex-direction:column;align-items:flex-start;gap:6px}
+.le-portada .le-publico .pub-l,.le-portada .le-publico .pub-nombre{color:#e9dcc6}
+.le-portada .le-publico .pub-pick[aria-pressed="true"] .pub-nombre{color:#fff}
+.le-portada .le-publico .pub-cara{width:70px;height:70px}
+.le-portada .le-publico .pub-cara img{filter:drop-shadow(0 4px 4px rgba(0,0,0,.35))}
+
+/* Pop-up «Quiero ser escritor» */
+.le-sol{position:fixed;inset:0;z-index:45;background:rgba(20,12,6,.7);display:flex;align-items:center;justify-content:center;padding:16px}
+.le-sol-caja{position:relative;width:min(440px,100%);background:var(--paper);border:2.5px solid var(--ink);border-radius:20px;padding:26px 26px 24px;box-shadow:5px 7px 0 rgba(0,0,0,.35)}
+.le-sol-caja h2{font-size:30px;font-weight:800;margin:0 0 6px;line-height:1.05;color:var(--ink)}
+.le-sol-caja p{font-size:15px;line-height:1.5;margin:0 0 14px}
+.le-sol-caja label{display:block;font-size:13px;font-weight:600;color:var(--soft);margin-bottom:10px}
+.le-sol-caja input{display:block;width:100%;margin-top:4px;border:2px solid var(--ink);border-radius:12px;padding:10px 12px;font:15px 'Poppins',sans-serif;background:#fff;color:var(--ink)}
+.le-sol-caja .le-sol-error{color:#b3412c;font-weight:600;min-height:1.2em;margin:0 0 8px;font-size:13.5px}
+.le-sol-gato{position:absolute;right:46px;top:-60px;width:88px;pointer-events:none;filter:drop-shadow(0 4px 3px rgba(0,0,0,.35))}
+.le-sol-x{position:absolute;right:10px;top:8px;border:0;background:none;font-size:28px;line-height:1;color:var(--soft)}
+.le-pill:disabled{opacity:.6;cursor:wait}

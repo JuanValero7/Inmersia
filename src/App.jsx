@@ -46,6 +46,8 @@ const Landing               = lazy(() => import('./components/Landing.jsx'))
 const LandingMobile         = lazy(() => import('./components/mobile/LandingMobile.jsx'))
 const LandingColegios       = lazy(() => import('./components/LandingColegios.jsx'))
 const LandingColegiosMobile = lazy(() => import('./components/mobile/LandingColegiosMobile.jsx'))
+const LandingEscritores     = lazy(() => import('./components/LandingEscritores.jsx'))
+const LandingEscritoresMobile = lazy(() => import('./components/mobile/LandingEscritoresMobile.jsx'))
 const VistaAlbum            = lazy(() => import('./components/Album.jsx'))
 const AlbumMobile           = lazy(() => import('./components/mobile/AlbumMobile.jsx'))
 const ComunidadesMobile     = lazy(() => import('./components/mobile/ComunidadesMobile.jsx'))
@@ -134,6 +136,7 @@ export default function App() {
   const Lectura     = lectorEsMobile ? VistaLecturaMobile : VistaLectura
   const LandingView = isMobile ? LandingMobile         : Landing
   const ColegiosView = isMobile ? LandingColegiosMobile : LandingColegios
+  const EscritoresView = isMobile ? LandingEscritoresMobile : LandingEscritores
   const Tienda      = isMobile ? VistaTiendaMobile     : VistaTienda
   const Album       = isMobile ? AlbumMobile           : VistaAlbum
 
@@ -275,6 +278,9 @@ export default function App() {
 
           {/* Landing para colegios: pública, con o sin sesión (la ve un profe que ya tiene cuenta). */}
           <Route path="/colegios" element={<ColegiosView />} />
+
+          {/* Landing de escritores (el viaje del libro): pública. «Quiero ser escritor» guarda la solicitud (migración 120). */}
+          <Route path="/escritores" element={<EscritoresView user={user} openAuth={openAuth} />} />
 
           <Route path="/unirse/:codigo" element={<UnirseConEnlace user={user} openAuth={openAuth} />} />
 

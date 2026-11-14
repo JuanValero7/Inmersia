@@ -113,11 +113,10 @@ export default function LandingColegios({ mobile = false }) {
   const navigate = useNavigate()
 
   // «¿Cómo vas a usar Inmersia?»: aquí está marcado el colegio
-  const [avisoPublico, setAvisoPublico] = useState(null)
   const elegirPublico = (p) => {
     evento('colegios_publico', { publico: p.id })
     if (p.id === 'lector') navigate('/')
-    else if (p.pronto) setAvisoPublico('Mancha está preparando el rincón de los escritores. ¡Pronto!')
+    else if (p.ruta && p.id !== 'colegio') navigate(p.ruta)
   }
 
   return (
@@ -211,7 +210,7 @@ export default function LandingColegios({ mobile = false }) {
                 <span className="lc-fuente">National Literacy Trust, Reino Unido, 2025</span>
               </div>
             </div>
-            <SelectorPublico actual="colegio" onElegir={elegirPublico} mobile={mobile} aviso={avisoPublico} className="lc-publico" />
+            <SelectorPublico actual="colegio" onElegir={elegirPublico} mobile={mobile} className="lc-publico" />
           </div>
         </section>
 

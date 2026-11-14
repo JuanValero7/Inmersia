@@ -1,0 +1,40 @@
+/* src/styles/landing-escritores.mobile.css
+   Variante móvil de la landing de escritores (.le-mobile): la imagen arriba,
+   el texto debajo y cada lámina se desliza en vertical; el carrusel sigue
+   siendo de lado. Lo mismo que la maqueta en ≤ 820 px.
+*/
+.le-mobile{--linea-t:58px}
+.le-mobile .le-cab .le-pill{height:38px;padding:0 14px;font-size:14.5px;white-space:nowrap}
+.le-mobile .le-cab{padding:0 16px}
+.le-mobile .le-cab .le-lugar,.le-mobile .le-cab .le-plana{display:none}
+.le-mobile .le-flecha{display:none}
+.le-mobile .le-era{overflow-y:auto;background:var(--noche)}
+.le-mobile .le-era>img{position:relative;height:56vw;transform:none!important}
+.le-mobile .le-era.le-izq>img{object-position:70% 50%}
+.le-mobile .le-era.le-der>img{object-position:30% 50%}
+.le-mobile .le-era::after{display:none}
+.le-mobile .le-texto{position:relative;top:auto;bottom:auto;left:auto!important;right:auto!important;width:auto;transform:none!important;opacity:1;padding:16px 16px calc(var(--linea-t) + 20px)}
+.le-mobile .le-texto h2{font-size:28px}
+.le-mobile .le-hoy .le-gato{width:76px;top:-40px}
+.le-mobile .le-ancha .le-texto{width:auto}
+.le-mobile .le-cuerpo .le-duo{grid-template-columns:1fr}
+.le-mobile .le-pasos{grid-template-columns:1fr 1fr}
+.le-mobile .le-salas{grid-template-columns:1fr}
+.le-mobile .le-chips{grid-template-columns:1fr 1fr}
+.le-mobile .le-sonidos,.le-mobile .le-juegos2{grid-template-columns:1fr}
+.le-mobile .le-nf{flex-direction:column;align-items:flex-start}
+.le-mobile .le-datos{grid-template-columns:1fr 1fr}
+.le-mobile .le-piezas{grid-template-columns:1fr}
+.le-mobile .le-tipos{grid-template-columns:1fr}
+.le-mobile .le-estilos{grid-template-columns:1fr 1fr}
+.le-mobile .le-hoy b.le-paso{font-size:24px}
+.le-mobile .le-portada>img{position:relative;height:56vw}
+.le-mobile .le-portada{overflow-y:auto;background:var(--noche)}
+.le-mobile .le-portada::after{display:none}
+.le-mobile .le-portada .le-centro{position:relative;left:auto;width:auto;padding:18px 16px 30px}
+.le-mobile .le-portada h1{font-size:34px}
+.le-mobile .le-riel button span{display:none}
+.le-mobile .le-riel button.le-on span{display:block}
+.le-mobile .le-sol-caja{padding:24px 18px 20px}
+.le-mobile .le-sol-gato{right:42px;top:-54px;width:70px}
+.le-mobile .le-sol-caja h2{font-size:26px;padding-right:84px}

@@ -12,6 +12,7 @@
     "esquema": "node scripts/volcar-esquema.mjs",
     "humo": "node scripts/humo.mjs",
     "respaldo": "node scripts/respaldar.mjs",
+    "escritor": "node scripts/escritor.mjs",
     "security-check": "npm run lint && node scripts/scan-secrets.mjs && npm audit --audit-level=high",
     "typecheck": "tsc -p jsconfig.json --noEmit"
   },
